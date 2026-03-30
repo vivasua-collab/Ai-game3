@@ -1,138 +1,228 @@
 # 📚 Перечень документации проекта Cultivation World Simulator
 
-**Последнее обновление:** 2026-03-24 16:55 UTC
+**Последнее обновление:** 2026-03-30 10:00 UTC
 **Файлов в /docs:** 47
+**Файлов в /Unity:** 13 (+ 4 REQUIRED)
 
 ---
 
-## 📁 Начало работы (3 файла)
+## 🔬 ДЕТАЛЬНЫЙ АНАЛИЗ МИГРАЦИИ
 
-| Файл | Описание | Токены |
-|------|----------|--------|
-| [start_lore.md](./start_lore.md) | Лор мира культивации, система Ци, география | ~6 800 |
-| [INSTALL.md](./INSTALL.md) | Установка, запуск, скрипты, troubleshooting | ~5 300 |
-| [PHASER_STACK.md](./PHASER_STACK.md) | Стек Phaser 3, SSR, генерация текстур | ~1 700 |
+### ✅ Полностью мигрированные документы:
 
----
+| Unity документ | Источник в docs | Покрытие |
+|----------------|-----------------|----------|
+| BODY_SYSTEM.md | body.md, body-development-analysis.md, body_review.md, body_monsters.md | ✅ 100% |
+| COMBAT_SYSTEM.md | combat-system.md, technique-system-v2.md (частично) | ✅ 95% |
+| TECHNIQUE_SYSTEM.md | technique-system-v2.md | ✅ 95% |
+| TIME_SYSTEM.md | TIME_SYSTEM.md | ✅ 100% |
+| QI_SYSTEM.md | start_lore.md, body_review.md | ✅ 100% |
+| NPC_AI_SYSTEM.md | npc-session-integration.md, NPC_AI_THEORY.md | ✅ 90% |
+| WORLD_SYSTEM.md | sector-architecture.md, soul-system.md | ✅ 95% |
+| SAVE_SYSTEM.md | — | ✅ 100% (новый) |
+| GENERATORS_SYSTEM.md | generators.md | ✅ 100% |
+| FACTION_SYSTEM.md | faction-system.md | ✅ 100% |
+| LORE_SYSTEM.md | start_lore.md | ✅ 100% |
 
-## 📁 Архитектура (7 файлов)
+### ⚠️ ТРЕБУЕТСЯ ДОПОЛНИТЕЛЬНАЯ МИГРАЦИЯ:
 
-| Файл | Описание | Токены |
-|------|----------|--------|
-| [ARCHITECTURE.md](./ARCHITECTURE.md) | **Общая архитектура v19, Truth System, Event Bus, TickTimer** | ~10 500 |
-| [ARCHITECTURE_code_base.md](./ARCHITECTURE_code_base.md) | **Примеры кода для архитектуры (NEW)** | ~1 200 |
-| [TIME_SYSTEM.md](./TIME_SYSTEM.md) | **Документация системы времени TickTimer (NEW)** | ~2 500 |
-| [sector-architecture.md](./sector-architecture.md) | Архитектура мира и секторов (RimWorld-style) | ~5 100 |
-| [FUNCTIONS.md](./FUNCTIONS.md) | Справочник функций и API | ~13 000 |
-| [inventory-system.md](./inventory-system.md) | Система инвентаря | ~3 500 |
-| [event-bus-system.md](./event-bus-system.md) | Шина событий Phaser ↔ Server | ~1 800 |
+#### 1. EQUIPMENT_SYSTEM.md (НОВЫЙ, ВЫСОКИЙ ПРИОРИТЕТ)
 
----
+**Источники для консолидации:**
+- `equip.md` — унифицированная система экипировки (✅ частично в INVENTORY_SYSTEM.md)
+- `equip-v2.md` — экипировка v2 с Grade System
+- `materials.md` — система материалов с ID (❌ НЕ мигрировано)
+- `weapon-armor-system.md` — оружие, броня, формулы (❌ НЕ мигрировано)
 
-## 📁 Сущности (5 файлов)
+**Что отсутствует в Unity:**
+- Таблицы шансов попадания по частям тела
+- Прицельные атаки (aimed attacks)
+- Детальные формулы урона оружия
+- Ремонт и понижение Grade
+- Полный реестр материалов (5 тиров)
 
-| Файл | Описание | Токены |
-|------|----------|--------|
-| [body.md](./body.md) | Система тела (Kenshi-style), конечности | ~2 000 |
-| [equip.md](./equip.md) | Система экипировки | ~10 000 |
-| [equip-v2.md](./equip-v2.md) | Экипировка v2 (Grade System) | ~2 900 |
-| [soul-system.md](./soul-system.md) | SoulEntity + PhysicalObject | ~1 800 |
-| [random_npc.md](./random_npc.md) | Генерация NPC | ~7 400 |
+#### 2. MODIFIERS_SYSTEM.md (НОВЫЙ, ВЫСОКИЙ ПРИОРИТЕТ)
 
----
+**Источник:** `bonuses.md`
 
-## 📁 Игровые системы (20 файлов)
+**Что отсутствует в Unity:**
+- Единая система бонусов и штрафов
+- Мягкие капы (soft caps)
+- Диминишинг (diminishing returns)
+- Источники модификаторов (material, grade, curse, blessing)
+- Примеры расчётов с капами
 
-| Файл | Описание | Токены |
-|------|----------|--------|
-| [technique-system-v2.md](./technique-system-v2.md) | Система техник v2.1 (Grade + Capacity System) | ~4 500 |
-| [generators.md](./generators.md) | Все генераторы системы | ~3 900 |
-| [charger.md](./charger.md) | Зарядник Ци | ~12 500 |
-| [qi_stone.md](./qi_stone.md) | Камни Ци | ~8 100 |
-| [combat-system.md](./combat-system.md) | Боевая система | ~2 100 |
-| [faction-system.md](./faction-system.md) | Система фракций | ~5 500 |
-| [relations-system.md](./relations-system.md) | Система отношений | ~7 200 |
-| [TEST_WORLD_TARGETS.md](./TEST_WORLD_TARGETS.md) | Тестовый полигон | ~4 500 |
-| [vitality-hp-system.md](./vitality-hp-system.md) | Система HP | ~1 400 |
-| [DAMAGE_FORMULAS_PROPOSAL.md](./DAMAGE_FORMULAS_PROPOSAL.md) | Предложение по формулам урона | ~2 600 |
-| [weapon-armor-system.md](./weapon-armor-system.md) | Теория: Оружие и броня | ~20 300 |
-| [materials.md](./materials.md) | Система материалов | ~8 900 |
-| [bonuses.md](./bonuses.md) | Единая система бонусов | ~2 500 |
-| [ENVIRONMENT_SYSTEM_PLAN.md](./ENVIRONMENT_SYSTEM_PLAN.md) | План системы окружения | ~8 700 |
-| [TRAINING_GROUND_ROADMAP.md](./TRAINING_GROUND_ROADMAP.md) | План тренировочного полигона | ~2 400 |
-| [condition-system.md](./condition-system.md) | Система состояний | ~2 700 |
-| [stat-development-system.md](./stat-development-system.md) | Развитие характеристик | ~2 800 |
-| [stat-threshold-system.md](./stat-threshold-system.md) | Пороги развития | ~4 300 |
-| [body-development-analysis.md](./body-development-analysis.md) | Анализ развития тела | ~6 200 |
-| [development-1000-days-calculation.md](./development-1000-days-calculation.md) | Расчёт развития на 1000 дней | ~4 100 |
+**КРИТИЧНО:** Эта система используется ВСЕМИ другими системами!
 
----
+#### 3. ELEMENTS_SYSTEM.md (НОВЫЙ, СРЕДНИЙ ПРИОРИТЕТ)
 
-## 📁 Планирование (2 файла)
+**Источник:** `elements-system.md`
 
-| Файл | Описание | Токены |
-|------|----------|--------|
-| [PROJECT_ROADMAP.md](./PROJECT_ROADMAP.md) | Roadmap проекта, история, планы | ~4 300 |
-| [npc-session-integration.md](./npc-session-integration.md) | Интеграция NPC с сессиями | ~5 000 |
+**Что отсутствует в Unity:**
+- Детальные таблицы эффектов стихий по типам техник
+- Poison механика (множественные дебаффы по Grade)
+- Transcendent-эффекты для каждого элемента
+- Ограничения по типам техник
 
----
+#### 4. CHARGER_SYSTEM.md (НОВЫЙ, СРЕДНИЙ ПРИОРИТЕТ)
 
-## 📁 Справка (5 файлов)
+**Источник:** `charger.md`
 
-| Файл | Описание | Токены |
-|------|----------|--------|
-| [Listing.md](./Listing.md) | Этот файл | ~600 |
-| [PROMPT-EXAMPLES.md](./PROMPT-EXAMPLES.md) | Примеры промптов | ~4 200 |
-| [ui-terminology.md](./ui-terminology.md) | Терминология UI | ~2 800 |
-| [PLAYER_SPRITES.md](./PLAYER_SPRITES.md) | Спрайты игрока | ~1 500 |
-| [CHEATS.md](./CHEATS.md) | Чит-команды | ~700 |
+**Что отсутствует в Unity:**
+- Типы зарядников (belt, bracelet, necklace, ring, backpack)
+- Режимы работы (trickle, normal, burst, combat)
+- Буфер Ци зарядника
+- Проводимость как ограничитель потока
+- Использование в бою и медитации
 
 ---
 
-## 📁 Прочее (2 файла)
+## 🎮 Unity Migration (Новая папка)
 
-| Файл | Описание | Токены |
-|------|----------|--------|
-| [phaser-game-analysis.md](./phaser-game-analysis.md) | Анализ Phaser игры | ~2 000 |
-| [implementation-plan-body-development.md](./implementation-plan-body-development.md) | План развития тела | ~3 600 |
+Документы для миграции на Unity (только теория, без кода):
+
+### Приоритет 1 — Ядро игры:
+| Файл | Статус | Источники |
+|------|--------|-----------|
+| [Unity/ARCHITECTURE.md](../Unity/ARCHITECTURE.md) | ✅ DRAFT v1.0 | ARCHITECTURE.md |
+| [Unity/BODY_SYSTEM.md](../Unity/BODY_SYSTEM.md) | ✅ DRAFT v1.0 | body.md, body-development-analysis.md, body_review.md, body_monsters.md |
+| [Unity/TIME_SYSTEM.md](../Unity/TIME_SYSTEM.md) | ✅ DRAFT v1.0 | TIME_SYSTEM.md |
+| [Unity/QI_SYSTEM.md](../Unity/QI_SYSTEM.md) | ✅ DRAFT v1.0 | start_lore.md, technique-system-v2.md, body_review.md |
+| [Unity/COMBAT_SYSTEM.md](../Unity/COMBAT_SYSTEM.md) | ✅ DRAFT v1.0 | combat-system.md, technique-system-v2.md, body_review.md |
+| [Unity/TECHNIQUE_SYSTEM.md](../Unity/TECHNIQUE_SYSTEM.md) | ✅ DRAFT v1.0 | technique-system-v2.md, combat-system.md |
+
+### Приоритет 2 — Игровые системы:
+| Файл | Статус | Источники |
+|------|--------|-----------|
+| [Unity/INVENTORY_SYSTEM.md](../Unity/INVENTORY_SYSTEM.md) | ✅ DRAFT v1.0 | inventory-system.md, equip.md, equip-v2.md |
+| [Unity/NPC_AI_SYSTEM.md](../Unity/NPC_AI_SYSTEM.md) | ✅ DRAFT v1.0 | npc-session-integration.md, body_review.md |
+| [Unity/WORLD_SYSTEM.md](../Unity/WORLD_SYSTEM.md) | ✅ DRAFT v1.0 | sector-architecture.md, soul-system.md |
+| [Unity/SAVE_SYSTEM.md](../Unity/SAVE_SYSTEM.md) | ✅ DRAFT v1.0 | session.service docs |
+
+### Приоритет 3 — Дополнительные системы:
+| Файл | Статус | Источники |
+|------|--------|-----------|
+| [Unity/GENERATORS_SYSTEM.md](../Unity/GENERATORS_SYSTEM.md) | ✅ DRAFT v1.0 | generators.md |
+| [Unity/FACTION_SYSTEM.md](../Unity/FACTION_SYSTEM.md) | ✅ DRAFT v1.0 | faction-system.md |
+| [Unity/LORE_SYSTEM.md](../Unity/LORE_SYSTEM.md) | ✅ DRAFT v1.0 | start_lore.md |
+
+### Приоритет 4 — Требуется создание (НОВЫЕ):
+| Файл | Статус | Источники |
+|------|--------|-----------|
+| Unity/EQUIPMENT_SYSTEM.md | ❌ REQUIRED | equip.md, equip-v2.md, materials.md, weapon-armor-system.md |
+| Unity/MODIFIERS_SYSTEM.md | ❌ REQUIRED | bonuses.md |
+| Unity/ELEMENTS_SYSTEM.md | ❌ REQUIRED | elements-system.md |
+| Unity/CHARGER_SYSTEM.md | ❌ REQUIRED | charger.md |
 
 ---
 
-## 📂 Рабочие папки (не входят в документацию)
+## 📁 Документы в /docs (оригиналы, НЕ изменять)
 
-### checkpoints/ — Чекпоинты и планы внедрения
+### Начало работы (3 файла)
+| Файл | Описание |
+|------|----------|
+| [start_lore.md](./start_lore.md) | Лор мира культивации, система Ци, география |
+| [INSTALL.md](./INSTALL.md) | Установка, запуск, скрипты |
+| [PHASER_STACK.md](./PHASER_STACK.md) | Стек Phaser 3 |
 
-Рабочие документы для ИИ-агентов. Включает:
-- **checkpoint_03_24_tick_timer_phase_6.md** — Анализ миграции системы времени
-- **checkpoint_03_24_tick_timer_phase_7.md** — План реализации Phase 7
+### Архитектура (7 файлов)
+| Файл | Описание |
+|------|----------|
+| [ARCHITECTURE.md](./ARCHITECTURE.md) | Общая архитектура v19 |
+| [TIME_SYSTEM.md](./TIME_SYSTEM.md) | Система времени TickTimer |
+| [sector-architecture.md](./sector-architecture.md) | Архитектура мира |
+| [FUNCTIONS.md](./FUNCTIONS.md) | Справочник функций |
+| [inventory-system.md](./inventory-system.md) | Система инвентаря |
+| [event-bus-system.md](./event-bus-system.md) | Шина событий |
+
+### Сущности (5 файлов)
+| Файл | Описание | Мигрирован? |
+|------|----------|-------------|
+| [body.md](./body.md) | Система тела (Kenshi-style) | ✅ в BODY_SYSTEM.md |
+| [body_armor.md](./body_armor.md) | **Броня и прохождение урона** | ⚠️ Частично в COMBAT_SYSTEM.md |
+| [soul-system.md](./soul-system.md) | SoulEntity + PhysicalObject | ✅ в WORLD_SYSTEM.md |
+| [random_npc.md](./random_npc.md) | Генерация NPC | ✅ в NPC_AI_SYSTEM.md |
+
+### Экипировка и материалы (7 файлов)
+| Файл | Описание | Мигрирован? |
+|------|----------|-------------|
+| [equip.md](./equip.md) | **Унифицированная система экипировки** | ⚠️ Частично в INVENTORY_SYSTEM.md |
+| [equip-v2.md](./equip-v2.md) | **Экипировка v2 (Grade System)** | ⚠️ Частично в INVENTORY_SYSTEM.md |
+| [materials.md](./materials.md) | **Система материалов с ID** | ❌ НЕ мигрировано |
+| [weapon-armor-system.md](./weapon-armor-system.md) | **Оружие и броня (теория)** | ❌ НЕ мигрировано |
+| [bonuses.md](./bonuses.md) | **Единая система бонусов/штрафов** | ❌ НЕ мигрировано |
+| [elements-system.md](./elements-system.md) | **Система стихий (8 элементов)** | ⚠️ Частично в TECHNIQUE_SYSTEM.md |
+| [charger.md](./charger.md) | **Зарядник Ци** | ❌ НЕ мигрировано |
+
+### Техники и бой (5 файлов)
+| Файл | Описание | Мигрирован? |
+|------|----------|-------------|
+| [technique-system-v2.md](./technique-system-v2.md) | Система техник v2.1 | ✅ в TECHNIQUE_SYSTEM.md |
+| [combat-system.md](./combat-system.md) | Боевая система | ✅ в COMBAT_SYSTEM.md |
+| [qi_stone.md](./qi_stone.md) | Камни Ци | ⚠️ Частично |
+| [vitality-hp-system.md](./vitality-hp-system.md) | Система HP | ✅ в BODY_SYSTEM.md |
+| [condition-system.md](./condition-system.md) | Система состояний | ⚠️ Частично |
+
+### NPC и AI (3 файла)
+| Файл | Описание | Мигрирован? |
+|------|----------|-------------|
+| [npc-session-integration.md](./npc-session-integration.md) | Интеграция NPC | ✅ в NPC_AI_SYSTEM.md |
+| [NPC_AI_THEORY.md](./NPC_AI_THEORY.md) | Теория NPC AI | ✅ в NPC_AI_SYSTEM.md |
+| [NPC_AI_NEUROTHEORY.md](./NPC_AI_NEUROTHEORY.md) | Нейротеория AI | ⚠️ Частично |
+
+### Прочие системы (10 файлов)
+| Файл | Описание | Мигрирован? |
+|------|----------|-------------|
+| [generators.md](./generators.md) | Генераторы | ✅ в GENERATORS_SYSTEM.md |
+| [faction-system.md](./faction-system.md) | Фракции | ✅ в FACTION_SYSTEM.md |
+| [relations-system.md](./relations-system.md) | Отношения | ⚠️ Частично |
+| [stat-development-system.md](./stat-development-system.md) | Развитие статов | ✅ в BODY_SYSTEM.md |
+| [body-development-analysis.md](./body-development-analysis.md) | Анализ развития | ✅ в BODY_SYSTEM.md |
+| [body_review.md](./body_review.md) | Обзор тела | ✅ в BODY_SYSTEM.md |
+| [body_monsters.md](./body_monsters.md) | Тела монстров | ✅ в BODY_SYSTEM.md |
 
 ---
 
-## 🆕 Последние обновления (2026-03-24)
+## 📊 Сводка миграции
 
-| Компонент | Изменения |
-|-----------|-----------|
-| **TIME_SYSTEM.md** | ✅ Обновлено до v6.0: Time Scaling реализован и исправлен |
-| **ARCHITECTURE.md** | ✅ Обновлено до v21: добавлены time-scaling.ts, action-speeds.ts, activity-manager.ts |
-| **ARCHITECTURE_code_base.md** | ✅ Обновлено до v2.0: добавлены примеры Time Scaling |
-| **FUNCTIONS.md** | ✅ Обновлено до v4.0: добавлены функции Time Scaling и Activity Manager |
-| **PHASE3-PHASER-PROGRESS.md** | ✅ Добавлен этап 10: Time Scaling (завершён) |
-| **checkpoint_03_24_tick_timer_fix_2.md** | ✅ Обновлено: история разработки с отметками о выполненных задачах |
-| **checkpoint_03_24_tick_timer_fix_3.md** | ✅ Создано: исправление инверсии скорости |
-| **time-scaling.ts** | ✅ Новый файл: масштабирование скорости и кулдаунов |
-| **action-speeds.ts** | ✅ Новый файл: профили активностей |
-| **activity-manager.ts** | ✅ Новый файл: менеджер автоматического переключения времени |
-| **LocationScene.ts** | ✅ Исправлено: использована scaleMovementSpeedInverse |
-| **PhaserGame.tsx** | ✅ Исправлено: использована scaleMovementSpeedInverse |
+| Категория | Всего | Мигрировано | Частично | Не мигрировано |
+|-----------|-------|-------------|----------|----------------|
+| Ядро (архитектура, тело, время) | 6 | 6 | 0 | 0 |
+| Боевые системы | 5 | 3 | 2 | 0 |
+| Экипировка и материалы | 7 | 0 | 2 | **5** |
+| NPC и AI | 3 | 2 | 1 | 0 |
+| Прочие | 10 | 7 | 2 | 1 |
+| **ИТОГО** | **31** | **18** | **7** | **6** |
+
+### Критические пробелы (НЕОБХОДИМО мигрировать):
+
+1. **bonuses.md** → Unity/MODIFIERS_SYSTEM.md
+   - Критично для всех систем модификаторов
+   
+2. **materials.md** → Unity/EQUIPMENT_SYSTEM.md
+   - Необходимо для генерации экипировки
+   
+3. **weapon-armor-system.md** → Unity/EQUIPMENT_SYSTEM.md
+   - Детальные формулы урона и защиты
+   
+4. **body_armor.md** (дополнения) → Unity/COMBAT_SYSTEM.md
+   - Детальные таблицы покрытия брони
+   
+5. **charger.md** → Unity/CHARGER_SYSTEM.md
+   - Уникальная система зарядников Ци
+   
+6. **elements-system.md** → Unity/ELEMENTS_SYSTEM.md
+   - Детальная система стихий с poison
 
 ---
 
 ## 🔗 Связанные документы
 
-- [ARCHITECTURE.md](./ARCHITECTURE.md) — Основная архитектура
-- [TIME_SYSTEM.md](./TIME_SYSTEM.md) — Система времени
-- [FUNCTIONS.md](./FUNCTIONS.md) — Справочник функций
+- [Unity/ARCHITECTURE.md](../Unity/ARCHITECTURE.md) — Общая архитектура Unity
+- [Unity/BODY_SYSTEM.md](../Unity/BODY_SYSTEM.md) — Система тела
+- [Unity/COMBAT_SYSTEM.md](../Unity/COMBAT_SYSTEM.md) — Боевая система
 
 ---
 
-*Файл обновлён: 2026-03-24*
+*Файл обновлён: 2026-03-30*
+*Анализ миграции: ВЫПОЛНЕН*
