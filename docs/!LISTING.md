@@ -38,6 +38,7 @@
 | [MIGRATION_ANALYSIS.md](./MIGRATION_ANALYSIS.md) | Анализ миграции, что нужно перенести | ~2000 |
 | [WORKFLOW_GITHUB_UNITY.md](./WORKFLOW_GITHUB_UNITY.md) | Workflow: GitHub ↔ локальный Unity | ~3000 |
 | [UNITY_63_RESEARCH.md](./UNITY_63_RESEARCH.md) | Исследование API Unity 6.3 (из оф. документации) | ~3500 |
+| [PROJECT_SETUP_PLAN.md](./PROJECT_SETUP_PLAN.md) | План подготовки проекта БЕЗ доступа к Unity | ~2500 |
 
 ### Системы данных
 
@@ -89,8 +90,8 @@
 
 | Метрика | Значение |
 |---------|----------|
-| Всего документов | 27 |
-| Общий объём | ~80,000 токенов |
+| Всего документов | 28 |
+| Общий объём | ~83,000 токенов |
 | Средний размер | ~3,000 токенов |
 
 ---
