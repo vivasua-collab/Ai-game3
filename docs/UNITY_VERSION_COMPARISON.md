@@ -1,6 +1,6 @@
-# 🎮 Сравнение версий Unity: 2022 LTS vs Unity 6
+# 🎮 Сравнение версий Unity: 2022 LTS vs Unity 6.3
 
-**Версия документа:** 1.0  
+**Версия документа:** 1.1  
 **Дата:** 2026-03-30  
 **Проект:** Cultivation World Simulator (Unity Migration)
 
@@ -15,7 +15,7 @@
 | Версия | Тип | Статус | Поддержка до |
 |--------|-----|--------|--------------|
 | **Unity 2022.3 LTS** | Long Term Support | Стабильная | 2027+ |
-| **Unity 6 (6000.0)** | Текущая версия | Активная разработка | 2028+ |
+| **Unity 6.3 (6000.3)** | Текущая версия | Активная разработка | 2029+ |
 
 ---
 
@@ -67,7 +67,7 @@
 
 ---
 
-## 🔶 Unity 6 (6000.0)
+## 🔶 Unity 6.3 (6000.3)
 
 ### Преимущества
 
@@ -172,7 +172,7 @@
 
 ## 📝 Рекомендуемое решение
 
-### ✅ **Рекомендуется: Unity 6 (6000.0)**
+### ✅ **Рекомендуется: Unity 6.3 (6000.3)**
 
 **Причины:**
 
@@ -209,7 +209,7 @@
 
 | Компонент | Требование |
 |-----------|------------|
-| Unity | 6000.0.x или новее |
+| Unity | 6000.3.x или новее |
 | IDE | Rider 2024+ или VS 2022 |
 | OS | Windows 10/11, macOS 12+ |
 | RAM | 16 GB минимум, 32 GB рекомендовано |
@@ -251,14 +251,16 @@ Code Quality:
 | DOTS Guide | docs.unity3d.com/Packages/com.unity.entities@1.0 |
 | URP Manual | docs.unity3d.com/Packages/com.unity.render-pipelines.universal@14.0 |
 
-### Unity 6
+### Unity 6.3
 
 | Ресурс | Ссылка |
 |--------|--------|
-| Документация | docs.unity3d.com/6000.0 |
-| DOTS 2.0 Guide | docs.unity3d.com/Packages/com.unity.entities@2.0 |
-| Migration Guide | docs.unity3d.com/6000.0/Documentation/Manual/MigrationGuide.html |
-| Unity Muse | unity.com/products/muse |
+| Документация (главная) | https://docs.unity3d.com/Manual/index.html |
+| Документация (по версии) | https://docs.unity3d.com/6000.3/Documentation/Manual/ |
+| DOTS Guide | https://docs.unity3d.com/Packages/com.unity.entities@latest |
+| URP Manual | https://docs.unity3d.com/Packages/com.unity.render-pipelines.universal@latest |
+| ScriptableObjects | https://docs.unity3d.com/Manual/script-ScriptableObject.html |
+| Unity Muse | https://unity.com/products/muse |
 
 ---
 
@@ -283,12 +285,12 @@ Code Quality:
 
 | Решение | Версия | Обоснование |
 |---------|--------|-------------|
-| **Основное** | Unity 6 (6000.0) | DOTS 2.0, GPU Resident Drawer, долгосрочная перспектива |
+| **Основное** | Unity 6.3 (6000.3) | DOTS 2.0, GPU Resident Drawer, долгосрочная перспектива |
 | **Альтернативное** | Unity 2022.3 LTS | Стабильность, экосистема, если сроки критичны |
 
 ### Финальная рекомендация
 
-Для проекта **Cultivation World Simulator** рекомендуется **Unity 6 (6000.0)** с постепенным внедрением DOTS 2.0 для систем с высокой нагрузкой (NPC AI, генерация мира).
+Для проекта **Cultivation World Simulator** рекомендуется **Unity 6.3 (6000.3)** с постепенным внедрением DOTS 2.0 для систем с высокой нагрузкой (NPC AI, генерация мира).
 
 ---
 

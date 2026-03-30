@@ -20,7 +20,7 @@
 
 | Файл | Описание | Токенов |
 |------|----------|---------|
-| [UNITY_VERSION_COMPARISON.md](./UNITY_VERSION_COMPARISON.md) | Сравнение Unity 2022 LTS vs Unity 6, рекомендации | ~4000 |
+| [UNITY_VERSION_COMPARISON.md](./UNITY_VERSION_COMPARISON.md) | Сравнение Unity 2022 LTS vs Unity 6.3, рекомендации | ~4000 |
 
 ### Архитектура и основы
 
@@ -140,12 +140,15 @@ ARCHITECTURE.md (корневой документ)
 
 ## 🛠️ Рекомендованная версия Unity
 
-**Unity 6 (6000.0)** — рекомендуется для проекта.
+**Unity 6.3 (6000.3)** — рекомендуется для проекта.
 
 **Причины:**
 - DOTS 2.0 для NPC AI (10-100x улучшение производительности)
 - GPU Resident Drawer для рендеринга
 - Долгосрочная перспектива (5+ лет)
+- Стабильная версия с актуальной документацией
+
+**Документация:** https://docs.unity3d.com/Manual/index.html
 
 Подробнее: [UNITY_VERSION_COMPARISON.md](./UNITY_VERSION_COMPARISON.md)
 
