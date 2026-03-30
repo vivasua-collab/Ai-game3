@@ -1,9 +1,9 @@
 # 🧮 Алгоритмы и формулы: Unity Migration
 
-**Версия:** 1.0-DRAFT  
+**Версия:** 1.1  
 **Дата:** 2026-03-30  
-**Статус:** 📋 Черновик для доработки  
-**Источники:** src/lib/*.ts
+**Статус:** 📋 Дополнено данными из кода  
+**Источники:** src/lib/*.ts, src/lib/constants/*.ts
 
 ---
 
@@ -428,6 +428,104 @@ damage = 0.3 × totalDamage  // Чёрная HP
 | `Scripts/Constants/TechniqueCapacity.cs` | Базовые ёмкости |
 | `Scripts/Constants/LevelSuppression.cs` | Таблица подавления |
 | `Scripts/Constants/SoftCaps.cs` | Мягкие капы |
+
+---
+
+## 🔟 Система элементов
+
+### 10.1 Стихии
+
+| Элемент | Русское название | Противоположность | Сродство |
+|---------|------------------|-------------------|----------|
+| fire | Огонь | water | air |
+| water | Вода | fire | lightning |
+| earth | Земля | air | fire |
+| air | Воздух | earth | fire, lightning |
+| lightning | Молния | earth (одностороннее) | water, air |
+| void | Пустота | — | — |
+| neutral | Нейтральный | — | — |
+
+### 10.2 Множители эффективности атаки
+
+**Противоположные элементы:**
+- Атакующий элемент наносит ×1.5 урона противоположному
+
+**Сродство:**
+- Элементы со сродством ослабляют друг друга: ×0.8 урона
+
+**Void:**
+- Поглощает все элементы: ×1.2 урона по любому
+
+**Neutral:**
+- Базовый множитель: ×1.0 по всем
+
+### 10.3 Эффекты элементов
+
+| Элемент | Возможные эффекты |
+|---------|-------------------|
+| fire | burning, heat |
+| water | freezing, slow, flow |
+| earth | shield, knockback, stability, weight |
+| air | knockback, slow, speed, lightness |
+| lightning | stun, pierce, chain |
+| void | pierce, leech, debuff, drain |
+| neutral | — |
+
+---
+
+## 1️⃣1️⃣ Масштабирование от характеристик
+
+### 11.1 Коэффициенты по типу атаки
+
+| Тип атаки | Сила | Ловкость | Интеллект |
+|-----------|------|----------|-----------|
+| melee_strike | +5%/ед | +2.5%/ед | — |
+| melee_weapon | +2.5%/ед | +5%/ед | — |
+| ranged_projectile | — | +2.5%/ед | +5%/ед |
+| ranged_beam | — | +2.5%/ед | +5%/ед |
+| ranged_aoe | — | +2.5%/ед | +5%/ед |
+| defense_block | — | — | +5%/ед |
+| defense_shield | — | — | +5%/ед |
+| defense_dodge | — | — | +5%/ед |
+
+### 11.2 Формула масштабирования
+
+```
+statBonus = (characterStat - 10) × coefficient
+
+// Пример: melee_strike, STR=15
+statBonus = (15 - 10) × 0.05 = 0.25 (+25% урона)
+```
+
+---
+
+## 1️⃣2️⃣ Время каста техник
+
+### 12.1 Формула
+
+```
+baseTime = qiCost / conductivity
+effectiveSpeed = conductivity × (1 + cultivationBonus) × (1 + masteryBonus)
+effectiveTime = max(0.1, qiCost / effectiveSpeed)
+```
+
+### 12.2 Бонусы
+
+| Источник | Бонус |
+|----------|-------|
+| Уровень культивации | +5% за уровень выше 1 |
+| Мастерство техники | +1% за 1% мастерства |
+
+### 12.3 Пример
+
+```
+// qiCost=50, conductivity=2.0, level=3, mastery=50%
+cultivationBonus = (3-1) × 0.05 = 0.10
+masteryBonus = 0.50
+effectiveSpeed = 2.0 × 1.10 × 1.50 = 3.3
+baseTime = 50 / 2.0 = 25 сек
+effectiveTime = 50 / 3.3 = 15.15 сек
+```
 
 ---
 

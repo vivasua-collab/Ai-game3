@@ -1,9 +1,9 @@
 # 🗄️ Модели данных: Unity Migration
 
-**Версия:** 1.0-DRAFT  
+**Версия:** 1.1  
 **Дата:** 2026-03-30  
-**Статус:** 📋 Черновик для доработки  
-**Источники:** prisma/schema.prisma
+**Статус:** 📋 Дополнено данными из кода  
+**Источники:** prisma/schema.prisma, src/types/body.ts, src/types/entity-types.ts
 
 ---
 
@@ -377,6 +377,59 @@
 | `Saves/world_state.json` | Состояние мира |
 | `Saves/characters.json` | Персонажи |
 | `Saves/npcs.json` | NPC |
+
+---
+
+## 17. SpeciesPreset — Виды существ
+
+### Иерархия типов души
+
+| Уровень | Тип | Описание |
+|---------|-----|----------|
+| Уровень 1 | SoulType | ПЕРВИЧНЫЙ: character, creature, spirit, construct |
+| Уровень 2 | Morphology | ВТОРИЧНЫЙ: humanoid, quadruped, bird, serpentine, arthropod |
+| Уровень 3 | Species | КОНКРЕТНЫЙ: human, elf, wolf, dragon |
+
+### Поля пресета вида
+
+| Поле | Тип | Описание |
+|------|-----|----------|
+| id | string | Уникальный ID |
+| soulType | string | character, creature, spirit, construct |
+| morphology | string | humanoid, quadruped, bird, serpentine, arthropod |
+| bodyMaterial | string | organic, scaled, chitin, ethereal, mineral, chaos |
+| **Характеристики (Range)** ||
+| strength | {min, max} | Диапазон силы |
+| agility | {min, max} | Диапазон ловкости |
+| intelligence | {min, max} | Диапазон интеллекта |
+| vitality | {min, max} | Диапазон жизнеспособности |
+| **Способности** ||
+| canCultivate | bool | Может культивировать |
+| innateQiGeneration | bool | Врождённая генерация Ци |
+| speechCapable | bool | Может говорить |
+| toolUse | bool | Использует инструменты |
+| learningRate | float | Скорость обучения (0.1-2.0) |
+| **Культивация** ||
+| coreCapacityBase | {min, max} | Базовая ёмкость ядра |
+| maxCultivationLevel | int | Макс. уровень культивации |
+| conductivityBase | float | Базовая проводимость |
+| **Прочее** ||
+| sizeClass | string | tiny, small, medium, large, huge |
+| innateTechniques | JSON[] | Врождённые техники |
+| weaknesses | string[] | Слабости |
+| resistances | string[] | Сопротивления |
+| lifespan | int | Продолжительность жизни |
+
+### Типы материалов тела
+
+| Материал | Снижение урона | Примеры |
+|----------|----------------|----------|
+| organic | 0% | Люди, звери |
+| scaled | 30% | Рептилии, драконы |
+| chitin | 20% | Пауки, скорпионы |
+| mineral | 50% | Големы |
+| ethereal | 70% | Призраки |
+| chaos | 40% | Аберрации |
 
 ---
 
