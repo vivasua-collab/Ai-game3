@@ -17,6 +17,9 @@
 | [05_PlayerSetup_SemiAuto.md](./05_PlayerSetup_SemiAuto.md) | Настройка Player (полуавтомат) | 1 префаб |
 | [06_TechniqueData.md](./06_TechniqueData.md) | Техники культивации | 34 файла |
 | [07_NPCPresetData.md](./07_NPCPresetData.md) | Пресеты NPC | 15 файлов |
+| [08_EquipmentData.md](./08_EquipmentData.md) | Экипировка (оружие/броня) | 39 файлов |
+| [09_EnemySetup.md](./09_EnemySetup.md) | Настройка врагов | 27 типов |
+| [10_QuestSetup.md](./10_QuestSetup.md) | Настройка квестов | 15 квестов |
 
 ---
 
@@ -295,4 +298,4 @@ qiForLevelBreakthrough = coreCapacity × 100
 ---
 
 *Папка создана: 2026-03-30*
-*Обновлено: 2026-04-01 — добавлены инструкции для техник (34) и NPC пресетов (15)*
+*Обновлено: 2026-04-01 — полный комплект инструкций: 10 файлов для всех типов данных*
