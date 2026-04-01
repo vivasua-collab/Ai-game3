@@ -1,0 +1,252 @@
+{
+  "description": "Элементы (стихии) для Cultivation World Simulator",
+  "version": "2.0",
+  "source": "ElementData.cs + docs/asset_setup/03_ElementData.md",
+  "elements": [
+    {
+      "element": "neutral",
+      "elementType": 0,
+      "nameRu": "Нейтральный",
+      "nameEn": "Neutral",
+      "description": "Нейтральный элемент, не имеет преимуществ или слабостей.",
+      "color": "#FFFFFF",
+      "colorRGB": { "r": 255, "g": 255, "b": 255 },
+      "opposite": null,
+      "affinities": [],
+      "weakTo": [],
+      "oppositeMultiplier": 1.5,
+      "affinityMultiplier": 0.8,
+      "voidMultiplier": 1.2,
+      "effects": [],
+      "affectsEnvironment": false,
+      "environmentEffects": []
+    },
+    {
+      "element": "fire",
+      "elementType": 1,
+      "nameRu": "Огонь",
+      "nameEn": "Fire",
+      "description": "Стихия огня — разрушительная сила, сильна против воздуха.",
+      "color": "#FF4500",
+      "colorRGB": { "r": 255, "g": 69, "b": 0 },
+      "opposite": "water",
+      "affinities": ["air"],
+      "weakTo": ["water"],
+      "oppositeMultiplier": 1.5,
+      "affinityMultiplier": 0.8,
+      "voidMultiplier": 1.2,
+      "effects": [
+        {
+          "effectName": "burning",
+          "description": "Постоянный урон от огня",
+          "baseDuration": 10,
+          "damageMultiplier": 0.1,
+          "applyChance": 50
+        },
+        {
+          "effectName": "heat",
+          "description": "Повышение температуры, ослабление",
+          "baseDuration": 5,
+          "damageMultiplier": 0,
+          "applyChance": 30
+        }
+      ],
+      "affectsEnvironment": true,
+      "environmentEffects": []
+    },
+    {
+      "element": "water",
+      "elementType": 2,
+      "nameRu": "Вода",
+      "nameEn": "Water",
+      "description": "Стихия воды — гибкая и изменчивая, сильна против огня.",
+      "color": "#1E90FF",
+      "colorRGB": { "r": 30, "g": 144, "b": 255 },
+      "opposite": "fire",
+      "affinities": ["lightning"],
+      "weakTo": ["fire"],
+      "oppositeMultiplier": 1.5,
+      "affinityMultiplier": 0.8,
+      "voidMultiplier": 1.2,
+      "effects": [
+        {
+          "effectName": "freezing",
+          "description": "Замедление движения",
+          "baseDuration": 8,
+          "damageMultiplier": 0.05,
+          "applyChance": 40
+        },
+        {
+          "effectName": "slow",
+          "description": "Снижение скорости",
+          "baseDuration": 10,
+          "damageMultiplier": 0,
+          "applyChance": 60
+        }
+      ],
+      "affectsEnvironment": true,
+      "environmentEffects": []
+    },
+    {
+      "element": "earth",
+      "elementType": 3,
+      "nameRu": "Земля",
+      "nameEn": "Earth",
+      "description": "Стихия земли — устойчивая и защитная.",
+      "color": "#8B4513",
+      "colorRGB": { "r": 139, "g": 69, "b": 19 },
+      "opposite": "air",
+      "affinities": ["fire"],
+      "weakTo": ["air"],
+      "oppositeMultiplier": 1.5,
+      "affinityMultiplier": 0.8,
+      "voidMultiplier": 1.2,
+      "effects": [
+        {
+          "effectName": "shield",
+          "description": "Временная защита",
+          "baseDuration": 15,
+          "damageMultiplier": 0,
+          "applyChance": 70
+        },
+        {
+          "effectName": "knockback",
+          "description": "Отталкивание врага",
+          "baseDuration": 1,
+          "damageMultiplier": 0,
+          "applyChance": 80
+        }
+      ],
+      "affectsEnvironment": true,
+      "environmentEffects": []
+    },
+    {
+      "element": "air",
+      "elementType": 4,
+      "nameRu": "Воздух",
+      "nameEn": "Air",
+      "description": "Стихия воздуха — быстрая и неуловимая.",
+      "color": "#87CEEB",
+      "colorRGB": { "r": 135, "g": 206, "b": 235 },
+      "opposite": "earth",
+      "affinities": ["fire", "lightning"],
+      "weakTo": ["earth"],
+      "oppositeMultiplier": 1.5,
+      "affinityMultiplier": 0.8,
+      "voidMultiplier": 1.2,
+      "effects": [
+        {
+          "effectName": "knockback",
+          "description": "Отталкивание врага",
+          "baseDuration": 1,
+          "damageMultiplier": 0,
+          "applyChance": 80
+        },
+        {
+          "effectName": "speed",
+          "description": "Повышение скорости",
+          "baseDuration": 10,
+          "damageMultiplier": 0,
+          "applyChance": 50
+        }
+      ],
+      "affectsEnvironment": false,
+      "environmentEffects": []
+    },
+    {
+      "element": "lightning",
+      "elementType": 5,
+      "nameRu": "Молния",
+      "nameEn": "Lightning",
+      "description": "Стихия молнии — быстрая и пробивающая.",
+      "color": "#FFD700",
+      "colorRGB": { "r": 255, "g": 215, "b": 0 },
+      "opposite": null,
+      "affinities": ["water", "air"],
+      "weakTo": ["earth"],
+      "oppositeMultiplier": 1.5,
+      "affinityMultiplier": 0.8,
+      "voidMultiplier": 1.2,
+      "effects": [
+        {
+          "effectName": "stun",
+          "description": "Временная парализация",
+          "baseDuration": 3,
+          "damageMultiplier": 0,
+          "applyChance": 30
+        },
+        {
+          "effectName": "pierce",
+          "description": "Игнорирование части защиты",
+          "baseDuration": 1,
+          "damageMultiplier": 0,
+          "applyChance": 60
+        },
+        {
+          "effectName": "chain",
+          "description": "Переход на соседние цели",
+          "baseDuration": 1,
+          "damageMultiplier": 0.5,
+          "applyChance": 40
+        }
+      ],
+      "affectsEnvironment": true,
+      "environmentEffects": []
+    },
+    {
+      "element": "void",
+      "elementType": 6,
+      "nameRu": "Пустота",
+      "nameEn": "Void",
+      "description": "Стихия пустоты — загадочная и всепоглощающая.",
+      "color": "#4B0082",
+      "colorRGB": { "r": 75, "g": 0, "b": 130 },
+      "opposite": null,
+      "affinities": [],
+      "weakTo": [],
+      "oppositeMultiplier": 1.5,
+      "affinityMultiplier": 0.8,
+      "voidMultiplier": 1.2,
+      "effects": [
+        {
+          "effectName": "pierce",
+          "description": "Игнорирование защиты",
+          "baseDuration": 1,
+          "damageMultiplier": 0,
+          "applyChance": 80
+        },
+        {
+          "effectName": "leech",
+          "description": "Кража Ци или HP",
+          "baseDuration": 5,
+          "damageMultiplier": 0,
+          "applyChance": 40
+        },
+        {
+          "effectName": "drain",
+          "description": "Ослабление врага",
+          "baseDuration": 10,
+          "damageMultiplier": 0,
+          "applyChance": 50
+        }
+      ],
+      "affectsEnvironment": true,
+      "environmentEffects": []
+    }
+  ],
+  "damageMultipliers": {
+    "opposite": 1.5,
+    "affinity": 0.8,
+    "void": 1.2,
+    "neutral": 1.0
+  },
+  "relationships": {
+    "fire": { "opposite": "water", "affinities": ["air"], "weakTo": ["water"] },
+    "water": { "opposite": "fire", "affinities": ["lightning"], "weakTo": ["fire"] },
+    "earth": { "opposite": "air", "affinities": ["fire"], "weakTo": ["air"] },
+    "air": { "opposite": "earth", "affinities": ["fire", "lightning"], "weakTo": ["earth"] },
+    "lightning": { "opposite": null, "affinities": ["water", "air"], "weakTo": ["earth"] },
+    "void": { "opposite": null, "affinities": [], "weakTo": [] },
+    "neutral": { "opposite": null, "affinities": [], "weakTo": [] }
+  }
+}
