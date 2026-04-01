@@ -15,6 +15,8 @@
 | [04_BasicScene_SemiAuto.md](./04_BasicScene_SemiAuto.md) | Базовая сцена (полуавтомат) | 1 сцена |
 | [05_PlayerSetup.md](./05_PlayerSetup.md) | Настройка Player (ручная) | 1 префаб |
 | [05_PlayerSetup_SemiAuto.md](./05_PlayerSetup_SemiAuto.md) | Настройка Player (полуавтомат) | 1 префаб |
+| [06_TechniqueData.md](./06_TechniqueData.md) | Техники культивации | 34 файла |
+| [07_NPCPresetData.md](./07_NPCPresetData.md) | Пресеты NPC | 15 файлов |
 
 ---
 
@@ -101,12 +103,12 @@ Assets/
 │   ├── CultivationLevels/     ← CultivationLevelData (10 файлов)
 │   ├── MortalStages/          ← MortalStageData (6 файлов)
 │   ├── Elements/              ← ElementData (7 файлов)
-│   ├── Materials/             ← MaterialData — будет добавлено
-│   ├── Techniques/            ← TechniqueData — будет добавлено
-│   ├── Items/                 ← ItemData — будет добавлено
-│   ├── NPCPresets/            ← NPCPresetData — будет добавлено
-│   ├── Species/               ← SpeciesData — будет добавлено
-│   └── Equipment/             ← EquipmentData — будет добавлено
+│   ├── Techniques/            ← TechniqueData (34 файла)
+│   ├── NPCPresets/            ← NPCPresetData (15 файлов)
+│   ├── Materials/             ← MaterialData — требуется создать
+│   ├── Items/                 ← ItemData — требуется создать
+│   ├── Species/               ← SpeciesData — требуется создать
+│   └── Equipment/             ← EquipmentData — требуется создать
 ├── Prefabs/
 │   └── Player/
 │       └── Player.prefab      ← Создать из Hierarchy
@@ -293,4 +295,4 @@ qiForLevelBreakthrough = coreCapacity × 100
 ---
 
 *Папка создана: 2026-03-30*
-*Обновлено: 2026-04-01 — добавлена информация об инструментах автоматизации*
+*Обновлено: 2026-04-01 — добавлены инструкции для техник (34) и NPC пресетов (15)*
