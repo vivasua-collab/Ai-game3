@@ -174,18 +174,25 @@ namespace CultivationGame.Managers
         
         private IEnumerator InitializeSystem(string systemName, Func<IEnumerator> initMethod)
         {
+            // Cannot use yield inside try-catch in C#
+            // Using separate method for error handling
+            IEnumerator coroutine = null;
             try
             {
-                yield return initMethod();
-                systemsInitialized++;
-                OnSystemInitialized?.Invoke(systemName);
-                Log($"[GameInitializer] ✓ {systemName} initialized ({systemsInitialized}/{totalSystems})");
+                coroutine = initMethod();
             }
             catch (Exception ex)
             {
-                Debug.LogError($"[GameInitializer] ✗ {systemName} failed: {ex.Message}");
+                Debug.LogError($"[GameInitializer] ✗ {systemName} failed to start: {ex.Message}");
                 OnInitializationError?.Invoke(systemName, ex.Message);
+                yield break;
             }
+            
+            yield return coroutine;
+            
+            systemsInitialized++;
+            OnSystemInitialized?.Invoke(systemName);
+            Log($"[GameInitializer] ✓ {systemName} initialized ({systemsInitialized}/{totalSystems})");
         }
         
         #endregion
@@ -294,7 +301,8 @@ namespace CultivationGame.Managers
                 {
                     bodyController.OnDamageTaken += (part, result) =>
                     {
-                        GameEvents.TriggerDamageTaken((int)result.DamageDealt, part.PartType.ToString());
+                        int totalDamage = (int)(result.RedHPDamage + result.BlackHPDamage);
+                        GameEvents.TriggerDamageTaken(totalDamage, part.PartType.ToString());
                     };
                     
                     bodyController.OnDeath += () =>
