@@ -2,6 +2,7 @@ using UnityEngine;
 using UnityEditor;
 using UnityEngine.UI;
 using TMPro;
+using UnityEngine.InputSystem.UI;
 
 // Core enums
 using CultivationGame.Core;
@@ -38,6 +39,9 @@ using CultivationGame.Interaction;
 /// Window → Scene Setup Tools
 /// 
 /// Совместимость: Unity 6.3+
+/// 
+/// Создано: 2026-03-31
+/// Редактировано: 2026-04-02 07:01:13 UTC
 /// </summary>
 public class SceneSetupTools : EditorWindow
 {
@@ -475,8 +479,10 @@ public class SceneSetupTools : EditorWindow
         {
             GameObject eventSystemGO = new GameObject("EventSystem");
             eventSystemGO.AddComponent<UnityEngine.EventSystems.EventSystem>();
-            eventSystemGO.AddComponent<UnityEngine.EventSystems.StandaloneInputModule>();
-            Debug.Log("[SceneSetupTools] EventSystem создан!");
+            // Используем InputSystemUIInputModule вместо StandaloneInputModule
+            // т.к. проект настроен на Input System Package
+            eventSystemGO.AddComponent<InputSystemUIInputModule>();
+            Debug.Log("[SceneSetupTools] EventSystem создан с InputSystemUIInputModule!");
         }
 
         Undo.RegisterCreatedObjectUndo(canvasGO, "Create GameUI");

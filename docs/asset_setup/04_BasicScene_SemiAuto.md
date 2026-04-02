@@ -194,6 +194,25 @@ Player initialized: Игрок
 | "Missing component" | Тип компонента не найден | Проверь что скрипт существует |
 | Canvas не виден | Нет EventSystem | Скрипт создаст автоматически |
 | Текст не отображается | Нет TextMeshPro | Import TextMeshPro package |
+| **InvalidOperationException: Input** | EventSystem использует старый Input | Удали EventSystem и пересоздай через Setup Tools |
+
+### ⚠️ Ошибка Input System (Input System Package):
+
+Если видишь ошибку:
+```
+InvalidOperationException: You are trying to read Input using the UnityEngine.Input class, 
+but you have switched active Input handling to Input System package in Player Settings.
+```
+
+**Решение:**
+1. Удали объект **EventSystem** в Hierarchy
+2. Запусти **Window → Scene Setup Tools** → **Create GameUI Canvas**
+3. Скрипт создаст EventSystem с правильным `InputSystemUIInputModule`
+
+Или вручную:
+1. Выбери EventSystem в Hierarchy
+2. Удали компонент `StandaloneInputModule`
+3. Добавь компонент `Input System UI Input Module`
 
 ---
 
@@ -214,4 +233,6 @@ Player initialized: Игрок
 
 ---
 
-*Документ создан: 2025-04-01*
+*Документ создан: 2025-04-01*  
+*Редактировано: 2026-04-02 07:01:13 UTC*  
+*Исправлено: Input System UI Module для Input System Package*
