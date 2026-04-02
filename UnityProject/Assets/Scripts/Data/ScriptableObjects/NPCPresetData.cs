@@ -35,8 +35,11 @@ namespace CultivationGame.Data.ScriptableObjects
         [Header("Category")]
         [Tooltip("Категория NPC")]
         public NPCCategory category;
-        
-        [Tooltip("Вид существа")]
+
+        [Tooltip("ID вида существа (для поиска SpeciesData)")]
+        public string speciesId;
+
+        [Tooltip("Вид существа (назначается вручную или по speciesId)")]
         public SpeciesData species;
         
         [Header("Cultivation")]

@@ -211,7 +211,7 @@ namespace CultivationGame.Editor
             asset.title = data.title;
             asset.backstory = data.backstory;
 
-            asset.species = data.species;
+            asset.speciesId = data.species;  // SpeciesData назначается вручную по ID
             asset.cultivationLevel = data.cultivationLevel;
             asset.cultivationSubLevel = data.cultivationSubLevel;
             asset.coreCapacity = data.coreCapacity;
@@ -603,26 +603,28 @@ namespace CultivationGame.Editor
 
         private static EquipmentSlot ParseEquipmentSlot(object value)
         {
-            if (value == null) return EquipmentSlot.weapon_main;
+            if (value == null) return EquipmentSlot.RightHand;
 
             string slotStr = value.ToString().ToLower();
 
             switch (slotStr)
             {
-                case "weapon_main": return EquipmentSlot.weapon_main;
-                case "weapon_off": return EquipmentSlot.weapon_off;
-                case "weapon_twohanded": return EquipmentSlot.weapon_twohanded;
+                // Weapons
+                case "weapon_main": return EquipmentSlot.RightHand;
+                case "weapon_off": return EquipmentSlot.LeftHand;
+                case "weapon_twohanded": return EquipmentSlot.RightHand;
+                // Armor
+                case "head_armor":
+                case "head_clothing": return EquipmentSlot.Head;
+                case "torso_armor":
+                case "torso_clothing": return EquipmentSlot.Torso;
                 case "hands":
-                case "hands_armor": return EquipmentSlot.hands_armor;
-                case "head_armor": return EquipmentSlot.head_armor;
-                case "head_clothing": return EquipmentSlot.head_clothing;
-                case "torso_armor": return EquipmentSlot.torso_armor;
-                case "torso_clothing": return EquipmentSlot.torso_clothing;
-                case "legs_armor": return EquipmentSlot.legs_armor;
-                case "legs_clothing": return EquipmentSlot.legs_clothing;
-                case "feet_armor": return EquipmentSlot.feet_armor;
-                case "feet_clothing": return EquipmentSlot.feet_clothing;
-                default: return EquipmentSlot.weapon_main;
+                case "hands_armor": return EquipmentSlot.LeftHand;  // Перчатки
+                case "legs_armor":
+                case "legs_clothing": return EquipmentSlot.Legs;
+                case "feet_armor":
+                case "feet_clothing": return EquipmentSlot.Feet;
+                default: return EquipmentSlot.RightHand;
             }
         }
 
