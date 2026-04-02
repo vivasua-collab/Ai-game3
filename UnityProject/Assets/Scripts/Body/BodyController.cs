@@ -1,9 +1,9 @@
 // ============================================================================
 // BodyController.cs — Контроллер тела
 // Cultivation World Simulator
-// Версия: 1.1 — Исправлены проблемы code review
+// Версия: 1.2 — Обновлено для инкапсулированного BodyPart
 // Создано: 2026-03-30 10:00:00 UTC
-// Редактировано: 2026-04-02 13:51:19 UTC
+// Редактировано: 2026-04-02 14:50:00 UTC
 // ============================================================================
 
 using System;
@@ -116,8 +116,8 @@ namespace CultivationGame.Body
                 {
                     var part = new BodyPart(config.partType, config.baseHp, config.isVital);
                     if (!string.IsNullOrEmpty(config.customName))
-                        part.CustomName = config.customName;
-                    part.BaseHitChance += config.hitChanceModifier;
+                        part.SetCustomName(config.customName);
+                    part.AddHitChanceModifier(config.hitChanceModifier);
                     bodyParts.Add(part);
                 }
             }
@@ -252,9 +252,8 @@ namespace CultivationGame.Body
         {
             foreach (var part in bodyParts)
             {
-                part.CurrentRedHP = part.MaxRedHP;
-                part.CurrentBlackHP = part.MaxBlackHP;
-                part.UpdateState();
+                // Используем SetHP для установки HP (internal method)
+                part.SetHP(part.MaxRedHP, part.MaxBlackHP);
             }
         }
         
@@ -321,7 +320,7 @@ namespace CultivationGame.Body
         /// </summary>
         public List<BodyPart> GetDisabledParts()
         {
-            return bodyParts.FindAll(p => p.State == BodyPartState.Disabled);
+            return bodyParts.FindAll(p => p.IsDisabled());
         }
         
         /// <summary>

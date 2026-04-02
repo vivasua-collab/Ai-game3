@@ -1,9 +1,15 @@
 // ============================================================================
 // TimeController.cs — Система игрового времени
 // Cultivation World Simulator
-// Версия: 1.0
+// Версия: 1.1 — Детерминированный шаг времени через FixedUpdate
+// ============================================================================
 // Создано: 2026-03-30 14:00:00 UTC
-// Редактировано: 2026-03-31 10:17:18 UTC
+// Редактировано: 2026-04-02 14:38:00 UTC
+//
+// ИЗМЕНЕНИЯ В ВЕРСИИ 1.1:
+// - Добавлен детерминированный шаг через FixedUpdate (защита от FPS просадок)
+// - Добавлен TimeManager для изоляции логики времени
+// - Добавлены события OnTick для подписки систем
 // ============================================================================
 
 using System;
@@ -21,11 +27,15 @@ namespace CultivationGame.World
         [Header("Time Settings")]
         [SerializeField] private TimeSpeed currentTimeSpeed = TimeSpeed.Normal;
         [SerializeField] private bool autoAdvance = true;
+        [SerializeField] private bool useDeterministicTime = true; // Использовать FixedUpdate для детерминизма
         
         [Header("Time Ratios")]
         [SerializeField] private float normalSpeedRatio = 60f;      // 1 сек = 1 минута
         [SerializeField] private float fastSpeedRatio = 300f;       // 1 сек = 5 минут
         [SerializeField] private float veryFastSpeedRatio = 900f;   // 1 сек = 15 минут
+        
+        [Header("Deterministic Settings")]
+        [SerializeField] private float tickInterval = 1f; // Интервал тика в секундах
         
         [Header("Calendar")]
         [SerializeField] private int daysPerMonth = 30;
@@ -43,6 +53,8 @@ namespace CultivationGame.World
         
         private float timeAccumulator = 0f;
         private double totalGameSeconds = 0;
+        private float deterministicAccumulator = 0f;
+        private int currentTick = 0;
         
         // === Events ===
         
@@ -54,6 +66,7 @@ namespace CultivationGame.World
         public event Action<TimeOfDay> OnTimeOfDayChanged;
         public event Action<Season> OnSeasonChanged;
         public event Action<TimeSpeed> OnTimeSpeedChanged;
+        public event Action<int> OnTick; // Детерминированный тик
         
         // === Properties ===
         
@@ -66,6 +79,7 @@ namespace CultivationGame.World
         public TimeOfDay CurrentTimeOfDay => CalculateTimeOfDay();
         public Season CurrentSeason => CalculateSeason();
         public double TotalGameSeconds => totalGameSeconds;
+        public int CurrentTick => currentTick;
         
         public string FormattedDate => $"{currentDay:D2}.{currentMonth:D2}.{currentYear}";
         public string FormattedTime => $"{currentHour:D2}:{currentMinute:D2}";
@@ -73,20 +87,72 @@ namespace CultivationGame.World
         
         // === Unity Lifecycle ===
         
+        private void Awake()
+        {
+            // Регистрируем в ServiceLocator для быстрого доступа
+            ServiceLocator.Register(this);
+        }
+        
         private void Update()
         {
-            if (autoAdvance && currentTimeSpeed != TimeSpeed.Paused)
+            // Недетерминированный режим (зависит от FPS)
+            if (!useDeterministicTime && autoAdvance && currentTimeSpeed != TimeSpeed.Paused)
             {
-                ProcessTime();
+                ProcessTimeUpdate();
             }
+        }
+        
+        private void FixedUpdate()
+        {
+            // Детерминированный режим (фиксированный шаг, защита от FPS просадок)
+            if (useDeterministicTime && autoAdvance && currentTimeSpeed != TimeSpeed.Paused)
+            {
+                ProcessTimeFixed();
+            }
+        }
+        
+        private void OnDestroy()
+        {
+            ServiceLocator.Unregister<TimeController>();
         }
         
         // === Time Processing ===
         
-        private void ProcessTime()
+        /// <summary>
+        /// Обработка времени через Update (недетерминированная).
+        /// Внимание: при падении FPS время может "отставать".
+        /// </summary>
+        private void ProcessTimeUpdate()
         {
             float ratio = GetSpeedRatio();
             timeAccumulator += Time.deltaTime * ratio;
+            
+            while (timeAccumulator >= 60f)
+            {
+                timeAccumulator -= 60f;
+                AdvanceMinute();
+            }
+        }
+        
+        /// <summary>
+        /// Обработка времени через FixedUpdate (детерминированная).
+        /// Защищена от просадок FPS, использует Time.fixedDeltaTime.
+        /// </summary>
+        private void ProcessTimeFixed()
+        {
+            float ratio = GetSpeedRatio();
+            float gameTimeDelta = Time.fixedDeltaTime * ratio;
+            
+            timeAccumulator += gameTimeDelta;
+            deterministicAccumulator += Time.fixedDeltaTime;
+            
+            // Отправляем событие тика для систем, которые должны работать с фиксированным шагом
+            if (deterministicAccumulator >= tickInterval)
+            {
+                deterministicAccumulator -= tickInterval;
+                currentTick++;
+                OnTick?.Invoke(currentTick);
+            }
             
             while (timeAccumulator >= 60f)
             {

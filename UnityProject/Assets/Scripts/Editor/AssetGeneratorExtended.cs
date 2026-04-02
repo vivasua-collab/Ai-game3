@@ -1,9 +1,10 @@
 // ============================================================================
 // AssetGeneratorExtended.cs — Расширенный генератор ScriptableObject ассетов
 // Cultivation World Simulator
-// Версия: 1.0
+// Версия: 1.1 — Добавлена валидация данных
 // ============================================================================
 // Создан: 2026-04-02
+// Редактировано: 2026-04-02 14:35:00 UTC
 // Добавляет генерацию: Techniques, NPCPresets, Equipment, Items, Materials
 // ============================================================================
 
@@ -43,6 +44,7 @@ namespace CultivationGame.Editor
         public static void GenerateAllExtendedAssets()
         {
             int total = 0;
+            int errors = 0;
 
             total += GenerateTechniques();
             total += GenerateNPCPresets();
@@ -53,7 +55,17 @@ namespace CultivationGame.Editor
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
 
-            Debug.Log($"[AssetGeneratorExtended] Generated {total} extended assets total");
+            // Валидация после генерации
+            errors = ValidateAllAssets();
+
+            if (errors > 0)
+            {
+                Debug.LogWarning($"[AssetGeneratorExtended] Generated {total} assets with {errors} validation errors!");
+            }
+            else
+            {
+                Debug.Log($"[AssetGeneratorExtended] Generated {total} assets - all valid!");
+            }
         }
 
         #endregion
@@ -738,6 +750,290 @@ namespace CultivationGame.Editor
                 string assetPath = AssetDatabase.GUIDToAssetPath(guid);
                 AssetDatabase.DeleteAsset(assetPath);
             }
+        }
+
+        #endregion
+
+        #region Validation
+
+        /// <summary>
+        /// Валидация всех сгенерированных ассетов.
+        /// Проверяет: дубликаты имён, обязательные поля, корректность ссылок.
+        /// </summary>
+        [MenuItem("Tools/Generate Assets/Validate All Assets", false, 50)]
+        public static int ValidateAllAssets()
+        {
+            int totalErrors = 0;
+
+            totalErrors += ValidateTechniques();
+            totalErrors += ValidateNPCPresets();
+            totalErrors += ValidateEquipment();
+            totalErrors += ValidateItems();
+            totalErrors += ValidateMaterials();
+            totalErrors += CheckDuplicateNames();
+
+            if (totalErrors == 0)
+            {
+                Debug.Log("[AssetGeneratorExtended] ✅ All assets validated successfully!");
+            }
+            else
+            {
+                Debug.LogError($"[AssetGeneratorExtended] ❌ Validation failed with {totalErrors} errors!");
+            }
+
+            return totalErrors;
+        }
+
+        private static int ValidateTechniques()
+        {
+            int errors = 0;
+            var guids = AssetDatabase.FindAssets("t:TechniqueData", new[] { OUTPUT_TECHNIQUES });
+
+            foreach (var guid in guids)
+            {
+                string path = AssetDatabase.GUIDToAssetPath(guid);
+                var asset = AssetDatabase.LoadAssetAtPath<TechniqueData>(path);
+
+                if (asset == null) continue;
+
+                // Проверка обязательных полей
+                if (string.IsNullOrEmpty(asset.techniqueId))
+                {
+                    Debug.LogError($"[Validation] {path}: Missing techniqueId");
+                    errors++;
+                }
+
+                if (string.IsNullOrEmpty(asset.nameEn))
+                {
+                    Debug.LogError($"[Validation] {path}: Missing nameEn");
+                    errors++;
+                }
+
+                if (asset.baseCapacity <= 0)
+                {
+                    Debug.LogWarning($"[Validation] {path}: Invalid baseCapacity ({asset.baseCapacity})");
+                }
+
+                if (asset.baseQiCost < 0)
+                {
+                    Debug.LogWarning($"[Validation] {path}: Negative Qi cost ({asset.baseQiCost})");
+                }
+
+                // Проверка уровня культивации
+                if (asset.minCultivationLevel < 1 || asset.minCultivationLevel > 10)
+                {
+                    Debug.LogWarning($"[Validation] {path}: Invalid minCultivationLevel ({asset.minCultivationLevel})");
+                }
+            }
+
+            return errors;
+        }
+
+        private static int ValidateNPCPresets()
+        {
+            int errors = 0;
+            var guids = AssetDatabase.FindAssets("t:NPCPresetData", new[] { OUTPUT_NPC_PRESETS });
+
+            foreach (var guid in guids)
+            {
+                string path = AssetDatabase.GUIDToAssetPath(guid);
+                var asset = AssetDatabase.LoadAssetAtPath<NPCPresetData>(path);
+
+                if (asset == null) continue;
+
+                // Проверка обязательных полей
+                if (string.IsNullOrEmpty(asset.presetId))
+                {
+                    Debug.LogError($"[Validation] {path}: Missing presetId");
+                    errors++;
+                }
+
+                if (string.IsNullOrEmpty(asset.nameTemplate))
+                {
+                    Debug.LogError($"[Validation] {path}: Missing nameTemplate");
+                    errors++;
+                }
+
+                // Проверка уровня культивации
+                if (asset.cultivationLevel < 1 || asset.cultivationLevel > 10)
+                {
+                    Debug.LogWarning($"[Validation] {path}: Invalid cultivationLevel ({asset.cultivationLevel})");
+                }
+
+                // Проверка характеристик
+                if (asset.strength < 0 || asset.agility < 0 || asset.intelligence < 0 || asset.vitality < 0)
+                {
+                    Debug.LogWarning($"[Validation] {path}: Negative stats detected");
+                }
+            }
+
+            return errors;
+        }
+
+        private static int ValidateEquipment()
+        {
+            int errors = 0;
+            var guids = AssetDatabase.FindAssets("t:EquipmentData", new[] { OUTPUT_EQUIPMENT });
+
+            foreach (var guid in guids)
+            {
+                string path = AssetDatabase.GUIDToAssetPath(guid);
+                var asset = AssetDatabase.LoadAssetAtPath<EquipmentData>(path);
+
+                if (asset == null) continue;
+
+                // Проверка обязательных полей
+                if (string.IsNullOrEmpty(asset.itemId))
+                {
+                    Debug.LogError($"[Validation] {path}: Missing itemId");
+                    errors++;
+                }
+
+                if (string.IsNullOrEmpty(asset.nameEn))
+                {
+                    Debug.LogError($"[Validation] {path}: Missing nameEn");
+                    errors++;
+                }
+
+                // Проверка веса
+                if (asset.weight < 0)
+                {
+                    Debug.LogWarning($"[Validation] {path}: Negative weight ({asset.weight})");
+                }
+
+                // Проверка слота
+                if (asset.slot == EquipmentSlot.None)
+                {
+                    Debug.LogWarning($"[Validation] {path}: Equipment slot is None");
+                }
+            }
+
+            return errors;
+        }
+
+        private static int ValidateItems()
+        {
+            int errors = 0;
+            var guids = AssetDatabase.FindAssets("t:ItemData", new[] { OUTPUT_ITEMS });
+
+            foreach (var guid in guids)
+            {
+                string path = AssetDatabase.GUIDToAssetPath(guid);
+                var asset = AssetDatabase.LoadAssetAtPath<ItemData>(path);
+
+                if (asset == null) continue;
+
+                // Проверка обязательных полей
+                if (string.IsNullOrEmpty(asset.itemId))
+                {
+                    Debug.LogError($"[Validation] {path}: Missing itemId");
+                    errors++;
+                }
+
+                if (string.IsNullOrEmpty(asset.nameEn))
+                {
+                    Debug.LogError($"[Validation] {path}: Missing nameEn");
+                    errors++;
+                }
+
+                // Проверка стека
+                if (asset.stackable && asset.maxStack <= 0)
+                {
+                    Debug.LogWarning($"[Validation] {path}: Stackable item with invalid maxStack ({asset.maxStack})");
+                }
+
+                // Проверка размера
+                if (asset.sizeWidth <= 0 || asset.sizeHeight <= 0)
+                {
+                    Debug.LogWarning($"[Validation] {path}: Invalid item size ({asset.sizeWidth}x{asset.sizeHeight})");
+                }
+            }
+
+            return errors;
+        }
+
+        private static int ValidateMaterials()
+        {
+            int errors = 0;
+            var guids = AssetDatabase.FindAssets("t:MaterialData", new[] { OUTPUT_MATERIALS });
+
+            foreach (var guid in guids)
+            {
+                string path = AssetDatabase.GUIDToAssetPath(guid);
+                var asset = AssetDatabase.LoadAssetAtPath<MaterialData>(path);
+
+                if (asset == null) continue;
+
+                // Проверка обязательных полей
+                if (string.IsNullOrEmpty(asset.itemId))
+                {
+                    Debug.LogError($"[Validation] {path}: Missing itemId");
+                    errors++;
+                }
+
+                if (string.IsNullOrEmpty(asset.nameEn))
+                {
+                    Debug.LogError($"[Validation] {path}: Missing nameEn");
+                    errors++;
+                }
+
+                // Проверка тира
+                if (asset.tier < 1 || asset.tier > 5)
+                {
+                    Debug.LogWarning($"[Validation] {path}: Invalid tier ({asset.tier})");
+                }
+
+                // Проверка характеристик материала
+                if (asset.hardness < 0)
+                {
+                    Debug.LogWarning($"[Validation] {path}: Negative hardness ({asset.hardness})");
+                }
+            }
+
+            return errors;
+        }
+
+        /// <summary>
+        /// Проверка на дубликаты имён и ID.
+        /// </summary>
+        private static int CheckDuplicateNames()
+        {
+            int errors = 0;
+            var nameSet = new HashSet<string>();
+            var idSet = new HashSet<string>();
+
+            // Проверяем все типы ассетов
+            var allTypes = new[] 
+            { 
+                (OUTPUT_TECHNIQUES, "t:TechniqueData"),
+                (OUTPUT_NPC_PRESETS, "t:NPCPresetData"),
+                (OUTPUT_EQUIPMENT, "t:EquipmentData"),
+                (OUTPUT_ITEMS, "t:ItemData"),
+                (OUTPUT_MATERIALS, "t:MaterialData")
+            };
+
+            foreach (var (folder, filter) in allTypes)
+            {
+                var guids = AssetDatabase.FindAssets(filter, new[] { folder });
+
+                foreach (var guid in guids)
+                {
+                    string path = AssetDatabase.GUIDToAssetPath(guid);
+                    string fileName = System.IO.Path.GetFileNameWithoutExtension(path);
+
+                    if (nameSet.Contains(fileName))
+                    {
+                        Debug.LogError($"[Validation] Duplicate asset name: {fileName}");
+                        errors++;
+                    }
+                    else
+                    {
+                        nameSet.Add(fileName);
+                    }
+                }
+            }
+
+            return errors;
         }
 
         #endregion

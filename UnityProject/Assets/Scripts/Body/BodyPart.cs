@@ -1,10 +1,16 @@
 // ============================================================================
 // BodyPart.cs — Часть тела
 // Cultivation World Simulator
-// Версия: 1.0
+// Версия: 1.1 — Улучшена инкапсуляция
 // ============================================================================
-// Создан: 2026-03-30 10:00:00 UTC
-// Редактирован: 2026-03-31 08:46:09 UTC
+// Создано: 2026-03-30 10:00:00 UTC
+// Редактировано: 2026-04-02 14:45:00 UTC
+//
+// ИЗМЕНЕНИЯ В ВЕРСИИ 1.1:
+// - Поля сделаны private с public readonly properties
+// - Добавлен метод ApplyDamage() для внешнего использования
+// - Добавлена проверка на отрубленную часть в TakeDamage
+// - Улучшена документация методов
 // ============================================================================
 
 using System;
@@ -23,27 +29,46 @@ namespace CultivationGame.Body
     /// 
     /// Соотношение: Структурная HP = Функциональная HP × 2
     /// Исключение: Сердце имеет только функциональную HP
+    /// 
+    /// ИНКАПСУЛЯЦИЯ:
+    /// - Все поля private, доступ через properties (read-only)
+    /// - Изменение состояния ТОЛЬКО через методы TakeDamage/Heal
+    /// - Внешние системы не могут напрямую манипулировать HP
     /// </summary>
     [Serializable]
     public class BodyPart
     {
         // === Идентификация ===
-        public BodyPartType PartType;
-        public string CustomName;
-        public bool IsVital;           // Жизненно важная (смерть при уничтожении)
+        private BodyPartType partType;
+        private string customName;
+        private bool isVital;           // Жизненно важная (смерть при уничтожении)
         
         // === HP (Kenshi-style) ===
-        public float MaxRedHP;         // Максимальная функциональная HP
-        public float CurrentRedHP;     // Текущая функциональная HP
+        private float maxRedHP;         // Максимальная функциональная HP
+        private float currentRedHP;     // Текущая функциональная HP
         
-        public float MaxBlackHP;       // Максимальная структурная HP
-        public float CurrentBlackHP;   // Текущая структурная HP
+        private float maxBlackHP;       // Максимальная структурная HP
+        private float currentBlackHP;   // Текущая структурная HP
         
         // === Состояние ===
-        public BodyPartState State;
+        private BodyPartState state;
         
         // === Модификаторы ===
-        public float BaseHitChance;    // Базовый шанс попадания
+        private float baseHitChance;    // Базовый шанс попадания
+        
+        // === Public Properties (Read-Only) ===
+        
+        public BodyPartType PartType => partType;
+        public string CustomName => customName;
+        public bool IsVital => isVital;
+        
+        public float MaxRedHP => maxRedHP;
+        public float CurrentRedHP => currentRedHP;
+        public float MaxBlackHP => maxBlackHP;
+        public float CurrentBlackHP => currentBlackHP;
+        
+        public BodyPartState State => state;
+        public float BaseHitChance => baseHitChance;
         
         // === Конструктор ===
         
@@ -55,47 +80,72 @@ namespace CultivationGame.Body
         /// <param name="isVital">Жизненно важная часть (head, heart)</param>
         public BodyPart(BodyPartType partType, float maxRedHP, bool isVital = false)
         {
-            PartType = partType;
-            CustomName = partType.ToString();
-            IsVital = isVital;
+            this.partType = partType;
+            this.customName = partType.ToString();
+            this.isVital = isVital;
             
-            MaxRedHP = maxRedHP;
-            CurrentRedHP = maxRedHP;
+            this.maxRedHP = maxRedHP;
+            this.currentRedHP = maxRedHP;
             
             // Структурная HP = функциональная × 2
             // Источник: BODY_SYSTEM.md "Соотношение HP"
             // ⚠️ ВНИМАНИЕ: Для сердца должна быть только красная HP (blackHP = 0)
             // Текущая реализация устанавливает blackHP всегда, что не соответствует документации
-            MaxBlackHP = maxRedHP * GameConstants.STRUCTURAL_HP_MULTIPLIER;
-            CurrentBlackHP = MaxBlackHP;
+            this.maxBlackHP = maxRedHP * GameConstants.STRUCTURAL_HP_MULTIPLIER;
+            this.currentBlackHP = this.maxBlackHP;
             
-            State = BodyPartState.Healthy;
+            this.state = BodyPartState.Healthy;
             
             // Базовый шанс попадания из констант
             // Источник: ALGORITHMS.md §8 "Шансы попадания по частям тела"
             if (GameConstants.BodyPartHitChances.TryGetValue(partType, out float chance))
             {
-                BaseHitChance = chance;
+                this.baseHitChance = chance;
             }
             else
             {
-                BaseHitChance = 0.1f; // 10% по умолчанию
+                this.baseHitChance = 0.1f; // 10% по умолчанию
             }
         }
         
         // === Методы ===
         
         /// <summary>
-        /// Нанести урон.
+        /// Нанести урон части тела.
         /// Урон распределяется: 70% красная HP, 30% чёрная HP.
         /// Источник: ALGORITHMS.md §9 "Расчёт телесного урона"
+        /// 
+        /// ВАЖНО: Если часть уже отрублена (Severed), урон не применяется.
         /// </summary>
-        public void TakeDamage(float redDamage, float blackDamage)
+        /// <param name="redDamage">Урон по функциональной HP</param>
+        /// <param name="blackDamage">Урон по структурной HP</param>
+        /// <returns>True если урон был применён, false если часть отрублена</returns>
+        public bool TakeDamage(float redDamage, float blackDamage)
         {
-            CurrentRedHP -= redDamage;
-            CurrentBlackHP -= blackDamage;
+            // Проверка на отрубленную часть
+            if (state == BodyPartState.Severed)
+            {
+                return false;
+            }
+            
+            currentRedHP -= redDamage;
+            currentBlackHP -= blackDamage;
             
             UpdateState();
+            return true;
+        }
+        
+        /// <summary>
+        /// Применить общий урон с автоматическим распределением.
+        /// Распределение: 70% в красную HP, 30% в чёрную HP.
+        /// </summary>
+        /// <param name="totalDamage">Общий урон</param>
+        /// <returns>True если урон был применён</returns>
+        public bool ApplyDamage(float totalDamage)
+        {
+            float redDamage = totalDamage * 0.7f;
+            float blackDamage = totalDamage * 0.3f;
+            return TakeDamage(redDamage, blackDamage);
         }
         
         /// <summary>
@@ -104,16 +154,28 @@ namespace CultivationGame.Body
         /// Порядок восстановления:
         /// 1. Сначала структурная HP
         /// 2. Затем функциональная HP
+        /// 
+        /// ВАЖНО: Невозможно вылечить отрубленную часть!
         /// </summary>
-        public void Heal(float redHeal, float blackHeal = 0f)
+        /// <param name="redHeal">Восстановление функциональной HP</param>
+        /// <param name="blackHeal">Восстановление структурной HP (опционально)</param>
+        /// <returns>True если лечение было применено, false если часть отрублена</returns>
+        public bool Heal(float redHeal, float blackHeal = 0f)
         {
-            CurrentRedHP = Math.Min(MaxRedHP, CurrentRedHP + redHeal);
+            // Нельзя вылечить отрубленную часть
+            if (state == BodyPartState.Severed)
+            {
+                return false;
+            }
+            
+            currentRedHP = Math.Min(maxRedHP, currentRedHP + redHeal);
             if (blackHeal > 0)
             {
-                CurrentBlackHP = Math.Min(MaxBlackHP, CurrentBlackHP + blackHeal);
+                currentBlackHP = Math.Min(maxBlackHP, currentBlackHP + blackHeal);
             }
             
             UpdateState();
+            return true;
         }
         
         /// <summary>
@@ -129,28 +191,28 @@ namespace CultivationGame.Body
         /// </summary>
         public void UpdateState()
         {
-            if (CurrentBlackHP <= 0)
+            if (currentBlackHP <= 0)
             {
-                State = BodyPartState.Severed;
-                CurrentRedHP = 0;
-                CurrentBlackHP = 0;
+                state = BodyPartState.Severed;
+                currentRedHP = 0;
+                currentBlackHP = 0;
             }
-            else if (CurrentRedHP <= 0)
+            else if (currentRedHP <= 0)
             {
-                State = BodyPartState.Disabled;
-                CurrentRedHP = 0;
+                state = BodyPartState.Disabled;
+                currentRedHP = 0;
             }
-            else if (CurrentRedHP < MaxRedHP * 0.3f)
+            else if (currentRedHP < maxRedHP * 0.3f)
             {
-                State = BodyPartState.Wounded;
+                state = BodyPartState.Wounded;
             }
-            else if (CurrentRedHP < MaxRedHP * 0.7f)
+            else if (currentRedHP < maxRedHP * 0.7f)
             {
-                State = BodyPartState.Bruised;
+                state = BodyPartState.Bruised;
             }
             else
             {
-                State = BodyPartState.Healthy;
+                state = BodyPartState.Healthy;
             }
         }
         
@@ -194,14 +256,49 @@ namespace CultivationGame.Body
         /// </summary>
         public BodyPart Clone()
         {
-            return new BodyPart(PartType, MaxRedHP, IsVital)
-            {
-                CustomName = CustomName,
-                CurrentRedHP = CurrentRedHP,
-                CurrentBlackHP = CurrentBlackHP,
-                State = State,
-                BaseHitChance = BaseHitChance
-            };
+            var clone = new BodyPart(partType, maxRedHP, isVital);
+            clone.customName = this.customName;
+            clone.currentRedHP = this.currentRedHP;
+            clone.currentBlackHP = this.currentBlackHP;
+            clone.state = this.state;
+            clone.baseHitChance = this.baseHitChance;
+            return clone;
+        }
+        
+        /// <summary>
+        /// Проверить, парализована ли часть.
+        /// </summary>
+        public bool IsDisabled()
+        {
+            return state == BodyPartState.Disabled;
+        }
+        
+        // === Internal Setters (для BodyController и SaveSystem) ===
+        
+        /// <summary>
+        /// Установить CustomName. Используется при инициализации.
+        /// </summary>
+        internal void SetCustomName(string name)
+        {
+            customName = name;
+        }
+        
+        /// <summary>
+        /// Добавить модификатор к BaseHitChance.
+        /// </summary>
+        internal void AddHitChanceModifier(float modifier)
+        {
+            baseHitChance += modifier;
+        }
+        
+        /// <summary>
+        /// Принудительно установить HP (для загрузки сохранений).
+        /// </summary>
+        internal void SetHP(float red, float black)
+        {
+            currentRedHP = red;
+            currentBlackHP = black;
+            UpdateState();
         }
     }
 }

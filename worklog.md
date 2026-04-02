@@ -1,6 +1,49 @@
 # Cultivation World Simulator — Work Log
 
 ---
+Task ID: 18
+Agent: Main Agent
+Task: Исправление issues по результатам внешнего код-ревью
+
+Work Log:
+- Получено системное время: 2026-04-02 14:31:54 UTC
+- Проанализированы 2 отчёта код-ревью (основной + дополнительный)
+- Выявлены уже исправленные issues:
+  - ✅ Event unsubscription в PlayerController.OnDestroy()
+  - ✅ Qi precision loss через double dailyAccumulator
+  - ✅ Qi overflow protection в CalculateMaxCapacity()
+  - ✅ Damage to missing body parts через fallback в TakeDamage()
+  - ✅ Combat death race condition через state check
+- Создан ServiceLocator.cs (~200 строк):
+  - Замена FindFirstObjectByType для частых запросов
+  - O(1) доступ вместо O(n) поиск
+  - Поддержка async Request<T>() для отложенной подписки
+  - RegisteredBehaviour<T> базовый класс
+- Добавлена валидация в AssetGeneratorExtended.cs (~300 строк):
+  - ValidateAllAssets() метод
+  - Проверка обязательных полей
+  - Проверка дубликатов имён
+  - Меню: Tools → Generate Assets → Validate All Assets
+- Улучшен TimeController.cs:
+  - Добавлен детерминированный режим через FixedUpdate
+  - Защита от FPS просадок
+  - Событие OnTick для систем с фиксированным шагом
+  - Регистрация в ServiceLocator
+- Улучшена инкапсуляция BodyPart.cs:
+  - Поля сделаны private с read-only properties
+  - Добавлен метод ApplyDamage()
+  - Добавлен метод IsDisabled()
+  - Добавлены internal setters для BodyController
+  - Обновлён BodyController для использования новых методов
+
+Stage Summary:
+- Создан ServiceLocator для замены FindFirstObjectByType
+- Добавлена валидация ассетов после генерации
+- Детерминированное время через FixedUpdate
+- Инкапсуляция BodyPart улучшена
+- 6 новых/изменённых файлов
+
+---
 Task ID: 17
 Agent: Main Agent
 Task: Создание SemiAuto инструкций и AssetGeneratorExtended
