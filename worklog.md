@@ -1,6 +1,54 @@
 # Cultivation World Simulator — Work Log
 
 ---
+Task ID: 19
+Agent: Main Agent
+Task: Третье код-ревью — исправление критических багов
+
+Work Log:
+- Получено системное время: 2026-04-02 15:15:00 UTC
+- Проанализированы 2 отчёта от двух агентов
+- Выявлено 8 критических/высоких проблем
+
+**Исправленные issues:**
+
+1. 🔴 **TimeController.totalGameSeconds** — минута считалась как 1 секунда
+   - FIX: `totalGameSeconds += 60` вместо `totalGameSeconds++`
+
+2. 🔴 **TimeController.time-of-day transition** — oldTimeOfDay вычислялся после мутации hour
+   - FIX: `oldTimeOfDay` вычисляется ДО `currentHour++`
+
+3. 🔴 **DateTime serialization** — JsonUtility не поддерживает DateTime
+   - FIX: Заменены все DateTime на `long Unix timestamp`
+   - Затронуты: SaveManager.cs, SaveDataTypes.cs, GameSaveData, SaveSlotInfo, SaveMetadata, AchievementSaveData, QuestSaveData, SaveChecksum, SaveBackup
+
+4. 🔴 **SaveManager.PlayTimeSeconds** — realtimeSinceStartup сбрасывался при перезапуске
+   - FIX: Теперь накапливается через `TimeController.TotalGameSeconds / 3600`
+
+5. 🔴 **GameInitializer event subscriptions** — lambdas без отписки + cascading reinitialization
+   - FIX: Все lambdas заменены на named methods
+   - FIX: Добавлен `UnsubscribeFromEvents()` в OnDestroy
+   - FIX: Убран `Reinitialize()` из `HandleGameLoaded()`
+
+6. 🔴 **GameManager start vs resume** — currentState обновлялся ДО проверки
+   - FIX: `HandlePlaying(oldState)` принимает oldState
+   - FIX: Проверка `if (oldState == GameState.Paused)` работает корректно
+   - FIX: Добавлена отписка от событий в OnDestroy
+
+7. 🔴 **UIManager initial state** — SetState(MainMenu) return early
+   - FIX: `currentState = GameState.None` (sentinel)
+   - FIX: Добавлен `ForceInitialSync()` для первого запуска
+
+8. 🟡 **CombatManager null guards** — нет проверки на null
+   - FIX: Добавлены null guards в ExecuteAttack, ExecuteTechniqueAttack, ExecuteBasicAttack
+
+Stage Summary:
+- 7 файлов исправлено
+- ~200 строк добавлено/изменено
+- 8 критических багов исправлено
+- Push на GitHub pending
+
+---
 Task ID: 18
 Agent: Main Agent
 Task: Исправление issues по результатам внешнего код-ревью

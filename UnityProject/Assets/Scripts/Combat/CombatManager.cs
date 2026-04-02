@@ -1,10 +1,13 @@
 // ============================================================================
 // CombatManager.cs — Центральный менеджер боя
 // Cultivation World Simulator
-// Версия: 1.1 — Исправлены проблемы code review
+// Версия: 1.2 — Добавлены null guards в публичные методы
 // ============================================================================
 // Создан: 2026-03-31 14:12:00 UTC
-// Редактировано: 2026-04-02 13:51:19 UTC
+// Редактировано: 2026-04-02 15:45:00 UTC
+//
+// ИЗМЕНЕНИЯ В ВЕРСИИ 1.2:
+// - FIX: Добавлены null guards в ExecuteAttack, ExecuteTechniqueAttack, ExecuteBasicAttack
 // ============================================================================
 
 using System;
@@ -197,6 +200,17 @@ namespace CultivationGame.Combat
             int techniqueCapacity,
             AttackerParams attackerParams)
         {
+            // FIX: Null guards для защиты от NullReferenceException
+            if (attacker == null)
+            {
+                return AttackResult.Failed("Attacker is null");
+            }
+            
+            if (defender == null)
+            {
+                return AttackResult.Failed("Defender is null");
+            }
+            
             if (state != CombatState.Active)
             {
                 return AttackResult.Failed("Combat not active");
@@ -257,6 +271,17 @@ namespace CultivationGame.Combat
             ICombatant defender,
             LearnedTechnique technique)
         {
+            // FIX: Null guards
+            if (attacker == null)
+            {
+                return AttackResult.Failed("Attacker is null");
+            }
+            
+            if (defender == null)
+            {
+                return AttackResult.Failed("Defender is null");
+            }
+            
             if (technique == null || technique.Data == null)
             {
                 return AttackResult.Failed("Invalid technique");
@@ -301,6 +326,17 @@ namespace CultivationGame.Combat
         /// </summary>
         public AttackResult ExecuteBasicAttack(ICombatant attacker, ICombatant defender)
         {
+            // FIX: Null guards
+            if (attacker == null)
+            {
+                return AttackResult.Failed("Attacker is null");
+            }
+            
+            if (defender == null)
+            {
+                return AttackResult.Failed("Defender is null");
+            }
+            
             // Базовая атака - множитель 64 (melee_strike)
             int baseCapacity = TechniqueCapacity.GetBaseCapacity(TechniqueType.Combat, CombatSubtype.MeleeStrike);
 

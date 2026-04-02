@@ -1,7 +1,14 @@
 // ============================================================================
 // UIManager.cs — Главный менеджер UI
 // Cultivation World Simulator
-// Версия: 1.0
+// Версия: 1.1 — Исправлен баг начального состояния
+// ============================================================================
+// Создано: 2026-03-30 14:00:00 UTC
+// Редактировано: 2026-04-02 15:40:00 UTC
+//
+// ИЗМЕНЕНИЯ В ВЕРСИИ 1.1:
+// - FIX: currentState инициализируется как None (sentinel) для первого запуска
+// - FIX: Добавлен forceInitialSync для принудительной синхронизации панелей
 // ============================================================================
 
 using System;
@@ -32,10 +39,11 @@ namespace CultivationGame.UI
         [SerializeField] private float fadeOutDuration = 0.2f;
         
         // === State ===
-        private GameState currentState = GameState.MainMenu;
+        private GameState currentState = GameState.None;  // FIX: Sentinel state для первого запуска
         private Stack<GameState> stateHistory = new Stack<GameState>();
         private Dictionary<GameState, GameObject> panels = new Dictionary<GameState, GameObject>();
         private bool isTransitioning = false;
+        private bool hasInitialized = false;  // FIX: Флаг для отслеживания первой инициализации
         
         // === References ===
         private HUDController hudController;
@@ -79,7 +87,8 @@ namespace CultivationGame.UI
         
         private void Start()
         {
-            SetState(GameState.MainMenu);
+            // FIX: Принудительная начальная синхронизация
+            ForceInitialSync();
         }
         
         private void Update()
@@ -167,6 +176,33 @@ namespace CultivationGame.UI
             {
                 OnMenuClosed?.Invoke();
             }
+        }
+        
+        /// <summary>
+        /// FIX: Принудительная начальная синхронизация панелей.
+        /// Вызывается один раз при старте для отображения MainMenu.
+        /// </summary>
+        private void ForceInitialSync()
+        {
+            if (hasInitialized) return;
+            
+            hasInitialized = true;
+            
+            // Показываем MainMenu
+            if (panels.TryGetValue(GameState.MainMenu, out GameObject mainMenuPanel) && mainMenuPanel != null)
+            {
+                mainMenuPanel.SetActive(true);
+            }
+            
+            currentState = GameState.MainMenu;
+            
+            // Пауза на главном меню
+            if (pauseOnMenu)
+            {
+                Time.timeScale = 0f;
+            }
+            
+            OnMenuOpened?.Invoke();
         }
         
         private void UpdatePanels(GameState oldState, GameState newState)

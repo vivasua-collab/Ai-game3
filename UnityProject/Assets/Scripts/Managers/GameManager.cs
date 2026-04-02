@@ -1,10 +1,14 @@
 // ============================================================================
 // GameManager.cs — Главный менеджер игры
 // Cultivation World Simulator
-// Версия: 1.0
+// Версия: 1.1 — Исправлен start vs resume bug, добавлена отписка от событий
 // ============================================================================
-// Создан: 2026-03-31 10:00:00 UTC
-// Изменён: 2026-04-01 13:03:39 UTC
+// Создано: 2026-03-31 10:00:00 UTC
+// Редактировано: 2026-04-02 15:35:00 UTC
+//
+// ИЗМЕНЕНИЯ В ВЕРСИИ 1.1:
+// - FIX: HandlePlaying() теперь правильно различает start vs resume
+// - FIX: Добавлена отписка от событий в OnDestroy
 // ============================================================================
 
 using System;
@@ -127,6 +131,17 @@ namespace CultivationGame.Managers
 
         private void OnDestroy()
         {
+            // FIX: Отписываемся от событий
+            if (worldController != null)
+            {
+                worldController.OnWorldInitialized -= OnWorldInitialized;
+            }
+            
+            if (playerController != null)
+            {
+                playerController.OnPlayerDeath -= OnPlayerDeath;
+            }
+            
             if (Instance == this)
             {
                 Instance = null;
@@ -214,9 +229,9 @@ namespace CultivationGame.Managers
                 return;
 
             GameState oldState = currentState;
-            currentState = newState;
-
-            Log($"State changed: {oldState} → {newState}");
+            // FIX: Передаём oldState в handlers для корректной логики
+            
+            Log($"State changing: {oldState} → {newState}");
 
             // Handle state transitions
             switch (newState)
@@ -228,7 +243,7 @@ namespace CultivationGame.Managers
                     HandleLoading();
                     break;
                 case GameState.Playing:
-                    HandlePlaying();
+                    HandlePlaying(oldState);  // FIX: Передаём oldState
                     break;
                 case GameState.Paused:
                     HandlePaused();
@@ -237,6 +252,9 @@ namespace CultivationGame.Managers
                     HandleCutscene();
                     break;
             }
+            
+            // FIX: Обновляем состояние ПОСЛЕ handlers
+            currentState = newState;
 
             OnStateChanged?.Invoke(newState);
         }
@@ -253,19 +271,20 @@ namespace CultivationGame.Managers
             UnityEngine.Time.timeScale = 0f;
         }
 
-        private void HandlePlaying()
+        private void HandlePlaying(GameState oldState)  // FIX: Принимаем oldState
         {
             UnityEngine.Time.timeScale = 1f;
             if (timeController != null)
                 timeController.Resume();
 
-            if (currentState != GameState.Paused)
+            // FIX: Проверяем oldState вместо currentState (который уже Playing)
+            if (oldState == GameState.Paused)
             {
-                OnGameStart?.Invoke();
+                OnGameResume?.Invoke();
             }
             else
             {
-                OnGameResume?.Invoke();
+                OnGameStart?.Invoke();
             }
         }
 

@@ -1,7 +1,10 @@
 // ============================================================================
 // SaveDataTypes.cs — Типы данных для сохранения
 // Cultivation World Simulator
-// Версия: 1.0
+// Версия: 1.1 — Исправлена сериализация DateTime → Unix timestamp
+// ============================================================================
+// Создано: 2026-03-30 14:00:00 UTC
+// Редактировано: 2026-04-02 15:22:00 UTC
 // ============================================================================
 
 using System;
@@ -53,12 +56,28 @@ namespace CultivationGame.Save
     {
         public string SaveId;
         public string SlotName;
-        public DateTime CreatedAt;
-        public DateTime ModifiedAt;
+        public long CreatedAtUnix;   // FIX: Unix timestamp
+        public long ModifiedAtUnix;  // FIX: Unix timestamp
         public int LoadCount;
         public bool IsAutoSave;
         public bool IsQuickSave;
         public List<string> Tags = new List<string>();
+        
+        /// <summary>
+        /// Получить DateTime создания.
+        /// </summary>
+        public System.DateTime GetCreatedAt()
+        {
+            return DateTimeOffset.FromUnixTimeSeconds(CreatedAtUnix).LocalDateTime;
+        }
+        
+        /// <summary>
+        /// Получить DateTime модификации.
+        /// </summary>
+        public System.DateTime GetModifiedAt()
+        {
+            return DateTimeOffset.FromUnixTimeSeconds(ModifiedAtUnix).LocalDateTime;
+        }
         
         /// <summary>
         /// Добавить тег.
@@ -163,12 +182,17 @@ namespace CultivationGame.Save
     {
         public string AchievementId;
         public bool IsUnlocked;
-        public DateTime UnlockTime;
+        public long UnlockTimeUnix;  // FIX: Unix timestamp
         public float Progress;
         public int CurrentStage;
         public int MaxStage;
         
         public bool IsCompleted => Progress >= 1f;
+        
+        public System.DateTime GetUnlockTime()
+        {
+            return DateTimeOffset.FromUnixTimeSeconds(UnlockTimeUnix).LocalDateTime;
+        }
     }
     
     /// <summary>
@@ -184,8 +208,20 @@ namespace CultivationGame.Save
         public bool IsFailed;
         public Dictionary<string, int> Objectives = new Dictionary<string, int>();
         public List<string> Flags = new List<string>();
-        public DateTime StartTime;
-        public DateTime? CompletionTime;
+        public long StartTimeUnix;  // FIX: Unix timestamp
+        public long? CompletionTimeUnix;  // FIX: Unix timestamp (nullable)
+        
+        public System.DateTime GetStartTime()
+        {
+            return DateTimeOffset.FromUnixTimeSeconds(StartTimeUnix).LocalDateTime;
+        }
+        
+        public System.DateTime? GetCompletionTime()
+        {
+            return CompletionTimeUnix.HasValue 
+                ? DateTimeOffset.FromUnixTimeSeconds(CompletionTimeUnix.Value).LocalDateTime 
+                : null;
+        }
     }
     
     /// <summary>
@@ -223,7 +259,12 @@ namespace CultivationGame.Save
     {
         public string DataHash;
         public long DataSize;
-        public DateTime GeneratedAt;
+        public long GeneratedAtUnix;  // FIX: Unix timestamp
+        
+        public System.DateTime GetGeneratedAt()
+        {
+            return DateTimeOffset.FromUnixTimeSeconds(GeneratedAtUnix).LocalDateTime;
+        }
         
         /// <summary>
         /// Вычислить хеш данных.
@@ -256,7 +297,7 @@ namespace CultivationGame.Save
     {
         public string BackupId;
         public string OriginalSlotId;
-        public DateTime BackupTime;
+        public long BackupTimeUnix;  // FIX: Unix timestamp
         public string Reason; // "auto", "manual", "before_update"
         public SaveHeader Header;
         
@@ -265,12 +306,18 @@ namespace CultivationGame.Save
         /// </summary>
         public static readonly int MaxAgeDays = 30;
         
+        public System.DateTime GetBackupTime()
+        {
+            return DateTimeOffset.FromUnixTimeSeconds(BackupTimeUnix).LocalDateTime;
+        }
+        
         /// <summary>
         /// Проверить, устарела ли копия.
         /// </summary>
         public bool IsExpired()
         {
-            return (DateTime.Now - BackupTime).TotalDays > MaxAgeDays;
+            var backupTime = GetBackupTime();
+            return (System.DateTime.Now - backupTime).TotalDays > MaxAgeDays;
         }
     }
 }

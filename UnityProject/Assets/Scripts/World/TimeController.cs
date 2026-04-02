@@ -1,15 +1,14 @@
 // ============================================================================
 // TimeController.cs — Система игрового времени
 // Cultivation World Simulator
-// Версия: 1.1 — Детерминированный шаг времени через FixedUpdate
+// Версия: 1.2 — Исправлены баги time accounting и time-of-day transition
 // ============================================================================
 // Создано: 2026-03-30 14:00:00 UTC
-// Редактировано: 2026-04-02 14:38:00 UTC
+// Редактировано: 2026-04-02 15:15:00 UTC
 //
-// ИЗМЕНЕНИЯ В ВЕРСИИ 1.1:
-// - Добавлен детерминированный шаг через FixedUpdate (защита от FPS просадок)
-// - Добавлен TimeManager для изоляции логики времени
-// - Добавлены события OnTick для подписки систем
+// ИЗМЕНЕНИЯ В ВЕРСИИ 1.2:
+// - FIX: totalGameSeconds теперь увеличивается на 60 за минуту (не на 1)
+// - FIX: oldTimeOfDay вычисляется ДО мутации hour (корректные переходы)
 // ============================================================================
 
 using System;
@@ -178,7 +177,7 @@ namespace CultivationGame.World
         public void AdvanceMinute()
         {
             currentMinute++;
-            totalGameSeconds++;
+            totalGameSeconds += 60;  // FIX: минута = 60 секунд, не 1
             
             OnMinutePassed?.Invoke(currentMinute);
             
@@ -194,8 +193,10 @@ namespace CultivationGame.World
         /// </summary>
         public void AdvanceHour()
         {
-            currentHour++;
+            // FIX: Вычисляем oldTimeOfDay ДО мутации hour
             TimeOfDay oldTimeOfDay = CalculateTimeOfDay();
+            
+            currentHour++;
             
             OnHourPassed?.Invoke(currentHour);
             

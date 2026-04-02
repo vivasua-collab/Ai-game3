@@ -1,7 +1,14 @@
 // ============================================================================
 // SaveManager.cs — Менеджер сохранений
 // Cultivation World Simulator
-// Версия: 1.0
+// Версия: 1.1 — Исправлена сериализация DateTime → Unix timestamp
+// ============================================================================
+// Создано: 2026-03-30 14:00:00 UTC
+// Редактировано: 2026-04-02 15:20:00 UTC
+//
+// ИЗМЕНЕНИЯ В ВЕРСИИ 1.1:
+// - FIX: DateTime заменён на Unix timestamp (long) для JsonUtility
+// - FIX: PlayTimeSeconds теперь накапливается через TimeController.TotalGameSeconds
 // ============================================================================
 
 using System;
@@ -125,8 +132,16 @@ namespace CultivationGame.Save
             try
             {
                 GameSaveData saveData = CollectSaveData();
-                saveData.SaveTime = DateTime.Now;
-                saveData.PlayTimeSeconds = Time.realtimeSinceStartup;
+                
+                // FIX: Используем Unix timestamp вместо DateTime для JsonUtility
+                saveData.SaveTimeUnix = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+                
+                // FIX: Накапливаем игровое время из TimeController вместо realtimeSinceStartup
+                if (timeController != null)
+                {
+                    // Конвертируем в часы для удобства отображения
+                    saveData.TotalPlayTimeHours = (float)(timeController.TotalGameSeconds / 3600.0);
+                }
                 
                 string json = JsonUtility.ToJson(saveData, true);
                 string filePath = GetSlotFilePath(slotId);
@@ -395,8 +410,8 @@ namespace CultivationGame.Save
             {
                 SlotId = slotId,
                 Exists = true,
-                SaveTime = data.SaveTime,
-                PlayTimeSeconds = data.PlayTimeSeconds,
+                SaveTimeUnix = data.SaveTimeUnix,
+                TotalPlayTimeHours = data.TotalPlayTimeHours,
                 WorldAge = data.WorldData?.WorldAge ?? 0,
                 Version = data.Version
             };
@@ -459,22 +474,30 @@ namespace CultivationGame.Save
     {
         public string SlotId;
         public bool Exists;
-        public DateTime SaveTime;
-        public float PlayTimeSeconds;
+        public long SaveTimeUnix;  // FIX: Unix timestamp вместо DateTime
+        public float TotalPlayTimeHours;  // FIX: В часах, накапливается
         public int WorldAge;
         public string Version;
+        
+        /// <summary>
+        /// Получить DateTime из Unix timestamp.
+        /// </summary>
+        public System.DateTime GetSaveTime()
+        {
+            return DateTimeOffset.FromUnixTimeSeconds(SaveTimeUnix).LocalDateTime;
+        }
         
         public string FormattedPlayTime
         {
             get
             {
-                int hours = (int)(PlayTimeSeconds / 3600);
-                int minutes = (int)((PlayTimeSeconds % 3600) / 60);
+                int hours = (int)TotalPlayTimeHours;
+                int minutes = (int)((TotalPlayTimeHours % 1) * 60);
                 return $"{hours:D2}:{minutes:D2}";
             }
         }
         
-        public string FormattedSaveTime => SaveTime.ToString("yyyy-MM-dd HH:mm");
+        public string FormattedSaveTime => GetSaveTime().ToString("yyyy-MM-dd HH:mm");
     }
     
     /// <summary>
@@ -485,8 +508,8 @@ namespace CultivationGame.Save
     {
         public string Version;
         public int Seed;
-        public DateTime SaveTime;
-        public float PlayTimeSeconds;
+        public long SaveTimeUnix;  // FIX: Unix timestamp вместо DateTime
+        public float TotalPlayTimeHours;  // FIX: Накапливаемое время в часах
         
         // Системы
         public TimeSaveData TimeData;

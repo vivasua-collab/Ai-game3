@@ -1,9 +1,16 @@
 // ============================================================================
 // GameInitializer.cs — Инициализация игры при старте
 // Cultivation World Simulator
-// Версия: 1.0
+// Версия: 1.1 — Исправлены проблемы с event subscriptions
 // ============================================================================
 // Создан: 2026-04-01 13:03:39 UTC
+// Редактировано: 2026-04-02 15:30:00 UTC
+//
+// ИЗМЕНЕНИЯ В ВЕРСИИ 1.1:
+// - FIX: Lambda handlers заменены на named methods
+// - FIX: Добавлена отписка от событий в OnDestroy
+// - FIX: Добавлен флаг isSubscribed для защиты от дублирования подписок
+// - FIX: Убран Reinitialize() из OnGameLoaded (cascading reinitialization bug)
 // ============================================================================
 
 using System;
@@ -23,6 +30,8 @@ namespace CultivationGame.Managers
     /// 
     /// Запускается автоматически при старте сцены.
     /// Координирует порядок инициализации систем.
+    /// 
+    /// ВАЖНО: Подписки на события используют named methods для возможности отписки.
     /// </summary>
     public class GameInitializer : MonoBehaviour
     {
@@ -41,8 +50,13 @@ namespace CultivationGame.Managers
         #region Runtime
         
         private bool isInitialized = false;
+        private bool isSubscribed = false;  // FIX: Флаг для защиты от дублирования подписок
         private int systemsInitialized = 0;
         private int totalSystems = 8;
+        
+        // Cached references for event handlers
+        private BodyController cachedBodyController;
+        private QiController cachedQiController;
         
         #endregion
         
@@ -94,6 +108,12 @@ namespace CultivationGame.Managers
             }
         }
         
+        private void OnDestroy()
+        {
+            // FIX: Отписываемся от всех событий
+            UnsubscribeFromEvents();
+        }
+        
         #endregion
         
         #region Public API
@@ -114,9 +134,19 @@ namespace CultivationGame.Managers
         
         /// <summary>
         /// Переинициализировать игру (например, после загрузки).
+        /// ВНИМАНИЕ: Не вызывать из подписок на GameEvents!
         /// </summary>
         public void Reinitialize()
         {
+            if (!isInitialized)
+            {
+                Debug.LogWarning("[GameInitializer] Not initialized, nothing to reinitialize");
+                return;
+            }
+            
+            // Сначала отписываемся от старых событий
+            UnsubscribeFromEvents();
+            
             isInitialized = false;
             systemsInitialized = 0;
             StartCoroutine(InitializeGameAsync());
@@ -174,8 +204,6 @@ namespace CultivationGame.Managers
         
         private IEnumerator InitializeSystem(string systemName, Func<IEnumerator> initMethod)
         {
-            // Cannot use yield inside try-catch in C#
-            // Using separate method for error handling
             IEnumerator coroutine = null;
             try
             {
@@ -201,7 +229,6 @@ namespace CultivationGame.Managers
         
         private IEnumerator InitializeGameEvents()
         {
-            // Включаем логирование событий в debug режиме
             GameEvents.DebugLogging = debugMode;
             yield return null;
         }
@@ -212,7 +239,6 @@ namespace CultivationGame.Managers
             
             if (gameManager == null)
             {
-                // Пытаемся найти
                 gameManager = FindFirstObjectByType<GameManager>();
                 
                 if (gameManager == null)
@@ -230,11 +256,8 @@ namespace CultivationGame.Managers
             
             if (timeController != null)
             {
-                // Подписываемся на события времени
-                GameEvents.OnTimeSpeedChanged += (speed) =>
-                {
-                    if (debugMode) Debug.Log($"[GameInitializer] Time speed changed: {speed}");
-                };
+                // Регистрируем в ServiceLocator
+                ServiceLocator.Register(timeController);
             }
             else
             {
@@ -250,7 +273,7 @@ namespace CultivationGame.Managers
             
             if (worldController != null)
             {
-                // Мир инициализируется автоматически
+                ServiceLocator.Register(worldController);
             }
             else
             {
@@ -266,18 +289,8 @@ namespace CultivationGame.Managers
             
             if (saveManager != null)
             {
-                // Подписываемся на события сохранения
-                GameEvents.OnGameSaving += (slot) =>
-                {
-                    if (debugMode) Debug.Log($"[GameInitializer] Saving to slot {slot}");
-                };
-                
-                GameEvents.OnGameLoaded += (slot) =>
-                {
-                    if (debugMode) Debug.Log($"[GameInitializer] Loaded from slot {slot}");
-                    // Переинициализируем после загрузки
-                    Reinitialize();
-                };
+                // FIX: Подписываемся через named methods
+                SubscribeToSaveEvents();
             }
             else
             {
@@ -293,36 +306,11 @@ namespace CultivationGame.Managers
             
             if (player != null)
             {
-                var bodyController = player.GetComponent<BodyController>();
-                var qiController = player.GetComponent<QiController>();
+                cachedBodyController = player.GetComponent<BodyController>();
+                cachedQiController = player.GetComponent<QiController>();
                 
-                // Подписываемся на события игрока
-                if (bodyController != null)
-                {
-                    bodyController.OnDamageTaken += (part, result) =>
-                    {
-                        int totalDamage = (int)(result.RedHPDamage + result.BlackHPDamage);
-                        GameEvents.TriggerDamageTaken(totalDamage, part.PartType.ToString());
-                    };
-                    
-                    bodyController.OnDeath += () =>
-                    {
-                        GameEvents.TriggerPlayerDeath();
-                    };
-                }
-                
-                if (qiController != null)
-                {
-                    qiController.OnQiChanged += (current, max) =>
-                    {
-                        GameEvents.TriggerPlayerQiChanged(current, max);
-                    };
-                    
-                    qiController.OnCultivationLevelChanged += (level) =>
-                    {
-                        GameEvents.TriggerPlayerCultivationLevelChanged(level);
-                    };
-                }
+                // FIX: Подписываемся через named methods
+                SubscribeToPlayerEvents();
                 
                 Log($"[GameInitializer] Player initialized: {player.PlayerName}");
             }
@@ -344,7 +332,6 @@ namespace CultivationGame.Managers
         {
             // Финальная настройка после всех систем
             
-            // Проверяем критические системы
             bool hasPlayer = FindFirstObjectByType<PlayerController>() != null;
             bool hasGameManager = GameManager.Instance != null;
             bool hasTimeSystem = FindFirstObjectByType<TimeController>() != null;
@@ -356,6 +343,123 @@ namespace CultivationGame.Managers
             }
             
             yield return null;
+        }
+        
+        #endregion
+        
+        #region Event Subscription Management
+        
+        /// <summary>
+        /// Подписаться на все события (с защитой от дублирования).
+        /// </summary>
+        private void SubscribeToEvents()
+        {
+            if (isSubscribed) return;
+            
+            SubscribeToSaveEvents();
+            SubscribeToPlayerEvents();
+            SubscribeToTimeEvents();
+            
+            isSubscribed = true;
+        }
+        
+        /// <summary>
+        /// Отписаться от всех событий.
+        /// </summary>
+        private void UnsubscribeFromEvents()
+        {
+            if (!isSubscribed) return;
+            
+            // Отписываемся от GameEvents
+            GameEvents.OnGameSaving -= HandleGameSaving;
+            GameEvents.OnGameLoaded -= HandleGameLoaded;
+            GameEvents.OnTimeSpeedChanged -= HandleTimeSpeedChanged;
+            
+            // Отписываемся от Player events
+            if (cachedBodyController != null)
+            {
+                cachedBodyController.OnDamageTaken -= HandleBodyDamageTaken;
+                cachedBodyController.OnDeath -= HandlePlayerDeath;
+            }
+            
+            if (cachedQiController != null)
+            {
+                cachedQiController.OnQiChanged -= HandleQiChanged;
+                cachedQiController.OnCultivationLevelChanged -= HandleCultivationLevelChanged;
+            }
+            
+            isSubscribed = false;
+        }
+        
+        private void SubscribeToSaveEvents()
+        {
+            GameEvents.OnGameSaving += HandleGameSaving;
+            GameEvents.OnGameLoaded += HandleGameLoaded;
+        }
+        
+        private void SubscribeToPlayerEvents()
+        {
+            if (cachedBodyController != null)
+            {
+                cachedBodyController.OnDamageTaken += HandleBodyDamageTaken;
+                cachedBodyController.OnDeath += HandlePlayerDeath;
+            }
+            
+            if (cachedQiController != null)
+            {
+                cachedQiController.OnQiChanged += HandleQiChanged;
+                cachedQiController.OnCultivationLevelChanged += HandleCultivationLevelChanged;
+            }
+        }
+        
+        private void SubscribeToTimeEvents()
+        {
+            GameEvents.OnTimeSpeedChanged += HandleTimeSpeedChanged;
+        }
+        
+        #endregion
+        
+        #region Named Event Handlers
+        
+        private void HandleGameSaving(int slot)
+        {
+            if (debugMode) Debug.Log($"[GameInitializer] Saving to slot {slot}");
+        }
+        
+        private void HandleGameLoaded(int slot)
+        {
+            if (debugMode) Debug.Log($"[GameInitializer] Loaded from slot {slot}");
+            
+            // FIX: НЕ вызываем Reinitialize() здесь!
+            // Это вызывает cascading reinitialization bug.
+            // Вместо этого обновляем только то, что нужно.
+            // Reinitialize() должен вызываться явно из SaveManager после применения данных.
+        }
+        
+        private void HandleTimeSpeedChanged(TimeSpeed speed)
+        {
+            if (debugMode) Debug.Log($"[GameInitializer] Time speed changed: {speed}");
+        }
+        
+        private void HandleBodyDamageTaken(BodyPart part, BodyDamageResult result)
+        {
+            int totalDamage = (int)(result.RedHPDamage + result.BlackHPDamage);
+            GameEvents.TriggerDamageTaken(totalDamage, part.PartType.ToString());
+        }
+        
+        private void HandlePlayerDeath()
+        {
+            GameEvents.TriggerPlayerDeath();
+        }
+        
+        private void HandleQiChanged(long current, long max)
+        {
+            GameEvents.TriggerPlayerQiChanged(current, max);
+        }
+        
+        private void HandleCultivationLevelChanged(int level)
+        {
+            GameEvents.TriggerPlayerCultivationLevelChanged(level);
         }
         
         #endregion
