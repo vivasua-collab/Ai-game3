@@ -71,14 +71,7 @@ Main (сцена)
 ├── Main Camera          ← был изначально
 ├── Directional Light    ← был изначально
 ├── GameManager          ← создан скриптом
-│   └── Systems
-│       ├── WorldController
-│       ├── TimeController
-│       ├── LocationController
-│       ├── EventController
-│       ├── FactionController
-│       ├── GeneratorRegistry
-│       └── SaveManager
+│   └── Systems          ← ОДИН объект, все контроллеры как КОМПОНЕНТЫ
 ├── Player               ← создан скриптом
 ├── EventSystem          ← создан скриптом
 └── GameUI (Canvas)      ← создан скриптом
@@ -87,6 +80,17 @@ Main (сцена)
         ├── HPText
         └── QiText
 ```
+
+> ⚠️ **Важно:** Объект `Systems` — это **один GameObject**, а контроллеры (WorldController, TimeController и др.) добавлены как **компоненты** в Inspector, а не как дочерние объекты!
+> 
+> **Выбери `Systems` в Hierarchy → смотри Inspector → увидишь все контроллеры как компоненты:**
+> - WorldController (Script)
+> - TimeController (Script)
+> - LocationController (Script)
+> - EventController (Script)
+> - FactionController (Script)
+> - GeneratorRegistry (Script)
+> - SaveManager (Script)
 
 ---
 
@@ -234,5 +238,5 @@ but you have switched active Input handling to Input System package in Player Se
 ---
 
 *Документ создан: 2025-04-01*  
-*Редактировано: 2026-04-02 07:01:13 UTC*  
-*Исправлено: Input System UI Module для Input System Package*
+*Редактировано: 2026-04-02 09:46:31 UTC*  
+*Исправлено: Input System UI Module + уточнена структура Systems (компоненты, не дочерние объекты)*
