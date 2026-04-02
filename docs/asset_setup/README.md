@@ -16,20 +16,27 @@
 | [05_PlayerSetup.md](./05_PlayerSetup.md) | Настройка Player (ручная) | 1 префаб |
 | [05_PlayerSetup_SemiAuto.md](./05_PlayerSetup_SemiAuto.md) | Настройка Player (полуавтомат) | 1 префаб |
 | [06_TechniqueData.md](./06_TechniqueData.md) | Техники культивации | 34 файла |
+| [06_TechniqueData_SemiAuto.md](./06_TechniqueData_SemiAuto.md) | Техники (полуавтомат) | 34 файла |
 | [07_NPCPresetData.md](./07_NPCPresetData.md) | Пресеты NPC | 15 файлов |
+| [07_NPCPresetData_SemiAuto.md](./07_NPCPresetData_SemiAuto.md) | NPC пресеты (полуавтомат) | 15 файлов |
 | [08_EquipmentData.md](./08_EquipmentData.md) | Экипировка (оружие/броня) | 39 файлов |
+| [08_EquipmentData_SemiAuto.md](./08_EquipmentData_SemiAuto.md) | Экипировка (полуавтомат) | 39 файлов |
 | [09_EnemySetup.md](./09_EnemySetup.md) | Настройка врагов | 27 типов |
+| [09_EnemySetup_SemiAuto.md](./09_EnemySetup_SemiAuto.md) | Враги (полуавтомат) | 27 типов |
 | [10_QuestSetup.md](./10_QuestSetup.md) | Настройка квестов | 15 квестов |
+| [10_QuestSetup_SemiAuto.md](./10_QuestSetup_SemiAuto.md) | Квесты (полуавтомат) | 15 квестов |
 | [11_ItemData.md](./11_ItemData.md) | Расходники и свитки | 8 предметов |
+| [11_ItemData_SemiAuto.md](./11_ItemData_SemiAuto.md) | Расходники (полуавтомат) | 8 предметов |
 | [12_MaterialData.md](./12_MaterialData.md) | Материалы для крафта | 17 материалов |
+| [12_MaterialData_SemiAuto.md](./12_MaterialData_SemiAuto.md) | Материалы (полуавтомат) | 17 материалов |
 
 ---
 
 ## 🤖 Инструменты автоматизации
 
-### 1. Asset Generator
+### 1. Asset Generator (базовый)
 
-**Меню:** `Window → Asset Generator`
+**Меню:** `Tools → Generate Assets → ...`
 
 **Скрипт:** `Assets/Scripts/Editor/AssetGenerator.cs`
 
@@ -40,6 +47,27 @@
 | Generate Cultivation Levels | CultivationLevelData | 10 файлов |
 | Generate Mortal Stages | MortalStageData | 6 файлов |
 | Generate Elements | ElementData | 7 файлов |
+| Clear All Generated | Очистка | — |
+
+---
+
+### 2. Asset Generator Extended
+
+**Меню:** `Tools → Generate Assets → ...`
+
+**Скрипт:** `Assets/Scripts/Editor/AssetGeneratorExtended.cs`
+
+**Функции:**
+
+| Кнопка | Создаёт | Количество |
+|--------|---------|------------|
+| All Extended Assets | Все расширенные | 122 файла |
+| Techniques | TechniqueData | 34 файла |
+| NPC Presets | NPCPresetData | 15 файлов |
+| Equipment | EquipmentData | 39 файлов |
+| Items | ItemData | 8 файлов |
+| Materials | MaterialData | 17 файлов |
+| Clear Extended Assets | Очистка | — |
 
 **Результат:**
 ```
@@ -300,4 +328,4 @@ qiForLevelBreakthrough = coreCapacity × 100
 ---
 
 *Папка создана: 2026-03-30*
-*Обновлено: 2026-04-01 — полный комплект инструкций: 12 файлов для всех типов данных*
+*Обновлено: 2026-04-02 — полный комплект инструкций: 24 файла (12 полных + 12 полуавтомат) + AssetGeneratorExtended.cs*

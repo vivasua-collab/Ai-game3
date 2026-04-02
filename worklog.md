@@ -1,6 +1,40 @@
 # Cultivation World Simulator — Work Log
 
 ---
+Task ID: 17
+Agent: Main Agent
+Task: Создание SemiAuto инструкций и AssetGeneratorExtended
+
+Work Log:
+- Получено системное время: 2026-04-02 04:31:42 UTC
+- Прочитаны правила чекпоинтов (checkpoints/README.md)
+- Прочитаны примеры SemiAuto инструкций (04, 05)
+- Проанализированы JSON файлы (techniques, npc_presets, equipment, items, materials)
+- Создан AssetGeneratorExtended.cs (~700 строк):
+  - Generate Techniques (34)
+  - Generate NPC Presets (15)
+  - Generate Equipment (39)
+  - Generate Items (8)
+  - Generate Materials (17)
+  - Меню: Tools → Generate Assets → ...
+- Созданы SemiAuto инструкции (7 файлов):
+  - 06_TechniqueData_SemiAuto.md
+  - 07_NPCPresetData_SemiAuto.md
+  - 08_EquipmentData_SemiAuto.md
+  - 09_EnemySetup_SemiAuto.md
+  - 10_QuestSetup_SemiAuto.md
+  - 11_ItemData_SemiAuto.md
+  - 12_MaterialData_SemiAuto.md
+- Обновлён docs/asset_setup/README.md
+- Создан чекпоинт 04_02_asset_generator_extended.md
+
+Stage Summary:
+- 24 файла инструкций (12 полных + 12 полуавтомат)
+- AssetGeneratorExtended.cs для генерации 122 assets
+- Меню Tools → Generate Assets интегрировано
+- Готово к отправке на GitHub
+
+---
 Task ID: 16
 Agent: Main Agent
 Task: Восстановление контекста и создание инструкций для items/materials

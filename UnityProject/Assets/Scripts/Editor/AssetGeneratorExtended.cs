@@ -1,0 +1,955 @@
+// ============================================================================
+// AssetGeneratorExtended.cs — Расширенный генератор ScriptableObject ассетов
+// Cultivation World Simulator
+// Версия: 1.0
+// ============================================================================
+// Создан: 2026-04-02
+// Добавляет генерацию: Techniques, NPCPresets, Equipment, Items, Materials
+// ============================================================================
+
+#if UNITY_EDITOR
+using UnityEngine;
+using UnityEditor;
+using System.IO;
+using System.Collections.Generic;
+using CultivationGame.Core;
+using CultivationGame.Data.ScriptableObjects;
+
+namespace CultivationGame.Editor
+{
+    /// <summary>
+    /// Расширение AssetGenerator для генерации ScriptableObject из JSON.
+    ///
+    /// Меню: Tools → Generate Assets → ...
+    /// Источник JSON: Assets/Data/JSON/
+    /// Результат: Assets/Data/[Techniques|NPCPresets|Equipment|Items|Materials]/
+    /// </summary>
+    public static class AssetGeneratorExtended
+    {
+        #region Paths
+
+        private const string JSON_PATH = "Assets/Data/JSON";
+        private const string OUTPUT_TECHNIQUES = "Assets/Data/Techniques";
+        private const string OUTPUT_NPC_PRESETS = "Assets/Data/NPCPresets";
+        private const string OUTPUT_EQUIPMENT = "Assets/Data/Equipment";
+        private const string OUTPUT_ITEMS = "Assets/Data/Items";
+        private const string OUTPUT_MATERIALS = "Assets/Data/Materials";
+
+        #endregion
+
+        #region Menu Items - Generate All Extended
+
+        [MenuItem("Tools/Generate Assets/All Extended Assets (122)", false, 10)]
+        public static void GenerateAllExtendedAssets()
+        {
+            int total = 0;
+
+            total += GenerateTechniques();
+            total += GenerateNPCPresets();
+            total += GenerateEquipment();
+            total += GenerateItems();
+            total += GenerateMaterials();
+
+            AssetDatabase.SaveAssets();
+            AssetDatabase.Refresh();
+
+            Debug.Log($"[AssetGeneratorExtended] Generated {total} extended assets total");
+        }
+
+        #endregion
+
+        #region Techniques (34)
+
+        [MenuItem("Tools/Generate Assets/Techniques (34)", false, 11)]
+        public static int GenerateTechniques()
+        {
+            EnsureDirectory(OUTPUT_TECHNIQUES);
+
+            string jsonPath = Path.Combine(JSON_PATH, "techniques.json");
+
+            if (!File.Exists(jsonPath))
+            {
+                Debug.LogError($"[AssetGeneratorExtended] JSON not found: {jsonPath}");
+                return 0;
+            }
+
+            string json = File.ReadAllText(jsonPath);
+            var data = JsonUtility.FromJson<TechniquesJson>(json);
+
+            if (data == null || data.techniques == null)
+            {
+                Debug.LogError($"[AssetGeneratorExtended] Failed to parse: {jsonPath}");
+                return 0;
+            }
+
+            int count = 0;
+
+            foreach (var techData in data.techniques)
+            {
+                var asset = ScriptableObject.CreateInstance<TechniqueData>();
+                ApplyTechniqueData(asset, techData);
+
+                string fileName = $"Tech_{techData.nameEn.Replace(" ", "_").Replace("⚡_", "")}.asset";
+                string outputPath = Path.Combine(OUTPUT_TECHNIQUES, fileName);
+
+                AssetDatabase.CreateAsset(asset, outputPath);
+                count++;
+            }
+
+            Debug.Log($"[AssetGeneratorExtended] Generated {count} TechniqueData assets");
+            return count;
+        }
+
+        private static void ApplyTechniqueData(TechniqueData asset, TechniqueJson data)
+        {
+            asset.techniqueId = data.techniqueId;
+            asset.nameRu = data.nameRu;
+            asset.nameEn = data.nameEn;
+            asset.description = data.description;
+
+            asset.techniqueType = ParseTechniqueType(data.techniqueType);
+            asset.combatSubtype = ParseCombatSubtype(data.combatSubtype);
+            asset.element = ParseElement(data.element);
+            asset.grade = ParseTechniqueGrade(data.grade);
+            asset.techniqueLevel = data.techniqueLevel;
+
+            asset.minLevel = data.minLevel;
+            asset.maxLevel = data.maxLevel;
+            asset.canEvolve = data.canEvolve;
+
+            asset.baseQiCost = data.baseQiCost;
+            asset.physicalFatigueCost = data.physicalFatigueCost;
+            asset.mentalFatigueCost = data.mentalFatigueCost;
+            asset.cooldown = data.cooldown;
+
+            asset.baseCapacity = data.baseCapacity;
+            asset.isUltimate = data.isUltimate;
+
+            asset.strengthScaling = data.strengthScaling;
+            asset.agilityScaling = data.agilityScaling;
+            asset.intelligenceScaling = data.intelligenceScaling;
+            asset.conductivityScaling = data.conductivityScaling;
+
+            asset.minCultivationLevel = data.minCultivationLevel;
+            asset.minStrength = data.minStrength;
+            asset.minAgility = data.minAgility;
+            asset.minIntelligence = data.minIntelligence;
+            asset.minConductivity = data.minConductivity;
+
+            if (data.effects != null)
+            {
+                foreach (var effectData in data.effects)
+                {
+                    var effect = new TechniqueEffect
+                    {
+                        effectType = ParseEffectType(effectData.effectType),
+                        value = effectData.value,
+                        duration = effectData.duration,
+                        chance = effectData.chance
+                    };
+                    asset.effects.Add(effect);
+                }
+            }
+
+            if (data.sources != null)
+            {
+                asset.sources = new List<string>(data.sources);
+            }
+
+            asset.learnableFromScroll = data.learnableFromScroll;
+            asset.learnableFromNPC = data.learnableFromNPC;
+        }
+
+        #endregion
+
+        #region NPC Presets (15)
+
+        [MenuItem("Tools/Generate Assets/NPC Presets (15)", false, 12)]
+        public static int GenerateNPCPresets()
+        {
+            EnsureDirectory(OUTPUT_NPC_PRESETS);
+
+            string jsonPath = Path.Combine(JSON_PATH, "npc_presets.json");
+
+            if (!File.Exists(jsonPath))
+            {
+                Debug.LogError($"[AssetGeneratorExtended] JSON not found: {jsonPath}");
+                return 0;
+            }
+
+            string json = File.ReadAllText(jsonPath);
+            var data = JsonUtility.FromJson<NPCPresetsJson>(json);
+
+            if (data == null || data.presets == null)
+            {
+                Debug.LogError($"[AssetGeneratorExtended] Failed to parse: {jsonPath}");
+                return 0;
+            }
+
+            int count = 0;
+
+            foreach (var presetData in data.presets)
+            {
+                var asset = ScriptableObject.CreateInstance<NPCPresetData>();
+                ApplyNPCPresetData(asset, presetData);
+
+                string fileName = $"NPC_{presetData.nameTemplate.Replace(" ", "_")}.asset";
+                string outputPath = Path.Combine(OUTPUT_NPC_PRESETS, fileName);
+
+                AssetDatabase.CreateAsset(asset, outputPath);
+                count++;
+            }
+
+            Debug.Log($"[AssetGeneratorExtended] Generated {count} NPCPresetData assets");
+            return count;
+        }
+
+        private static void ApplyNPCPresetData(NPCPresetData asset, NPCPresetJson data)
+        {
+            asset.presetId = data.presetId;
+            asset.nameTemplate = data.nameTemplate;
+            asset.title = data.title;
+            asset.backstory = data.backstory;
+
+            asset.species = data.species;
+            asset.cultivationLevel = data.cultivationLevel;
+            asset.cultivationSubLevel = data.cultivationSubLevel;
+            asset.coreCapacity = data.coreCapacity;
+            asset.qiPercentage = data.qiPercentage;
+
+            asset.strength = data.strength;
+            asset.agility = data.agility;
+            asset.intelligence = data.intelligence;
+            asset.vitality = data.vitality;
+            asset.conductivity = data.conductivity;
+
+            // personalityTraits, motivation, alignment, etc. handled by NPCPresetData fields
+        }
+
+        #endregion
+
+        #region Equipment (39)
+
+        [MenuItem("Tools/Generate Assets/Equipment (39)", false, 13)]
+        public static int GenerateEquipment()
+        {
+            EnsureDirectory(OUTPUT_EQUIPMENT);
+
+            string jsonPath = Path.Combine(JSON_PATH, "equipment.json");
+
+            if (!File.Exists(jsonPath))
+            {
+                Debug.LogError($"[AssetGeneratorExtended] JSON not found: {jsonPath}");
+                return 0;
+            }
+
+            string json = File.ReadAllText(jsonPath);
+            var data = JsonUtility.FromJson<EquipmentJson>(json);
+
+            if (data == null)
+            {
+                Debug.LogError($"[AssetGeneratorExtended] Failed to parse: {jsonPath}");
+                return 0;
+            }
+
+            int count = 0;
+
+            // Weapons
+            if (data.weapons != null)
+            {
+                foreach (var weaponData in data.weapons)
+                {
+                    var asset = ScriptableObject.CreateInstance<EquipmentData>();
+                    ApplyWeaponData(asset, weaponData);
+
+                    string fileName = $"Weapon_{weaponData.nameEn.Replace(" ", "_")}.asset";
+                    string outputPath = Path.Combine(OUTPUT_EQUIPMENT, fileName);
+
+                    AssetDatabase.CreateAsset(asset, outputPath);
+                    count++;
+                }
+            }
+
+            // Armor
+            if (data.armor != null)
+            {
+                foreach (var armorData in data.armor)
+                {
+                    var asset = ScriptableObject.CreateInstance<EquipmentData>();
+                    ApplyArmorData(asset, armorData);
+
+                    string fileName = $"Armor_{armorData.nameEn.Replace(" ", "_")}.asset";
+                    string outputPath = Path.Combine(OUTPUT_EQUIPMENT, fileName);
+
+                    AssetDatabase.CreateAsset(asset, outputPath);
+                    count++;
+                }
+            }
+
+            Debug.Log($"[AssetGeneratorExtended] Generated {count} EquipmentData assets");
+            return count;
+        }
+
+        private static void ApplyWeaponData(EquipmentData asset, WeaponJson data)
+        {
+            asset.itemId = data.itemId;
+            asset.nameRu = data.nameRu;
+            asset.nameEn = data.nameEn;
+            asset.description = data.description;
+
+            asset.category = ItemCategory.Weapon;
+            asset.stackable = false;
+            asset.maxStack = 1;
+            asset.weight = data.weight;
+            asset.value = data.value;
+
+            asset.slot = ParseEquipmentSlot(data.slot);
+            asset.damage = Mathf.RoundToInt((data.damageRange.min + data.damageRange.max) / 2f);
+            asset.defense = 0;
+        }
+
+        private static void ApplyArmorData(EquipmentData asset, ArmorJson data)
+        {
+            asset.itemId = data.itemId;
+            asset.nameRu = data.nameRu;
+            asset.nameEn = data.nameEn;
+            asset.description = data.description;
+
+            asset.category = ItemCategory.Armor;
+            asset.stackable = false;
+            asset.maxStack = 1;
+            asset.weight = data.weight;
+            asset.value = data.value;
+
+            asset.slot = ParseEquipmentSlot(data.slot);
+            asset.damage = 0;
+            asset.defense = data.armorValue;
+            asset.coverage = data.coverage;
+            asset.damageReduction = data.damageReduction;
+        }
+
+        #endregion
+
+        #region Items (8)
+
+        [MenuItem("Tools/Generate Assets/Items (8)", false, 14)]
+        public static int GenerateItems()
+        {
+            EnsureDirectory(OUTPUT_ITEMS);
+
+            string jsonPath = Path.Combine(JSON_PATH, "items.json");
+
+            if (!File.Exists(jsonPath))
+            {
+                Debug.LogError($"[AssetGeneratorExtended] JSON not found: {jsonPath}");
+                return 0;
+            }
+
+            string json = File.ReadAllText(jsonPath);
+            var data = JsonUtility.FromJson<ItemsJson>(json);
+
+            if (data == null)
+            {
+                Debug.LogError($"[AssetGeneratorExtended] Failed to parse: {jsonPath}");
+                return 0;
+            }
+
+            int count = 0;
+
+            // Consumables
+            if (data.consumables != null)
+            {
+                foreach (var itemData in data.consumables)
+                {
+                    var asset = ScriptableObject.CreateInstance<ItemData>();
+                    ApplyItemData(asset, itemData);
+
+                    string fileName = $"Item_{itemData.nameEn.Replace(" ", "_")}.asset";
+                    string outputPath = Path.Combine(OUTPUT_ITEMS, fileName);
+
+                    AssetDatabase.CreateAsset(asset, outputPath);
+                    count++;
+                }
+            }
+
+            // Scrolls
+            if (data.scrolls != null)
+            {
+                foreach (var scrollData in data.scrolls)
+                {
+                    var asset = ScriptableObject.CreateInstance<ItemData>();
+                    ApplyItemData(asset, scrollData);
+
+                    string fileName = $"Scroll_{scrollData.nameEn.Replace(" ", "_")}.asset";
+                    string outputPath = Path.Combine(OUTPUT_ITEMS, fileName);
+
+                    AssetDatabase.CreateAsset(asset, outputPath);
+                    count++;
+                }
+            }
+
+            Debug.Log($"[AssetGeneratorExtended] Generated {count} ItemData assets");
+            return count;
+        }
+
+        private static void ApplyItemData(ItemData asset, ItemJson data)
+        {
+            asset.itemId = data.itemId;
+            asset.nameRu = data.nameRu;
+            asset.nameEn = data.nameEn;
+            asset.description = data.description;
+
+            asset.category = ParseItemCategory(data.category);
+            asset.itemType = data.itemType;
+            asset.rarity = ParseItemRarity(data.rarity);
+
+            asset.stackable = data.stackable;
+            asset.maxStack = data.maxStack;
+            asset.sizeWidth = data.sizeWidth;
+            asset.sizeHeight = data.sizeHeight;
+            asset.weight = data.weight;
+            asset.value = data.value;
+
+            asset.hasDurability = data.hasDurability;
+            asset.maxDurability = data.maxDurability;
+
+            asset.requiredCultivationLevel = data.requiredCultivationLevel;
+
+            if (data.effects != null)
+            {
+                foreach (var effectData in data.effects)
+                {
+                    var effect = new ItemEffect
+                    {
+                        effectType = effectData.effectType,
+                        value = effectData.value,
+                        duration = effectData.duration
+                    };
+                    asset.effects.Add(effect);
+                }
+            }
+        }
+
+        #endregion
+
+        #region Materials (17)
+
+        [MenuItem("Tools/Generate Assets/Materials (17)", false, 15)]
+        public static int GenerateMaterials()
+        {
+            EnsureDirectory(OUTPUT_MATERIALS);
+
+            string jsonPath = Path.Combine(JSON_PATH, "materials.json");
+
+            if (!File.Exists(jsonPath))
+            {
+                Debug.LogError($"[AssetGeneratorExtended] JSON not found: {jsonPath}");
+                return 0;
+            }
+
+            string json = File.ReadAllText(jsonPath);
+            var data = JsonUtility.FromJson<MaterialsJson>(json);
+
+            if (data == null || data.tiers == null)
+            {
+                Debug.LogError($"[AssetGeneratorExtended] Failed to parse: {jsonPath}");
+                return 0;
+            }
+
+            int count = 0;
+
+            foreach (var tierData in data.tiers)
+            {
+                if (tierData.materials != null)
+                {
+                    foreach (var matData in tierData.materials)
+                    {
+                        var asset = ScriptableObject.CreateInstance<MaterialData>();
+                        ApplyMaterialData(asset, matData, tierData.tier);
+
+                        string fileName = $"Mat_{matData.nameEn.Replace(" ", "_")}.asset";
+                        string outputPath = Path.Combine(OUTPUT_MATERIALS, fileName);
+
+                        AssetDatabase.CreateAsset(asset, outputPath);
+                        count++;
+                    }
+                }
+            }
+
+            Debug.Log($"[AssetGeneratorExtended] Generated {count} MaterialData assets");
+            return count;
+        }
+
+        private static void ApplyMaterialData(MaterialData asset, MaterialJson data, int tier)
+        {
+            asset.itemId = data.id;
+            asset.nameRu = data.nameRu;
+            asset.nameEn = data.nameEn;
+            asset.description = $"{data.nameRu} (Тир {tier})";
+
+            asset.category = ItemCategory.Material;
+            asset.rarity = GetRarityForTier(tier);
+            asset.stackable = true;
+            asset.maxStack = 100;
+
+            asset.tier = tier;
+            asset.materialCategory = ParseMaterialCategory(data.category);
+
+            asset.hardness = data.hardness;
+            asset.durability = data.durability;
+            asset.conductivity = data.conductivity;
+
+            asset.damageBonus = data.damageBonus;
+            asset.defenseBonus = data.defenseBonus;
+
+            asset.source = data.sources != null ? string.Join(", ", data.sources) : "";
+            asset.dropChance = data.dropChance;
+            asset.requiredLevel = data.requiredLevel > 0 ? data.requiredLevel : tier;
+        }
+
+        #endregion
+
+        #region Parsing Helpers
+
+        private static Element ParseElement(string value)
+        {
+            if (string.IsNullOrEmpty(value)) return Element.Neutral;
+
+            switch (value.ToLower())
+            {
+                case "neutral": return Element.Neutral;
+                case "fire": return Element.Fire;
+                case "water": return Element.Water;
+                case "earth": return Element.Earth;
+                case "air": return Element.Air;
+                case "lightning": return Element.Lightning;
+                case "void": return Element.Void;
+                case "poison": return Element.Poison;
+                default: return Element.Neutral;
+            }
+        }
+
+        private static TechniqueType ParseTechniqueType(string value)
+        {
+            if (string.IsNullOrEmpty(value)) return TechniqueType.Combat;
+
+            switch (value.ToLower())
+            {
+                case "combat": return TechniqueType.Combat;
+                case "defense": return TechniqueType.Defense;
+                case "healing": return TechniqueType.Healing;
+                case "movement": return TechniqueType.Movement;
+                case "curse": return TechniqueType.Curse;
+                case "cultivation": return TechniqueType.Cultivation;
+                case "support": return TechniqueType.Support;
+                case "sensory": return TechniqueType.Sensory;
+                case "poison": return TechniqueType.Poison;
+                default: return TechniqueType.Combat;
+            }
+        }
+
+        private static CombatSubtype ParseCombatSubtype(string value)
+        {
+            if (string.IsNullOrEmpty(value)) return CombatSubtype.None;
+
+            switch (value.ToLower())
+            {
+                case "none": return CombatSubtype.None;
+                case "meleestrike": return CombatSubtype.MeleeStrike;
+                case "meleeweapon": return CombatSubtype.MeleeWeapon;
+                case "rangedprojectile": return CombatSubtype.RangedProjectile;
+                case "rangedbeam": return CombatSubtype.RangedBeam;
+                case "rangedaoe": return CombatSubtype.RangedAoe;
+                default: return CombatSubtype.None;
+            }
+        }
+
+        private static TechniqueGrade ParseTechniqueGrade(string value)
+        {
+            if (string.IsNullOrEmpty(value)) return TechniqueGrade.Common;
+
+            switch (value.ToLower())
+            {
+                case "common": return TechniqueGrade.Common;
+                case "refined": return TechniqueGrade.Refined;
+                case "perfect": return TechniqueGrade.Perfect;
+                case "transcendent": return TechniqueGrade.Transcendent;
+                default: return TechniqueGrade.Common;
+            }
+        }
+
+        private static EffectType ParseEffectType(string value)
+        {
+            if (string.IsNullOrEmpty(value)) return EffectType.Damage;
+
+            switch (value.ToLower())
+            {
+                case "damage": return EffectType.Damage;
+                case "heal": return EffectType.Heal;
+                case "buff": return EffectType.Buff;
+                case "debuff": return EffectType.Debuff;
+                case "shield": return EffectType.Shield;
+                case "movement": return EffectType.Movement;
+                case "statboost": return EffectType.StatBoost;
+                case "statreduction": return EffectType.StatReduction;
+                case "elemental": return EffectType.Elemental;
+                case "special": return EffectType.Special;
+                case "block": return EffectType.Buff;
+                case "dodge": return EffectType.Buff;
+                case "reflect": return EffectType.Special;
+                default: return EffectType.Damage;
+            }
+        }
+
+        private static EquipmentSlot ParseEquipmentSlot(object value)
+        {
+            if (value == null) return EquipmentSlot.weapon_main;
+
+            string slotStr = value.ToString().ToLower();
+
+            switch (slotStr)
+            {
+                case "weapon_main": return EquipmentSlot.weapon_main;
+                case "weapon_off": return EquipmentSlot.weapon_off;
+                case "weapon_twohanded": return EquipmentSlot.weapon_twohanded;
+                case "hands":
+                case "hands_armor": return EquipmentSlot.hands_armor;
+                case "head_armor": return EquipmentSlot.head_armor;
+                case "head_clothing": return EquipmentSlot.head_clothing;
+                case "torso_armor": return EquipmentSlot.torso_armor;
+                case "torso_clothing": return EquipmentSlot.torso_clothing;
+                case "legs_armor": return EquipmentSlot.legs_armor;
+                case "legs_clothing": return EquipmentSlot.legs_clothing;
+                case "feet_armor": return EquipmentSlot.feet_armor;
+                case "feet_clothing": return EquipmentSlot.feet_clothing;
+                default: return EquipmentSlot.weapon_main;
+            }
+        }
+
+        private static ItemCategory ParseItemCategory(string value)
+        {
+            if (string.IsNullOrEmpty(value)) return ItemCategory.Misc;
+
+            switch (value.ToLower())
+            {
+                case "weapon": return ItemCategory.Weapon;
+                case "armor": return ItemCategory.Armor;
+                case "accessory": return ItemCategory.Accessory;
+                case "consumable": return ItemCategory.Consumable;
+                case "material": return ItemCategory.Material;
+                case "technique": return ItemCategory.Technique;
+                case "quest": return ItemCategory.Quest;
+                default: return ItemCategory.Misc;
+            }
+        }
+
+        private static ItemRarity ParseItemRarity(string value)
+        {
+            if (string.IsNullOrEmpty(value)) return ItemRarity.Common;
+
+            switch (value.ToLower())
+            {
+                case "common": return ItemRarity.Common;
+                case "uncommon": return ItemRarity.Uncommon;
+                case "rare": return ItemRarity.Rare;
+                case "epic": return ItemRarity.Epic;
+                case "legendary": return ItemRarity.Legendary;
+                case "mythic": return ItemRarity.Mythic;
+                default: return ItemRarity.Common;
+            }
+        }
+
+        private static MaterialCategory ParseMaterialCategory(string value)
+        {
+            if (string.IsNullOrEmpty(value)) return MaterialCategory.Metal;
+
+            switch (value.ToLower())
+            {
+                case "metal": return MaterialCategory.Metal;
+                case "leather": return MaterialCategory.Leather;
+                case "cloth": return MaterialCategory.Cloth;
+                case "wood": return MaterialCategory.Wood;
+                case "bone": return MaterialCategory.Bone;
+                case "crystal": return MaterialCategory.Crystal;
+                case "gem": return MaterialCategory.Gem;
+                case "organic": return MaterialCategory.Organic;
+                case "spirit": return MaterialCategory.Spirit;
+                case "void": return MaterialCategory.Void;
+                default: return MaterialCategory.Metal;
+            }
+        }
+
+        private static ItemRarity GetRarityForTier(int tier)
+        {
+            switch (tier)
+            {
+                case 1: return ItemRarity.Common;
+                case 2: return ItemRarity.Uncommon;
+                case 3: return ItemRarity.Rare;
+                case 4: return ItemRarity.Epic;
+                case 5: return ItemRarity.Legendary;
+                default: return ItemRarity.Common;
+            }
+        }
+
+        #endregion
+
+        #region Utility
+
+        private static void EnsureDirectory(string path)
+        {
+            if (!AssetDatabase.IsValidFolder(path))
+            {
+                string parent = Path.GetDirectoryName(path);
+                string folder = Path.GetFileName(path);
+
+                if (!AssetDatabase.IsValidFolder(parent))
+                {
+                    EnsureDirectory(parent);
+                }
+
+                AssetDatabase.CreateFolder(parent, folder);
+            }
+        }
+
+        [MenuItem("Tools/Generate Assets/Clear Extended Assets", false, 100)]
+        public static void ClearExtendedAssets()
+        {
+            ClearDirectory(OUTPUT_TECHNIQUES);
+            ClearDirectory(OUTPUT_NPC_PRESETS);
+            ClearDirectory(OUTPUT_EQUIPMENT);
+            ClearDirectory(OUTPUT_ITEMS);
+            ClearDirectory(OUTPUT_MATERIALS);
+
+            AssetDatabase.Refresh();
+            Debug.Log("[AssetGeneratorExtended] Cleared all extended assets");
+        }
+
+        private static void ClearDirectory(string path)
+        {
+            if (!AssetDatabase.IsValidFolder(path)) return;
+
+            var assets = AssetDatabase.FindAssets("", new[] { path });
+
+            foreach (var guid in assets)
+            {
+                string assetPath = AssetDatabase.GUIDToAssetPath(guid);
+                AssetDatabase.DeleteAsset(assetPath);
+            }
+        }
+
+        #endregion
+
+        #region JSON Classes
+
+        [System.Serializable]
+        private class TechniquesJson
+        {
+            public List<TechniqueJson> techniques;
+        }
+
+        [System.Serializable]
+        private class TechniqueJson
+        {
+            public string techniqueId;
+            public string nameRu;
+            public string nameEn;
+            public string description;
+            public string techniqueType;
+            public string combatSubtype;
+            public string element;
+            public string grade;
+            public int techniqueLevel;
+            public int minLevel;
+            public int maxLevel;
+            public bool canEvolve;
+            public int baseQiCost;
+            public float physicalFatigueCost;
+            public float mentalFatigueCost;
+            public int cooldown;
+            public int baseCapacity;
+            public bool isUltimate;
+            public float strengthScaling;
+            public float agilityScaling;
+            public float intelligenceScaling;
+            public float conductivityScaling;
+            public int minCultivationLevel;
+            public int minStrength;
+            public int minAgility;
+            public int minIntelligence;
+            public float minConductivity;
+            public List<TechniqueEffectJson> effects;
+            public List<string> sources;
+            public bool learnableFromScroll;
+            public bool learnableFromNPC;
+        }
+
+        [System.Serializable]
+        private class TechniqueEffectJson
+        {
+            public string effectType;
+            public float value;
+            public int duration;
+            public float chance;
+        }
+
+        [System.Serializable]
+        private class NPCPresetsJson
+        {
+            public List<NPCPresetJson> presets;
+        }
+
+        [System.Serializable]
+        private class NPCPresetJson
+        {
+            public string presetId;
+            public string nameTemplate;
+            public string title;
+            public string backstory;
+            public string category;
+            public string species;
+            public int cultivationLevel;
+            public int cultivationSubLevel;
+            public long coreCapacity;
+            public int qiPercentage;
+            public int strength;
+            public int agility;
+            public int intelligence;
+            public int vitality;
+            public float conductivity;
+            public List<PersonalityTraitJson> personalityTraits;
+            public string motivation;
+            public string alignment;
+            public int baseDisposition;
+            public string factionId;
+            public string factionRole;
+        }
+
+        [System.Serializable]
+        private class PersonalityTraitJson
+        {
+            public string traitName;
+            public int intensity;
+        }
+
+        [System.Serializable]
+        private class EquipmentJson
+        {
+            public List<WeaponJson> weapons;
+            public List<ArmorJson> armor;
+        }
+
+        [System.Serializable]
+        private class WeaponJson
+        {
+            public string itemId;
+            public string nameRu;
+            public string nameEn;
+            public string description;
+            public string weaponType;
+            public string damageType;
+            public DamageRangeJson damageRange;
+            public float attackSpeed;
+            public float range;
+            public float weight;
+            public int value;
+            public object slot;
+            public bool isTwoHanded;
+        }
+
+        [System.Serializable]
+        private class DamageRangeJson
+        {
+            public int min;
+            public int max;
+        }
+
+        [System.Serializable]
+        private class ArmorJson
+        {
+            public string itemId;
+            public string nameRu;
+            public string nameEn;
+            public string description;
+            public string armorType;
+            public int armorValue;
+            public int damageReduction;
+            public float coverage;
+            public float weight;
+            public int value;
+            public string slot;
+        }
+
+        [System.Serializable]
+        private class ItemsJson
+        {
+            public List<ItemJson> consumables;
+            public List<ItemJson> scrolls;
+        }
+
+        [System.Serializable]
+        private class ItemJson
+        {
+            public string itemId;
+            public string nameRu;
+            public string nameEn;
+            public string description;
+            public string category;
+            public string itemType;
+            public string rarity;
+            public bool stackable;
+            public int maxStack;
+            public int sizeWidth;
+            public int sizeHeight;
+            public float weight;
+            public int value;
+            public bool hasDurability;
+            public int maxDurability;
+            public List<ItemEffectJson> effects;
+            public int requiredCultivationLevel;
+        }
+
+        [System.Serializable]
+        private class ItemEffectJson
+        {
+            public string effectType;
+            public float value;
+            public int duration;
+        }
+
+        [System.Serializable]
+        private class MaterialsJson
+        {
+            public List<MaterialTierJson> tiers;
+        }
+
+        [System.Serializable]
+        private class MaterialTierJson
+        {
+            public int tier;
+            public string nameRu;
+            public string nameEn;
+            public List<MaterialJson> materials;
+        }
+
+        [System.Serializable]
+        private class MaterialJson
+        {
+            public string id;
+            public string nameRu;
+            public string nameEn;
+            public string category;
+            public int hardness;
+            public int durability;
+            public float conductivity;
+            public float damageBonus;
+            public float defenseBonus;
+            public float dropChance;
+            public int requiredLevel;
+            public List<string> sources;
+        }
+
+        #endregion
+    }
+}
+#endif
