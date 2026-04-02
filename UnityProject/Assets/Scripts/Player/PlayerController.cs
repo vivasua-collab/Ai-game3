@@ -1,9 +1,9 @@
 // ============================================================================
 // PlayerController.cs — Главный контроллер игрока
 // Cultivation World Simulator
-// Версия: 1.0
+// Версия: 1.1 — Исправлены проблемы code review
 // Создано: 2026-03-30 14:00:00 UTC
-// Редактировано: 2026-03-31 10:17:18 UTC
+// Редактировано: 2026-04-02 13:51:19 UTC
 // ============================================================================
 
 using System;
@@ -99,6 +99,21 @@ namespace CultivationGame.Player
             ProcessMovement();
         }
         
+        private void OnDestroy()
+        {
+            // Отписываемся от событий (fix: утечка памяти)
+            if (bodyController != null)
+            {
+                bodyController.OnDeath -= OnBodyDeath;
+            }
+            
+            if (qiController != null)
+            {
+                qiController.OnQiChanged -= OnQiChangedHandler;
+                qiController.OnCultivationLevelChanged -= OnCultivationLevelChangedHandler;
+            }
+        }
+        
         // === Initialization ===
         
         private void InitializeComponents()
@@ -122,6 +137,10 @@ namespace CultivationGame.Player
                 worldController = FindFirstObjectByType<WorldController>();
             if (timeController == null)
                 timeController = FindFirstObjectByType<TimeController>();
+            
+            // ПРЕДУПРЕЖДЕНИЕ: FindFirstObjectByType — дорогая операция!
+            // Рекомендуется назначить ссылки в инспекторе или использовать Service Locator.
+            // Данный код работает как fallback для удобства.
         }
         
         private void InitializePlayer()

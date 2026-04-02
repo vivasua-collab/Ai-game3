@@ -1,9 +1,10 @@
 // ============================================================================
 // CombatManager.cs — Центральный менеджер боя
 // Cultivation World Simulator
-// Версия: 1.0
+// Версия: 1.1 — Исправлены проблемы code review
 // ============================================================================
 // Создан: 2026-03-31 14:12:00 UTC
+// Редактировано: 2026-04-02 13:51:19 UTC
 // ============================================================================
 
 using System;
@@ -387,6 +388,13 @@ namespace CultivationGame.Combat
 
         private void HandleCombatantDeath()
         {
+            // FIX: Проверяем состояние боя, чтобы избежать повторного вызова EndCombat
+            if (state != CombatState.Active)
+            {
+                Debug.LogWarning("[CombatManager] HandleCombatantDeath called but combat not active");
+                return;
+            }
+            
             // Находим кто умер
             ICombatant dead = null;
             ICombatant alive = null;
@@ -402,6 +410,11 @@ namespace CultivationGame.Combat
             if (dead != null && alive != null)
             {
                 EndCombat(alive, dead);
+            }
+            else if (dead != null)
+            {
+                // Все умерли или никто не выжил
+                EndCombat(null, dead);
             }
         }
 

@@ -1,10 +1,9 @@
 // ============================================================================
 // BodyController.cs — Контроллер тела
 // Cultivation World Simulator
-// Версия: 1.0
-// ============================================================================
-// Создан: 2026-03-30 10:00:00 UTC
-// Редактирован: 2026-03-31 08:46:09 UTC
+// Версия: 1.1 — Исправлены проблемы code review
+// Создано: 2026-03-30 10:00:00 UTC
+// Редактировано: 2026-04-02 13:51:19 UTC
 // ============================================================================
 
 using System;
@@ -149,10 +148,33 @@ namespace CultivationGame.Body
         public BodyDamageResult TakeDamage(BodyPartType partType, float damage)
         {
             BodyPart part = GetPart(partType);
-            if (part == null)
+            
+            // FIX: Проверка на отрубленную/отсутствующую часть тела
+            if (part == null || part.IsSevered())
             {
-                // Если часть не найдена, перенаправляем в торс
+                // Перенаправляем в торс (fallback)
                 part = GetPart(BodyPartType.Torso);
+                
+                // Если торс тоже отрублен — перенаправляем в ближайшую жизненно важную часть
+                if (part == null || part.IsSevered())
+                {
+                    var vitalParts = GetVitalParts();
+                    foreach (var vital in vitalParts)
+                    {
+                        if (!vital.IsSevered())
+                        {
+                            part = vital;
+                            break;
+                        }
+                    }
+                }
+                
+                // Если вообще нет живых частей — урон некуда применять
+                if (part == null || part.IsSevered())
+                {
+                    Debug.LogWarning($"[BodyController] No valid body part for damage. Part {partType} not found.");
+                    return new BodyDamageResult { WasAbsorbed = false };
+                }
             }
             
             return TakeDamage(part, damage);

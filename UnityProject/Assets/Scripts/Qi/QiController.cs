@@ -1,9 +1,9 @@
 // ============================================================================
 // QiController.cs — Контроллер Ци
 // Cultivation World Simulator
-// Версия: 1.1 — Исправлены критические ошибки аудита
+// Версия: 1.2 — Исправлены проблемы code review (переполнение, точность)
 // Создано: 2026-03-30 14:00:00 UTC
-// Редактировано: 2026-03-31 10:17:18 UTC
+// Редактировано: 2026-04-02 13:51:19 UTC
 // ============================================================================
 
 using System;
@@ -36,7 +36,7 @@ namespace CultivationGame.Qi
         
         private long maxQiCapacity;
         private float qiDensity;
-        private float dailyAccumulator = 0f;
+        private double dailyAccumulator = 0.0; // FIX: Используем double для точности
         
         // === Events ===
         
@@ -111,7 +111,20 @@ namespace CultivationGame.Qi
             float subLevelGrowth = Mathf.Pow(GameConstants.CORE_CAPACITY_GROWTH, 
                 (cultivationLevel - 1) * 10 + cultivationSubLevel);
             
-            return (long)(baseCapacity * qualityMult * subLevelGrowth);
+            // FIX: Защита от переполнения long (max ~9.22e18)
+            // Используем double для промежуточных вычислений
+            double rawCapacity = (double)baseCapacity * qualityMult * subLevelGrowth;
+            
+            // Ограничиваем максимальным значением long
+            const long MAX_SAFE_CAPACITY = long.MaxValue / 2; // ~4.6e18 — безопасный предел
+            
+            if (rawCapacity > MAX_SAFE_CAPACITY)
+            {
+                Debug.LogWarning($"[QiController] Capacity overflow detected! Clamping to {MAX_SAFE_CAPACITY}");
+                return MAX_SAFE_CAPACITY;
+            }
+            
+            return (long)rawCapacity;
         }
         
         private float GetQualityMultiplier()
@@ -191,22 +204,22 @@ namespace CultivationGame.Qi
         {
             // Генерация микроядром: 10% от ёмкости в сутки
             // В секундах: ёмкость * 0.1 / (24 * 60 * 60)
-            float dailyGen = maxQiCapacity * GameConstants.MICROCORE_GENERATION_RATE;
-            float perSecond = dailyGen / 86400f;
+            double dailyGen = maxQiCapacity * GameConstants.MICROCORE_GENERATION_RATE;
+            double perSecond = dailyGen / 86400.0;
             
             // Применяем множители (БЕЗ qiDensity! - она влияет только на урон техник)
             // Регенерация: 10% от ёмкости в сутки, умноженная на regenMultiplier уровня
-            float actualRegen = perSecond * regenMultiplier * Time.deltaTime;
+            double actualRegen = perSecond * regenMultiplier * Time.deltaTime;
             
-            if (actualRegen >= 1f)
+            if (actualRegen >= 1.0)
             {
                 AddQi((long)actualRegen);
             }
             else
             {
-                // Накапливаем мелкие доли
+                // Накапливаем мелкие доли с повышенной точностью
                 dailyAccumulator += actualRegen;
-                if (dailyAccumulator >= 1f)
+                if (dailyAccumulator >= 1.0)
                 {
                     AddQi((long)dailyAccumulator);
                     dailyAccumulator -= (long)dailyAccumulator;
