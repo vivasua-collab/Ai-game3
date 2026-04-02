@@ -92,6 +92,12 @@ Main (сцена)
 > - GeneratorRegistry (Script)
 > - SaveManager (Script)
 
+> **HUD структура:**
+> - `HUD` — Panel с Image (полупрозрачный фон)
+> - `TimeText`, `HPText`, `QiText` — дочерние объекты с **TextMeshProUGUI** компонентами
+> 
+> Если текст не виден — выбери TimeText в Hierarchy и проверь в Inspector что компонент TextMeshProUGUI имеет шрифт (Font Asset).
+
 ---
 
 ## Шаг 4: Project Settings (ВРУКАМИ)
@@ -190,6 +196,18 @@ Player initialized: Игрок
 - HP: "HP: 100%"
 - Ци: "Ци: 0/100"
 
+### ⚠️ Если HUD текст НЕ отображается:
+
+**Причина:** TextMeshPro не импортирован или отсутствует шрифт по умолчанию.
+
+**Решение:**
+1. **Window → TextMeshPro → Import TMP Essentials** (если появился диалог)
+2. Или **Window → TextMeshPro → Project Files Importer**
+3. Нажми **Import TMP Essentials**
+4. Удали HUD и пересоздай: **Window → Scene Setup Tools → Create HUD Panel**
+
+> Если текст всё ещё не виден — проверь что у TMP_Text есть шрифт (font asset) в Inspector.
+
 ### Типичные ошибки:
 
 | Ошибка | Причина | Решение |
@@ -238,5 +256,5 @@ but you have switched active Input handling to Input System package in Player Se
 ---
 
 *Документ создан: 2025-04-01*  
-*Редактировано: 2026-04-02 09:46:31 UTC*  
-*Исправлено: Input System UI Module + уточнена структура Systems (компоненты, не дочерние объекты)*
+*Редактировано: 2026-04-02 09:54:23 UTC*  
+*Исправлено: Input System UI Module + TMP Essentials + структура HUD*
