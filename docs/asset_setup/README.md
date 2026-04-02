@@ -20,6 +20,8 @@
 | [08_EquipmentData.md](./08_EquipmentData.md) | Экипировка (оружие/броня) | 39 файлов |
 | [09_EnemySetup.md](./09_EnemySetup.md) | Настройка врагов | 27 типов |
 | [10_QuestSetup.md](./10_QuestSetup.md) | Настройка квестов | 15 квестов |
+| [11_ItemData.md](./11_ItemData.md) | Расходники и свитки | 8 предметов |
+| [12_MaterialData.md](./12_MaterialData.md) | Материалы для крафта | 17 материалов |
 
 ---
 
@@ -108,8 +110,8 @@ Assets/
 │   ├── Elements/              ← ElementData (7 файлов)
 │   ├── Techniques/            ← TechniqueData (34 файла)
 │   ├── NPCPresets/            ← NPCPresetData (15 файлов)
-│   ├── Materials/             ← MaterialData — требуется создать
-│   ├── Items/                 ← ItemData — требуется создать
+│   ├── Materials/             ← MaterialData (17 материалов)
+│   ├── Items/                 ← ItemData (8 предметов)
 │   ├── Species/               ← SpeciesData — требуется создать
 │   └── Equipment/             ← EquipmentData — требуется создать
 ├── Prefabs/
@@ -298,4 +300,4 @@ qiForLevelBreakthrough = coreCapacity × 100
 ---
 
 *Папка создана: 2026-03-30*
-*Обновлено: 2026-04-01 — полный комплект инструкций: 10 файлов для всех типов данных*
+*Обновлено: 2026-04-01 — полный комплект инструкций: 12 файлов для всех типов данных*
