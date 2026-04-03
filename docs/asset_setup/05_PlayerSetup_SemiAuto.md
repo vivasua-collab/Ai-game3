@@ -1,5 +1,8 @@
 # Настройка Player (Полуавтомат)
 
+**Создано:** 2026-04-01  
+**Редактировано:** 2026-04-03 07:35:34 UTC
+
 **Инструмент:** `Window → Scene Setup Tools`
 
 ---
@@ -61,29 +64,50 @@ Passive Regen:      ☑ true
 
 ## Шаг 2: Проверка созданного Player
 
-**Hierarchy должен содержать:**
+**⚠️ Важно:** Все компоненты (PlayerController, BodyController, QiController и т.д.) — это **компоненты на одном GameObject**, а не дочерние объекты! Они просматриваются **ТОЛЬКО в Inspector** при выделении Player.
 
+### В Hierarchy будет:
 ```
-Player (GameObject)
-├── Transform
-│   ├── Position: (0, 0, 0)
-│   ├── Rotation: (0, 0, 0)
-│   └── Scale: (1, 1, 1)
-├── Rigidbody2D           ✅ настроен
-│   ├── Body Type: Dynamic
-│   ├── Gravity Scale: 0
-│   └── Freeze Rotation Z: ☑
-├── Circle Collider 2D    ✅ настроен
-│   └── Radius: 0.5
-├── PlayerController      ✅ настроен
-├── BodyController        ✅ настроен
-├── QiController          ✅ настроен
-├── InventoryController   ✅ настроен
-├── EquipmentController   ✅ настроен
-├── TechniqueController   ✅ настроен
-├── StatDevelopment       ✅ настроен
-└── SleepSystem           ✅ настроен
+Player (GameObject)    ← только один объект
 ```
+
+### В Inspector при выделении Player будет:
+```
+┌─────────────────────────────────────────────────────────┐
+│ Player (GameObject)                                     │
+├─────────────────────────────────────────────────────────┤
+│ Transform                                               │
+│   ├── Position: (0, 0, 0)                              │
+│   ├── Rotation: (0, 0, 0)                              │
+│   └── Scale: (1, 1, 1)                                 │
+├─────────────────────────────────────────────────────────┤
+│ Rigidbody2D                    ✅ настроен              │
+│   ├── Body Type: Dynamic                               │
+│   ├── Gravity Scale: 0                                 │
+│   └── Freeze Rotation Z: ☑                             │
+├─────────────────────────────────────────────────────────┤
+│ Circle Collider 2D             ✅ настроен              │
+│   └── Radius: 0.5                                      │
+├─────────────────────────────────────────────────────────┤
+│ PlayerController (Script)      ✅ настроен              │
+├─────────────────────────────────────────────────────────┤
+│ BodyController (Script)        ✅ настроен              │
+├─────────────────────────────────────────────────────────┤
+│ QiController (Script)          ✅ настроен              │
+├─────────────────────────────────────────────────────────┤
+│ InventoryController (Script)   ✅ настроен              │
+├─────────────────────────────────────────────────────────┤
+│ EquipmentController (Script)   ✅ настроен              │
+├─────────────────────────────────────────────────────────┤
+│ TechniqueController (Script)   ✅ настроен              │
+├─────────────────────────────────────────────────────────┤
+│ StatDevelopment (Script)       ✅ настроен              │
+├─────────────────────────────────────────────────────────┤
+│ SleepSystem (Script)           ✅ настроен              │
+└─────────────────────────────────────────────────────────┘
+```
+
+> **Пояснение:** Все скрипты добавляются как компоненты на **один GameObject Player**. Это видно только в Inspector при выделении объекта. В Hierarchy отображается только сам GameObject без раскрытия компонентов.
 
 ---
 
@@ -234,6 +258,40 @@ Player initialized: Игрок
 
 ---
 
+## ⚠️ Исправление ошибки Input System
+
+**Ошибка:**
+```
+InvalidOperationException: You are trying to read Input using the UnityEngine.Input class, 
+but you have switched active Input handling to Input System package in Player Settings.
+```
+
+**Причина:** Event System пытается использовать старый Input Manager, но в проекте включен только Input System Package.
+
+**Решение:**
+
+### Вариант 1: Включить Both (рекомендуется)
+
+1. Открой **Edit → Project Settings**
+2. Перейди в **Player**
+3. Разверни **Other Settings**
+4. Найди **Active Input Handling**
+5. Измени на **Both**
+
+```
+Active Input Handling: Both
+```
+
+Это позволит использовать и старый Input Manager, и новый Input System Package одновременно.
+
+### Вариант 2: Заменить Event System на Input System
+
+1. Удали **EventSystem** из Hierarchy
+2. Правый клик в Hierarchy → **UI → Event System**
+3. В появившемся диалоге выбери замена на **Input System UI Input Module**
+
+---
+
 ## Настройки для разных типов персонажей
 
 ### Смертный (не практик):
@@ -304,4 +362,5 @@ Passive Regen:      ☑ true
 
 ---
 
-*Документ создан: 2025-04-01*
+*Документ создан: 2026-04-01*  
+*Редактировано: 2026-04-03 07:35:34 UTC*
