@@ -250,14 +250,15 @@ namespace CultivationWorld.Combat.Effects
             // Простая эвристика по имени или типу
             if (effect is DirectionalEffect)
             {
+                // Редактировано: 2026-04-03
                 return effect.Element switch
                 {
-                    Core.Element.Fire => EffectType.FireSlash,
-                    Core.Element.Water => EffectType.WaterWave,
-                    Core.Element.Air => EffectType.AirBlade,
-                    Core.Element.Lightning => EffectType.LightningBolt,
-                    Core.Element.Earth => EffectType.EarthSpike,
-                    Core.Element.Void => EffectType.VoidRift,
+                    Element.Fire => EffectType.FireSlash,
+                    Element.Water => EffectType.WaterWave,
+                    Element.Air => EffectType.AirBlade,
+                    Element.Lightning => EffectType.LightningBolt,
+                    Element.Earth => EffectType.EarthSpike,
+                    Element.Void => EffectType.VoidRift,
                     _ => EffectType.FireSlash
                 };
             }
@@ -266,8 +267,8 @@ namespace CultivationWorld.Combat.Effects
             {
                 return effect.Element switch
                 {
-                    Core.Element.Poison => EffectType.PoisonCloud,
-                    Core.Element.Neutral => EffectType.HealingAura,
+                    Element.Poison => EffectType.PoisonCloud,
+                    Element.Neutral => EffectType.HealingAura,
                     _ => EffectType.ExpandingMist
                 };
             }

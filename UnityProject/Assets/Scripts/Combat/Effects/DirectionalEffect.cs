@@ -74,15 +74,16 @@ namespace CultivationWorld.Combat.Effects
         {
             if (trailRenderer == null) return;
 
+            // Редактировано: 2026-04-03
             Color trailColor = element switch
             {
-                Core.Element.Fire => new Color(1f, 0.3f, 0.1f, 0.8f),
-                Core.Element.Water => new Color(0.2f, 0.5f, 1f, 0.8f),
-                Core.Element.Lightning => new Color(0.8f, 0.8f, 1f, 0.9f),
-                Core.Element.Earth => new Color(0.6f, 0.4f, 0.2f, 0.8f),
-                Core.Element.Air => new Color(0.7f, 1f, 0.7f, 0.6f),
-                Core.Element.Poison => new Color(0.5f, 0f, 0.8f, 0.8f),
-                Core.Element.Void => new Color(0.3f, 0f, 0.5f, 0.8f),
+                Element.Fire => new Color(1f, 0.3f, 0.1f, 0.8f),
+                Element.Water => new Color(0.2f, 0.5f, 1f, 0.8f),
+                Element.Lightning => new Color(0.8f, 0.8f, 1f, 0.9f),
+                Element.Earth => new Color(0.6f, 0.4f, 0.2f, 0.8f),
+                Element.Air => new Color(0.7f, 1f, 0.7f, 0.6f),
+                Element.Poison => new Color(0.5f, 0f, 0.8f, 0.8f),
+                Element.Void => new Color(0.3f, 0f, 0.5f, 0.8f),
                 _ => new Color(1f, 1f, 1f, 0.5f)
             };
 

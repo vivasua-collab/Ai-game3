@@ -139,21 +139,22 @@ namespace CultivationWorld.Combat.Effects
         /// </summary>
         protected virtual void ApplyEffect(OrbitalSystem.ICombatTarget target)
         {
+            // Редактировано: 2026-04-03
             switch (element)
             {
-                case Core.Element.Poison:
+                case Element.Poison:
                     ApplyPoison(target);
                     break;
 
-                case Core.Element.Fire:
+                case Element.Fire:
                     ApplyFireDamage(target);
                     break;
 
-                case Core.Element.Water:
+                case Element.Water:
                     ApplyWaterEffect(target);
                     break;
 
-                case Core.Element.Neutral:
+                case Element.Neutral:
                     if (!target.IsHostile && affectFriendly)
                     {
                         ApplyHealing(target);
@@ -174,7 +175,7 @@ namespace CultivationWorld.Combat.Effects
             var damage = new OrbitalSystem.DamageInfo
             {
                 Amount = baseDamage,
-                Element = Core.Element.Poison,
+                Element = Element.Poison,
                 Source = null,
                 HitPoint = target.Position
             };
@@ -190,7 +191,7 @@ namespace CultivationWorld.Combat.Effects
             var damage = new OrbitalSystem.DamageInfo
             {
                 Amount = baseDamage,
-                Element = Core.Element.Fire,
+                Element = Element.Fire,
                 Source = null,
                 HitPoint = target.Position
             };
@@ -206,7 +207,7 @@ namespace CultivationWorld.Combat.Effects
             var damage = new OrbitalSystem.DamageInfo
             {
                 Amount = baseDamage / 2,
-                Element = Core.Element.Water,
+                Element = Element.Water,
                 Source = null,
                 HitPoint = target.Position
             };
