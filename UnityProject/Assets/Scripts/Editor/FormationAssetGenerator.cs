@@ -16,7 +16,8 @@ using System.IO;
 using System.Collections.Generic;
 using CultivationGame.Core;
 using CultivationGame.Formation;
-using CultivationGame.Data.ScriptableObjects;
+// Примечание: CultivationGame.Data.ScriptableObjects НЕ подключён чтобы избежать конфликта BuffType
+// Используем Formation.BuffType (Damage, Defense, Speed), не Data.ScriptableObjects.BuffType (Buff/Debuff)
 
 namespace CultivationGame.Editor
 {

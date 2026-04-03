@@ -319,6 +319,7 @@ namespace CultivationGame.Core
     /// </summary>
     public enum EquipmentSlot
     {
+        None,           // Нет слота (редактировано: 2026-04-03)
         Head,           // Голова (шлем)
         Torso,          // Торс (броня)
         LeftHand,       // Левая рука
