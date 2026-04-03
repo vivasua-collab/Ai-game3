@@ -1,6 +1,18 @@
 # Исправления ошибок компиляции
 
 ## Дата: 2026-04-04
+**Обновлено после исследования Unity 6.3 документации**
+
+---
+
+### 🔍 Ключевые изменения в Unity 6.3
+
+Согласно актуальной документации Unity 6.3:
+
+1. **Unity UI → uGUI** - Пакет был переименован в `com.unity.ugui`
+2. **TextMesh Pro интегрирован** - TMP теперь часть uGUI, исходники находятся в `com.unity.ugui`
+3. **UI Toolkit встроен** - Не требует отдельной установки в Unity 6+
+4. **Поддержка uGUI до 2029 года** - Официально поддерживается Unity
 
 ### Исправленные проблемы с кодом
 
@@ -79,6 +91,26 @@ com.unity.textmeshpro
     "com.unity.test-framework": "1.3.9",
     "com.unity.textmeshpro": "3.0.6",
     ...
+  }
+}
+```
+
+---
+
+## ✅ Создан Packages/manifest.json
+
+Файл `Packages/manifest.json` был создан с необходимыми зависимостями:
+
+```json
+{
+  "dependencies": {
+    "com.unity.ugui": "2.0.0",
+    "com.unity.inputsystem": "1.7.0",
+    "com.unity.test-framework": "1.4.0",
+    "com.unity.textmeshpro": "3.0.6",
+    "com.unity.render-pipelines.universal": "17.0.3",
+    "com.unity.2d.sprite": "1.0.0",
+    "com.unity.2d.tilemap": "1.0.0"
   }
 }
 ```
