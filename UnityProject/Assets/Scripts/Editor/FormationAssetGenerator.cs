@@ -16,8 +16,12 @@ using System.IO;
 using System.Collections.Generic;
 using CultivationGame.Core;
 using CultivationGame.Formation;
-// Примечание: CultivationGame.Data.ScriptableObjects НЕ подключён чтобы избежать конфликта BuffType
-// Используем Formation.BuffType (Damage, Defense, Speed), не Data.ScriptableObjects.BuffType (Buff/Debuff)
+using CultivationGame.Data.ScriptableObjects;
+
+// Редактировано: 2026-04-03 - Type alias для разрешения конфликта имён BuffType
+// Formation.BuffType = типы эффектов (Damage, Defense, Speed)
+// Data.ScriptableObjects.BuffType = классификация (Buff, Debuff, Neutral)
+using FormationBuffType = CultivationGame.Formation.BuffType;
 
 namespace CultivationGame.Editor
 {
@@ -245,7 +249,7 @@ namespace CultivationGame.Editor
                     asset.allyEffects.Add(new FormationEffect
                     {
                         effectType = FormationEffectType.Buff,
-                        buffType = BuffType.Defense,
+                        buffType = FormationBuffType.Defense,
                         value = 10f * powerMultiplier,
                         isPercentage = true
                     });
@@ -278,14 +282,14 @@ namespace CultivationGame.Editor
                     asset.allyEffects.Add(new FormationEffect
                     {
                         effectType = FormationEffectType.Buff,
-                        buffType = BuffType.Damage,
+                        buffType = FormationBuffType.Damage,
                         value = 15f * powerMultiplier,
                         isPercentage = true
                     });
                     asset.allyEffects.Add(new FormationEffect
                     {
                         effectType = FormationEffectType.Buff,
-                        buffType = BuffType.Speed,
+                        buffType = FormationBuffType.Speed,
                         value = 10f * powerMultiplier,
                         isPercentage = true
                     });
@@ -296,14 +300,14 @@ namespace CultivationGame.Editor
                     asset.enemyEffects.Add(new FormationEffect
                     {
                         effectType = FormationEffectType.Debuff,
-                        buffType = BuffType.Damage,
+                        buffType = FormationBuffType.Damage,
                         value = -20f * powerMultiplier,
                         isPercentage = true
                     });
                     asset.enemyEffects.Add(new FormationEffect
                     {
                         effectType = FormationEffectType.Debuff,
-                        buffType = BuffType.Speed,
+                        buffType = FormationBuffType.Speed,
                         value = -15f * powerMultiplier,
                         isPercentage = true
                     });
