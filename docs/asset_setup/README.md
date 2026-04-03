@@ -29,6 +29,8 @@
 | [11_ItemData_SemiAuto.md](./11_ItemData_SemiAuto.md) | Расходники (полуавтомат) | 8 предметов |
 | [12_MaterialData.md](./12_MaterialData.md) | Материалы для крафта | 17 материалов |
 | [12_MaterialData_SemiAuto.md](./12_MaterialData_SemiAuto.md) | Материалы (полуавтомат) | 17 материалов |
+| [13_SpriteSetup.md](./13_SpriteSetup.md) | **Настройка спрайтов (полная)** | 57 спрайтов |
+| [13_SpriteSetup_QuickStart.md](./13_SpriteSetup_QuickStart.md) | **Настройка спрайтов (быстрая)** | 57 спрайтов |
 
 ---
 
@@ -328,4 +330,4 @@ qiForLevelBreakthrough = coreCapacity × 100
 ---
 
 *Папка создана: 2026-03-30*
-*Обновлено: 2026-04-02 — полный комплект инструкций: 24 файла (12 полных + 12 полуавтомат) + AssetGeneratorExtended.cs*
+*Обновлено: 2026-04-03 — добавлены инструкции по спрайтам (57 файлов), полный комплект: 26 файлов документации*
