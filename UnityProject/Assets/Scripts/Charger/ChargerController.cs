@@ -526,7 +526,41 @@ namespace CultivationGame.Charger
                 totalStonesQi = GetTotalStonesQi()
             };
         }
-        
+
+        // === Formation Integration ===
+
+        /// <summary>
+        /// Подпитать формацию от камней Ци.
+        /// Источник: FORMATION_SYSTEM.md
+        /// </summary>
+        /// <param name="formation">Формация для подпитки</param>
+        /// <returns>Количество переданного Ци</returns>
+        public int ChargeFormation(Formation.FormationCore formation)
+        {
+            if (!IsOperational || !HasStones || formation == null) return 0;
+
+            // Ограничено проводимостью зарядника
+            int maxTransfer = Mathf.RoundToInt(buffer.Conductivity * Time.deltaTime * 60);
+
+            // Используем Ци из буфера
+            ChargerBufferResult result = buffer.UseQiForTechnique(maxTransfer, 0);
+
+            if (result.QiFromBuffer > 0)
+            {
+                int accepted = formation.ContributeQi(practitionerQi?.gameObject, result.QiFromBuffer, buffer.Conductivity);
+
+                // Добавляем тепло от использования буфера
+                if (accepted > 0)
+                {
+                    heat.AddHeatFromQi(accepted);
+                }
+
+                return accepted;
+            }
+
+            return 0;
+        }
+
         // === Cleanup ===
         
         private void OnDestroy()

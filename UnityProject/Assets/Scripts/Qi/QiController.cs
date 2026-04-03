@@ -397,5 +397,47 @@ namespace CultivationGame.Qi
         {
             return $"Уровень: L{cultivationLevel}.{cultivationSubLevel} | Проводимость: {conductivity:F1}";
         }
+
+        // === Formation Integration ===
+
+        /// <summary>
+        /// Передать Ци в формацию.
+        /// Источник: FORMATION_SYSTEM.md
+        /// </summary>
+        /// <param name="formation">Формация-приёмник</param>
+        /// <param name="maxAmount">Максимальное количество</param>
+        /// <returns>Переданное количество</returns>
+        public int TransferToFormation(Formation.FormationCore formation, int maxAmount)
+        {
+            if (formation == null || currentQi <= 0) return 0;
+
+            int amount = Mathf.Min((int)currentQi, maxAmount);
+
+            if (amount > 0)
+            {
+                // Скорость передачи = проводимость × плотность
+                float transferRate = conductivity * qiDensity;
+
+                // Формация принимает с учётом своей проводимости
+                int accepted = formation.ContributeQi(gameObject, amount, transferRate);
+
+                if (accepted > 0)
+                {
+                    SpendQi(accepted);
+                }
+
+                return accepted;
+            }
+
+            return 0;
+        }
+
+        /// <summary>
+        /// Получить скорость передачи Ци (проводимость × плотность).
+        /// </summary>
+        public float GetTransferRate()
+        {
+            return conductivity * qiDensity;
+        }
     }
 }
