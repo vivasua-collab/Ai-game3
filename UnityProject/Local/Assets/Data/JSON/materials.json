@@ -1,0 +1,286 @@
+{
+  "description": "Материалы для крафта в Cultivation World Simulator",
+  "version": "1.0",
+  "tiers": [
+    {
+      "tier": 1,
+      "nameRu": "Обычные материалы",
+      "nameEn": "Common Materials",
+      "description": "Базовые материалы, доступные с начала игры",
+      "durabilityRange": [20, 50],
+      "conductivityRange": [0.3, 0.8],
+      "materials": [
+        {
+          "id": "iron",
+          "nameRu": "Железо",
+          "nameEn": "Iron",
+          "category": "metal",
+          "hardness": 40,
+          "durability": 30,
+          "conductivity": 0.3,
+          "damageBonus": 0,
+          "defenseBonus": 0,
+          "dropChance": 50,
+          "sources": ["Шахты", "Торговцы", "Разрушенные здания"]
+        },
+        {
+          "id": "leather",
+          "nameRu": "Кожа",
+          "nameEn": "Leather",
+          "category": "organic",
+          "hardness": 10,
+          "durability": 25,
+          "conductivity": 0.5,
+          "damageBonus": 0,
+          "defenseBonus": 0,
+          "dropChance": 40,
+          "sources": ["Охота на животных", "Торговцы"]
+        },
+        {
+          "id": "cloth",
+          "nameRu": "Ткань",
+          "nameEn": "Cloth",
+          "category": "organic",
+          "hardness": 2,
+          "durability": 20,
+          "conductivity": 0.8,
+          "damageBonus": 0,
+          "defenseBonus": 0,
+          "dropChance": 60,
+          "sources": ["Торговцы", "Сбор растений"]
+        },
+        {
+          "id": "wood",
+          "nameRu": "Дерево",
+          "nameEn": "Wood",
+          "category": "wood",
+          "hardness": 15,
+          "durability": 25,
+          "conductivity": 0.4,
+          "damageBonus": 0,
+          "defenseBonus": 0,
+          "dropChance": 70,
+          "sources": ["Леса", "Торговцы"]
+        },
+        {
+          "id": "bone",
+          "nameRu": "Кость",
+          "nameEn": "Bone",
+          "category": "bone",
+          "hardness": 25,
+          "durability": 30,
+          "conductivity": 0.6,
+          "damageBonus": 0,
+          "defenseBonus": 0,
+          "dropChance": 30,
+          "sources": ["Охота", "Пещеры"]
+        }
+      ]
+    },
+    {
+      "tier": 2,
+      "nameRu": "Качественные материалы",
+      "nameEn": "Quality Materials",
+      "description": "Улучшенные материалы, требующие навыки обработки",
+      "durabilityRange": [50, 80],
+      "conductivityRange": [0.4, 1.2],
+      "materials": [
+        {
+          "id": "steel",
+          "nameRu": "Сталь",
+          "nameEn": "Steel",
+          "category": "metal",
+          "hardness": 60,
+          "durability": 55,
+          "conductivity": 0.5,
+          "damageBonus": 0.1,
+          "defenseBonus": 0.1,
+          "dropChance": 20,
+          "sources": ["Кузницы", "Торговцы"]
+        },
+        {
+          "id": "silk",
+          "nameRu": "Шёлк",
+          "nameEn": "Silk",
+          "category": "organic",
+          "hardness": 5,
+          "durability": 40,
+          "conductivity": 1.0,
+          "damageBonus": 0,
+          "defenseBonus": 0.05,
+          "dropChance": 15,
+          "sources": ["Торговцы", "Шёлковые черви"]
+        },
+        {
+          "id": "silver",
+          "nameRu": "Серебро",
+          "nameEn": "Silver",
+          "category": "metal",
+          "hardness": 30,
+          "durability": 50,
+          "conductivity": 1.2,
+          "damageBonus": 0.05,
+          "defenseBonus": 0,
+          "dropChance": 10,
+          "sources": ["Шахты", "Торговцы"]
+        }
+      ]
+    },
+    {
+      "tier": 3,
+      "nameRu": "Духовные материалы",
+      "nameEn": "Spirit Materials",
+      "description": "Материалы, напитанные духовной энергией",
+      "durabilityRange": [80, 150],
+      "conductivityRange": [1.0, 2.0],
+      "materials": [
+        {
+          "id": "spirit_iron",
+          "nameRu": "Духовное железо",
+          "nameEn": "Spirit Iron",
+          "category": "spirit",
+          "hardness": 80,
+          "durability": 100,
+          "conductivity": 1.5,
+          "damageBonus": 0.2,
+          "defenseBonus": 0.15,
+          "dropChance": 5,
+          "requiredLevel": 3,
+          "sources": ["Духовные шахты", "Секты"]
+        },
+        {
+          "id": "jade",
+          "nameRu": "Нефрит",
+          "nameEn": "Jade",
+          "category": "crystal",
+          "hardness": 70,
+          "durability": 90,
+          "conductivity": 2.0,
+          "damageBonus": 0.1,
+          "defenseBonus": 0.2,
+          "dropChance": 3,
+          "requiredLevel": 3,
+          "sources": ["Горы", "Секты"]
+        },
+        {
+          "id": "cold_iron",
+          "nameRu": "Холодное железо",
+          "nameEn": "Cold Iron",
+          "category": "metal",
+          "hardness": 75,
+          "durability": 85,
+          "conductivity": 1.0,
+          "damageBonus": 0.25,
+          "defenseBonus": 0.1,
+          "dropChance": 4,
+          "requiredLevel": 4,
+          "sources": ["Северные земли", "Подземелья"]
+        }
+      ]
+    },
+    {
+      "tier": 4,
+      "nameRu": "Небесные материалы",
+      "nameEn": "Heavenly Materials",
+      "description": "Редкие материалы с невероятными свойствами",
+      "durabilityRange": [150, 400],
+      "conductivityRange": [2.0, 3.5],
+      "materials": [
+        {
+          "id": "star_metal",
+          "nameRu": "Звёздный металл",
+          "nameEn": "Star Metal",
+          "category": "metal",
+          "hardness": 150,
+          "durability": 200,
+          "conductivity": 3.0,
+          "damageBonus": 0.4,
+          "defenseBonus": 0.3,
+          "dropChance": 1,
+          "requiredLevel": 6,
+          "sources": ["Падающие звёзды", "Древние руины"]
+        },
+        {
+          "id": "dragon_bone",
+          "nameRu": "Кость дракона",
+          "nameEn": "Dragon Bone",
+          "category": "bone",
+          "hardness": 180,
+          "durability": 250,
+          "conductivity": 3.5,
+          "damageBonus": 0.5,
+          "defenseBonus": 0.25,
+          "dropChance": 0.5,
+          "requiredLevel": 7,
+          "sources": ["Логова драконов", "Древние поля битв"]
+        },
+        {
+          "id": "elemental_core",
+          "nameRu": "Элементальное ядро",
+          "nameEn": "Elemental Core",
+          "category": "crystal",
+          "hardness": 120,
+          "durability": 150,
+          "conductivity": 3.0,
+          "damageBonus": 0.35,
+          "defenseBonus": 0.35,
+          "dropChance": 0.8,
+          "requiredLevel": 5,
+          "sources": ["Элементали", "Духовные области"]
+        }
+      ]
+    },
+    {
+      "tier": 5,
+      "nameRu": "Первородные материалы",
+      "nameEn": "Primordial Materials",
+      "description": "Легендарные материалы времён сотворения мира",
+      "durabilityRange": [400, 600],
+      "conductivityRange": [4.0, 5.0],
+      "materials": [
+        {
+          "id": "void_matter",
+          "nameRu": "Материя пустоты",
+          "nameEn": "Void Matter",
+          "category": "void",
+          "hardness": 300,
+          "durability": 400,
+          "conductivity": 4.5,
+          "damageBonus": 0.6,
+          "defenseBonus": 0.5,
+          "dropChance": 0.1,
+          "requiredLevel": 8,
+          "sources": ["Разломы пустоты", "Измерение пустоты"]
+        },
+        {
+          "id": "chaos_matter",
+          "nameRu": "Материя хаоса",
+          "nameEn": "Chaos Matter",
+          "category": "void",
+          "hardness": 250,
+          "durability": 350,
+          "conductivity": 5.0,
+          "damageBonus": 0.7,
+          "defenseBonus": 0.4,
+          "dropChance": 0.05,
+          "requiredLevel": 9,
+          "sources": ["Области хаоса", "Древние катаклизмы"]
+        },
+        {
+          "id": "primordial_essence",
+          "nameRu": "Первородная эссенция",
+          "nameEn": "Primordial Essence",
+          "category": "spirit",
+          "hardness": 200,
+          "durability": 500,
+          "conductivity": 5.0,
+          "damageBonus": 0.5,
+          "defenseBonus": 0.6,
+          "dropChance": 0.01,
+          "requiredLevel": 10,
+          "sources": ["Ядро мира", "Первородные существа"]
+        }
+      ]
+    }
+  ]
+}

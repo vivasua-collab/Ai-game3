@@ -1,0 +1,144 @@
+{
+  "description": "Типы техник для Cultivation World Simulator",
+  "version": "1.0",
+  "types": [
+    {
+      "type": "combat",
+      "nameRu": "Боевая",
+      "nameEn": "Combat",
+      "description": "Техники для боя и нанесения урона",
+      "baseCapacity": 64,
+      "subtypes": [
+        {
+          "subtype": "melee_strike",
+          "nameRu": "Удар телом",
+          "nameEn": "Melee Strike",
+          "baseCapacity": 64,
+          "description": "Удар руками, ногами или телом"
+        },
+        {
+          "subtype": "melee_weapon",
+          "nameRu": "Удар с оружием",
+          "nameEn": "Melee Weapon",
+          "baseCapacity": 48,
+          "description": "Удар с использованием оружия"
+        },
+        {
+          "subtype": "ranged_projectile",
+          "nameRu": "Снаряд",
+          "nameEn": "Ranged Projectile",
+          "baseCapacity": 32,
+          "description": "Дистанционная атака снарядом"
+        },
+        {
+          "subtype": "ranged_beam",
+          "nameRu": "Луч",
+          "nameEn": "Ranged Beam",
+          "baseCapacity": 32,
+          "description": "Дистанционная атака лучом"
+        },
+        {
+          "subtype": "ranged_aoe",
+          "nameRu": "Область",
+          "nameEn": "Ranged AOE",
+          "baseCapacity": 32,
+          "description": "Атака по области"
+        }
+      ]
+    },
+    {
+      "type": "defense",
+      "nameRu": "Защитная",
+      "nameEn": "Defense",
+      "description": "Техники для защиты от атак",
+      "baseCapacity": 72,
+      "subtypes": [
+        {
+          "subtype": "defense_block",
+          "nameRu": "Блок",
+          "nameEn": "Block",
+          "baseCapacity": 72,
+          "description": "Пассивный блок атак"
+        },
+        {
+          "subtype": "defense_shield",
+          "nameRu": "Щит",
+          "nameEn": "Shield",
+          "baseCapacity": 72,
+          "description": "Активный щит из Ци"
+        },
+        {
+          "subtype": "defense_dodge",
+          "nameRu": "Уклонение",
+          "nameEn": "Dodge",
+          "baseCapacity": 72,
+          "description": "Техники уклонения"
+        }
+      ]
+    },
+    {
+      "type": "cultivation",
+      "nameRu": "Культивация",
+      "nameEn": "Cultivation",
+      "description": "Техники для развития культивации",
+      "baseCapacity": 0,
+      "subtypes": []
+    },
+    {
+      "type": "support",
+      "nameRu": "Поддержка",
+      "nameEn": "Support",
+      "description": "Вспомогательные техники",
+      "baseCapacity": 56,
+      "subtypes": []
+    },
+    {
+      "type": "healing",
+      "nameRu": "Исцеление",
+      "nameEn": "Healing",
+      "description": "Техники лечения и восстановления",
+      "baseCapacity": 56,
+      "subtypes": []
+    },
+    {
+      "type": "movement",
+      "nameRu": "Перемещение",
+      "nameEn": "Movement",
+      "description": "Техники передвижения и телепортации",
+      "baseCapacity": 40,
+      "subtypes": []
+    },
+    {
+      "type": "sensory",
+      "nameRu": "Восприятие",
+      "nameEn": "Sensory",
+      "description": "Техники чувств и восприятия",
+      "baseCapacity": 32,
+      "subtypes": []
+    },
+    {
+      "type": "curse",
+      "nameRu": "Проклятие",
+      "nameEn": "Curse",
+      "description": "Техники проклятий и ослабления",
+      "baseCapacity": 40,
+      "subtypes": []
+    },
+    {
+      "type": "poison",
+      "nameRu": "Яд",
+      "nameEn": "Poison",
+      "description": "Техники отравления",
+      "baseCapacity": 40,
+      "subtypes": []
+    },
+    {
+      "type": "formation",
+      "nameRu": "Формация",
+      "nameEn": "Formation",
+      "description": "Техники создания формаций",
+      "baseCapacity": 80,
+      "subtypes": []
+    }
+  ]
+}

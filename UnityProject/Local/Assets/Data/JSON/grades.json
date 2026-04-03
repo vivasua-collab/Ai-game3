@@ -1,0 +1,172 @@
+{
+  "description": "Грейды (качество) предметов и техник в Cultivation World Simulator",
+  "version": "1.1",
+  "techniqueGrades": [
+    {
+      "grade": "common",
+      "nameRu": "Обычная",
+      "nameEn": "Common",
+      "damageMultiplier": 1.0,
+      "qiBonus": 0.0,
+      "gradient": 1.0,
+      "unnoticeability": 0.05,
+      "shieldRecharge": 0,
+      "description": "Базовая техника без улучшений"
+    },
+    {
+      "grade": "refined",
+      "nameRu": "Очищенная",
+      "nameEn": "Refined",
+      "damageMultiplier": 1.2,
+      "qiBonus": 0.0,
+      "gradient": 1.2,
+      "unnoticeability": 0.1,
+      "shieldRecharge": 0.05,
+      "description": "Техника прошла первичное очищение"
+    },
+    {
+      "grade": "perfect",
+      "nameRu": "Совершенная",
+      "nameEn": "Perfect",
+      "damageMultiplier": 1.4,
+      "qiBonus": 0.0,
+      "gradient": 1.5,
+      "unnoticeability": 0.15,
+      "shieldRecharge": 0.1,
+      "description": "Техника доведена до совершенства"
+    },
+    {
+      "grade": "transcendent",
+      "nameRu": "Трансцендентная",
+      "nameEn": "Transcendent",
+      "damageMultiplier": 1.6,
+      "qiBonus": 0.0,
+      "gradient": 2.0,
+      "unnoticeability": 0.25,
+      "shieldRecharge": 0.2,
+      "description": "Техника превзошла обычные пределы"
+    }
+  ],
+  "equipmentGrades": [
+    {
+      "grade": "damaged",
+      "nameRu": "Повреждённый",
+      "nameEn": "Damaged",
+      "durabilityMultiplier": 0.5,
+      "effectivenessMultiplier": 0.5,
+      "bonusCount": [0, 0],
+      "description": "Сломанный или сильно повреждённый предмет"
+    },
+    {
+      "grade": "common",
+      "nameRu": "Обычный",
+      "nameEn": "Common",
+      "durabilityMultiplier": 1.0,
+      "effectivenessMultiplier": 1.0,
+      "bonusCount": [0, 1],
+      "description": "Стандартный предмет без улучшений"
+    },
+    {
+      "grade": "refined",
+      "nameRu": "Очищенный",
+      "nameEn": "Refined",
+      "durabilityMultiplier": 1.5,
+      "effectivenessMultiplier": 1.5,
+      "bonusCount": [1, 2],
+      "description": "Качественно изготовленный предмет"
+    },
+    {
+      "grade": "perfect",
+      "nameRu": "Совершенный",
+      "nameEn": "Perfect",
+      "durabilityMultiplier": 2.5,
+      "effectivenessMultiplier": 2.5,
+      "bonusCount": [2, 4],
+      "description": "Мастерски созданный предмет"
+    },
+    {
+      "grade": "transcendent",
+      "nameRu": "Трансцендентный",
+      "nameEn": "Transcendent",
+      "durabilityMultiplier": 4.0,
+      "effectivenessMultiplier": 4.0,
+      "bonusCount": [4, 6],
+      "description": "Легендарный предмет невероятного качества"
+    }
+  ],
+  "durabilityConditions": [
+    {
+      "condition": "pristine",
+      "nameRu": "Идеальное",
+      "range": [1.0, 1.0],
+      "effectiveness": 1.0
+    },
+    {
+      "condition": "excellent",
+      "nameRu": "Отличное",
+      "range": [0.8, 0.99],
+      "effectiveness": 0.95
+    },
+    {
+      "condition": "good",
+      "nameRu": "Хорошее",
+      "range": [0.6, 0.79],
+      "effectiveness": 0.85
+    },
+    {
+      "condition": "worn",
+      "nameRu": "Изношенное",
+      "range": [0.4, 0.59],
+      "effectiveness": 0.70
+    },
+    {
+      "condition": "damaged",
+      "nameRu": "Повреждённое",
+      "range": [0.2, 0.39],
+      "effectiveness": 0.50
+    },
+    {
+      "condition": "broken",
+      "nameRu": "Сломанное",
+      "range": [0.0, 0.19],
+      "effectiveness": 0.20
+    }
+  ],
+  "gradeDistribution": {
+    "L1-L2": {
+      "damaged": 0.3,
+      "common": 0.6,
+      "refined": 0.1,
+      "perfect": 0,
+      "transcendent": 0
+    },
+    "L3-L4": {
+      "damaged": 0.1,
+      "common": 0.5,
+      "refined": 0.35,
+      "perfect": 0.05,
+      "transcendent": 0
+    },
+    "L5-L6": {
+      "damaged": 0.05,
+      "common": 0.3,
+      "refined": 0.45,
+      "perfect": 0.2,
+      "transcendent": 0
+    },
+    "L7-L8": {
+      "damaged": 0,
+      "common": 0.2,
+      "refined": 0.4,
+      "perfect": 0.35,
+      "transcendent": 0.05
+    },
+    "L9": {
+      "damaged": 0,
+      "common": 0.1,
+      "refined": 0.3,
+      "perfect": 0.4,
+      "transcendent": 0.2
+    }
+  }
+}

@@ -1,0 +1,937 @@
+{
+  "description": "Пресеты NPC для Cultivation World Simulator",
+  "version": "1.0",
+  "created": "2026-04-01 13:03:39 UTC",
+  "source": "docs/NPC_AI_SYSTEM.md, docs/DATA_MODELS.md",
+  "presets": [
+    {
+      "presetId": "npc_villager_01",
+      "nameTemplate": "Селянин",
+      "title": "Житель деревни",
+      "backstory": "Обычный житель деревни. Занимается сельским хозяйством и простой работой.",
+      "category": "Temp",
+      "species": "human",
+      "cultivationLevel": 1,
+      "cultivationSubLevel": 0,
+      "coreCapacity": 500,
+      "qiPercentage": 50,
+      "strength": 8,
+      "agility": 7,
+      "intelligence": 6,
+      "vitality": 8,
+      "conductivity": 0.5,
+      "personalityTraits": [
+        {
+          "traitName": "friendly",
+          "intensity": 3
+        },
+        {
+          "traitName": "honest",
+          "intensity": 4
+        }
+      ],
+      "motivation": "Жить спокойной жизнью, растить семью",
+      "alignment": "NeutralGood",
+      "baseDisposition": 10,
+      "factionId": null,
+      "factionRole": null,
+      "knownTechniques": [],
+      "equipment": [],
+      "inventory": [],
+      "behaviorType": "Passive",
+      "aggressiveness": 10,
+      "courage": 30
+    },
+    {
+      "presetId": "npc_guard_01",
+      "nameTemplate": "Стражник",
+      "title": "Охранник",
+      "backstory": "Воин, охраняющий поселение. Прошёл базовую военную подготовку.",
+      "category": "Plot",
+      "species": "human",
+      "cultivationLevel": 2,
+      "cultivationSubLevel": 3,
+      "coreCapacity": 1500,
+      "qiPercentage": 80,
+      "strength": 12,
+      "agility": 10,
+      "intelligence": 7,
+      "vitality": 12,
+      "conductivity": 0.8,
+      "personalityTraits": [
+        {
+          "traitName": "disciplined",
+          "intensity": 5
+        },
+        {
+          "traitName": "suspicious",
+          "intensity": 2
+        }
+      ],
+      "motivation": "Защищать порядок и закон",
+      "alignment": "LawfulNeutral",
+      "baseDisposition": 0,
+      "factionId": "faction_guard",
+      "factionRole": "guard",
+      "knownTechniques": [
+        {
+          "techniqueId": "tech_earth_palm_01",
+          "mastery": 25,
+          "quickSlot": 0
+        }
+      ],
+      "equipment": [
+        {
+          "slot": "RightHand",
+          "itemId": "weapon_iron_sword_01",
+          "grade": "Common",
+          "durabilityPercent": 90
+        },
+        {
+          "slot": "Torso",
+          "itemId": "armor_leather_vest_02",
+          "grade": "Common",
+          "durabilityPercent": 85
+        }
+      ],
+      "inventory": [
+        {
+          "itemId": "item_bread",
+          "quantity": 2
+        }
+      ],
+      "behaviorType": "Defensive",
+      "aggressiveness": 40,
+      "courage": 70
+    },
+    {
+      "presetId": "npc_cultivator_01",
+      "nameTemplate": "Практик",
+      "title": "Начинающий культиватор",
+      "backstory": "Молодой практик, начинающий путь культивации. Полон решимости достичь высших уровней.",
+      "category": "Plot",
+      "species": "human",
+      "cultivationLevel": 2,
+      "cultivationSubLevel": 5,
+      "coreCapacity": 2000,
+      "qiPercentage": 70,
+      "strength": 10,
+      "agility": 10,
+      "intelligence": 12,
+      "vitality": 9,
+      "conductivity": 1.2,
+      "personalityTraits": [
+        {
+          "traitName": "ambitious",
+          "intensity": 6
+        },
+        {
+          "traitName": "curious",
+          "intensity": 5
+        }
+      ],
+      "motivation": "Достичь высших уровней культивации",
+      "alignment": "NeutralGood",
+      "baseDisposition": 15,
+      "factionId": null,
+      "factionRole": null,
+      "knownTechniques": [
+        {
+          "techniqueId": "tech_cultivation_breath_01",
+          "mastery": 40,
+          "quickSlot": -1
+        },
+        {
+          "techniqueId": "tech_fire_fist_01",
+          "mastery": 15,
+          "quickSlot": 0
+        },
+        {
+          "techniqueId": "tech_healing_light_01",
+          "mastery": 10,
+          "quickSlot": 1
+        }
+      ],
+      "equipment": [
+        {
+          "slot": "Torso",
+          "itemId": "armor_cloth_robe_01",
+          "grade": "Refined",
+          "durabilityPercent": 95
+        }
+      ],
+      "inventory": [],
+      "behaviorType": "Neutral",
+      "aggressiveness": 30,
+      "courage": 60
+    },
+    {
+      "presetId": "npc_bandit_01",
+      "nameTemplate": "Разбойник",
+      "title": "Лесной разбойник",
+      "backstory": "Преступник, скрывающийся в лесах. Нападает на путников ради наживы.",
+      "category": "Temp",
+      "species": "human",
+      "cultivationLevel": 1,
+      "cultivationSubLevel": 7,
+      "coreCapacity": 1200,
+      "qiPercentage": 60,
+      "strength": 11,
+      "agility": 12,
+      "intelligence": 6,
+      "vitality": 10,
+      "conductivity": 0.6,
+      "personalityTraits": [
+        {
+          "traitName": "greedy",
+          "intensity": 6
+        },
+        {
+          "traitName": "aggressive",
+          "intensity": 5
+        },
+        {
+          "traitName": "cowardly",
+          "intensity": 3
+        }
+      ],
+      "motivation": "Нажива и выживание",
+      "alignment": "ChaoticEvil",
+      "baseDisposition": -30,
+      "factionId": "faction_bandits",
+      "factionRole": "bandit",
+      "knownTechniques": [
+        {
+          "techniqueId": "tech_wind_blade_01",
+          "mastery": 20,
+          "quickSlot": 0
+        }
+      ],
+      "equipment": [
+        {
+          "slot": "RightHand",
+          "itemId": "weapon_dagger_01",
+          "grade": "Damaged",
+          "durabilityPercent": 60
+        },
+        {
+          "slot": "Torso",
+          "itemId": "armor_leather_vest_02",
+          "grade": "Damaged",
+          "durabilityPercent": 50
+        }
+      ],
+      "inventory": [
+        {
+          "itemId": "item_coin",
+          "quantity": 15
+        }
+      ],
+      "behaviorType": "Hostile",
+      "aggressiveness": 80,
+      "courage": 40
+    },
+    {
+      "presetId": "npc_wolf_01",
+      "nameTemplate": "Волк",
+      "title": "Дикий волк",
+      "backstory": "Дикий зверь, обитающий в лесах. Охотится стаями.",
+      "category": "Temp",
+      "species": "wolf",
+      "cultivationLevel": 1,
+      "cultivationSubLevel": 0,
+      "coreCapacity": 300,
+      "qiPercentage": 100,
+      "strength": 8,
+      "agility": 14,
+      "intelligence": 3,
+      "vitality": 7,
+      "conductivity": 0.2,
+      "personalityTraits": [
+        {
+          "traitName": "pack_minded",
+          "intensity": 8
+        },
+        {
+          "traitName": "territorial",
+          "intensity": 6
+        }
+      ],
+      "motivation": "Охота и защита стаи",
+      "alignment": "TrueNeutral",
+      "baseDisposition": -20,
+      "factionId": null,
+      "factionRole": null,
+      "knownTechniques": [],
+      "equipment": [],
+      "inventory": [],
+      "behaviorType": "Aggressive",
+      "aggressiveness": 70,
+      "courage": 80
+    },
+    {
+      "presetId": "npc_spirit_tiger_01",
+      "nameTemplate": "Духовный тигр",
+      "title": "Тигр-дух",
+      "backstory": "Тигр, поглотивший достаточное количество Ци для пробуждения разума. Опасный противник.",
+      "category": "Temp",
+      "species": "tiger",
+      "cultivationLevel": 3,
+      "cultivationSubLevel": 2,
+      "coreCapacity": 5000,
+      "qiPercentage": 90,
+      "strength": 25,
+      "agility": 20,
+      "intelligence": 10,
+      "vitality": 22,
+      "conductivity": 1.5,
+      "personalityTraits": [
+        {
+          "traitName": "proud",
+          "intensity": 7
+        },
+        {
+          "traitName": "territorial",
+          "intensity": 8
+        },
+        {
+          "traitName": "wise",
+          "intensity": 4
+        }
+      ],
+      "motivation": "Охрана территории, накопление силы",
+      "alignment": "LawfulNeutral",
+      "baseDisposition": -10,
+      "factionId": null,
+      "factionRole": null,
+      "knownTechniques": [
+        {
+          "techniqueId": "tech_wind_blade_01",
+          "mastery": 50,
+          "quickSlot": 0
+        }
+      ],
+      "equipment": [],
+      "inventory": [],
+      "behaviorType": "Aggressive",
+      "aggressiveness": 60,
+      "courage": 90
+    },
+    {
+      "presetId": "npc_merchant_01",
+      "nameTemplate": "Торговец",
+      "title": "Странствующий торговец",
+      "backstory": "Опытный торговец, путешествующий между поселениями. Знает много слухов и секретов.",
+      "category": "Unique",
+      "species": "human",
+      "cultivationLevel": 1,
+      "cultivationSubLevel": 5,
+      "coreCapacity": 800,
+      "qiPercentage": 40,
+      "strength": 6,
+      "agility": 7,
+      "intelligence": 14,
+      "vitality": 6,
+      "conductivity": 0.4,
+      "personalityTraits": [
+        {
+          "traitName": "greedy",
+          "intensity": 4
+        },
+        {
+          "traitName": "friendly",
+          "intensity": 5
+        },
+        {
+          "traitName": "secretive",
+          "intensity": 3
+        }
+      ],
+      "motivation": "Прибыль и информация",
+      "alignment": "TrueNeutral",
+      "baseDisposition": 30,
+      "factionId": "faction_merchants",
+      "factionRole": "trader",
+      "knownTechniques": [],
+      "equipment": [],
+      "inventory": [
+        {
+          "itemId": "item_coin",
+          "quantity": 500
+        },
+        {
+          "itemId": "item_healing_pill",
+          "quantity": 5
+        },
+        {
+          "itemId": "item_qi_pill",
+          "quantity": 3
+        }
+      ],
+      "behaviorType": "Passive",
+      "aggressiveness": 5,
+      "courage": 25
+    },
+    {
+      "presetId": "npc_sect_elder_01",
+      "nameTemplate": "Старейшина",
+      "title": "Старейшина секты",
+      "backstory": "Опытный культиватор, достигший высокого уровня. Преподаёт знания младшим ученикам.",
+      "category": "Unique",
+      "species": "human",
+      "cultivationLevel": 5,
+      "cultivationSubLevel": 7,
+      "coreCapacity": 50000,
+      "qiPercentage": 95,
+      "strength": 25,
+      "agility": 22,
+      "intelligence": 35,
+      "vitality": 28,
+      "conductivity": 3.5,
+      "personalityTraits": [
+        {
+          "traitName": "wise",
+          "intensity": 8
+        },
+        {
+          "traitName": "patient",
+          "intensity": 7
+        },
+        {
+          "traitName": "secretive",
+          "intensity": 5
+        }
+      ],
+      "motivation": "Развитие секты, передача знаний",
+      "alignment": "LawfulGood",
+      "baseDisposition": 50,
+      "factionId": "faction_sect",
+      "factionRole": "elder",
+      "knownTechniques": [
+        {
+          "techniqueId": "tech_cultivation_breath_01",
+          "mastery": 100,
+          "quickSlot": -1
+        },
+        {
+          "techniqueId": "tech_fire_inferno_05",
+          "mastery": 75,
+          "quickSlot": 2
+        },
+        {
+          "techniqueId": "tech_healing_light_01",
+          "mastery": 100,
+          "quickSlot": 3
+        }
+      ],
+      "equipment": [
+        {
+          "slot": "Torso",
+          "itemId": "armor_spirit_robe_05",
+          "grade": "Perfect",
+          "durabilityPercent": 100
+        },
+        {
+          "slot": "RingLeft1",
+          "itemId": "acc_jade_pendant_03",
+          "grade": "Refined",
+          "durabilityPercent": 100
+        }
+      ],
+      "inventory": [
+        {
+          "itemId": "item_spirit_stone",
+          "quantity": 10
+        }
+      ],
+      "behaviorType": "Friendly",
+      "aggressiveness": 10,
+      "courage": 85
+    },
+    {
+      "presetId": "npc_disciple_01",
+      "nameTemplate": "Ученик",
+      "title": "Ученик секты",
+      "backstory": "Молодой ученик секты, постигающий основы культивации. Полон энтузиазма и готов учиться у старших.",
+      "category": "Plot",
+      "species": "human",
+      "cultivationLevel": 2,
+      "cultivationSubLevel": 0,
+      "coreCapacity": 1500,
+      "qiPercentage": 60,
+      "strength": 9,
+      "agility": 9,
+      "intelligence": 11,
+      "vitality": 8,
+      "conductivity": 1.0,
+      "personalityTraits": [
+        {
+          "traitName": "eager",
+          "intensity": 5
+        },
+        {
+          "traitName": "respectful",
+          "intensity": 6
+        },
+        {
+          "traitName": "naive",
+          "intensity": 3
+        }
+      ],
+      "motivation": "Стать достойным культиватором секты",
+      "alignment": "LawfulGood",
+      "baseDisposition": 25,
+      "factionId": "faction_sect",
+      "factionRole": "disciple",
+      "knownTechniques": [
+        {
+          "techniqueId": "tech_cultivation_breath_01",
+          "mastery": 20,
+          "quickSlot": -1
+        },
+        {
+          "techniqueId": "tech_earth_palm_01",
+          "mastery": 10,
+          "quickSlot": 0
+        }
+      ],
+      "equipment": [
+        {
+          "slot": "Torso",
+          "itemId": "armor_disciple_robe_01",
+          "grade": "Common",
+          "durabilityPercent": 90
+        }
+      ],
+      "inventory": [
+        {
+          "itemId": "item_qi_pill",
+          "quantity": 2
+        }
+      ],
+      "behaviorType": "Neutral",
+      "aggressiveness": 25,
+      "courage": 55
+    },
+    {
+      "presetId": "npc_innkeeper_01",
+      "nameTemplate": "Трактирщик",
+      "title": "Владелец таверны",
+      "backstory": "Опытный хозяин таверны, знающий всех постояльцев и местные слухи. Превосходно готовит и умеет слушать.",
+      "category": "Unique",
+      "species": "human",
+      "cultivationLevel": 1,
+      "cultivationSubLevel": 8,
+      "coreCapacity": 1000,
+      "qiPercentage": 35,
+      "strength": 9,
+      "agility": 6,
+      "intelligence": 13,
+      "vitality": 10,
+      "conductivity": 0.6,
+      "personalityTraits": [
+        {
+          "traitName": "hospitable",
+          "intensity": 7
+        },
+        {
+          "traitName": "talkative",
+          "intensity": 5
+        },
+        {
+          "traitName": "observant",
+          "intensity": 6
+        }
+      ],
+      "motivation": "Поддерживать таверну и собирать информацию",
+      "alignment": "NeutralGood",
+      "baseDisposition": 40,
+      "factionId": "faction_merchants",
+      "factionRole": "innkeeper",
+      "knownTechniques": [],
+      "equipment": [],
+      "inventory": [
+        {
+          "itemId": "item_coin",
+          "quantity": 200
+        },
+        {
+          "itemId": "item_rice_wine",
+          "quantity": 10
+        },
+        {
+          "itemId": "item_cooked_meal",
+          "quantity": 5
+        }
+      ],
+      "behaviorType": "Friendly",
+      "aggressiveness": 5,
+      "courage": 40
+    },
+    {
+      "presetId": "npc_blacksmith_01",
+      "nameTemplate": "Кузнец",
+      "title": "Мастер-кузнец",
+      "backstory": "Искусный кузнец, создающий оружие и доспехи. Его изделия ценятся во всей области.",
+      "category": "Unique",
+      "species": "human",
+      "cultivationLevel": 2,
+      "cultivationSubLevel": 4,
+      "coreCapacity": 3000,
+      "qiPercentage": 55,
+      "strength": 15,
+      "agility": 8,
+      "intelligence": 11,
+      "vitality": 14,
+      "conductivity": 1.1,
+      "personalityTraits": [
+        {
+          "traitName": "hardworking",
+          "intensity": 8
+        },
+        {
+          "traitName": "stubborn",
+          "intensity": 4
+        },
+        {
+          "traitName": "honest",
+          "intensity": 5
+        }
+      ],
+      "motivation": "Создавать совершенное оружие и доспехи",
+      "alignment": "LawfulNeutral",
+      "baseDisposition": 20,
+      "factionId": "faction_crafters",
+      "factionRole": "blacksmith",
+      "knownTechniques": [
+        {
+          "techniqueId": "tech_fire_fist_01",
+          "mastery": 30,
+          "quickSlot": 0
+        }
+      ],
+      "equipment": [
+        {
+          "slot": "RightHand",
+          "itemId": "weapon_forge_hammer_01",
+          "grade": "Refined",
+          "durabilityPercent": 95
+        },
+        {
+          "slot": "Torso",
+          "itemId": "armor_apron_01",
+          "grade": "Common",
+          "durabilityPercent": 70
+        }
+      ],
+      "inventory": [
+        {
+          "itemId": "item_iron_ore",
+          "quantity": 20
+        },
+        {
+          "itemId": "item_coal",
+          "quantity": 15
+        }
+      ],
+      "behaviorType": "Neutral",
+      "aggressiveness": 20,
+      "courage": 65
+    },
+    {
+      "presetId": "npc_alchemist_01",
+      "nameTemplate": "Алхимик",
+      "title": "Мастер пилюль",
+      "backstory": "Учёный-алхимик, посвятивший жизнь созданию лечебных пилюль и эликсиров. Знает свойства всех трав.",
+      "category": "Unique",
+      "species": "human",
+      "cultivationLevel": 3,
+      "cultivationSubLevel": 1,
+      "coreCapacity": 4500,
+      "qiPercentage": 75,
+      "strength": 6,
+      "agility": 7,
+      "intelligence": 18,
+      "vitality": 8,
+      "conductivity": 1.8,
+      "personalityTraits": [
+        {
+          "traitName": "curious",
+          "intensity": 7
+        },
+        {
+          "traitName": "meticulous",
+          "intensity": 6
+        },
+        {
+          "traitName": "secretive",
+          "intensity": 4
+        }
+      ],
+      "motivation": "Открывать новые рецепты и совершенствовать мастерство",
+      "alignment": "TrueNeutral",
+      "baseDisposition": 15,
+      "factionId": "faction_sect",
+      "factionRole": "alchemist",
+      "knownTechniques": [
+        {
+          "techniqueId": "tech_healing_light_01",
+          "mastery": 60,
+          "quickSlot": 0
+        },
+        {
+          "techniqueId": "tech_fire_control_01",
+          "mastery": 45,
+          "quickSlot": 1
+        }
+      ],
+      "equipment": [],
+      "inventory": [
+        {
+          "itemId": "item_herb_ginseng",
+          "quantity": 8
+        },
+        {
+          "itemId": "item_herb_spirit_grass",
+          "quantity": 12
+        },
+        {
+          "itemId": "item_healing_pill",
+          "quantity": 15
+        },
+        {
+          "itemId": "item_qi_pill",
+          "quantity": 8
+        }
+      ],
+      "behaviorType": "Passive",
+      "aggressiveness": 10,
+      "courage": 35
+    },
+    {
+      "presetId": "npc_hermit_01",
+      "nameTemplate": "Отшельник",
+      "title": "Уединённый культиватор",
+      "backstory": "Покинул мирскую суету ради постижения Дао. Живёт в глуши, избегая людей, но обладает глубокими знаниями.",
+      "category": "Unique",
+      "species": "human",
+      "cultivationLevel": 4,
+      "cultivationSubLevel": 5,
+      "coreCapacity": 25000,
+      "qiPercentage": 85,
+      "strength": 18,
+      "agility": 16,
+      "intelligence": 25,
+      "vitality": 20,
+      "conductivity": 2.8,
+      "personalityTraits": [
+        {
+          "traitName": "reclusive",
+          "intensity": 8
+        },
+        {
+          "traitName": "wise",
+          "intensity": 7
+        },
+        {
+          "traitName": "patient",
+          "intensity": 9
+        }
+      ],
+      "motivation": "Постичь истину Дао в уединении",
+      "alignment": "TrueNeutral",
+      "baseDisposition": -10,
+      "factionId": null,
+      "factionRole": null,
+      "knownTechniques": [
+        {
+          "techniqueId": "tech_cultivation_breath_01",
+          "mastery": 100,
+          "quickSlot": -1
+        },
+        {
+          "techniqueId": "tech_nature_bond_01",
+          "mastery": 80,
+          "quickSlot": 0
+        },
+        {
+          "techniqueId": "tech_wind_step_01",
+          "mastery": 65,
+          "quickSlot": 1
+        }
+      ],
+      "equipment": [
+        {
+          "slot": "Torso",
+          "itemId": "armor_hermit_robe_01",
+          "grade": "Refined",
+          "durabilityPercent": 80
+        }
+      ],
+      "inventory": [
+        {
+          "itemId": "item_spirit_stone",
+          "quantity": 5
+        },
+        {
+          "itemId": "item_rare_herb",
+          "quantity": 3
+        }
+      ],
+      "behaviorType": "Neutral",
+      "aggressiveness": 15,
+      "courage": 75
+    },
+    {
+      "presetId": "npc_traveling_monk_01",
+      "nameTemplate": "Странствующий монах",
+      "title": "Странник Дао",
+      "backstory": "Монах, странствующий по миру в поисках просветления. Несёт учение Будды в отдалённые уголки.",
+      "category": "Temp",
+      "species": "human",
+      "cultivationLevel": 2,
+      "cultivationSubLevel": 8,
+      "coreCapacity": 2200,
+      "qiPercentage": 70,
+      "strength": 11,
+      "agility": 10,
+      "intelligence": 13,
+      "vitality": 11,
+      "conductivity": 1.3,
+      "personalityTraits": [
+        {
+          "traitName": "peaceful",
+          "intensity": 7
+        },
+        {
+          "traitName": "charitable",
+          "intensity": 6
+        },
+        {
+          "traitName": "wanderer",
+          "intensity": 5
+        }
+      ],
+      "motivation": "Распространять учение и помогать страждущим",
+      "alignment": "NeutralGood",
+      "baseDisposition": 35,
+      "factionId": null,
+      "factionRole": null,
+      "knownTechniques": [
+        {
+          "techniqueId": "tech_healing_light_01",
+          "mastery": 35,
+          "quickSlot": 0
+        },
+        {
+          "techniqueId": "tech_iron_body_01",
+          "mastery": 25,
+          "quickSlot": -1
+        }
+      ],
+      "equipment": [
+        {
+          "slot": "RightHand",
+          "itemId": "weapon_monk_staff_01",
+          "grade": "Common",
+          "durabilityPercent": 85
+        },
+        {
+          "slot": "Torso",
+          "itemId": "armor_monk_robe_01",
+          "grade": "Common",
+          "durabilityPercent": 80
+        }
+      ],
+      "inventory": [
+        {
+          "itemId": "item_bread",
+          "quantity": 3
+        },
+        {
+          "itemId": "item_healing_pill",
+          "quantity": 2
+        }
+      ],
+      "behaviorType": "Friendly",
+      "aggressiveness": 15,
+      "courage": 60
+    },
+    {
+      "presetId": "npc_beast_tamer_01",
+      "nameTemplate": "Укротитель",
+      "title": "Укротитель духовных зверей",
+      "backstory": "Специалист по приручению и воспитанию духовных зверей. Глубоко понимает природу существ.",
+      "category": "Plot",
+      "species": "human",
+      "cultivationLevel": 3,
+      "cultivationSubLevel": 4,
+      "coreCapacity": 5000,
+      "qiPercentage": 65,
+      "strength": 12,
+      "agility": 11,
+      "intelligence": 14,
+      "vitality": 12,
+      "conductivity": 1.5,
+      "personalityTraits": [
+        {
+          "traitName": "patient",
+          "intensity": 6
+        },
+        {
+          "traitName": "empathetic",
+          "intensity": 7
+        },
+        {
+          "traitName": "calm",
+          "intensity": 5
+        }
+      ],
+      "motivation": "Изучать духовных зверей и помогать секте",
+      "alignment": "NeutralGood",
+      "baseDisposition": 20,
+      "factionId": "faction_sect",
+      "factionRole": "beast_tamer",
+      "knownTechniques": [
+        {
+          "techniqueId": "tech_beast_bond_01",
+          "mastery": 55,
+          "quickSlot": 0
+        },
+        {
+          "techniqueId": "tech_nature_whisper_01",
+          "mastery": 40,
+          "quickSlot": 1
+        }
+      ],
+      "equipment": [
+        {
+          "slot": "RightHand",
+          "itemId": "weapon_whip_01",
+          "grade": "Refined",
+          "durabilityPercent": 90
+        },
+        {
+          "slot": "Torso",
+          "itemId": "armor_leather_vest_02",
+          "grade": "Common",
+          "durabilityPercent": 85
+        }
+      ],
+      "inventory": [
+        {
+          "itemId": "item_beast_feed",
+          "quantity": 10
+        },
+        {
+          "itemId": "item_spirit_stone",
+          "quantity": 3
+        }
+      ],
+      "behaviorType": "Defensive",
+      "aggressiveness": 25,
+      "courage": 70
+    }
+  ],
+  "modified": "2026-04-01 13:43:14 UTC"
+}
