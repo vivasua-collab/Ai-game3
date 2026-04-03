@@ -82,6 +82,9 @@
 | Файл | Описание | Токенов |
 |------|----------|---------|
 | [WORLD_SYSTEM.md](./WORLD_SYSTEM.md) | Мир, локации, 3D координаты | ~3000 |
+| [WORLD_MAP_SYSTEM.md](./WORLD_MAP_SYSTEM.md) | **🆕** Мировая карта: секторы, местность, навигация | ~6000 |
+| [LOCATION_MAP_SYSTEM.md](./LOCATION_MAP_SYSTEM.md) | **🆕** Локации: генерация зданий, препятствий, ресурсов | ~5500 |
+| [TRANSITION_SYSTEM.md](./TRANSITION_SYSTEM.md) | **🆕** Система переходов между картами | ~4500 |
 | [TIME_SYSTEM.md](./TIME_SYSTEM.md) | Система времени, тики, календарь | ~2500 |
 | [FACTION_SYSTEM.md](./FACTION_SYSTEM.md) | Фракции, отношения, нации | ~2500 |
 | [LORE_SYSTEM.md](./LORE_SYSTEM.md) | Лор, истории, миростроение | ~2000 |
@@ -164,8 +167,8 @@
 
 | Метрика | Значение |
 |---------|----------|
-| Всего документов игры | 65+ |
-| Общий объём | ~160,000 токенов |
+| Всего документов игры | 68+ |
+| Общий объём | ~176,000 токенов |
 | Средний размер | ~2,500 токенов |
 | Файлов примеров кода | 8 |
 
@@ -207,6 +210,9 @@ ARCHITECTURE.md (корневой документ)
     ├── NPC_AI_SYSTEM.md
     │
     ├── WORLD_SYSTEM.md
+    │   ├── WORLD_MAP_SYSTEM.md
+    │   ├── LOCATION_MAP_SYSTEM.md
+    │   ├── TRANSITION_SYSTEM.md
     │   ├── TIME_SYSTEM.md
     │   ├── FACTION_SYSTEM.md
     │   └── ENTITY_TYPES.md
