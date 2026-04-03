@@ -6,3 +6,9 @@
 bun install v1.3.10 (30e609e0)
 error: Integrity check failed for tarball: @prisma/client
 error: IntegrityCheckFailed extracting tarball from @prisma/client
+==========================================
+[2026-04-03 16:14:31] Starting: bun install
+==========================================
+[BUN] Installing dependencies...
+error: Bun could not find a package.json file to install from
+note: Run "bun init" to initialize a project
