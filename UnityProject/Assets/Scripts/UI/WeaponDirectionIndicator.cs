@@ -145,17 +145,17 @@ namespace CultivationWorld.UI
             }
         }
 
-        private Color GetElementColor(Core.Element element)
+        private Color GetElementColor(Element element)
         {
             return element switch
             {
-                Core.Element.Fire => fireColor,
-                Core.Element.Water => waterColor,
-                Core.Element.Lightning => lightningColor,
-                Core.Element.Earth => earthColor,
-                Core.Element.Air => airColor,
-                Core.Element.Poison => poisonColor,
-                Core.Element.Void => voidColor,
+                Element.Fire => fireColor,
+                Element.Water => waterColor,
+                Element.Lightning => lightningColor,
+                Element.Earth => earthColor,
+                Element.Air => airColor,
+                Element.Poison => poisonColor,
+                Element.Void => voidColor,
                 _ => neutralColor
             };
         }

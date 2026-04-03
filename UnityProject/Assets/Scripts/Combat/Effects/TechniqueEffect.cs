@@ -21,7 +21,7 @@ namespace CultivationWorld.Combat.Effects
         #region Configuration
 
         [Header("Base Settings")]
-        [SerializeField] protected Core.Element element = Core.Element.Neutral;
+        [SerializeField] protected Element element = Element.Neutral;
         [SerializeField] protected float duration = 1f;
         [SerializeField] protected AnimationCurve scaleCurve = AnimationCurve.Linear(0, 1, 1, 1);
         [SerializeField] protected AnimationCurve alphaCurve = AnimationCurve.Linear(0, 1, 1, 0);
@@ -43,7 +43,7 @@ namespace CultivationWorld.Combat.Effects
 
         #region Properties
 
-        public Core.Element Element => element;
+        public Element Element => element;
         public bool IsPlaying => _isPlaying;
         public float Progress => duration > 0 ? _elapsedTime / duration : 1f;
 
@@ -200,7 +200,7 @@ namespace CultivationWorld.Combat.Effects
         /// <summary>
         /// Устанавливает элемент эффекта.
         /// </summary>
-        public void SetElement(Core.Element newElement)
+        public void SetElement(Element newElement)
         {
             element = newElement;
         }

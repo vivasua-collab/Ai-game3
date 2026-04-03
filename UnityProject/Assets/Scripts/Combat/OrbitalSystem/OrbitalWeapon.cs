@@ -21,7 +21,7 @@ namespace CultivationWorld.Combat.OrbitalSystem
 
         [Header("Weapon Settings")]
         [SerializeField] private string weaponName = "Orbital Weapon";
-        [SerializeField] private Core.Element element = Core.Element.Neutral;
+        [SerializeField] private Element element = Element.Neutral;
         [SerializeField] private int baseDamage = 10;
         [SerializeField] private float hitRadius = 0.5f;
         [SerializeField] private LayerMask hitLayers;
@@ -49,7 +49,7 @@ namespace CultivationWorld.Combat.OrbitalSystem
         #region Properties
 
         public bool IsActive => _isActive;
-        public Core.Element Element => element;
+        public Element Element => element;
         public string WeaponName => weaponName;
         public int BaseDamage => baseDamage;
 
@@ -111,14 +111,14 @@ namespace CultivationWorld.Combat.OrbitalSystem
         {
             return element switch
             {
-                Core.Element.Fire => new Color(1f, 0.3f, 0.1f, 0.8f),      // Красно-оранжевый
-                Core.Element.Water => new Color(0.2f, 0.5f, 1f, 0.8f),     // Синий
-                Core.Element.Lightning => new Color(0.8f, 0.8f, 1f, 0.9f), // Голубовато-белый
-                Core.Element.Earth => new Color(0.6f, 0.4f, 0.2f, 0.8f),   // Коричневый
-                Core.Element.Air => new Color(0.7f, 1f, 0.7f, 0.6f),       // Светло-зелёный
-                Core.Element.Poison => new Color(0.5f, 0f, 0.8f, 0.8f),    // Фиолетовый
-                Core.Element.Void => new Color(0.3f, 0f, 0.5f, 0.8f),      // Тёмно-фиолетовый
-                Core.Element.Neutral => new Color(1f, 1f, 1f, 0.5f),       // Белый
+                Element.Fire => new Color(1f, 0.3f, 0.1f, 0.8f),      // Красно-оранжевый
+                Element.Water => new Color(0.2f, 0.5f, 1f, 0.8f),     // Синий
+                Element.Lightning => new Color(0.8f, 0.8f, 1f, 0.9f), // Голубовато-белый
+                Element.Earth => new Color(0.6f, 0.4f, 0.2f, 0.8f),   // Коричневый
+                Element.Air => new Color(0.7f, 1f, 0.7f, 0.6f),       // Светло-зелёный
+                Element.Poison => new Color(0.5f, 0f, 0.8f, 0.8f),    // Фиолетовый
+                Element.Void => new Color(0.3f, 0f, 0.5f, 0.8f),      // Тёмно-фиолетовый
+                Element.Neutral => new Color(1f, 1f, 1f, 0.5f),       // Белый
                 _ => new Color(1f, 1f, 1f, 0.5f)
             };
         }
@@ -256,7 +256,7 @@ namespace CultivationWorld.Combat.OrbitalSystem
         /// <summary>
         /// Устанавливает элемент оружия.
         /// </summary>
-        public void SetElement(Core.Element newElement)
+        public void SetElement(Element newElement)
         {
             element = newElement;
             SetupElementVisuals();
@@ -313,7 +313,7 @@ namespace CultivationWorld.Combat.OrbitalSystem
     public struct DamageInfo
     {
         public int Amount;
-        public Core.Element Element;
+        public Element Element;
         public GameObject Source;
         public Vector2 HitPoint;
     }

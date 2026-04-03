@@ -287,20 +287,20 @@ namespace CultivationWorld.Combat.Effects
         /// <summary>
         /// Получает тип эффекта по элементу и типу техники.
         /// </summary>
-        public static EffectType GetEffectType(Core.Element element, string techniqueType)
+        public static EffectType GetEffectType(Element element, string techniqueType)
         {
             // Направленные (offensive)
             if (techniqueType == "Offensive" || techniqueType == "Melee" || techniqueType == "Ranged")
             {
                 return element switch
                 {
-                    Core.Element.Fire => EffectType.FireSlash,
-                    Core.Element.Water => EffectType.WaterWave,
-                    Core.Element.Air => EffectType.AirBlade,
-                    Core.Element.Lightning => EffectType.LightningBolt,
-                    Core.Element.Earth => EffectType.EarthSpike,
-                    Core.Element.Void => EffectType.VoidRift,
-                    Core.Element.Poison => EffectType.PoisonCloud,
+                    Element.Fire => EffectType.FireSlash,
+                    Element.Water => EffectType.WaterWave,
+                    Element.Air => EffectType.AirBlade,
+                    Element.Lightning => EffectType.LightningBolt,
+                    Element.Earth => EffectType.EarthSpike,
+                    Element.Void => EffectType.VoidRift,
+                    Element.Poison => EffectType.PoisonCloud,
                     _ => EffectType.QiExplosion
                 };
             }

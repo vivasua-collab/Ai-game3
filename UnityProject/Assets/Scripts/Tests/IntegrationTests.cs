@@ -25,6 +25,9 @@ using CultivationGame.Qi;
 using CultivationGame.Buff;
 using CultivationGame.Formation;
 
+// Alias для использования Formation.BuffType в тестах
+using TestBuffType = CultivationGame.Formation.BuffType;
+
 namespace CultivationGame.Tests
 {
     /// <summary>
@@ -138,7 +141,7 @@ namespace CultivationGame.Tests
                 );
 
                 // 2. Добавляем бафф на урон +50%
-                attackerBuff.AddBuff(BuffType.Damage, 50f, true, 60f);
+                attackerBuff.AddBuff(TestBuffType.Damage, 50f, true, 60f);
 
                 // 3. Измеряем урон с баффом
                 AttackerParams buffedAttackerParams = attackerCombatant.GetAttackerParams();
@@ -376,7 +379,7 @@ namespace CultivationGame.Tests
 
                 // === Act ===
                 // Пытаемся добавить модификатор через обычный stat (не сработает для conductivity)
-                buffMgr.AddBuff(BuffType.Conductivity, 50f, true, 60f);
+                buffMgr.AddBuff(TestBuffType.Conductivity, 50f, true, 60f);
 
                 // === Assert ===
                 // Conductivity обрабатывается отдельно, не через totalModifiers
@@ -798,11 +801,43 @@ namespace CultivationGame.Tests
         private int level;
         private QiController qiController;
 
+        // === ICombatant Identity ===
         public string Name => "MockCombatant";
+        public GameObject GameObject => gameObject;
         public bool IsAlive => true;
         public int CultivationLevel => level;
+        public int CultivationSubLevel => 0;
 
+        // === ICombatant Stats ===
+        public int Strength => 10 + level * 2;
+        public int Agility => 10 + level;
+        public int Intelligence => 10 + level;
+        public int Vitality => 10 + level;
+
+        // === ICombatant Qi ===
+        public long CurrentQi => qiController?.CurrentQi ?? 0;
+        public long MaxQi => qiController?.MaxQi ?? 0;
+        public float QiDensity => qiController?.QiDensity ?? 1f;
+        public QiDefenseType QiDefense => QiDefenseType.RawQi;
+        public bool HasShieldTechnique => false;
+
+        // === ICombatant Body ===
+        public BodyMaterial BodyMaterial => BodyMaterial.Organic;
+        public float HealthPercent => 1f;
+
+        // === ICombatant Combat Stats ===
+        public int Penetration => 0;
+        public float DodgeChance => 0.1f;
+        public float ParryChance => 0.05f;
+        public float BlockChance => 0f;
+        public float ArmorCoverage => 0.3f;
+        public float DamageReduction => 0.1f;
+        public int ArmorValue => 10;
+
+        // === ICombatant Events ===
         public event Action OnDeath;
+        public event Action<float> OnDamageTaken;
+        public event Action<long, long> OnQiChanged;
 
         public void Setup(int level, QiController qi)
         {
@@ -810,16 +845,37 @@ namespace CultivationGame.Tests
             this.qiController = qi;
         }
 
-        public AttackerParams GetAttackerParams(Element? elementOverride = null)
+        // === ICombatant Actions ===
+        public void TakeDamage(BodyPartType part, float damage)
+        {
+            OnDamageTaken?.Invoke(damage);
+        }
+
+        public void TakeDamageRandom(float damage)
+        {
+            OnDamageTaken?.Invoke(damage);
+        }
+
+        public bool SpendQi(int amount)
+        {
+            return qiController?.SpendQi(amount) ?? false;
+        }
+
+        public void AddQi(long amount)
+        {
+            qiController?.AddQi(amount);
+        }
+
+        public AttackerParams GetAttackerParams(Element attackElement = Element.Neutral)
         {
             return new AttackerParams
             {
                 CultivationLevel = level,
-                Strength = 10 + level * 2,
-                Agility = 10 + level,
-                Intelligence = 10 + level,
-                Penetration = 0,
-                AttackElement = elementOverride ?? Element.Neutral,
+                Strength = Strength,
+                Agility = Agility,
+                Intelligence = Intelligence,
+                Penetration = Penetration,
+                AttackElement = attackElement,
                 CombatSubtype = CombatSubtype.MeleeStrike,
                 TechniqueLevel = level,
                 TechniqueGrade = TechniqueGrade.Common,
@@ -833,28 +889,18 @@ namespace CultivationGame.Tests
             return new DefenderParams
             {
                 CultivationLevel = level,
-                CurrentQi = (int)(qiController?.CurrentQi ?? 0),
-                QiDefense = QiDefenseType.RawQi,
-                Agility = 10 + level,
-                Strength = 10 + level,
-                ArmorCoverage = 0.3f,
-                DamageReduction = 0.1f,
-                ArmorValue = 10,
+                CurrentQi = (int)Math.Min(CurrentQi, int.MaxValue),
+                QiDefense = QiDefense,
+                Agility = Agility,
+                Strength = Strength,
+                ArmorCoverage = ArmorCoverage,
+                DamageReduction = DamageReduction,
+                ArmorValue = ArmorValue,
                 DodgePenalty = 0,
-                ParryBonus = 0,
-                BlockBonus = 0,
-                BodyMaterial = BodyMaterial.Organic
+                ParryBonus = ParryChance,
+                BlockBonus = BlockChance,
+                BodyMaterial = BodyMaterial
             };
-        }
-
-        public bool SpendQi(int amount)
-        {
-            return qiController?.SpendQi(amount) ?? false;
-        }
-
-        public void TakeDamage(BodyPartType part, float damage)
-        {
-            // Mock implementation
         }
 
         public void TriggerDeath()
@@ -908,21 +954,7 @@ namespace CultivationGame.Tests
     #region Enum Definitions for Tests
 
     /// <summary>
-    /// Типы баффов для тестов.
-    /// </summary>
-    public enum BuffType
-    {
-        Damage,
-        Defense,
-        Speed,
-        Conductivity,
-        CriticalChance,
-        Evasion,
-        Lifesteal
-    }
-
-    /// <summary>
-    /// Стадии формации.
+    /// Стадии формации (дубликат для тестов, чтобы избежать зависимости от основного кода).
     /// </summary>
     public enum FormationStage
     {

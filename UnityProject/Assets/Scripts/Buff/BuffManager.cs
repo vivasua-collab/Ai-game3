@@ -23,6 +23,9 @@ using CultivationGame.Data.ScriptableObjects;
 using CultivationGame.Formation;
 using CultivationGame.Combat;
 
+// Alias для разрешения конфликта имён BuffType
+using FormationBuffType = CultivationGame.Formation.BuffType;
+
 namespace CultivationGame.Buff
 {
     /// <summary>
@@ -126,7 +129,7 @@ namespace CultivationGame.Buff
         // Ссылки на контроллеры
         private Qi.QiController qiController;
         private Body.BodyController bodyController;
-        private Combat.Combatant combatant;
+        private ICombatant combatant;
         private Combat.TechniqueController techniqueController;
 
         #endregion
@@ -194,7 +197,7 @@ namespace CultivationGame.Buff
             // Получаем ссылки на контроллеры
             qiController = GetComponent<Qi.QiController>();
             bodyController = GetComponent<Body.BodyController>();
-            combatant = GetComponent<Combat.Combatant>();
+            combatant = GetComponent<ICombatant>();
             techniqueController = GetComponent<Combat.TechniqueController>();
         }
 
@@ -223,7 +226,7 @@ namespace CultivationGame.Buff
         /// Добавить бафф по типу (для FormationEffects).
         /// Упрощённый метод для быстрого применения.
         /// </summary>
-        public void AddBuff(BuffType buffType, float value, bool isPercentage, float duration)
+        public void AddBuff(FormationBuffType buffType, float value, bool isPercentage, float duration)
         {
             // Создаём временные данные баффа
             var tempData = CreateTempBuffData(buffType, value, isPercentage, duration);
@@ -233,7 +236,7 @@ namespace CultivationGame.Buff
         /// <summary>
         /// Добавить дебафф по типу (для FormationEffects).
         /// </summary>
-        public void AddDebuff(BuffType buffType, float value, bool isPercentage, float duration)
+        public void AddDebuff(FormationBuffType buffType, float value, bool isPercentage, float duration)
         {
             var tempData = CreateTempBuffData(buffType, -Mathf.Abs(value), isPercentage, duration);
             tempData.buffType = CultivationGame.Data.ScriptableObjects.BuffType.Debuff;
@@ -297,7 +300,7 @@ namespace CultivationGame.Buff
         /// <summary>
         /// Удалить бафф по типу.
         /// </summary>
-        public void RemoveBuff(BuffType buffType)
+        public void RemoveBuff(FormationBuffType buffType)
         {
             string statName = GetStatNameForBuffType(buffType);
             
@@ -1120,22 +1123,22 @@ namespace CultivationGame.Buff
             return 0f;
         }
 
-        private string GetStatNameForBuffType(BuffType buffType)
+        private string GetStatNameForBuffType(FormationBuffType buffType)
         {
             return buffType switch
             {
-                BuffType.Damage => "damage",
-                BuffType.Defense => "defense",
-                BuffType.Speed => "speed",
-                BuffType.CriticalChance => "criticalchance",
-                BuffType.CriticalDamage => "criticaldamage",
-                BuffType.QiRegen => "qiregen",
-                BuffType.MaxQi => "maxqi",
-                BuffType.Conductivity => "conductivity",
-                BuffType.Health => "health",
-                BuffType.Stamina => "stamina",
-                BuffType.Resistance => "resistance",
-                BuffType.Evasion => "evasion",
+                FormationBuffType.Damage => "damage",
+                FormationBuffType.Defense => "defense",
+                FormationBuffType.Speed => "speed",
+                FormationBuffType.CriticalChance => "criticalchance",
+                FormationBuffType.CriticalDamage => "criticaldamage",
+                FormationBuffType.QiRegen => "qiregen",
+                FormationBuffType.MaxQi => "maxqi",
+                FormationBuffType.Conductivity => "conductivity",
+                FormationBuffType.Health => "health",
+                FormationBuffType.Stamina => "stamina",
+                FormationBuffType.Resistance => "resistance",
+                FormationBuffType.Evasion => "evasion",
                 _ => buffType.ToString().ToLowerInvariant()
             };
         }
@@ -1143,22 +1146,22 @@ namespace CultivationGame.Buff
         /// <summary>
         /// Создать временные данные баффа для простого применения.
         /// </summary>
-        private BuffData CreateTempBuffData(BuffType buffType, float value, bool isPercentage, float duration)
+        private BuffData CreateTempBuffData(FormationBuffType buffType, float value, bool isPercentage, float duration)
         {
             var data = ScriptableObject.CreateInstance<BuffData>();
             data.buffId = $"temp_{buffType}_{Guid.NewGuid():N}";
             data.nameRu = buffType switch
             {
-                BuffType.Damage => "Усиление урона",
-                BuffType.Defense => "Усиление защиты",
-                BuffType.Speed => "Ускорение",
-                BuffType.CriticalChance => "Увеличение шанса крита",
-                BuffType.CriticalDamage => "Увеличение урона крита",
-                BuffType.Conductivity => "Усиление проводимости",
-                BuffType.Health => "Увеличение здоровья",
-                BuffType.Stamina => "Увеличение выносливости",
-                BuffType.Resistance => "Увеличение сопротивления",
-                BuffType.Evasion => "Увеличение уклонения",
+                FormationBuffType.Damage => "Усиление урона",
+                FormationBuffType.Defense => "Усиление защиты",
+                FormationBuffType.Speed => "Ускорение",
+                FormationBuffType.CriticalChance => "Увеличение шанса крита",
+                FormationBuffType.CriticalDamage => "Увеличение урона крита",
+                FormationBuffType.Conductivity => "Усиление проводимости",
+                FormationBuffType.Health => "Увеличение здоровья",
+                FormationBuffType.Stamina => "Увеличение выносливости",
+                FormationBuffType.Resistance => "Увеличение сопротивления",
+                FormationBuffType.Evasion => "Увеличение уклонения",
                 _ => buffType.ToString()
             };
             data.buffType = value >= 0 ? CultivationGame.Data.ScriptableObjects.BuffType.Buff : CultivationGame.Data.ScriptableObjects.BuffType.Debuff;
