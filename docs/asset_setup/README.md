@@ -31,6 +31,8 @@
 | [12_MaterialData_SemiAuto.md](./12_MaterialData_SemiAuto.md) | Материалы (полуавтомат) | 17 материалов |
 | [13_SpriteSetup.md](./13_SpriteSetup.md) | **Настройка спрайтов (полная)** | 57 спрайтов |
 | [13_SpriteSetup_QuickStart.md](./13_SpriteSetup_QuickStart.md) | **Настройка спрайтов (быстрая)** | 57 спрайтов |
+| [14_FormationData.md](./14_FormationData.md) | **Формации (ручная)** | 24+ формаций |
+| [15_FormationCoreData.md](./15_FormationCoreData.md) | **Ядра формаций (ручная)** | 30+ ядер |
 
 ---
 
@@ -95,7 +97,33 @@ Assets/Data/
 
 ---
 
-### 2. Scene Setup Tools
+### 3. Formation Asset Generator
+
+**Меню:** `Tools → Generate Assets → Formation Assets`
+
+**Скрипт:** `Assets/Scripts/Editor/FormationAssetGenerator.cs`
+
+**Функции:**
+
+| Кнопка | Создаёт | Количество |
+|--------|---------|------------|
+| Formation Assets (All) | Все формации и ядра | 54 файла |
+| Formation Data (24) | FormationData | 24 файла |
+| Formation Core Data (30) | FormationCoreData | 30 файлов |
+| Validate Formation Assets | Валидация | — |
+| Clear Formation Assets | Очистка | — |
+
+**UI Prefabs:** `Tools → Formation UI → Generate UI Prefabs`
+
+| Префаб | Описание |
+|--------|----------|
+| FormationListItem | Элемент списка формаций |
+| ActiveFormationItem | Элемент активной формации |
+| PlacementPreview | Превью размещения |
+
+---
+
+### 4. Scene Setup Tools
 
 **Меню:** `Window → Scene Setup Tools`
 

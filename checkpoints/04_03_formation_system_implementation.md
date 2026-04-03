@@ -1,6 +1,6 @@
 # 📋 Чекпоинт: Реализация системы формаций (Вариант В)
 
-**Дата:** 2026-04-03 13:50:00 UTC
+**Дата:** 2026-04-03 14:50:00 UTC
 **Статус:** ✅ Complete
 **Вариант:** В (Расширенный)
 
@@ -8,23 +8,34 @@
 
 ## 📊 Выполненные работы
 
-### Созданные файлы (8 файлов, ~3200 строк)
+### Созданные файлы (11 файлов, ~5500 строк)
 
 | Файл | Строк | Описание |
 |------|-------|----------|
-| `Scripts/Formation/FormationData.cs` | ~280 | ScriptableObject формации |
+| `Scripts/Formation/FormationData.cs` | ~400 | ScriptableObject формации + BuffType enum |
 | `Scripts/Formation/FormationQiPool.cs` | ~320 | Ёмкость и утечка Ци |
 | `Scripts/Formation/FormationCore.cs` | ~520 | Runtime активная формация |
 | `Scripts/Formation/FormationController.cs` | ~650 | Главный контроллер |
-| `Scripts/Formation/FormationEffects.cs` | ~400 | Применение эффектов |
+| `Scripts/Formation/FormationEffects.cs` | ~480 | Применение эффектов |
 | `Scripts/Formation/FormationUI.cs` | ~430 | Интерфейс управления |
+| `Scripts/Buff/BuffManager.cs` | ~950 | Полноценная система баффов |
+| `Scripts/Editor/FormationUIPrefabsGenerator.cs` | ~280 | Генератор UI префабов |
+| `Scripts/Editor/FormationAssetGenerator.cs` | ~550 | Генератор FormationData/CoreData |
 
-### Изменённые файлы (2 файла)
+### Документация (2 файла)
+
+| Файл | Описание |
+|------|----------|
+| `docs/asset_setup/14_FormationData.md` | Инструкция по созданию FormationData |
+| `docs/asset_setup/15_FormationCoreData.md` | Инструкция по созданию FormationCoreData |
+
+### Изменённые файлы (3 файла)
 
 | Файл | Изменения |
 |------|-----------|
 | `Scripts/Qi/QiController.cs` | +35 строк — TransferToFormation(), GetTransferRate() |
 | `Scripts/Charger/ChargerController.cs` | +35 строк — ChargeFormation() |
+| `docs/asset_setup/README.md` | +25 строк — Formation Asset Generator |
 
 ---
 
@@ -195,19 +206,32 @@ UnityProject/Assets/Scripts/Formation/
 
 ## ⚠️ Замечания
 
-1. **BuffManager** — заглушка, требует полной реализации
-2. **IControlReceiver, IStunnable** — интерфейсы готовы к реализации
-3. **FormationUI** — требует UI prefabs для элементов списка
+1. **BuffManager** — ✅ ПОЛНОСТЬЮ РЕАЛИЗОВАН
+   - Файл: `Scripts/Buff/BuffManager.cs`
+   - Поддержка всех типов баффов/дебаффов
+   - Защита PRIMARY статов (STR/AGI/INT/VIT)
+   - Payback механизм для Conductivity
+   - IControlReceiver и IStunnable интерфейсы
+   
+2. **UI Prefabs** — ✅ ГЕНЕРАТОР СОЗДАН
+   - Файл: `Scripts/Editor/FormationUIPrefabsGenerator.cs`
+   - Меню: `Tools → Formation UI → Generate UI Prefabs`
+   
+3. **FormationData/CoreData Assets** — ✅ ГЕНЕРАТОР СОЗДАН
+   - Файл: `Scripts/Editor/FormationAssetGenerator.cs`
+   - Меню: `Tools → Generate Assets → Formation Assets`
+   - Документация: `docs/asset_setup/14_FormationData.md`, `15_FormationCoreData.md`
 
 ---
 
 ## 🔄 Следующие шаги
 
-1. Создать FormationData assets в Unity Editor
-2. Создать FormationCoreData assets для ядер
-3. Реализовать полноценную систему баффов
-4. Добавить визуальные эффекты формаций
-5. Протестировать в реальной игре
+1. Запустить генераторы в Unity Editor:
+   - `Tools → Generate Assets → Formation Assets (All)`
+   - `Tools → Formation UI → Generate All UI Prefabs`
+2. Добавить иконки для формаций
+3. Создать VFX префабы для визуальных эффектов
+4. Протестировать в реальной игре
 
 ---
 

@@ -13,6 +13,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using CultivationGame.Core;
 using CultivationGame.Combat;
+using CultivationGame.Buff;
 
 namespace CultivationGame.Formation
 {
@@ -472,46 +473,9 @@ namespace CultivationGame.Formation
         bool IsStunned { get; }
     }
 
-    /// <summary>
-    /// Менеджер баффов (заглушка для интеграции).
-    /// </summary>
-    public class BuffManager : MonoBehaviour
-    {
-        public void AddBuff(BuffType buffType, float value, bool isPercentage, float duration)
-        {
-            Debug.Log($"[BuffManager] AddBuff: {buffType} +{value}{(isPercentage ? "%" : "")} for {duration}s");
-        }
-
-        public void AddDebuff(BuffType buffType, float value, bool isPercentage, float duration)
-        {
-            Debug.Log($"[BuffManager] AddDebuff: {buffType} -{value}{(isPercentage ? "%" : "")} for {duration}s");
-        }
-
-        public void RemoveBuff(BuffType buffType)
-        {
-            Debug.Log($"[BuffManager] RemoveBuff: {buffType}");
-        }
-    }
-
-    /// <summary>
-    /// Типы баффов.
-    /// </summary>
-    public enum BuffType
-    {
-        None,
-        Damage,         // Урон
-        Defense,        // Защита
-        Speed,          // Скорость
-        CriticalChance, // Шанс крита
-        CriticalDamage, // Урон крита
-        QiRegen,        // Регенерация Ци
-        MaxQi,          // Максимальное Ци
-        Conductivity,   // Проводимость
-        Health,         // Здоровье
-        Stamina,        // Выносливость
-        Resistance,     // Сопротивление
-        Evasion         // Уклонение
-    }
+    // Примечание: BuffManager перенесён в CultivationGame.Buff namespace
+    // Файл: Assets/Scripts/Buff/BuffManager.cs
+    // BuffType теперь определён в FormationData.cs для использования в FormationEffect
 
     #endregion
 }

@@ -45,6 +45,27 @@ namespace CultivationGame.Formation
     }
 
     /// <summary>
+    /// Типы баффов для формаций.
+    /// Используется в FormationEffect для указания типа модификации.
+    /// </summary>
+    public enum BuffType
+    {
+        None,
+        Damage,         // Урон
+        Defense,        // Защита
+        Speed,          // Скорость
+        CriticalChance, // Шанс крита
+        CriticalDamage, // Урон крита
+        QiRegen,        // Регенерация Ци (только для формаций, не для постоянных баффов!)
+        MaxQi,          // Максимальное Ци
+        Conductivity,   // Проводимость (с payback механизмом)
+        Health,         // Здоровье
+        Stamina,        // Выносливость
+        Resistance,     // Сопротивление
+        Evasion         // Уклонение
+    }
+
+    /// <summary>
     /// Этап формации
     /// </summary>
     public enum FormationStage
