@@ -4,19 +4,21 @@
 
 ## Error Categories
 
-### 1. Missing UnityEngine.UI (Assembly Reference)
+### 1. Missing UnityEngine.UI (Assembly Reference) ✓ PARTIALLY FIXED
 Files needing `using UnityEngine.UI;` or assembly reference:
-- FormationUI.cs
-- CharacterPanelUI.cs
-- CombatUI.cs
-- CultivationProgressBar.cs
-- DialogUI.cs
-- HUDController.cs
-- InventoryUI.cs
-- MenuUI.cs
-- WeaponDirectionIndicator.cs
-- Benchmark01_UGUI.cs (TMP Examples)
+- FormationUI.cs ✓ (using present)
+- CharacterPanelUI.cs ✓ (using present)
+- CombatUI.cs ✓ (using present)
+- CultivationProgressBar.cs ✓ (using present)
+- DialogUI.cs ✓ (using present)
+- HUDController.cs ✓ (using present)
+- InventoryUI.cs ✓ (using present)
+- MenuUI.cs ✓ (using present)
+- WeaponDirectionIndicator.cs ✓ FIXED
+- Benchmark01_UGUI.cs (TMP Examples - may need .asmdef)
 - EquipmentController.cs
+
+**Issue:** `using UnityEngine.UI;` exists but types not found → Assembly definition needed
 
 ### 2. Missing UnityEngine.InputSystem
 - PlayerController.cs
@@ -30,30 +32,29 @@ Files using TMP_Text, TMP_InputField, TMP_Dropdown, etc.:
 - All UI files
 - TMP Examples folder (can be excluded from compilation)
 
-### 5. Missing Type: ControlType
-- BuffManager.cs (lines 1184, 1222, 1250)
-- Need to define in FormationData.cs or separate file
+### 5. Missing Type: ControlType ✓ FIXED
+- BuffManager.cs - Added `using CultivationGame.Formation;`
 
-### 6. Missing Type: FormationCoreData
-- FormationQiPool.cs (line 209)
+### 6. Missing Type: FormationCoreData ✓ FIXED
+- FormationQiPool.cs - Added `using CultivationGame.Data.ScriptableObjects;`
 
-### 7. Missing Type: Core (namespace issue)
-- OrbitalWeapon.cs
-- TechniqueEffect.cs
-- TechniqueEffectFactory.cs
-- WeaponDirectionIndicator.cs
+### 7. Missing Type: Core (namespace issue) ✓ FIXED
+- OrbitalWeapon.cs ✓
+- TechniqueEffect.cs ✓
+- TechniqueEffectFactory.cs ✓
+- WeaponDirectionIndicator.cs ✓
 
-### 8. Missing Type: QiController
-- ChargerController.cs (lines 56, 157)
+### 8. Missing Type: QiController ✓ FIXED
+- ChargerController.cs - Added `using CultivationGame.Qi;`
 
-### 9. Missing Type: Combatant
-- BuffManager.cs (line 127)
+### 9. Missing Type: Combatant ✓ FIXED
+- BuffManager.cs - Added `using CultivationGame.Combat;`
 
-### 10. Missing Type: TimeController
-- QuestController.cs (line 73)
+### 10. Missing Type: TimeController ✓ FIXED
+- QuestController.cs - Added `using CultivationGame.World;`
 
-### 11. Duplicate Definition
-- QuestObjective.cs - RequiredAmount defined twice (line 112)
+### 11. Duplicate Definition ✓ FIXED
+- QuestObjective.cs - Removed duplicate RequiredAmount
 
 ### 12. Interface Implementation
 - MockCombatant doesn't implement ICombatant fully (IntegrationTests.cs line 796)
@@ -62,20 +63,20 @@ Files using TMP_Text, TMP_InputField, TMP_Dropdown, etc.:
 
 ## Resolution Strategy
 
-### Phase 1: Assembly Definitions
+### Phase 1: Assembly Definitions (NEXT)
 - [ ] Create/fix .asmdef for Scripts
 - [ ] Add references to UnityEngine.UI, UnityEngine.TestRunner, NUnit
 
-### Phase 2: Missing Type Definitions
-- [ ] Add ControlType enum
-- [ ] Add FormationCoreData class
-- [ ] Fix Core namespace references
-- [ ] Fix QiController reference
-- [ ] Fix Combatant reference
-- [ ] Fix TimeController reference
+### Phase 2: Missing Type Definitions ✓ DONE
+- [x] Add ControlType enum - already in FormationData.cs
+- [x] Add FormationCoreData class - already exists
+- [x] Fix Core namespace references
+- [x] Fix QiController reference
+- [x] Fix Combatant reference
+- [x] Fix TimeController reference
 
-### Phase 3: Code Fixes
-- [ ] Fix QuestObjective duplicate
+### Phase 3: Code Fixes ✓ DONE
+- [x] Fix QuestObjective duplicate
 - [ ] Fix MockCombatant interface implementation
 
 ### Phase 4: TMP Examples (Optional)
@@ -85,6 +86,15 @@ Files using TMP_Text, TMP_InputField, TMP_Dropdown, etc.:
 
 ## Progress Log
 
-### 2025-01-09
-- Created checkpoint file
-- Starting systematic fixes...
+### 2025-01-09 (Session 2)
+- Fixed FormationQiPool.cs - added using for FormationCoreData
+- Fixed ChargerController.cs - added using for QiController
+- Fixed BuffManager.cs - added using for ControlType, Combatant
+- Fixed OrbitalWeapon.cs - added using for Core.Element
+- Fixed TechniqueEffect.cs - added using for Core.Element
+- Fixed TechniqueEffectFactory.cs - added using for Core.Element
+- Fixed WeaponDirectionIndicator.cs - added using for Core.Element
+- Fixed QuestController.cs - added using for TimeController
+- Fixed QuestObjective.cs - removed duplicate RequiredAmount property
+- Committed: f92a7a3
+- Pushed to GitHub
