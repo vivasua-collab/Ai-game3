@@ -14,6 +14,7 @@ using UnityEngine;
 using CultivationGame.Core;
 using CultivationGame.Combat;
 using CultivationGame.Buff;
+using CultivationWorld.Combat.OrbitalSystem;
 
 namespace CultivationGame.Formation
 {
@@ -45,6 +46,7 @@ namespace CultivationGame.Formation
 
         /// <summary>
         /// Найти цели в радиусе.
+        /// Редактировано: 2026-04-03 - Обновлено для Unity 6 (OverlapCircle вместо OverlapCircleNonAlloc)
         /// </summary>
         /// <param name="center">Центр поиска</param>
         /// <param name="radius">Радиус</param>
@@ -52,13 +54,7 @@ namespace CultivationGame.Formation
         /// <returns>Массив коллайдеров</returns>
         public static Collider2D[] FindTargets(Vector2 center, float radius, LayerMask layerMask)
         {
-            Collider2D[] results = new Collider2D[100];
-            int count = Physics2D.OverlapCircleNonAlloc(center, radius, results, layerMask);
-
-            Collider2D[] validResults = new Collider2D[count];
-            Array.Copy(results, validResults, count);
-
-            return validResults;
+            return Physics2D.OverlapCircle(center, radius, layerMask);
         }
 
         /// <summary>
@@ -239,11 +235,11 @@ namespace CultivationGame.Formation
         {
             if (effect.tickValue <= 0) return;
 
-            // Редактировано: 2026-04-03 - Используем ICombatant вместо Combatant
-            var combatant = target.GetComponent<Combat.OrbitalSystem.ICombatTarget>();
+            // Редактировано: 2026-04-03 - Используем ICombatTarget вместо Combatant
+            var combatant = target.GetComponent<ICombatTarget>();
             if (combatant != null)
             {
-                var damage = new Combat.OrbitalSystem.DamageInfo
+                var damage = new DamageInfo
                 {
                     Amount = effect.tickValue,
                     Element = effect.element,

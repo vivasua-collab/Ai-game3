@@ -2,6 +2,7 @@
 // Источник: docs/examples/TechniqueEffectsSystem.md
 
 using UnityEngine;
+using CultivationWorld.Combat.OrbitalSystem;
 
 namespace CultivationWorld.Combat.Effects
 {
@@ -96,19 +97,19 @@ namespace CultivationWorld.Combat.Effects
 
         /// <summary>
         /// Применяет эффекты формации.
+        /// Редактировано: 2026-04-03 - Обновлено для Unity 6 (OverlapCircle вместо OverlapCircleNonAlloc)
         /// </summary>
         private void ApplyFormationEffects()
         {
-            int hitCount = Physics2D.OverlapCircleNonAlloc(
+            Collider2D[] hits = Physics2D.OverlapCircle(
                 transform.position,
                 radius,
-                _affectedBuffer,
                 affectedLayers
             );
 
-            for (int i = 0; i < hitCount; i++)
+            foreach (var hit in hits)
             {
-                var target = _affectedBuffer[i].GetComponent<OrbitalSystem.ICombatTarget>();
+                var target = hit.GetComponent<ICombatTarget>();
                 if (target == null) continue;
 
                 if (!target.IsHostile && buffAllies)
@@ -125,7 +126,7 @@ namespace CultivationWorld.Combat.Effects
         /// <summary>
         /// Применяет бафф к союзнику.
         /// </summary>
-        private void ApplyBuff(OrbitalSystem.ICombatTarget target)
+        private void ApplyBuff(ICombatTarget target)
         {
             // TODO: Реализовать через систему баффов
             // BuffSystem.ApplyBuff(target, BuffType.Defense, defenseBonus, effectInterval + 0.1f);
@@ -139,10 +140,10 @@ namespace CultivationWorld.Combat.Effects
         /// <summary>
         /// Применяет дебафф к врагу.
         /// </summary>
-        private void ApplyDebuff(OrbitalSystem.ICombatTarget target)
+        private void ApplyDebuff(ICombatTarget target)
         {
             // Наносим периодический урон
-            var damage = new OrbitalSystem.DamageInfo
+            var damage = new DamageInfo
             {
                 Amount = damagePerTick,
                 Element = element,

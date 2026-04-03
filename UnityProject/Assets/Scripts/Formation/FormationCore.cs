@@ -444,20 +444,20 @@ namespace CultivationGame.Formation
 
         /// <summary>
         /// Применить эффекты формации.
+        /// Редактировано: 2026-04-03 - Обновлено для Unity 6 (OverlapCircle вместо OverlapCircleNonAlloc)
         /// </summary>
         private void ApplyEffects()
         {
             if (formationData == null) return;
 
             // Находим цели в радиусе
-            int count = Physics2D.OverlapCircleNonAlloc(center, currentRadius, affectedBuffer);
+            Collider2D[] hits = Physics2D.OverlapCircle(center, currentRadius);
 
             int allyCount = 0;
             int enemyCount = 0;
 
-            for (int i = 0; i < count; i++)
+            foreach (var collider in hits)
             {
-                Collider2D collider = affectedBuffer[i];
                 GameObject target = collider.gameObject;
 
                 // Пропускаем себя

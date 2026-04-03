@@ -211,7 +211,8 @@ namespace CultivationGame.Formation
             }
 
             // Находим TimeController
-            timeController = FindObjectOfType<World.TimeController>();
+            // Редактировано: 2026-04-03 - Обновлено для Unity 6 (FindFirstObjectByType вместо FindObjectOfType)
+            timeController = FindFirstObjectByType<World.TimeController>();
 
             // Подписываемся на события
             SubscribeToEvents();

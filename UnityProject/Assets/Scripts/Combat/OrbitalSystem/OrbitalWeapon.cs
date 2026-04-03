@@ -129,20 +129,20 @@ namespace CultivationWorld.Combat.OrbitalSystem
 
         /// <summary>
         /// Вызывается при попадании атаки.
+        /// Редактировано: 2026-04-03 - Обновлено для Unity 6 (OverlapCircle вместо OverlapCircleNonAlloc)
         /// </summary>
         public void OnAttackHit()
         {
             // Проверяем попадания
-            int hitCount = Physics2D.OverlapCircleNonAlloc(
+            Collider2D[] hits = Physics2D.OverlapCircle(
                 transform.position,
                 hitRadius,
-                _hitResults,
                 hitLayers
             );
 
-            for (int i = 0; i < hitCount; i++)
+            foreach (var hit in hits)
             {
-                ProcessHit(_hitResults[i]);
+                ProcessHit(hit);
             }
         }
 
