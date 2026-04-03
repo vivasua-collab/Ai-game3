@@ -20,6 +20,8 @@ using System.Collections.Generic;
 using UnityEngine;
 using CultivationGame.Core;
 using CultivationGame.Data.ScriptableObjects;
+using CultivationGame.Formation;
+using CultivationGame.Combat;
 
 namespace CultivationGame.Buff
 {

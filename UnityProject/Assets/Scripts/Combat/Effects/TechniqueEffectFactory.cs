@@ -3,6 +3,7 @@
 
 using UnityEngine;
 using System.Collections.Generic;
+using CultivationGame.Core;
 
 namespace CultivationWorld.Combat.Effects
 {

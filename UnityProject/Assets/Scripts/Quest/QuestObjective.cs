@@ -109,7 +109,6 @@ namespace CultivationGame.Quest
         public bool IsLocked => state == ObjectiveState.Locked;
         public bool IsFailed => state == ObjectiveState.Failed;
         public float Progress => requiredAmount > 0 ? (float)currentAmount / requiredAmount : 0f;
-        public int RequiredAmount => requiredAmount;
         
         // === Events ===
         

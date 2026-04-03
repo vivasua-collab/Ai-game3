@@ -3,6 +3,7 @@
 
 using UnityEngine;
 using UnityEngine.UI;
+using CultivationGame.Core;
 
 namespace CultivationWorld.UI
 {

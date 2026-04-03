@@ -2,6 +2,7 @@
 // Источник: docs/examples/OrbitalWeaponSystem.md
 
 using UnityEngine;
+using CultivationGame.Core;
 
 namespace CultivationWorld.Combat.OrbitalSystem
 {

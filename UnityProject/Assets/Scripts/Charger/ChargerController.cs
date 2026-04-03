@@ -10,6 +10,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 using CultivationGame.Core;
+using CultivationGame.Qi;
 
 namespace CultivationGame.Charger
 {

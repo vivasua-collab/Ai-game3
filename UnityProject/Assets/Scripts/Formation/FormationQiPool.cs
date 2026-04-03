@@ -10,6 +10,7 @@
 
 using System;
 using UnityEngine;
+using CultivationGame.Data.ScriptableObjects;
 
 namespace CultivationGame.Formation
 {
