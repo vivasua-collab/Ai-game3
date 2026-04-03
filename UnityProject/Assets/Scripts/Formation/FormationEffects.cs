@@ -46,7 +46,7 @@ namespace CultivationGame.Formation
 
         /// <summary>
         /// Найти цели в радиусе.
-        /// Редактировано: 2026-04-03 - Обновлено для Unity 6 (OverlapCircle вместо OverlapCircleNonAlloc)
+        /// Редактировано: 2026-04-03 - Обновлено для Unity 6 (OverlapCircleAll вместо OverlapCircleNonAlloc)
         /// </summary>
         /// <param name="center">Центр поиска</param>
         /// <param name="radius">Радиус</param>
@@ -54,7 +54,7 @@ namespace CultivationGame.Formation
         /// <returns>Массив коллайдеров</returns>
         public static Collider2D[] FindTargets(Vector2 center, float radius, LayerMask layerMask)
         {
-            return Physics2D.OverlapCircle(center, radius, layerMask);
+            return Physics2D.OverlapCircleAll(center, radius, layerMask);
         }
 
         /// <summary>

@@ -97,11 +97,11 @@ namespace CultivationWorld.Combat.Effects
 
         /// <summary>
         /// Применяет эффекты формации.
-        /// Редактировано: 2026-04-03 - Обновлено для Unity 6 (OverlapCircle вместо OverlapCircleNonAlloc)
+        /// Редактировано: 2026-04-03 - Обновлено для Unity 6 (OverlapCircleAll вместо OverlapCircleNonAlloc)
         /// </summary>
         private void ApplyFormationEffects()
         {
-            Collider2D[] hits = Physics2D.OverlapCircle(
+            Collider2D[] hits = Physics2D.OverlapCircleAll(
                 transform.position,
                 radius,
                 affectedLayers

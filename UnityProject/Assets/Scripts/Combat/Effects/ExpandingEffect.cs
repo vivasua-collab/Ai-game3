@@ -102,11 +102,11 @@ namespace CultivationWorld.Combat.Effects
 
         /// <summary>
         /// Применяет эффект к целям в радиусе.
-        /// Редактировано: 2026-04-03 - Обновлено для Unity 6 (OverlapCircle вместо OverlapCircleNonAlloc)
+        /// Редактировано: 2026-04-03 - Обновлено для Unity 6 (OverlapCircleAll вместо OverlapCircleNonAlloc)
         /// </summary>
         private void ApplyEffectToTargets()
         {
-            Collider2D[] hits = Physics2D.OverlapCircle(
+            Collider2D[] hits = Physics2D.OverlapCircleAll(
                 transform.position,
                 _currentRadius,
                 affectedLayers

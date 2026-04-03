@@ -118,11 +118,11 @@ namespace CultivationWorld.Combat.Effects
 
         /// <summary>
         /// Проверяет попадания по целям.
-        /// Редактировано: 2026-04-03 - Обновлено для Unity 6 (OverlapCircle вместо OverlapCircleNonAlloc)
+        /// Редактировано: 2026-04-03 - Обновлено для Unity 6 (OverlapCircleAll вместо OverlapCircleNonAlloc)
         /// </summary>
         private void CheckHits()
         {
-            Collider2D[] hits = Physics2D.OverlapCircle(
+            Collider2D[] hits = Physics2D.OverlapCircleAll(
                 transform.position,
                 hitRadius,
                 hitLayers
