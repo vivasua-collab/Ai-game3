@@ -109,28 +109,43 @@ git push
 ### 12. Структура папок проекта (КРИТИЧНО!)
 
 ```
-/home/z/my-project/
-├── UnityProject/          # ТОЛЬКО КОД! Никакой документации!
-│   └── Local/
-│       └── Assets/
-│           └── Scripts/   # C# скрипты
-├── docs/                  # Вся документация
-├── checkpoints/           # Чекпоинты работы
-└── skills/               # AI Skills (только для чтения)
+/home/z/my-project/              # Git root
+├── UnityProject/                # Unity проект
+│   ├── Assets/                  # ✅ ОСНОВНОЕ место для ассетов
+│   │   ├── Scripts/             # C# скрипты
+│   │   ├── Sprites/             # Спрайты
+│   │   ├── Scenes/              # Сцены
+│   │   ├── Data/                # JSON, ScriptableObjects
+│   │   └── ...
+│   ├── ProjectSettings/         # Настройки Unity
+│   ├── Packages/                # Зависимости
+│   ├── Local/                   # ⚠️ ТОЛЬКО для ручного переноса между ПК!
+│   └── .gitignore
+├── docs/                        # Вся документация
+├── checkpoints/                 # Чекпоинты работы
+└── skills/                      # AI Skills (только для чтения)
 ```
 
-**❌ ЗАПРЕЩЕНО в UnityProject:**
-- README.md, CHANGELOG.md и другие .md файлы
-- Папки docs/, examples/
-- Любые файлы документации
+**❌ ЗАПРЕЩЕНО:**
+- Писать в `UnityProject/Local/` — это для ручного переноса пользователем!
+- Создавать `Assets/`, `ProjectSettings/`, `Packages/` в корне `/home/z/my-project/`
+- .md файлы в UnityProject (кроме README.md в корне UnityProject)
 
 **✅ Размещение файлов:**
 | Тип файла | Папка |
 |-----------|-------|
-| C# скрипты | `UnityProject/Local/Assets/Scripts/` |
+| C# скрипты | `UnityProject/Assets/Scripts/` |
+| Спрайты | `UnityProject/Assets/Sprites/` |
+| Сцены | `UnityProject/Assets/Scenes/` |
+| JSON данные | `UnityProject/Assets/Data/JSON/` |
 | Документация | `docs/` |
-| Примеры кода | `docs/examples/` |
 | Чекпоинты | `checkpoints/` |
+
+**🔄 Синхронизация между ПК:**
+- Используйте Git (GitHub Desktop или CLI)
+- `Local/` — переносите вручную если нужно (Library кэш и т.д.)
+- НЕ используйте Unity Cloud — сложный и ненадёжный
+- См. `docs/GIT_WORKFLOW_TWO_PC.md` для деталей
 
 ---
 

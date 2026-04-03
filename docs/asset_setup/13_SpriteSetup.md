@@ -1,23 +1,24 @@
 # 🎨 Настройка спрайтов — Sprite Setup Guide
 
-**Версия:** 1.0  
-**Дата:** 2026-04-03  
+**Версия:** 1.1  
+**Дата:** 2026-04-04  
 **Проект:** Cultivation World Simulator
 
 ---
 
 ## 📋 Обзор
 
-Сгенерировано **57 спрайтов** для всех игровых элементов:
+Сгенерировано **66 спрайтов** для всех игровых элементов:
 
 | Категория | Количество | Путь |
 |-----------|------------|------|
 | Элементы | 8 | `Sprites/Elements/` |
-| Техники | 8 | `Sprites/Techniques/` |
+| Техники | 11 | `Sprites/Techniques/` |
 | Материалы | 8 | `Sprites/Items/` |
 | Расходники | 7 | `Sprites/Items/` |
 | Оружие | 11 | `Sprites/Equipment/` |
 | Броня | 10 | `Sprites/Equipment/` |
+| Культивация | 3 | `Sprites/Cultivation/` |
 | UI | 4 | `Sprites/UI/` |
 | Персонаж | 1 | `Sprites/` |
 
@@ -26,29 +27,36 @@
 ## 🗂️ Структура папок
 
 ```
-Assets/
-└── Sprites/
-    ├── Elements/              ← Иконки стихий
-    │   ├── element_neutral.png
-    │   ├── element_fire.png
-    │   ├── element_water.png
-    │   ├── element_earth.png
-    │   ├── element_air.png
-    │   ├── element_lightning.png
-    │   ├── element_void.png
-    │   └── element_poison.png
-    │
-    ├── Techniques/            ← Иконки типов техник
-    │   ├── technique_melee.png
-    │   ├── technique_ranged.png
-    │   ├── technique_defense.png
-    │   ├── technique_healing.png
-    │   ├── technique_movement.png
-    │   ├── technique_cultivation.png
-    │   ├── technique_support.png
-    │   └── technique_curse.png
-    │
-    ├── Items/                 ← Материалы и расходники
+UnityProject/Assets/Sprites/
+├── Elements/              ← Иконки стихий (8)
+│   ├── element_neutral.png
+│   ├── element_fire.png
+│   ├── element_water.png
+│   ├── element_earth.png
+│   ├── element_air.png
+│   ├── element_lightning.png
+│   ├── element_void.png
+│   └── element_poison.png
+│
+├── Techniques/            ← Иконки типов техник (11)
+│   ├── technique_melee.png
+│   ├── technique_ranged.png
+│   ├── technique_defense.png
+│   ├── technique_healing.png
+│   ├── technique_movement.png
+│   ├── technique_cultivation.png
+│   ├── technique_support.png
+│   ├── technique_curse.png
+│   ├── technique_formation.png    ⭐ НОВОЕ
+│   ├── technique_sensory.png      ⭐ НОВОЕ
+│   └── technique_poison.png       ⭐ НОВОЕ
+│
+├── Cultivation/           ← Уровни культивации (3 примера)
+│   ├── cultivation_01_awakened_core.png
+│   ├── cultivation_05_heart_of_heaven.png
+│   └── cultivation_10_ascension.png
+│
+├── Items/                 ← Материалы и расходники
     │   ├── material_iron_ore.png
     │   ├── material_iron_ingot.png
     │   ├── material_spirit_iron.png
@@ -105,7 +113,7 @@ Assets/
 
 Спрайты уже находятся в проекте:
 ```
-UnityProject/Local/Assets/Sprites/
+UnityProject/Assets/Sprites/
 ```
 
 ### 1.2 Настройка импорта (для каждого спрайта)
@@ -471,7 +479,7 @@ public class SpriteAssigner : EditorWindow
 
 ```bash
 # Пример генерации нового спрайта
-z-ai image -p "Game icon for cultivation game, [описание], fantasy style, game asset, icon style, high quality" -o "./UnityProject/Local/Assets/Sprites/[путь].png" -s 1024x1024
+z-ai image -p "Game icon for cultivation game, [описание], fantasy style, game asset, icon style, high quality" -o "./UnityProject/Assets/Sprites/[путь].png" -s 1024x1024
 ```
 
 ### Параметры промпта
