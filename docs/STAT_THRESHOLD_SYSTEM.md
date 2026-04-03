@@ -206,46 +206,33 @@ consolidated = min(virtualDelta, sleepHours * 0.025)
 
 ## 🔧 Реализация в коде
 
-### Структура данных
+> **Полная реализация:** [examples/StatThresholdSystem_Examples.md](./examples/StatThresholdSystem_Examples.md)
 
-```csharp
-public class StatDevelopment
-{
-    // Реальные характеристики
-    public float strength;
-    public float agility;
-    public float intelligence;
-    public float vitality;
-    
-    // Виртуальные дельты
-    public float virtualStrengthDelta;
-    public float virtualAgilityDelta;
-    public float virtualIntelligenceDelta;
-    public float virtualVitalityDelta;
-    
-    // Методы
-    public void AddDelta(StatType type, float amount);
-    public float GetThreshold(StatType type);
-    public float ConsolidateSleep(float hours);
-}
+### Структура данных StatDevelopment
+
+Ключевые поля:
+- **Реальные характеристики:** `strength`, `agility`, `intelligence`, `vitality`
+- **Виртуальные дельты:** `virtualStrengthDelta`, `virtualAgilityDelta`, `virtualIntelligenceDelta`, `virtualVitalityDelta`
+
+Ключевые методы:
+- `AddDelta(StatType type, float amount)` — добавление прогресса
+- `GetThreshold(StatType type)` — расчёт порога
+- `ConsolidateSleep(float hours)` — закрепление при сне
+- `CanAdvance(StatType type)` — проверка возможности повышения
+
+### Формула порога
+
+```
+threshold = floor(currentStat / 10)
 ```
 
-### Формула порога в коде
-
-```csharp
-public float GetThreshold(StatType type)
-{
-    float currentStat = GetStat(type);
-    return Mathf.Floor(currentStat / 10f);
-}
-
-public bool CanAdvance(StatType type)
-{
-    float delta = GetDelta(type);
-    float threshold = GetThreshold(type);
-    return delta >= threshold;
-}
-```
+Примеры:
+| Стат | Порог | Действие |
+|------|-------|----------|
+| 10 | 1.0 | 10 → 11: нужно 1.0 дельты |
+| 20 | 2.0 | 20 → 21: нужно 2.0 дельты |
+| 50 | 5.0 | 50 → 51: нужно 5.0 дельты |
+| 100 | 10.0 | 100 → 101: нужно 10.0 дельты |
 
 ---
 

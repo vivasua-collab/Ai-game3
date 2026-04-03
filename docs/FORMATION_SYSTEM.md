@@ -118,22 +118,12 @@
 
 ### Создание ядра
 
+> **Подробная структура:** [examples/FormationSystem_Examples.md](./examples/FormationSystem_Examples.md#1-требования-к-созданию-ядра-yaml)
+
 **Требования:**
-```yaml
-requirements:
-  # Профессия
-  skill: string              # ID профессии (masonry, jewelry, smithing, etc.)
-  minLevel: number           # Мин. уровень профессии
-  
-  # Материалы
-  materials: Array<{
-    id: string
-    quantity: number
-  }>
-  
-# Время изготовления
-craftTime: number            # минут
-```
+- Профессия (`skill`, `minLevel`)
+- Материалы (`id`, `quantity`)
+- Время изготовления (`craftTime`)
 
 **Примеры профессий:**
 - Камнетёс (masonry) — каменные диски
@@ -144,28 +134,20 @@ craftTime: number            # минут
 
 ### Внедрение формации в ядро
 
-```csharp
-interface CoreImbuement {
-  // Условия
-  conditions: {
-    knowsFormation: boolean;    // Практик знает формацию
-    isCompatible: boolean;      // level формации ∈ core.levels
-    isEmpty: boolean;           // Ядро не занято другой формацией
-  };
-  
-  // Процесс
-  process: {
-    qiCost: number;             // contourQi формации
-    time: number;               // contourQi / (conductivity × qiDensity)
-  };
-  
-  // Результат
-  result: {
-    coreFormation: FormationInCore;
-    isPermanent: true;          // Очистить ядро НЕЛЬЗЯ
-  };
-}
-```
+> **Подробная реализация:** [examples/FormationSystem_Examples.md](./examples/FormationSystem_Examples.md#2-интерфейс-coreimbuement-c)
+
+**Условия внедрения:**
+- `knowsFormation` — практик знает формацию
+- `isCompatible` — level формации ∈ core.levels
+- `isEmpty` — ядро не занято другой формацией
+
+**Процесс:**
+- `qiCost` = contourQi формации
+- `time` = contourQi / (conductivity × qiDensity)
+
+**Результат:**
+- Ядро содержит формацию
+- Очистить ядро НЕЛЬЗЯ (isPermanent = true)
 
 ---
 
@@ -198,46 +180,37 @@ interface CoreImbuement {
 
 ## Формулы
 
+> **Код реализации:** [examples/FormationSystem_Examples.md](./examples/FormationSystem_Examples.md#3-таблица-contour_qi_by_level-typescript)
+
 ### Стоимость активации (contourQi)
 
-```typescript
-const CONTOUR_QI_BY_LEVEL: Record<number, number> = {
-  1: 80,      // 80 × 2^0
-  2: 160,
-  3: 320,
-  4: 640,
-  5: 1280,
-  6: 2560,
-  7: 5120,
-  8: 10240,
-  9: 20480,
-};
-```
+| Уровень | ContourQi |
+|---------|-----------|
+| L1 | 80 |
+| L2 | 160 |
+| L3 | 320 |
+| L4 | 640 |
+| L5 | 1,280 |
+| L6 | 2,560 |
+| L7 | 5,120 |
+| L8 | 10,240 |
+| L9 | 20,480 |
+
+Формула: `contourQi = 80 × 2^(level-1)`
 
 ### Ёмкость формации (capacity)
 
-```typescript
-function calculateCapacity(
-  level: number,
-  size: FormationSize,
-  isHeavy: boolean = false
-): number {
-  const contourQi = CONTOUR_QI_BY_LEVEL[level];
-  
-  const MULTIPLIERS = {
-    small: 10,
-    medium: 50,
-    large: 200,
-    great: 1000,
-  };
-  
-  const HEAVY_MULTIPLIER = 10000;
-  
-  if (isHeavy && level >= 6) {
-    return contourQi * HEAVY_MULTIPLIER;
-  }
-  
-  return contourQi * MULTIPLIERS[size];
+> **Код функции:** [examples/FormationSystem_Examples.md](./examples/FormationSystem_Examples.md#4-функция-расчёта-ёмкости-формации-typescript)
+
+```
+capacity = contourQi × sizeMultiplier
+
+sizeMultiplier = {
+  small: 10,
+  medium: 50,
+  large: 200,
+  great: 1000,
+  heavy: 10000 (только для L6+)
 }
 ```
 
@@ -384,48 +357,48 @@ FormationSystem
 
 ### Enums (FormationCoreData.cs)
 
-```csharp
-public enum FormationCoreType
-{
-    Disk,           // Диск (портативный)
-    Altar,          // Алтарь (стационарный)
-    Array,          // Массив
-    Totem,          // Тотем
-    Seal            // Печать
-}
+> **Полная реализация:** [examples/FormationSystem_Examples.md](./examples/FormationSystem_Examples.md#5-enums-для-формаций-c)
 
-public enum FormationCoreVariant
-{
-    Stone,          // Камень
-    Jade,           // Нефрит
-    Iron,           // Железо
-    SpiritIron,     // Духовное железо
-    Crystal,        // Кристалл
-    StarMetal,      // Звёздный металл
-    VoidMatter      // Пустотная материя
-}
+**FormationCoreType:**
+| Значение | Описание |
+|----------|----------|
+| Disk | Диск (портативный) |
+| Altar | Алтарь (стационарный) |
+| Array | Массив |
+| Totem | Тотем |
+| Seal | Печать |
 
-public enum FormationType
-{
-    Barrier,        // Барьер
-    Trap,           // Ловушка
-    Amplification,  // Усиление
-    Suppression,    // Подавление
-    Gathering,      // Сбор
-    Detection,      // Обнаружение
-    Teleportation,  // Телепортация
-    Summoning       // Призыв
-}
+**FormationCoreVariant:**
+| Значение | Описание |
+|----------|----------|
+| Stone | Камень |
+| Jade | Нефрит |
+| Iron | Железо |
+| SpiritIron | Духовное железо |
+| Crystal | Кристалл |
+| StarMetal | Звёздный металл |
+| VoidMatter | Пустотная материя |
 
-public enum FormationSize
-{
-    Small,          // 3x3 м
-    Medium,         // 10x10 м
-    Large,          // 30x30 м
-    Great,          // 100x100 м
-    Heavy           // 300x300 м
-}
-```
+**FormationType:**
+| Значение | Описание |
+|----------|----------|
+| Barrier | Барьер |
+| Trap | Ловушка |
+| Amplification | Усиление |
+| Suppression | Подавление |
+| Gathering | Сбор |
+| Detection | Обнаружение |
+| Teleportation | Телепортация |
+| Summoning | Призыв |
+
+**FormationSize:**
+| Значение | Размер |
+|----------|--------|
+| Small | 3x3 м |
+| Medium | 10x10 м |
+| Large | 30x30 м |
+| Great | 100x100 м |
+| Heavy | 300x300 м |
 
 ---
 

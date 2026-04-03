@@ -1,7 +1,7 @@
 # 📂 Unity Documentation Listing
 
-**Версия:** 2.0  
-**Дата:** 2026-04-03  
+**Версия:** 2.1  
+**Дата:** 2026-04-04  
 **Проект:** Cultivation World Simulator → Unity Migration
 
 ---
@@ -10,7 +10,8 @@
 
 > **Все документы содержат ТОЛЬКО ТЕОРИЮ.**  
 > **НЕТ КОДА** — только теоретические описания систем.  
-> Код реализован в `UnityProject/Local/Assets/Scripts/`.
+> Код перенесён в `docs/examples/` — см. раздел "Примеры реализации".  
+> Реализация в Unity: `UnityProject/Local/Assets/Scripts/`.
 
 ---
 
@@ -139,6 +140,9 @@
 | [examples/TechniqueEffectsSystem.md](./examples/TechniqueEffectsSystem.md) | Система эффектов техник | ~2000 |
 | [examples/CharacterSpriteMirroring.md](./examples/CharacterSpriteMirroring.md) | Зеркалирование спрайтов персонажа | ~1500 |
 | [examples/OrbitalWeaponSystem.md](./examples/OrbitalWeaponSystem.md) | Система орбитального оружия | ~2000 |
+| [examples/BuffSystem_Examples.md](./examples/BuffSystem_Examples.md) | **🆕** Примеры кода системы баффов | ~2500 |
+| [examples/FormationSystem_Examples.md](./examples/FormationSystem_Examples.md) | **🆕** Примеры кода системы формаций | ~2500 |
+| [examples/StatThresholdSystem_Examples.md](./examples/StatThresholdSystem_Examples.md) | **🆕** Примеры кода порогов развития | ~2500 |
 
 ### Планы внедрения
 
@@ -160,9 +164,20 @@
 
 | Метрика | Значение |
 |---------|----------|
-| Всего документов игры | 60+ |
-| Общий объём | ~150,000 токенов |
+| Всего документов игры | 65+ |
+| Общий объём | ~160,000 токенов |
 | Средний размер | ~2,500 токенов |
+| Файлов примеров кода | 8 |
+
+---
+
+## ⚠️ Важно о коде
+
+> **В документации НЕТ кода** — только теоретические описания.
+> 
+> Весь код перенесён в `docs/examples/` для удобства разработчиков.
+> 
+> При необходимости посмотреть реализацию — используйте файлы примеров.
 
 ---
 
@@ -247,5 +262,6 @@ ARCHITECTURE.md (корневой документ)
 
 ---
 
-*Документ обновлён: 2026-04-03*  
+*Документ обновлён: 2026-04-04*  
+*Изменения: Код перенесён из документации в docs/examples/*  
 *Проект: Cultivation World Simulator Unity Migration*
