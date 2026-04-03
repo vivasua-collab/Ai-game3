@@ -1,14 +1,42 @@
 # Система баффов и дебаффов (Buff System)
 
 **Создано:** 2026-04-03
+**Обновлено:** 2026-04-04
 **Статус:** Теоретические изыскания
 **Приоритет:** Высокий
+
+---
+
+## ⚠️ КРИТИЧЕСКИЕ ПРАВИЛА
+
+> **ВАЖНО: Эти правила НЕНАРУШИМЫ и определяют баланс игры!**
+
+### Что НЕЛЬЗЯ менять баффами:
+
+| Параметр | Причина | Альтернатива |
+|----------|---------|--------------|
+| **Первичные характеристики** (STR, AGI, INT, VIT) | Развиваются только физическими действиями и закрепляются при сне | — |
+| **Ёмкость ядра (MaxQi)** | Определяется уровнем культивации | — |
+| **Регенерация Ци (QiRegen)** | Базовый параметр ядра (10%/сутки) | — |
+| **Плотность Ци** | Определяется уровнем культивации | — |
+
+### Что МОЖНО менять баффами:
+
+| Параметр | Ограничения | Примеры |
+|----------|-------------|---------|
+| **Текущее Ци** | Только регенерация/расход | Восстановление Ци |
+| **Проводимость** | Только временно, с ОТКАТОМ | См. раздел "Проводимость" |
+| **Вторичные характеристики** | Через мягкие капы | Attack, Defense, Speed |
+| **HP частей тела** | Регенерация, щиты | Лечение, поглощение урона |
+| **Скорости** | Через мягкие капы | Скорость атаки, передвижения |
 
 ---
 
 ## Обзор
 
 Система баффов и дебаффов управляет временными эффектами, влияющими на характеристики персонажа. Баффы — положительные эффекты, дебаффы — отрицательные.
+
+**Ключевой принцип:** Баффы не дают "бесплатных" постоянных улучшений — они временные и имеют свою цену.
 
 ---
 
@@ -22,7 +50,161 @@ BuffSystem
 ├── BuffData                 # Данные эффекта (ScriptableObject)
 ├── ActiveBuff               # Активный эффект на цели
 ├── BuffType                 # Типы эффектов
+├── ConductivityModifier     # Особая система для проводимости
 └── BuffUI                   # Отображение
+```
+
+---
+
+## Разделение характеристик
+
+### Первичные характеристики (НЕ трогать баффами!)
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                    ПЕРВИЧНЫЕ ХАРАКТЕРИСТИКИ                                  │
+│                    (Развиваются только физически)                            │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                              │
+│   ┌───────────────────────────────────────────────────────────────────────┐ │
+│   │ Strength (STR)                                                        │ │
+│   │ ├── Развитие: Физические действия, бой, тренировки                   │ │
+│   │ ├── Закрепление: Только при сне (минимум 4 часа)                     │ │
+│   │ └── Влияние: Урон, переносимый вес                                    │ │
+│   └───────────────────────────────────────────────────────────────────────┘ │
+│                                                                              │
+│   ┌───────────────────────────────────────────────────────────────────────┐ │
+│   │ Agility (AGI)                                                         │ │
+│   │ ├── Развитие: Уклонения, быстродействие, спарринги                   │ │
+│   │ ├── Закрепление: Только при сне                                       │ │
+│   │ └── Влияние: Уклонение, скорость атаки                                │ │
+│   └───────────────────────────────────────────────────────────────────────┘ │
+│                                                                              │
+│   ┌───────────────────────────────────────────────────────────────────────┐ │
+│   │ Intelligence (INT)                                                    │ │
+│   │ ├── Развитие: Использование техник, медитация, обучение              │ │
+│   │ ├── Закрепление: Только при сне                                       │ │
+│   │ └── Влияние: Эффективность техник, скорость обучения                  │ │
+│   └───────────────────────────────────────────────────────────────────────┘ │
+│                                                                              │
+│   ┌───────────────────────────────────────────────────────────────────────┐ │
+│   │ Vitality (VIT)                                                        │ │
+│   │ ├── Развитие: Получение урона + лечение, закалка тела                │ │
+│   │ ├── Закрепление: Только при сне                                       │ │
+│   │ └── Влияние: HP частей тела, регенерация                              │ │
+│   └───────────────────────────────────────────────────────────────────────┘ │
+│                                                                              │
+│   ══════════════════════════════════════════════════════════════════════   │
+│   БАФФЫ НЕ МОГУТ ВЛИЯТЬ НА ЭТИ ХАРАКТЕРИСТИКИ!                              │
+│   ══════════════════════════════════════════════════════════════════════   │
+│                                                                              │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+### Параметры ядра (НЕ трогать баффами!)
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                    ПАРАМЕТРЫ ЯДРА                                            │
+│                    (Определяются уровнем культивации)                        │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                              │
+│   MaxQi (Ёмкость ядра)                                                      │
+│   ├── Формула: baseCapacity × 1.1^totalSubLevels                           │
+│   ├── L1.0: 1,000                                                           │
+│   ├── L5.0: 45,260                                                          │
+│   └── L9.0: 2,048,400                                                       │
+│   ══════════════════════════════════════════════════════════════════════   │
+│   БАФФЫ НЕ МОГУТ ИЗМЕНЯТЬ ЁМКОСТЬ ЯДРА!                                      │
+│   ══════════════════════════════════════════════════════════════════════   │
+│                                                                              │
+│   QiRegen (Регенерация Ци)                                                  │
+│   ├── Базовая: 10% от ёмкости ядра в сутки                                  │
+│   ├── Источник: Микро-ядро                                                  │
+│   └── Ускоряется: Медитация, камни Ци, техники                              │
+│   ══════════════════════════════════════════════════════════════════════   │
+│   БАФФЫ НЕ МОГУТ УВЕЛИЧИТЬ БАЗОВУЮ РЕГЕНЕРАЦИЮ!                              │
+│   Можно ускорить ПОГЛОЩЕНИЕ (медитация, камни), но не регенерацию!          │
+│   ══════════════════════════════════════════════════════════════════════   │
+│                                                                              │
+│   Density (Плотность Ци)                                                    │
+│   ├── Формула: 2^(cultivationLevel - 1)                                    │
+│   ├── L1: 1, L2: 2, L3: 4 ... L9: 256                                      │
+│   └── Определяет качество Ци                                                │
+│   ══════════════════════════════════════════════════════════════════════   │
+│   БАФФЫ НЕ МОГУТ ИЗМЕНИТЬ ПЛОТНОСТЬ ЦИ!                                      │
+│   ══════════════════════════════════════════════════════════════════════   │
+│                                                                              │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## Особый случай: Проводимость (Conductivity)
+
+### Правила изменения проводимости
+
+> **Ключевой принцип:** Любой бонус к проводимости имеет ОТКАТ — понижение на большее время.
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                    СИСТЕМА ПРОВОДИМОСТИ                                      │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                              │
+│   Проводимость (Conductivity)                                               │
+│   ├── Формула при пробуждении: coreVolume / 360 секунд                     │
+│   ├── Влияет на: скорость поглощения Ци, скорость вывода для техник        │
+│   └── Влияет на: ёмкость рабочего буфера меридиан                          │
+│                                                                              │
+│   ══════════════════════════════════════════════════════════════════════   │
+│   ПРАВИЛО ОТКАТА:                                                           │
+│   ══════════════════════════════════════════════════════════════════════   │
+│                                                                              │
+│   bonusDuration      = X секунд (длительность бонуса)                       │
+│   penaltyDuration    = X × 3 секунд (длительность штрафа)                   │
+│   penaltyValue       = bonusValue × 0.5 (величина штрафа)                   │
+│                                                                              │
+│   Пример:                                                                    │
+│   ├── Бонус: +20% проводимости на 30 секунд                                │
+│   ├── Откат: -10% проводимости на 90 секунд                                │
+│   └── Итого: 30 сек усиления, затем 90 сек ослабления                      │
+│                                                                              │
+│   ══════════════════════════════════════════════════════════════════════   │
+│   ПРИЧИНА: Меридианы "растягиваются" при усилении,                         │
+│   затем должны "восстановиться" в сжатом состоянии.                        │
+│   ══════════════════════════════════════════════════════════════════════   │
+│                                                                              │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+### Структура ConductivityModifier
+
+```csharp
+/// <summary>
+/// Модификатор проводимости с системой отката.
+/// </summary>
+public class ConductivityModifier
+{
+    // Бонус
+    public float bonusValue;           // Величина бонуса (например, +0.2 = +20%)
+    public float bonusRemainingTime;   // Оставшееся время бонуса
+    
+    // Откат (наступает после завершения бонуса)
+    public float penaltyValue;         // Величина штрафа (bonusValue × 0.5)
+    public float penaltyRemainingTime; // Оставшееся время штрафа
+    
+    // Состояние
+    public bool isBonusActive;
+    public bool isPenaltyActive;
+    
+    // Расчёт
+    public float GetMultiplier()
+    {
+        if (isBonusActive) return 1f + bonusValue;
+        if (isPenaltyActive) return 1f - penaltyValue;
+        return 1f;
+    }
+}
 ```
 
 ---
@@ -31,66 +213,99 @@ BuffSystem
 
 ### Баффы (положительные)
 
-| Тип | Описание | Примеры |
-|-----|----------|---------|
-| `StatBoost` | Увеличение характеристики | +20% атаки, +50% скорости |
-| `Regeneration` | Регенерация | HP/Ци/Выносливость |
-| `Immunity` | Иммунитет | К яду, оглушению |
-| `Shield` | Щит | Поглощение урона |
-| `Haste` | Ускорение | Скорость атаки, передвижения |
-| `Invisibility` | Невидимость | Скрытность |
-| `PowerUp` | Усиление | Урон способностей |
+| Категория | Тип | Описание | Примеры |
+|-----------|-----|----------|---------|
+| **Вторичные статы** | AttackBoost | +X% к урону атак | Ярость, Кровавый азарт |
+| | DefenseBoost | +X% к защите | Железная кожа, Щит духа |
+| | SpeedBoost | +X% скорость | Стремительный шаг |
+| | CriticalBoost | +X% шанс крита | Мёртвый глаз |
+| **Регенерация** | HealthRegen | Восстановление HP | Регенерация тела |
+| | QiRestoration | Восстановление Ци | Поток Ци (НЕ регенерация!) |
+| **Проводимость** | ConductivityBoost | +X% проводимости (с откатом!) | Раскрытие меридиан |
+| **Защита** | Shield | Поглощение урона | Ци-щит |
+| | DamageReduction | Снижение урона | Каменная кожа |
+| **Иммунитет** | StatusImmunity | Иммунитет к статусу | Очищение |
+| **Ускорение** | AttackSpeed | Скорость атаки | Берсерк |
+| | CastSpeed | Скорость каста | Просветление |
 
 ### Дебаффы (отрицательные)
 
-| Тип | Описание | Примеры |
-|-----|----------|---------|
-| `StatReduction` | Снижение характеристики | -20% защиты, -30% скорости |
-| `DamageOverTime` | Урон во времени | Отравление, горение |
-| `Control` | Контроль | Оглушение, замедление, сон |
-| `Weaken` | Ослабление | Снижение урона, лечения |
-| `Curse` | Проклятие | Блокировка способностей |
-| `Vulnerability` | Уязвимость | +50% урона от элемента |
+| Категория | Тип | Описание | Примеры |
+|-----------|-----|----------|---------|
+| **Вторичные статы** | AttackReduction | -X% к урону | Слабость |
+| | DefenseReduction | -X% к защите | Проклятие брони |
+| | SpeedReduction | -X% скорость | Тяжесть |
+| **DoT** | Poison | Урон во времени | Отравление |
+| | Burn | Урон огнём | Горение |
+| | Bleed | Кровотечение | Рана |
+| **Контроль** | Stun | Оглушение | Молот оглушения |
+| | Slow | Замедление | Ледяные оковы |
+| | Freeze | Заморозка | Ледяная гробница |
+| **Специальные** | Silence | Блок техник | Безмолвие |
+| | Blind | Ослепление | Тьма |
+| | Vulnerability | +X% урона от элемента | Метка огня |
 
 ---
 
 ## Структуры данных
 
-### BuffType
+### BuffType (пересмотренный)
 
 ```csharp
-// Создано: 2026-04-03
-
 /// <summary>
 /// Тип баффа/дебаффа.
+/// ВАЖНО: Первичные характеристики (STR, AGI, INT, VIT) отсутствуют!
 /// </summary>
 public enum BuffType
 {
-    // Баффы
-    AttackBoost,        // Увеличение атаки
+    // === ВТОРИЧНЫЕ ХАРАКТЕРИСТИКИ ===
+    AttackBoost,        // Увеличение урона
     DefenseBoost,       // Увеличение защиты
     SpeedBoost,         // Увеличение скорости
-    QiRegen,            // Регенерация Ци
-    HealthRegen,        // Регенерация здоровья
-    StaminaRegen,       // Регенерация выносливости
     CriticalChance,     // Шанс критического удара
     CriticalDamage,     // Урон критического удара
-    DamageReduction,    // Снижение урона
     Evasion,            // Уклонение
-    Shield,             // Щит
-
-    // Дебаффы
-    AttackReduction,    // Снижение атаки
+    
+    // === РЕГЕНЕРАЦИЯ (текущие значения, НЕ базовые!) ===
+    HealthRegen,        // Регенерация здоровья (HP)
+    QiRestoration,      // Восстановление Ци (НЕ QiRegen!)
+    StaminaRegen,       // Регенерация выносливости
+    
+    // === ПРОВОДИМОСТЬ (особые правила!) ===
+    ConductivityBoost,  // Временное усиление с откатом
+    ConductivityPenalty,// Штраф (дебафф или откат)
+    
+    // === ЗАЩИТА ===
+    Shield,             // Щит (поглощение урона)
+    DamageReduction,    // Снижение урона
+    
+    // === ИММУНИТЕТ ===
+    Immunity_Poison,    // Иммунитет к яду
+    Immunity_Stun,      // Иммунитет к оглушению
+    Immunity_Slow,      // Иммунитет к замедлению
+    
+    // === УСКОРЕНИЕ ===
+    AttackSpeed,        // Скорость атаки
+    CastSpeed,          // Скорость каста
+    
+    // === ДЕБАФФЫ: Снижение характеристик ===
+    AttackReduction,    // Снижение урона
     DefenseReduction,   // Снижение защиты
     SpeedReduction,     // Снижение скорости
+    
+    // === ДЕБАФФЫ: DoT ===
     Poison,             // Отравление
     Burn,               // Горение
     Bleed,              // Кровотечение
     Freeze,             // Заморозка
+    
+    // === ДЕБАФФЫ: Контроль ===
     Stun,               // Оглушение
     Slow,               // Замедление
     Blind,              // Ослепление
     Silence,            // Безмолвие (блок техник)
+    
+    // === ДЕБАФФЫ: Специальные ===
     Curse,              // Проклятие
     Vulnerability       // Уязвимость к элементу
 }
@@ -100,7 +315,7 @@ public enum BuffType
 /// </summary>
 public enum BuffApplication
 {
-    Instant,            // Мгновенный эффект
+    Instant,            // Мгновенный эффект (лечение, урон)
     Duration,           // Длительный эффект
     Permanent,          // Постоянный (пока не снят)
     Stacking,           // Накапливающийся
@@ -119,7 +334,7 @@ public enum BuffStacking
 }
 ```
 
-### BuffData
+### BuffData (пересмотренный)
 
 ```csharp
 /// <summary>
@@ -133,57 +348,42 @@ public class BuffData : ScriptableObject
     public string displayName;
     [TextArea] public string description;
     public Sprite icon;
-
+    
     [Header("Type")]
     public BuffType type;
     public bool isDebuff;
     public Element element;         // Связанный элемент
-
+    
     [Header("Effect")]
     public float value;             // Значение эффекта
     public bool isPercentage;       // true = %, false = абсолютное
-    public StatType affectedStat;   // Затронутая характеристика
-
+    
     [Header("Duration")]
     public BuffApplication application;
     public float duration;          // Длительность в секундах
     public int maxStacks = 1;       // Максимум стеков
     public BuffStacking stackingBehavior;
-
+    
+    // === ОСОБОЕ ДЛЯ ПРОВОДИМОСТИ ===
+    [Header("Conductivity Special (только для ConductivityBoost!)")]
+    public bool hasConductivityPenalty = true;  // Всегда true для проводимости
+    public float penaltyMultiplier = 3f;        // Длительность отката ×3
+    public float penaltyValueMultiplier = 0.5f; // Величина отката ×0.5
+    
     [Header("Tick Effect (для DoT/HoT)")]
     public bool hasTickEffect;
     public float tickInterval = 1f;
     public int tickDamage;
     public int tickHealing;
-
+    
     [Header("Visual")]
     public GameObject effectPrefab;
     public Color buffColor = Color.green;
     public Color debuffColor = Color.red;
-
+    
     [Header("Sound")]
     public AudioClip applySound;
     public AudioClip removeSound;
-}
-
-/// <summary>
-/// Затрагиваемые характеристики.
-/// </summary>
-public enum StatType
-{
-    Health,
-    MaxHealth,
-    Qi,
-    MaxQi,
-    Stamina,
-    MaxStamina,
-    Attack,
-    Defense,
-    Speed,
-    CriticalChance,
-    CriticalDamage,
-    QiRegenRate,
-    HealthRegenRate
 }
 ```
 
@@ -201,7 +401,10 @@ public class ActiveBuff
     public float tickTimer;
     public GameObject source;
     public bool isActive;
-
+    
+    // Для проводимости
+    public ConductivityModifier conductivityModifier;
+    
     public float Progress => data.duration > 0 ? 1f - (remainingDuration / data.duration) : 0f;
     public float TotalValue => data.value * currentStacks;
 }
@@ -209,380 +412,9 @@ public class ActiveBuff
 
 ---
 
-## Реализация
-
-### BuffManager.cs
-
-```csharp
-// Создано: 2026-04-03
-// Теоретическая реализация
-
-using UnityEngine;
-using System.Collections.Generic;
-
-public class BuffManager : MonoBehaviour
-{
-    #region Configuration
-
-    [Header("Settings")]
-    [SerializeField] private int maxBuffs = 10;
-    [SerializeField] private int maxDebuffs = 10;
-
-    #endregion
-
-    #region State
-
-    private List<ActiveBuff> activeBuffs = new List<ActiveBuff>();
-    private Dictionary<string, ActiveBuff> buffDict = new Dictionary<string, ActiveBuff>();
-
-    // Кэшированные модификаторы
-    private Dictionary<StatType, float> statModifiers = new Dictionary<StatType, float>();
-
-    #endregion
-
-    #region Events
-
-    public event System.Action<ActiveBuff> OnBuffApplied;
-    public event System.Action<ActiveBuff> OnBuffRemoved;
-    public event System.Action<ActiveBuff, int> OnBuffStacked;
-    public event System.Action<StatType, float> OnStatModified;
-
-    #endregion
-
-    #region Unity Lifecycle
-
-    private void Update()
-    {
-        UpdateBuffs(Time.deltaTime);
-    }
-
-    #endregion
-
-    #region Apply Buff
-
-    /// <summary>
-    /// Применяет бафф к цели.
-    /// </summary>
-    public bool ApplyBuff(BuffData buffData, GameObject source = null)
-    {
-        if (buffData == null) return false;
-
-        // Проверяем лимит
-        var buffList = buffData.isDebuff ? GetDebuffs() : GetBuffs();
-        int maxCount = buffData.isDebuff ? maxDebuffs : maxBuffs;
-
-        if (buffList.Count >= maxCount && !buffDict.ContainsKey(buffData.id))
-        {
-            Debug.LogWarning($"[BuffManager] Buff limit reached for {(buffData.isDebuff ? "debuffs" : "buffs")}");
-            return false;
-        }
-
-        // Проверяем, есть ли уже такой бафф
-        if (buffDict.TryGetValue(buffData.id, out var existingBuff))
-        {
-            return HandleExistingBuff(existingBuff, buffData, source);
-        }
-
-        // Создаём новый бафф
-        var newBuff = new ActiveBuff
-        {
-            data = buffData,
-            remainingDuration = buffData.duration,
-            currentStacks = 1,
-            tickTimer = 0f,
-            source = source,
-            isActive = true
-        };
-
-        activeBuffs.Add(newBuff);
-        buffDict[buffData.id] = newBuff;
-
-        // Применяем эффект к характеристикам
-        ApplyStatModifier(buffData);
-
-        OnBuffApplied?.Invoke(newBuff);
-
-        // Звук применения
-        if (buffData.applySound != null)
-        {
-            AudioSource.PlayClipAtPoint(buffData.applySound, transform.position);
-        }
-
-        return true;
-    }
-
-    /// <summary>
-    /// Обрабатывает повторное применение баффа.
-    /// </summary>
-    private bool HandleExistingBuff(ActiveBuff existing, BuffData data, GameObject source)
-    {
-        switch (data.stackingBehavior)
-        {
-            case BuffStacking.Replace:
-                RemoveBuff(data.id);
-                return ApplyBuff(data, source);
-
-            case BuffStacking.Refresh:
-                existing.remainingDuration = data.duration;
-                return true;
-
-            case BuffStacking.Stack:
-                if (existing.currentStacks < data.maxStacks)
-                {
-                    existing.currentStacks++;
-                    existing.remainingDuration = data.duration;
-                    ApplyStatModifier(data); // Добавляем ещё один модификатор
-                    OnBuffStacked?.Invoke(existing, existing.currentStacks);
-                    return true;
-                }
-                return false;
-
-            case BuffStacking.Ignore:
-            default:
-                return false;
-        }
-    }
-
-    #endregion
-
-    #region Remove Buff
-
-    /// <summary>
-    /// Удаляет бафф по ID.
-    /// </summary>
-    public bool RemoveBuff(string buffId)
-    {
-        if (!buffDict.TryGetValue(buffId, out var buff))
-            return false;
-
-        // Убираем модификаторы
-        RemoveStatModifier(buff.data, buff.currentStacks);
-
-        // Удаляем из списков
-        activeBuffs.Remove(buff);
-        buffDict.Remove(buffId);
-
-        OnBuffRemoved?.Invoke(buff);
-
-        // Звук удаления
-        if (buff.data.removeSound != null)
-        {
-            AudioSource.PlayClipAtPoint(buff.data.removeSound, transform.position);
-        }
-
-        return true;
-    }
-
-    /// <summary>
-    /// Удаляет все баффы типа.
-    /// </summary>
-    public void RemoveAllBuffsOfType(BuffType type)
-    {
-        var toRemove = activeBuffs.FindAll(b => b.data.type == type);
-        foreach (var buff in toRemove)
-        {
-            RemoveBuff(buff.data.id);
-        }
-    }
-
-    /// <summary>
-    /// Удаляет все баффы.
-    /// </summary>
-    public void RemoveAllBuffs()
-    {
-        var ids = new List<string>(buffDict.Keys);
-        foreach (var id in ids)
-        {
-            RemoveBuff(id);
-        }
-    }
-
-    /// <summary>
-    /// Удаляет все дебаффы.
-    /// </summary>
-    public void RemoveAllDebuffs()
-    {
-        var toRemove = activeBuffs.FindAll(b => b.data.isDebuff);
-        foreach (var buff in toRemove)
-        {
-            RemoveBuff(buff.data.id);
-        }
-    }
-
-    #endregion
-
-    #region Update
-
-    /// <summary>
-    /// Обновляет все баффы.
-    /// </summary>
-    private void UpdateBuffs(float deltaTime)
-    {
-        var expiredBuffs = new List<ActiveBuff>();
-
-        foreach (var buff in activeBuffs)
-        {
-            // Обновляем длительность
-            if (buff.data.application != BuffApplication.Permanent)
-            {
-                buff.remainingDuration -= deltaTime;
-
-                if (buff.remainingDuration <= 0)
-                {
-                    expiredBuffs.Add(buff);
-                    continue;
-                }
-            }
-
-            // Обновляем тиковые эффекты
-            if (buff.data.hasTickEffect)
-            {
-                buff.tickTimer += deltaTime;
-
-                if (buff.tickTimer >= buff.data.tickInterval)
-                {
-                    ProcessTickEffect(buff);
-                    buff.tickTimer = 0f;
-                }
-            }
-        }
-
-        // Удаляем истёкшие баффы
-        foreach (var buff in expiredBuffs)
-        {
-            RemoveBuff(buff.data.id);
-        }
-    }
-
-    /// <summary>
-    /// Обрабатывает тиковый эффект.
-    /// </summary>
-    private void ProcessTickEffect(ActiveBuff buff)
-    {
-        // Урон
-        if (buff.data.tickDamage > 0)
-        {
-            // var health = GetComponent<IHealth>();
-            // health?.TakeDamage(buff.data.tickDamage);
-        }
-
-        // Исцеление
-        if (buff.data.tickHealing > 0)
-        {
-            // var health = GetComponent<IHealth>();
-            // health?.Heal(buff.data.tickHealing);
-        }
-    }
-
-    #endregion
-
-    #region Stat Modifiers
-
-    /// <summary>
-    /// Применяет модификатор характеристики.
-    /// </summary>
-    private void ApplyStatModifier(BuffData data)
-    {
-        if (!statModifiers.ContainsKey(data.affectedStat))
-        {
-            statModifiers[data.affectedStat] = 0f;
-        }
-
-        statModifiers[data.affectedStat] += data.value;
-        OnStatModified?.Invoke(data.affectedStat, statModifiers[data.affectedStat]);
-    }
-
-    /// <summary>
-    /// Убирает модификатор характеристики.
-    /// </summary>
-    private void RemoveStatModifier(BuffData data, int stacks = 1)
-    {
-        if (statModifiers.ContainsKey(data.affectedStat))
-        {
-            statModifiers[data.affectedStat] -= data.value * stacks;
-            OnStatModified?.Invoke(data.affectedStat, statModifiers[data.affectedStat]);
-        }
-    }
-
-    /// <summary>
-    /// Получает модификатор характеристики.
-    /// </summary>
-    public float GetStatModifier(StatType stat)
-    {
-        return statModifiers.TryGetValue(stat, out var value) ? value : 0f;
-    }
-
-    /// <summary>
-    /// Вычисляет итоговое значение с модификаторами.
-    /// </summary>
-    public float CalculateStat(StatType stat, float baseValue)
-    {
-        float modifier = GetStatModifier(stat);
-        return baseValue + modifier;
-    }
-
-    #endregion
-
-    #region Queries
-
-    /// <summary>
-    /// Проверяет наличие баффа.
-    /// </summary>
-    public bool HasBuff(string buffId)
-    {
-        return buffDict.ContainsKey(buffId);
-    }
-
-    /// <summary>
-    /// Проверяет наличие баффа типа.
-    /// </summary>
-    public bool HasBuffOfType(BuffType type)
-    {
-        return activeBuffs.Exists(b => b.data.type == type);
-    }
-
-    /// <summary>
-    /// Получает активный бафф.
-    /// </summary>
-    public ActiveBuff GetBuff(string buffId)
-    {
-        return buffDict.TryGetValue(buffId, out var buff) ? buff : null;
-    }
-
-    /// <summary>
-    /// Получает все баффы.
-    /// </summary>
-    public List<ActiveBuff> GetBuffs()
-    {
-        return activeBuffs.FindAll(b => !b.data.isDebuff);
-    }
-
-    /// <summary>
-    /// Получает все дебаффы.
-    /// </summary>
-    public List<ActiveBuff> GetDebuffs()
-    {
-        return activeBuffs.FindAll(b => b.data.isDebuff);
-    }
-
-    /// <summary>
-    /// Получает количество стеков баффа.
-    /// </summary>
-    public int GetStackCount(string buffId)
-    {
-        var buff = GetBuff(buffId);
-        return buff?.currentStacks ?? 0;
-    }
-
-    #endregion
-}
-```
-
----
-
 ## Примеры баффов
 
-### Положительные (Баффы)
+### Правильные примеры
 
 ```json
 {
@@ -591,31 +423,35 @@ public class BuffManager : MonoBehaviour
       "id": "attack_boost_20",
       "type": "AttackBoost",
       "displayName": "Ярость",
-      "description": "+20% к урону атак",
-      "value": 20,
+      "description": "+20% к урону атак на 30 секунд",
+      "value": 0.20,
       "isPercentage": true,
       "duration": 30,
       "color": "#FFD700"
     },
     {
-      "id": "defense_boost_30",
-      "type": "DefenseBoost",
-      "displayName": "Железная кожа",
-      "description": "+30% к защите",
-      "value": 30,
+      "id": "conductivity_boost_temp",
+      "type": "ConductivityBoost",
+      "displayName": "Раскрытие меридиан",
+      "description": "+25% проводимости на 20 сек, затем -12.5% на 60 сек",
+      "value": 0.25,
       "isPercentage": true,
-      "duration": 60,
-      "color": "#808080"
+      "duration": 20,
+      "hasConductivityPenalty": true,
+      "penaltyMultiplier": 3.0,
+      "penaltyValueMultiplier": 0.5,
+      "color": "#00BFFF"
     },
     {
-      "id": "qi_regen_50",
-      "type": "QiRegen",
+      "id": "qi_restoration",
+      "type": "QiRestoration",
       "displayName": "Поток Ци",
-      "description": "+50% регенерация Ци",
-      "value": 50,
-      "isPercentage": true,
-      "duration": 120,
-      "color": "#00BFFF"
+      "description": "Восстанавливает 50 Ци каждые 5 секунд",
+      "hasTickEffect": true,
+      "tickInterval": 5,
+      "tickHealing": 50,
+      "duration": 60,
+      "color": "#00FF88"
     },
     {
       "id": "shield_100",
@@ -631,52 +467,28 @@ public class BuffManager : MonoBehaviour
 }
 ```
 
-### Отрицательные (Дебаффы)
+### НЕПРАВИЛЬНЫЕ примеры (ЗАПРЕЩЕНО!)
 
 ```json
 {
-  "debuffs": [
+  "forbidden_examples": [
     {
-      "id": "poison",
-      "type": "Poison",
-      "displayName": "Отравление",
-      "description": "Наносит 5 урона каждые 2 секунды",
-      "duration": 10,
-      "hasTickEffect": true,
-      "tickInterval": 2,
-      "tickDamage": 5,
-      "color": "#800080",
-      "stackingBehavior": "Refresh"
+      "id": "WRONG_strength_boost",
+      "type": "StrengthBoost",
+      "description": "НЕЛЬЗЯ! Первичная характеристика!",
+      "reason": "STR развивается только физически!"
     },
     {
-      "id": "burn",
-      "type": "Burn",
-      "displayName": "Горение",
-      "description": "Наносит 8 урона каждую секунду",
-      "element": "Fire",
-      "duration": 5,
-      "hasTickEffect": true,
-      "tickInterval": 1,
-      "tickDamage": 8,
-      "color": "#FF4500"
+      "id": "WRONG_max_qi_boost",
+      "type": "MaxQiBoost",
+      "description": "НЕЛЬЗЯ! Ёмкость ядра!",
+      "reason": "MaxQi определяется уровнем культивации!"
     },
     {
-      "id": "slow_30",
-      "type": "Slow",
-      "displayName": "Замедление",
-      "description": "-30% скорость передвижения",
-      "value": -30,
-      "isPercentage": true,
-      "duration": 5,
-      "color": "#87CEEB"
-    },
-    {
-      "id": "stun",
-      "type": "Stun",
-      "displayName": "Оглушение",
-      "description": "Невозможно действовать",
-      "duration": 2,
-      "color": "#FFFF00"
+      "id": "WRONG_qi_regen_boost",
+      "type": "QiRegenBoost",
+      "description": "НЕЛЬЗЯ! Базовая регенерация!",
+      "reason": "QiRegen = 10%/сутки, только от уровня!"
     }
   ]
 }
@@ -691,26 +503,30 @@ public class BuffManager : MonoBehaviour
 ```
 ┌─────────────────────────────────┐
 │  Баффы:                         │
-│  [⚔️] [🛡️] [💧] [✨]            │
-│   28s   55s  112s  60s          │
+│  [⚔️] [🛡️] [⚡] [💧]            │
+│   28s   55s  18s*  112s         │
+│                      ↑          │
+│                      └── * = активен откат после │
 ├─────────────────────────────────┤
 │  Дебаффы:                       │
-│  [☠️]x3 [🔥]                    │
-│   5s     3s                     │
+│  [☠️]x3 [🔥] [🧊]               │
+│   5s     3s   10s               │
 └─────────────────────────────────┘
 ```
 
-### Tooltip баффа
+### Tooltip баффа проводимости
 
 ```
-┌───────────────────────────┐
-│ ⚔️ Ярость                 │
-├───────────────────────────┤
-│ +20% к урону атак         │
-│                           │
-│ Осталось: 28 секунд       │
-│ Стеки: x2                 │
-└───────────────────────────┘
+┌───────────────────────────────────┐
+│ ⚡ Раскрытие меридиан             │
+├───────────────────────────────────┤
+│ +25% проводимости                 │
+│                                   │
+│ Осталось: 18 секунд               │
+│                                   │
+│ ⚠️ После завершения:              │
+│ -12.5% проводимости на 60 сек     │
+└───────────────────────────────────┘
 ```
 
 ---
@@ -720,27 +536,42 @@ public class BuffManager : MonoBehaviour
 ### С техниками
 
 ```csharp
-// В TechniqueController
+// В TechniqueController (теоретический пример)
 private void ApplyTechniqueEffects(TechniqueData technique, GameObject target)
 {
     var buffManager = target.GetComponent<BuffManager>();
-
+    
     foreach (var buffId in technique.buffsToApply)
     {
         var buffData = BuffDatabase.GetBuff(buffId);
+        
+        // Проверка на запрещённые типы (должна быть в редакторе!)
+        if (IsForbiddenBuffType(buffData.type))
+        {
+            Debug.LogError($"[BuffSystem] Запрещённый тип баффа: {buffData.type}");
+            continue;
+        }
+        
         buffManager?.ApplyBuff(buffData, gameObject);
     }
+}
+
+private bool IsForbiddenBuffType(BuffType type)
+{
+    // Первичные характеристики
+    // MaxQi, QiRegen, Density — не существуют в BuffType
+    return false;
 }
 ```
 
 ### С предметами
 
 ```csharp
-// В ConsumableItem
+// В ConsumableItem (теоретический пример)
 public override void Use(GameObject user)
 {
     var buffManager = user.GetComponent<BuffManager>();
-
+    
     foreach (var buff in buffs)
     {
         buffManager?.ApplyBuff(buff);
@@ -750,5 +581,56 @@ public override void Use(GameObject user)
 
 ---
 
+## Лорное обоснование
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                    ПОЧЕМУ ТАКИЕ ОГРАНИЧЕНИЯ?                                 │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                              │
+│   Первичные характеристики:                                                 │
+│   ─────────────────────────                                                 │
+│   Тело практика — это результат годов тренировок.                           │
+│   Нельзя "выпить пилюлю" и стать сильнее —                                 │
+│   мышцы требуют физических нагрузок.                                        │
+│   Это фундаментальный принцип культивации:                                 │
+│   "Внешнее не заменяет внутреннее".                                        │
+│                                                                              │
+│   Ёмкость ядра:                                                             │
+│   ─────────────────                                                         │
+│   Ядро — это сосуд, сформированный при пробуждении.                        │
+│   Его размер определяется структурой души и тела.                          │
+│   Расширение возможно только через прорыв (трансформацию).                 │
+│   Бафф не может "растянуть" ядро без повреждений.                          │
+│                                                                              │
+│   Регенерация Ци:                                                           │
+│   ──────────────────                                                        │
+│   Микро-ядро работает автономно, как сердце.                               │
+│   Нельзя "ускорить сердце" пилюлей без последствий.                        │
+│   Можно только ПОГЛОЩАТЬ Ци извне (медитация, камни).                      │
+│                                                                              │
+│   Проводимость и откат:                                                     │
+│   ──────────────────────                                                    │
+│   Меридианы — каналы для Ци, подобны сосудам.                              │
+│   Временное расширение (бафф) растягивает стенки.                          │
+│   После действия стенки "сжимаются" — временная слабость.                  │
+│   Это цена за кратковременное усиление.                                    │
+│                                                                              │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## 📚 Связанные документы
+
+- [STAT_THRESHOLD_SYSTEM.md](./STAT_THRESHOLD_SYSTEM.md) — Развитие характеристик
+- [QI_SYSTEM.md](./QI_SYSTEM.md) — Система Ци
+- [MORTAL_DEVELOPMENT.md](./MORTAL_DEVELOPMENT.md) — Развитие смертных
+- [ARCHITECTURE.md](./ARCHITECTURE.md) — Архитектура
+- [ALGORITHMS.md](./ALGORITHMS.md) — Мягкие капы
+
+---
+
 *Документ создан: 2026-04-03*
+*Обновлено: 2026-04-04 — Добавлены критические правила ограничений*
 *Статус: Теоретические изыскания*
