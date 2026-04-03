@@ -257,6 +257,44 @@ namespace CultivationGame.Body
             }
         }
         
+        // === Редактировано: 2026-04-03 - Convenience methods for BuffManager ===
+        
+        /// <summary>
+        /// Применить урон к телу (распределяется по частям).
+        /// Удобный метод для системы баффов.
+        /// </summary>
+        public void ApplyDamage(int amount)
+        {
+            if (amount <= 0) return;
+            
+            // Наносим урон в случайную часть тела
+            TakeDamageRandom(amount);
+        }
+        
+        /// <summary>
+        /// Исцелить тело (распределяется по частям).
+        /// Удобный метод для системы баффов.
+        /// </summary>
+        public void Heal(int amount)
+        {
+            if (amount <= 0) return;
+            
+            // Распределяем лечение по всем частям
+            float healPerPart = (float)amount / bodyParts.Count;
+            foreach (var part in bodyParts)
+            {
+                if (!part.IsSevered())
+                {
+                    part.Heal(healPerPart, healPerPart * 0.3f);
+                }
+            }
+        }
+        
+        /// <summary>
+        /// Получить текущую жизненную силу (Vitality).
+        /// </summary>
+        public int Vitality => vitality;
+        
         // === Regeneration ===
         
         /// <summary>

@@ -633,6 +633,7 @@ namespace CultivationGame.Core
     /// </summary>
     public enum GameState
     {
+        None,           // Редактировано: 2026-04-03 - Sentinel state для инициализации
         MainMenu,       // Главное меню
         Loading,        // Загрузка
         Playing,        // Игра

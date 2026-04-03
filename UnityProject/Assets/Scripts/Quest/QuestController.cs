@@ -109,7 +109,8 @@ namespace CultivationGame.Quest
         
         private void OnDestroy()
         {
-            ServiceLocator.Unregister<QuestController>(this);
+            // Редактировано: 2026-04-03 - Unregister не принимает аргумент
+            ServiceLocator.Unregister<QuestController>();
         }
         
         // === Quest Management ===

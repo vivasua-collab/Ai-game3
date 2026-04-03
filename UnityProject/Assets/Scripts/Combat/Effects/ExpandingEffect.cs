@@ -1,7 +1,9 @@
 // Создано: 2026-04-03
+// Редактировано: 2026-04-03
 // Источник: docs/examples/TechniqueEffectsSystem.md
 
 using UnityEngine;
+using CultivationGame.Core;
 
 namespace CultivationWorld.Combat.Effects
 {

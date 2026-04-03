@@ -74,21 +74,28 @@ namespace CultivationGame.Formation
             // Сам владелец — союзник
             if (target == owner) return true;
 
-            // Проверяем фракцию/команду
-            var targetFaction = target.GetComponent<World.FactionController>();
-            var ownerFaction = owner.GetComponent<World.FactionController>();
-
-            if (targetFaction != null && ownerFaction != null)
-            {
-                return targetFaction.IsAlly(ownerFaction.CurrentFactionId);
-            }
-
-            // Проверяем тег
+            // Проверяем теги
             if (target.CompareTag("Player") || target.CompareTag("Ally"))
                 return true;
 
             if (target.CompareTag("Enemy"))
                 return false;
+
+            // Проверяем фракцию через FactionController (если есть)
+            var targetFaction = target.GetComponent<World.FactionController>();
+            var ownerFaction = owner.GetComponent<World.FactionController>();
+
+            if (targetFaction != null && ownerFaction != null)
+            {
+                // Редактировано: 2026-04-03 - Используем GetMembership для проверки
+                // Если оба в одной фракции — союзники
+                var targetMembership = targetFaction.GetMembership(target.name);
+                var ownerMembership = ownerFaction.GetMembership(owner.name);
+                
+                if (targetMembership != null && ownerMembership != null && 
+                    targetMembership.FactionId == ownerMembership.FactionId)
+                    return true;
+            }
 
             // По умолчанию — нейтрал
             return false;
@@ -232,11 +239,18 @@ namespace CultivationGame.Formation
         {
             if (effect.tickValue <= 0) return;
 
-            // Проверяем наличие боевой системы
-            var combatant = target.GetComponent<Combatant>();
+            // Редактировано: 2026-04-03 - Используем ICombatant вместо Combatant
+            var combatant = target.GetComponent<Combat.OrbitalSystem.ICombatTarget>();
             if (combatant != null)
             {
-                combatant.TakeDamage(effect.tickValue, DamageType.Elemental, source);
+                var damage = new Combat.OrbitalSystem.DamageInfo
+                {
+                    Amount = effect.tickValue,
+                    Element = effect.element,
+                    Source = source,
+                    HitPoint = target.transform.position
+                };
+                combatant.TakeDamage(damage);
                 return;
             }
 
@@ -262,6 +276,7 @@ namespace CultivationGame.Formation
             if (qi != null)
             {
                 qi.SpendQi(effect.tickValue);
+                return;
             }
 
             Debug.Log($"[FormationEffects] Damage {effect.tickValue} applied to {target.name}");

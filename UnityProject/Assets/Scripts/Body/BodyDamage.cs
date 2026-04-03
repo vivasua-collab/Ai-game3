@@ -28,6 +28,7 @@ namespace CultivationGame.Body
         public bool IsFatal;             // Смертельно
         public bool CausedBleeding;      // Кровотечение
         public bool CausedShock;         // Шок
+        public bool WasAbsorbed;         // Редактировано: 2026-04-03 - Урон поглощён (щит/блок)
     }
     
     /// <summary>

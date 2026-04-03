@@ -127,8 +127,9 @@ namespace CultivationGame.Formation
 
         /// <summary>
         /// Событие истощения.
+        /// Редактировано: 2026-04-03 - изменено на Action<FormationCore> для передачи параметра
         /// </summary>
-        public event Action OnDepleted;
+        public event Action<FormationCore> OnDepleted;
 
         /// <summary>
         /// Событие применения эффектов.
@@ -507,7 +508,7 @@ namespace CultivationGame.Formation
             if (stage != FormationStage.Active) return;
 
             SetStage(FormationStage.Depleted);
-            OnDepleted?.Invoke();
+            OnDepleted?.Invoke(this);
 
             Debug.Log($"[Formation] Деактивирована: {formationData.displayName}");
         }

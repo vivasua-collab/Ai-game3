@@ -179,6 +179,11 @@ namespace CultivationGame.Buff
         public float ConductivityModifier => conductivityModifier;
         
         /// <summary>
+        /// Редактировано: 2026-04-03 - Скорость возврата модификатора проводимости
+        /// </summary>
+        public float ConductivityPaybackRate => conductivityPaybackRate;
+        
+        /// <summary>
         /// Может ли сущность действовать.
         /// </summary>
         public bool CanAct => !isStunned && !isRooted;

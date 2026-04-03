@@ -216,6 +216,10 @@ namespace CultivationGame.Data.ScriptableObjects
         [Tooltip("Значение")]
         public float value;
         
+        [Tooltip("Шанс срабатывания (%)")]
+        [Range(0f, 100f)]
+        public float triggerChance = 100f;  // Редактировано: 2026-04-03 - добавлено поле
+        
         [Tooltip("Масштабируется от характеристики")]
         public string scalingStat;
         
