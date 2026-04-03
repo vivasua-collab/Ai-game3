@@ -3,7 +3,7 @@
 // Cultivation World Simulator
 // Версия: 1.1
 // Создано: 2026-03-30 10:00:00 UTC
-// Редактировано: 2026-03-31 11:04:33 UTC
+// Редактировано: 2026-04-03 09:20:39 UTC
 // ============================================================================
 //
 // Источник: docs/TECHNIQUE_SYSTEM.md
@@ -178,32 +178,13 @@ namespace CultivationGame.Generators
         // | Transcendent| 2%    |
         private static readonly float[] GradeDistribution = { 0.60f, 0.28f, 0.10f, 0.02f };
 
-        // Названия техник по типам
-        private static readonly Dictionary<TechniqueType, string[]> TechniqueNames = new Dictionary<TechniqueType, string[]>
-        {
-            { TechniqueType.Combat, new[] { "Удар", "Атака", "Удар", "Атака", "Удар" } },
-            { TechniqueType.Defense, new[] { "Защита", "Блок", "Щит", "Стена", "Барьер" } },
-            { TechniqueType.Healing, new[] { "Исцеление", "Восстановление", "Лечение", "Регенерация", "Оздоровление" } },
-            { TechniqueType.Support, new[] { "Поддержка", "Усиление", "Помощь", "Бонус", "Прирост" } },
-            { TechniqueType.Movement, new[] { "Рывок", "Прыжок", "Перемещение", "Телепорт", "Полёт" } },
-            { TechniqueType.Curse, new[] { "Проклятие", "Порча", "Сглаз", "Скверна", "Тьма" } },
-            { TechniqueType.Poison, new[] { "Яд", "Токсин", "Отрава", "Зелье", "Мор" } },
-            { TechniqueType.Sensory, new[] { "Чувство", "Восприятие", "Обнаружение", "Взгляд", "Сенсор" } },
-            { TechniqueType.Formation, new[] { "Формация", "Массив", "Печать", "Узор", "Рунный круг" } },
-            { TechniqueType.Cultivation, new[] { "Медитация", "Практика", "Путь", "Сосредоточение", "Духовный покой" } }
-        };
+        // Названия техник по типам (УСТАРЕЛО - используйте NamingDatabase.TechniqueNames)
+        // Теперь используется NamingDatabase с грамматическим согласованием родов
+        // См. Scripts/Generators/Naming/NamingDatabase.cs
 
-        // Префиксы элементов
-        private static readonly Dictionary<Element, string> ElementPrefixes = new Dictionary<Element, string>
-        {
-            { Element.Fire, "Огненный" },
-            { Element.Water, "Водяной" },
-            { Element.Earth, "Земляной" },
-            { Element.Air, "Воздушный" },
-            { Element.Lightning, "Громовой" },
-            { Element.Void, "Пустотный" },
-            { Element.Neutral, "" }
-        };
+        // Префиксы элементов (УСТАРЕЛО - используйте NamingDatabase.ElementAdjectives)
+        // Теперь используется NamingDatabase с грамматическим согласованием родов
+        // См. Scripts/Generators/Naming/NamingDatabase.cs
 
         // Ограничения элементов для типов техник (источник: TECHNIQUE_SYSTEM.md §"Стихии")
         // | Тип техники  | Допустимые стихии              |
@@ -293,15 +274,16 @@ namespace CultivationGame.Generators
             if (technique.isUltimate)
                 technique.id = "ult_" + technique.id;
 
-            // Генерация имени
-            string prefix = ElementPrefixes.ContainsKey(technique.element) ? ElementPrefixes[technique.element] : "";
-            string baseName = GetTechniqueName(technique.type, rng);
-
-            if (!string.IsNullOrEmpty(prefix))
-                technique.nameRu = $"{prefix} {baseName}";
-            else
-                technique.nameRu = baseName;
-
+            // === Генерация имени с грамматическим согласованием ===
+            // Используем NamingDatabase и NameBuilder
+            var nounData = NamingDatabase.GetRandomTechniqueName(technique.type, rng);
+            
+            var builder = new NameBuilder();
+            builder.WithElement(technique.element)
+                   .WithNoun(nounData);
+            
+            technique.nameRu = builder.Build();
+            
             if (technique.isUltimate)
                 technique.nameRu = "⚡ " + technique.nameRu;
 

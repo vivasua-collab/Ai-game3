@@ -3,7 +3,7 @@
 // Cultivation World Simulator
 // Версия: 1.0
 // Создано: 2026-03-31 10:22:36 UTC
-// Редактировано: 2026-03-31 10:22:36 UTC
+// Редактировано: 2026-04-03 09:20:39 UTC
 // ============================================================================
 //
 // Источник: docs/EQUIPMENT_SYSTEM.md
@@ -209,17 +209,9 @@ namespace CultivationGame.Generators
             { MaterialCategory.Crystal, new[] { "Хрусталь", "Горный хрусталь", "Духовный кристалл", "Звёздный кристалл", "Изначальный кристалл" } }
         };
 
-        // Названия брони по подтипам
-        private static readonly Dictionary<ArmorSubtype, string[]> ArmorNamesBySubtype = new Dictionary<ArmorSubtype, string[]>
-        {
-            { ArmorSubtype.Head, new[] { "Шлем", "Корона", "Капюшон", "Диадема", "Маска" } },
-            { ArmorSubtype.Torso, new[] { "Нагрудник", "Кираса", "Кольчуга", "Мантия", "Доспех" } },
-            { ArmorSubtype.Arms, new[] { "Наручи", "Наплечники", "Рукава", "Браслеты", "Поножи рук" } },
-            { ArmorSubtype.Hands, new[] { "Перчатки", "Рукавицы", "Наручи кистей", "Кастеты", "Латные перчатки" } },
-            { ArmorSubtype.Legs, new[] { "Поножи", "Наголенники", "Штаны", "Брюки", "Латные поножи" } },
-            { ArmorSubtype.Feet, new[] { "Сабатоны", "Сапоги", "Ботинки", "Туфли", "Латные сапоги" } },
-            { ArmorSubtype.Full, new[] { "Полный доспех", "Латы", "Броня", "Доспех тела", "Панцирь" } }
-        };
+        // Названия брони по подтипам (УСТАРЕЛО - используйте NamingDatabase.ArmorNames)
+        // Теперь используется NamingDatabase с грамматическим согласованием родов
+        // См. Scripts/Generators/Naming/NamingDatabase.cs
 
         // Проводимость Ци материалов (источник: EQUIPMENT_SYSTEM.md §8.3)
         // | Материал        | Штраф к qi_efficiency |
@@ -497,35 +489,27 @@ namespace CultivationGame.Generators
             }
         }
 
+        /// <summary>
+        /// Генерация названия брони с грамматическим согласованием.
+        /// Использует NamingDatabase и NameBuilder для корректного согласования родов.
+        /// Примеры:
+        /// - "Лёгкая мантия" (не "Лёгкий мантия")
+        /// - "Тяжёлые перчатки" (не "Тяжёлый перчатки")
+        /// - "Улучшенная кираса" (не "Улучшенный кираса")
+        /// </summary>
         private static string GenerateName(GeneratedArmor armor, SeededRandom rng)
         {
-            string materialName = armor.materialId;
-            string baseName = "";
-
-            if (ArmorNamesBySubtype.ContainsKey(armor.subtype))
-                baseName = rng.NextElement(ArmorNamesBySubtype[armor.subtype]);
-            else
-                baseName = armor.subtype.ToString();
-
-            // Добавляем префикс грейда
-            string gradePrefix = armor.grade switch
-            {
-                EquipmentGrade.Damaged => "Повреждённый ",
-                EquipmentGrade.Refined => "Улучшенный ",
-                EquipmentGrade.Perfect => "Совершенный ",
-                EquipmentGrade.Transcendent => "Трансцендентный ",
-                _ => ""
-            };
-
-            // Добавляем весовой класс
-            string weightPrefix = armor.weightClass switch
-            {
-                ArmorWeightClass.Light => "Лёгкий ",
-                ArmorWeightClass.Heavy => "Тяжёлый ",
-                _ => ""
-            };
-
-            return $"{gradePrefix}{weightPrefix}{materialName} {baseName}";
+            // Получаем базовое название с грамматическим родом из базы данных
+            var nounData = NamingDatabase.GetRandomArmorName(armor.subtype, rng);
+            
+            // Используем NameBuilder для построения названия с согласованием
+            var builder = new NameBuilder();
+            builder.WithGrade(armor.grade)
+                   .WithWeightClass(armor.weightClass)
+                   .WithMaterial(armor.materialId)
+                   .WithNoun(nounData);
+            
+            return builder.Build();
         }
 
         private static string GenerateDescription(GeneratedArmor armor)

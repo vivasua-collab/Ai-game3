@@ -397,4 +397,4 @@ namespace CultivationGame.Generators
 
 ---
 
-*Документ создан: 2025-01-12*
+*Документ создан: 2026-04-03 09:14:44 UTC*

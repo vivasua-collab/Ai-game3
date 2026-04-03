@@ -3,7 +3,7 @@
 // Cultivation World Simulator
 // Версия: 1.0
 // Создано: 2026-03-31 10:22:36 UTC
-// Редактировано: 2026-03-31 10:22:36 UTC
+// Редактировано: 2026-04-03 09:20:39 UTC
 // ============================================================================
 //
 // Источник: docs/EQUIPMENT_SYSTEM.md
@@ -253,22 +253,9 @@ namespace CultivationGame.Generators
             { MaterialCategory.Crystal, new[] { "Хрусталь", "Горный хрусталь", "Духовный кристалл", "Звёздный кристалл", "Изначальный кристалл" } }
         };
 
-        // Названия оружия по подтипам
-        private static readonly Dictionary<WeaponSubtype, string[]> WeaponNamesBySubtype = new Dictionary<WeaponSubtype, string[]>
-        {
-            { WeaponSubtype.Unarmed, new[] { "Кастеты", "Когти", "Перчатки" } },
-            { WeaponSubtype.Dagger, new[] { "Кинжал", "Короткий меч", "Стилет" } },
-            { WeaponSubtype.Sword, new[] { "Меч", "Клинок", "Катана" } },
-            { WeaponSubtype.Greatsword, new[] { "Двуручный меч", "Палаш", "Клеймор" } },
-            { WeaponSubtype.Axe, new[] { "Топор", "Секира", "Боевой топор" } },
-            { WeaponSubtype.Spear, new[] { "Копьё", "Алебарда", "Глефа" } },
-            { WeaponSubtype.Bow, new[] { "Лук", "Длинный лук", "Короткий лук" } },
-            { WeaponSubtype.Staff, new[] { "Посох", "Жезл", "Скипетр" } },
-            { WeaponSubtype.Hammer, new[] { "Молот", "Боевой молот", "Кувалда" } },
-            { WeaponSubtype.Mace, new[] { "Булава", "Палица", "Моргенштерн" } },
-            { WeaponSubtype.Crossbow, new[] { "Арбалет", "Тяжёлый арбалет" } },
-            { WeaponSubtype.Wand, new[] { "Жезл", "Волшебная палочка", "Скипетр" } }
-        };
+        // Названия оружия по подтипам (УСТАРЕЛО - используйте NamingDatabase.WeaponNames)
+        // Теперь используется NamingDatabase с грамматическим согласованием родов
+        // См. Scripts/Generators/Naming/NamingDatabase.cs
 
         /// <summary>
         /// Сгенерировать одно оружие
@@ -540,27 +527,25 @@ namespace CultivationGame.Generators
             }
         }
 
+        /// <summary>
+        /// Генерация названия оружия с грамматическим согласованием.
+        /// Использует NamingDatabase и NameBuilder для корректного согласования родов.
+        /// Примеры:
+        /// - "Улучшенная секира" (не "Улучшенный секира")
+        /// - "Совершенное копьё" (не "Совершенный копьё")
+        /// </summary>
         private static string GenerateName(GeneratedWeapon weapon, SeededRandom rng)
         {
-            string materialName = weapon.materialId;
-            string baseName = "";
-
-            if (WeaponNamesBySubtype.ContainsKey(weapon.subtype))
-                baseName = rng.NextElement(WeaponNamesBySubtype[weapon.subtype]);
-            else
-                baseName = weapon.subtype.ToString();
-
-            // Добавляем префикс грейда
-            string gradePrefix = weapon.grade switch
-            {
-                EquipmentGrade.Damaged => "Сломанный ",
-                EquipmentGrade.Refined => "Улучшенный ",
-                EquipmentGrade.Perfect => "Совершенный ",
-                EquipmentGrade.Transcendent => "Трансцендентный ",
-                _ => ""
-            };
-
-            return $"{gradePrefix}{materialName} {baseName}";
+            // Получаем базовое название с грамматическим родом из базы данных
+            var nounData = NamingDatabase.GetRandomWeaponName(weapon.subtype, rng);
+            
+            // Используем NameBuilder для построения названия с согласованием
+            var builder = new NameBuilder();
+            builder.WithGrade(weapon.grade)
+                   .WithMaterial(weapon.materialId)
+                   .WithNoun(nounData);
+            
+            return builder.Build();
         }
 
         private static string GenerateDescription(GeneratedWeapon weapon)

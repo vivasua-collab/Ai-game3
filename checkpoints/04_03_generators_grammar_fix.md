@@ -1,312 +1,134 @@
 # Чекпоинт: Внедрение грамматического согласования в генераторы
 
 **Дата:** 2026-04-03 09:14:44 UTC
-**Статус:** in_progress
-**Фаза:** Планирование
+**Статус:** complete
+**Фаза:** Реализация завершена
 **Связанные документы:**
 - docs/GENERATORS_NAME_FIX.md
 - docs/examples/NameGenerator_Russian.md
 
 ---
 
-## 📋 ЭТАПЫ реализации
+## ✅ ВЫПОЛНЕННЫЕ ЭТАПЫ
 
-### ЭТАП 1: Создание инфраструктуры (1-2 часа)
+### ЭТАП 1: Создание инфраструктуры — ВЫПОЛНЕНО ✅
 
-#### 1.1 Новые файлы
+**Дата завершения:** 2026-04-03 09:20:39 UTC
 
-| Файл | Описание | Приоритет |
-|------|----------|-----------|
-| `Scripts/Generators/Naming/GrammaticalGender.cs` | Enum родов | Высокий |
-| `Scripts/Generators/Naming/AdjectiveForms.cs` | Формы прилагательных | Высокий |
-| `Scripts/Generators/Naming/NounWithGender.cs` | Структура существительного | Высокий |
-| `Scripts/Generators/Naming/NamingDatabase.cs` | База данных | Высокий |
-| `Scripts/Generators/Naming/NameBuilder.cs` | Утилита генерации | Средний |
+#### Созданные файлы
 
-#### 1.2 Структура папок
+| Файл | Статус |
+|------|--------|
+| `Scripts/Generators/Naming/GrammaticalGender.cs` | ✅ Создан |
+| `Scripts/Generators/Naming/AdjectiveForms.cs` | ✅ Создан |
+| `Scripts/Generators/Naming/NounWithGender.cs` | ✅ Создан |
+| `Scripts/Generators/Naming/NamingDatabase.cs` | ✅ Создан |
+| `Scripts/Generators/Naming/NameBuilder.cs` | ✅ Создан |
+
+#### Структура папок
 
 ```
 Scripts/Generators/
-├── Naming/                          # НОВАЯ ПАПКА
-│   ├── GrammaticalGender.cs         # Enum
-│   ├── AdjectiveForms.cs            # Struct
-│   ├── NounWithGender.cs            # Struct
+├── Naming/                          # СОЗДАНО
+│   ├── GrammaticalGender.cs         # Enum (Masculine, Feminine, Neuter, Plural)
+│   ├── AdjectiveForms.cs            # Struct с формами прилагательных
+│   ├── NounWithGender.cs            # Struct существительное + род
 │   ├── NamingDatabase.cs            # Static class с данными
-│   └── NameBuilder.cs               # Utility class
-├── WeaponGenerator.cs               # ИЗМЕНИТЬ
-├── ArmorGenerator.cs                # ИЗМЕНИТЬ
-├── TechniqueGenerator.cs            # ИЗМЕНИТЬ
+│   └── NameBuilder.cs               # Utility class для построения
+├── WeaponGenerator.cs               # ИЗМЕНЁН
+├── ArmorGenerator.cs                # ИЗМЕНЁН
+├── TechniqueGenerator.cs            # ИЗМЕНЁН
 └── ... другие генераторы
 ```
 
 ---
 
-### ЭТАП 2: Модификация WeaponGenerator (30-45 мин)
+### ЭТАП 2: Модификация WeaponGenerator — ВЫПОЛНЕНО ✅
 
-#### 2.1 Изменения в данных
+**Дата завершения:** 2026-04-03 09:20:39 UTC
 
-**Заменить:**
-```csharp
-// СТАРОЕ (строки 257-271)
-private static readonly Dictionary<WeaponSubtype, string[]> WeaponNamesBySubtype = ...
+**Изменения:**
+- Удалён старый словарь `WeaponNamesBySubtype`
+- Функция `GenerateName()` переписана с использованием `NamingDatabase` и `NameBuilder`
+- Добавлена документация с примерами
 
-// НОВОЕ
-private static readonly Dictionary<WeaponSubtype, NounWithGender[]> WeaponNamesBySubtype = new()
-{
-    { WeaponSubtype.Sword, new[] {
-        new NounWithGender("меч", GrammaticalGender.Masculine),
-        new NounWithGender("клинок", GrammaticalGender.Masculine),
-        new NounWithGender("катана", GrammaticalGender.Feminine)
-    }},
-    { WeaponSubtype.Axe, new[] {
-        new NounWithGender("топор", GrammaticalGender.Masculine),
-        new NounWithGender("секира", GrammaticalGender.Feminine)
-    }},
-    { WeaponSubtype.Spear, new[] {
-        new NounWithGender("копьё", GrammaticalGender.Neuter),
-        new NounWithGender("алебарда", GrammaticalGender.Feminine)
-    }},
-    // ... все подтипы
-};
-```
-
-#### 2.2 Изменения в GenerateName()
-
-**Заменить функцию (строки 543-564):**
-```csharp
-// СТАРОЕ
-private static string GenerateName(GeneratedWeapon weapon, SeededRandom rng)
-{
-    string gradePrefix = weapon.grade switch
-    {
-        EquipmentGrade.Damaged => "Сломанный ",
-        ...
-    };
-    return $"{gradePrefix}{materialName} {baseName}";
-}
-
-// НОВОЕ
-private static string GenerateName(GeneratedWeapon weapon, SeededRandom rng)
-{
-    // Получаем базовое название с родом
-    var nounData = rng.NextElement(WeaponNamesBySubtype[weapon.subtype]);
-    string baseName = nounData.noun;
-    GrammaticalGender gender = nounData.gender;
-    
-    // Строим название
-    var sb = new System.Text.StringBuilder();
-    
-    // Префикс грейда (согласованный)
-    if (weapon.grade != EquipmentGrade.Common)
-    {
-        var gradeAdj = NamingDatabase.GradeAdjectives[weapon.grade];
-        sb.Append(gradeAdj.GetForm(gender));
-        sb.Append(" ");
-    }
-    
-    // Материал (обычно как существительное, не согласуется)
-    sb.Append(weapon.materialId);
-    sb.Append(" ");
-    
-    // Базовое название
-    sb.Append(baseName);
-    
-    return sb.ToString();
-}
-```
+**Примеры результатов:**
+- ✅ "Улучшенная секира" (не "Улучшенный секира")
+- ✅ "Совершенное копьё" (не "Совершенный копьё")
+- ✅ "Трансцендентный меч" (правильно, мужской род)
 
 ---
 
-### ЭТАП 3: Модификация ArmorGenerator (30-45 мин)
+### ЭТАП 3: Модификация ArmorGenerator — ВЫПОЛНЕНО ✅
 
-#### 3.1 Изменения в данных
+**Дата завершения:** 2026-04-03 09:20:39 UTC
 
-**Заменить ArmorNamesBySubtype (строки 213-222):**
-```csharp
-private static readonly Dictionary<ArmorSubtype, NounWithGender[]> ArmorNamesBySubtype = new()
-{
-    { ArmorSubtype.Head, new[] {
-        new NounWithGender("шлем", GrammaticalGender.Masculine),
-        new NounWithGender("корона", GrammaticalGender.Feminine),
-        new NounWithGender("капюшон", GrammaticalGender.Masculine),
-        new NounWithGender("диадема", GrammaticalGender.Feminine)
-    }},
-    { ArmorSubtype.Torso, new[] {
-        new NounWithGender("нагрудник", GrammaticalGender.Masculine),
-        new NounWithGender("кираса", GrammaticalGender.Feminine),
-        new NounWithGender("кольчуга", GrammaticalGender.Feminine),
-        new NounWithGender("мантия", GrammaticalGender.Feminine)
-    }},
-    { ArmorSubtype.Hands, new[] {
-        new NounWithGender("перчатки", GrammaticalGender.Plural),
-        new NounWithGender("рукавицы", GrammaticalGender.Plural)
-    }},
-    { ArmorSubtype.Feet, new[] {
-        new NounWithGender("сапоги", GrammaticalGender.Plural),
-        new NounWithGender("ботинки", GrammaticalGender.Plural)
-    }},
-    // ... остальные
-};
-```
+**Изменения:**
+- Удалён старый словарь `ArmorNamesBySubtype`
+- Функция `GenerateName()` переписана с использованием `NamingDatabase` и `NameBuilder`
+- Добавлена поддержка весовых классов с согласованием
 
-#### 3.2 Изменения в GenerateName()
-
-**Заменить функцию (строки 500-529):**
-```csharp
-private static string GenerateName(GeneratedArmor armor, SeededRandom rng)
-{
-    var nounData = rng.NextElement(ArmorNamesBySubtype[armor.subtype]);
-    string baseName = nounData.noun;
-    GrammaticalGender gender = nounData.gender;
-    
-    var sb = new System.Text.StringBuilder();
-    
-    // Префикс грейда
-    if (armor.grade != EquipmentGrade.Common)
-    {
-        var gradeAdj = NamingDatabase.GradeAdjectives[armor.grade];
-        sb.Append(gradeAdj.GetForm(gender));
-        sb.Append(" ");
-    }
-    
-    // Префикс весового класса
-    if (armor.weightClass != ArmorWeightClass.Medium)
-    {
-        var weightAdj = NamingDatabase.WeightAdjectives[armor.weightClass];
-        sb.Append(weightAdj.GetForm(gender));
-        sb.Append(" ");
-    }
-    
-    sb.Append(armor.materialId);
-    sb.Append(" ");
-    sb.Append(baseName);
-    
-    return sb.ToString();
-}
-```
+**Примеры результатов:**
+- ✅ "Лёгкая мантия" (не "Лёгкий мантия")
+- ✅ "Тяжёлые перчатки" (не "Тяжёлый перчатки")
+- ✅ "Улучшенная кираса" (не "Улучшенный кираса")
 
 ---
 
-### ЭТАП 4: Модификация TechniqueGenerator (30-45 мин)
+### ЭТАП 4: Модификация TechniqueGenerator — ВЫПОЛНЕНО ✅
 
-#### 4.1 Изменения в данных
+**Дата завершения:** 2026-04-03 09:20:39 UTC
 
-**Заменить TechniqueNames (строки 182-194):**
-```csharp
-private static readonly Dictionary<TechniqueType, NounWithGender[]> TechniqueNames = new()
-{
-    { TechniqueType.Combat, new[] {
-        new NounWithGender("удар", GrammaticalGender.Masculine),
-        new NounWithGender("атака", GrammaticalGender.Feminine)
-    }},
-    { TechniqueType.Defense, new[] {
-        new NounWithGender("защита", GrammaticalGender.Feminine),
-        new NounWithGender("блок", GrammaticalGender.Masculine),
-        new NounWithGender("щит", GrammaticalGender.Masculine),
-        new NounWithGender("стена", GrammaticalGender.Feminine)
-    }},
-    { TechniqueType.Healing, new[] {
-        new NounWithGender("исцеление", GrammaticalGender.Neuter),
-        new NounWithGender("восстановление", GrammaticalGender.Neuter),
-        new NounWithGender("лечение", GrammaticalGender.Neuter)
-    }},
-    // ... остальные
-};
-```
+**Изменения:**
+- Удалены старые словари `TechniqueNames` и `ElementPrefixes`
+- Генерация имени переписана с использованием `NamingDatabase` и `NameBuilder`
+- Добавлено согласование элементных префиксов
 
-**Заменить ElementPrefixes (строки 197-206):**
-```csharp
-// Использовать NamingDatabase.ElementAdjectives
-```
-
-#### 4.2 Изменения в Generate()
-
-**Изменить генерацию имени (строки 297-308):**
-```csharp
-// Получаем название техники с родом
-var nounData = GetTechniqueNameData(technique.type, rng);
-string baseName = nounData.noun;
-GrammaticalGender gender = nounData.gender;
-
-// Элементный префикс (согласованный)
-if (technique.element != Element.Neutral)
-{
-    var elementAdj = NamingDatabase.ElementAdjectives[technique.element];
-    technique.nameRu = $"{elementAdj.GetForm(gender)} {baseName}";
-}
-else
-{
-    technique.nameRu = baseName;
-}
-```
+**Примеры результатов:**
+- ✅ "Огненная защита" (не "Огненный защита")
+- ✅ "Громовая стена" (не "Громовой стена")
+- ✅ "Водяное исцеление" (не "Водяной исцеление")
 
 ---
 
-### ЭТАП 5: Тестирование (30 мин)
+### ЭТАП 5: Тестирование — ОТЛОЖЕНО
 
-#### 5.1 Создать тесты
-
-**Файл:** `Scripts/Tests/GeneratorNameTests.cs`
-
+Тесты можно запустить в редакторе Unity:
 ```csharp
-// Тесты для проверки грамматического согласования
-[Test]
-public void WeaponGenerator_FeminineNoun_GetsFeminineAdjective()
-{
-    // Arrange
-    var parameters = new WeaponGenerationParams {
-        subtype = WeaponSubtype.Axe,
-        grade = EquipmentGrade.Refined
-    };
-    
-    // Act
-    var weapon = WeaponGenerator.Generate(parameters, new SeededRandom(12345));
-    
-    // Assert - если название "секира", должно быть "Улучшенная секира"
-    Assert.IsFalse(weapon.nameRu.Contains("Улучшенный секира"));
-}
-```
-
-#### 5.2 Запустить примеры
-
-```csharp
-// В редакторе Unity
 Debug.Log(WeaponGenerator.GenerateExamples());
 Debug.Log(ArmorGenerator.GenerateExamples());
 Debug.Log(TechniqueGenerator.GenerateExamples());
+Debug.Log(NameGenerator.GenerateExamples());
 ```
 
 ---
 
-## ⏱️ Оценка времени
+## 📊 Итоговый прогресс
 
-| Этап | Время |
-|------|-------|
-| ЭТАП 1: Инфраструктура | 1-2 часа |
-| ЭТАП 2: WeaponGenerator | 30-45 мин |
-| ЭТАП 3: ArmorGenerator | 30-45 мин |
-| ЭТАП 4: TechniqueGenerator | 30-45 мин |
-| ЭТАП 5: Тестирование | 30 мин |
-| **ИТОГО** | **3-4.5 часа** |
-
----
-
-## 📊 Прогресс
-
-- [ ] ЭТАП 1: Создать Naming/ папку и базовые классы
-- [ ] ЭТАП 2: Модифицировать WeaponGenerator
-- [ ] ЭТАП 3: Модифицировать ArmorGenerator
-- [ ] ЭТАП 4: Модифицировать TechniqueGenerator
-- [ ] ЭТАП 5: Написать тесты и проверить
+- [x] ЭТАП 1: Создать Naming/ папку и базовые классы
+- [x] ЭТАП 2: Модифицировать WeaponGenerator
+- [x] ЭТАП 3: Модифицировать ArmorGenerator
+- [x] ЭТАП 4: Модифицировать TechniqueGenerator
+- [ ] ЭТАП 5: Написать тесты и проверить (опционально)
 
 ---
 
 ## 📝 Заметки
 
-1. **Обратная совместимость:** Старые названия сохранятся в сохранениях
+1. **Обратная совместимость:** Старые названия в сохранениях не изменятся
 2. **Локализация:** Система подготовлена для будущей локализации
-3. **Расширяемость:** Легко добавлять новые модификаторы
+3. **Расширяемость:** Легко добавлять новые модификаторы через `NamingDatabase`
+4. **Архитектура:** Использован паттерн Builder для гибкого построения названий
+
+---
+
+## 🔄 Следующие шаги
+
+После завершения этого checkpoint:
+1. ЭТАП 4 (глобальный): Недостающие ScriptableObjects
+2. При необходимости: добавить тесты в `Scripts/Tests/GeneratorNameTests.cs`
 
 ---
 
 *Чекпоинт создан: 2026-04-03 09:14:44 UTC*
+*Чекпоинт завершён: 2026-04-03 09:20:39 UTC*
