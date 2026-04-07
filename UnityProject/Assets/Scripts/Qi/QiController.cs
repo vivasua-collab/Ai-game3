@@ -1,9 +1,9 @@
 // ============================================================================
 // QiController.cs — Контроллер Ци
 // Cultivation World Simulator
-// Версия: 1.2 — Исправлены проблемы code review (переполнение, точность)
+// Версия: 1.3 — Добавлен conductivityBonus для системы перков
 // Создано: 2026-03-30 14:00:00 UTC
-// Редактировано: 2026-04-02 13:51:19 UTC
+// Редактировано: 2026-04-07 12:15:00 UTC
 // ============================================================================
 
 using System;
@@ -28,6 +28,9 @@ namespace CultivationGame.Qi
         [SerializeField] private long currentQi = 1000;
         [SerializeField] private float conductivity = 1.0f;
         
+        [Header("Perk Bonuses")]
+        [SerializeField] [Range(0f, 2f)] private float conductivityBonus = 0f; // +0% to +200%
+        
         [Header("Regeneration")]
         [SerializeField] private bool enablePassiveRegen = true;
         [SerializeField] private float regenMultiplier = 1f;
@@ -36,6 +39,7 @@ namespace CultivationGame.Qi
         
         private long maxQiCapacity;
         private float qiDensity;
+        private float baseConductivity; // Базовая проводимость (без бонусов)
         private double dailyAccumulator = 0.0; // FIX: Используем double для точности
         
         // === Events ===
@@ -51,6 +55,8 @@ namespace CultivationGame.Qi
         public long MaxQi => maxQiCapacity;
         public long CoreCapacity => coreCapacity;
         public float Conductivity => conductivity;
+        public float BaseConductivity => baseConductivity;
+        public float ConductivityBonus => conductivityBonus;
         public int CultivationLevel => cultivationLevel;
         public float QiPercent => maxQiCapacity > 0 ? (float)currentQi / maxQiCapacity : 0f;
         public float QiDensity => qiDensity;
@@ -88,10 +94,15 @@ namespace CultivationGame.Qi
             // Ограничиваем текущее Ци
             currentQi = Math.Min(currentQi, maxQiCapacity);
             
-            // Проводимость = coreCapacity / 360 секунд (по документации QI_SYSTEM.md)
+            // Базовая проводимость = coreCapacity / 360 секунд (по документации QI_SYSTEM.md)
             // Это определяет скорость вывода Ци и медитации
             // Базовая проводимость при L1.0: 1000 / 360 ≈ 2.78
-            conductivity = maxQiCapacity / 360f;
+            baseConductivity = maxQiCapacity / 360f;
+            
+            // Итоговая проводимость с бонусом от перков
+            // Формула: finalConductivity = baseConductivity × (1 + bonus)
+            // Защита от умножения на 0: (1 + 0) = 1, результат = baseConductivity
+            conductivity = baseConductivity * (1f + conductivityBonus);
             
             OnQiChanged?.Invoke(currentQi, maxQiCapacity);
         }
@@ -395,7 +406,43 @@ namespace CultivationGame.Qi
         /// </summary>
         public string GetCultivationInfo()
         {
-            return $"Уровень: L{cultivationLevel}.{cultivationSubLevel} | Проводимость: {conductivity:F1}";
+            string bonusStr = conductivityBonus > 0 ? $" (+{conductivityBonus:P0})" : "";
+            return $"Уровень: L{cultivationLevel}.{cultivationSubLevel} | Проводимость: {conductivity:F1}{bonusStr}";
+        }
+        
+        // === Perk Integration ===
+        
+        /// <summary>
+        /// Установить бонус проводимости от перков.
+        /// 
+        /// Формула: finalConductivity = baseConductivity × (1 + bonus)
+        /// 
+        /// Примеры:
+        /// - bonus = 0.00 → проводимость без изменений (защита от умножения на 0)
+        /// - bonus = 0.15 → +15% проводимости (перк "Закалка меридиан")
+        /// - bonus = 0.30 → +30% проводимости (врождённый перк "Золотое качество тела")
+        /// </summary>
+        /// <param name="bonus">Бонус в долях (0.15 = 15%, 0.30 = 30%)</param>
+        public void SetConductivityBonus(float bonus)
+        {
+            // Ограничиваем бонус диапазоном [0, 2] (0% - 200%)
+            conductivityBonus = Mathf.Clamp(bonus, 0f, 2f);
+            
+            // Пересчитываем итоговую проводимость
+            // Защита от умножения на 0: (1 + 0) = 1
+            conductivity = baseConductivity * (1f + conductivityBonus);
+            
+            Debug.Log($"[QiController] Conductivity bonus set to {conductivityBonus:P0}. " +
+                      $"Final conductivity: {conductivity:F1} (base: {baseConductivity:F1})");
+        }
+        
+        /// <summary>
+        /// Добавить бонус проводимости (суммируется с существующим).
+        /// </summary>
+        /// <param name="additionalBonus">Дополнительный бонус в долях</param>
+        public void AddConductivityBonus(float additionalBonus)
+        {
+            SetConductivityBonus(conductivityBonus + additionalBonus);
         }
 
         // === Formation Integration ===
