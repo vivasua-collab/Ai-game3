@@ -1,7 +1,7 @@
 # 🚀 Стартовый промпт для сеанса кодинга
 
 **Создан:** 2026-04-02 06:37:09 UTC
-**Редактирован:** 2026-04-07 12:00:00 UTC
+**Редактирован:** 2026-04-08 10:30:00 UTC
 **Проект:** Cultivation World Simulator (Unity)
 **Пользователь:** обращение "Мой Господин"
 
@@ -188,6 +188,20 @@ ARCHITECTURE.md
 
 ---
 
+### 17. Режим коммуникации "Caveman"
+📍 **Caveman.md** — ultra-compressed communication mode
+
+**При старте сеанса спроси:** "Следовать ли правилам Caveman.md?"
+
+Уровни:
+- **lite** — без filler/hedging, предложения полные
+- **full** — без артиклей, фрагменты OK
+- **ultra** — аббревиатуры, стрелки `→`, минимум слов
+
+Триггеры: "caveman mode", "talk like caveman", "less tokens", "be brief".
+
+---
+
 ## 🔗 Быстрые ссылки
 
 | Что нужно | Где искать |
@@ -199,6 +213,7 @@ ARCHITECTURE.md
 | Архитектура | `docs/ARCHITECTURE.md` |
 | Противоречия | `docs/!CONTRADICTIONS_REPORT.md` |
 | Дубликаты | `docs/!DUPLICATION_REPORT.md` |
+| Caveman mode | `Caveman.md` |
 
 ---
 
