@@ -30,10 +30,13 @@ Work Log:
   - Используется в медитации и передаче Ци
 
 Stage Summary:
-- START_PROMPT.md обновлён (имя, обращение)
+- START_PROMPT.md обновлён (обращение "Мой Господин")
 - PERK_SYSTEM.md v2.0 — новая система слотов
 - QI_SYSTEM.md v1.1 — развитие проводимости
-- Готов план интеграции перков с QiController
+- QiController.cs v1.3 — добавлен conductivityBonus
+- Защита от умножения на 0: `(1 + bonus)` где bonus=0 → результат без изменений
+- Коммит: ebf9786 → GitHub
+- Push успешно выполнен
 
 
 ---
