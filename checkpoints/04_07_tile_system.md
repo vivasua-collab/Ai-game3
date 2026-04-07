@@ -61,5 +61,19 @@ Assets/Scripts/Tile/
 
 - `Assets/Scripts/Tile/` (новые файлы)
 - `docs/TILE_SYSTEM_IMPLEMENTATION.md` (новый)
+- `docs/asset_setup/16_TileSystem_SemiAuto.md` (новый)
+- `docs/asset_setup/README.md` (обновлён)
 - `Assets/Sprites/Tiles/` (создаётся генератором)
 - `Assets/Scenes/TestLocation.unity` (создаётся инструментом)
+
+---
+
+## Инструкция
+
+**Файл:** `docs/asset_setup/16_TileSystem_SemiAuto.md`
+
+**Кратко:**
+1. `Tools → Generate Tile Sprites` — генерация спрайтов
+2. `Tools → Setup Test Location Scene` — создание сцены
+3. Назначить спрайты в TileMapController (Inspector)
+4. Play!
