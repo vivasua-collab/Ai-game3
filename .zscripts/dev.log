@@ -12,3 +12,15 @@ error: IntegrityCheckFailed extracting tarball from @prisma/client
 [BUN] Installing dependencies...
 error: Bun could not find a package.json file to install from
 note: Run "bun init" to initialize a project
+==========================================
+[2026-04-06 05:48:44] Starting: bun install
+==========================================
+[BUN] Installing dependencies...
+error: Bun could not find a package.json file to install from
+note: Run "bun init" to initialize a project
+==========================================
+[2026-04-07 05:51:09] Starting: bun install
+==========================================
+[BUN] Installing dependencies...
+error: Bun could not find a package.json file to install from
+note: Run "bun init" to initialize a project
