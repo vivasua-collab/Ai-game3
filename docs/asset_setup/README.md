@@ -33,6 +33,7 @@
 | [13_SpriteSetup_QuickStart.md](./13_SpriteSetup_QuickStart.md) | **Настройка спрайтов (быстрая)** | 57 спрайтов |
 | [14_FormationData.md](./14_FormationData.md) | **Формации (ручная)** | 24+ формаций |
 | [15_FormationCoreData.md](./15_FormationCoreData.md) | **Ядра формаций (ручная)** | 30+ ядер |
+| [16_TileSystem_SemiAuto.md](./16_TileSystem_SemiAuto.md) | **Тайловая система (полуавтомат)** | 13 тайлов + сцена |
 
 ---
 
@@ -140,6 +141,46 @@ Assets/Data/
 | Create GameUI Canvas | Создаёт Canvas с EventSystem |
 | Create HUD Panel | Создаёт HUD с текстами |
 | **SETUP ALL (Full Scene)** | Всё сразу одной кнопкой |
+
+---
+
+### 5. Tile System Tools
+
+**Меню:** `Tools → ...`
+
+**Скрипты:** `Assets/Scripts/Tile/Editor/`
+
+**Функции:**
+
+| Меню | Действие | Создаёт |
+|------|----------|---------|
+| Generate Tile Sprites | Генерация спрайтов | 13 PNG файлов |
+| Setup Test Location Scene | Создание сцены | 1 сцена + Grid + Tilemaps |
+
+**Результат:**
+```
+Assets/Sprites/Tiles/
+├── terrain_grass.png
+├── terrain_dirt.png
+├── terrain_stone.png
+├── terrain_water_shallow.png
+├── terrain_water_deep.png
+├── terrain_sand.png
+├── terrain_snow.png
+├── terrain_void.png
+├── obj_tree.png
+├── obj_rock_small.png
+├── obj_rock_medium.png
+├── obj_bush.png
+└── obj_chest.png
+
+Assets/Scenes/
+└── TestLocation.unity
+    ├── Grid (cellSize: 2×2×1)
+    │   ├── Terrain (Tilemap)
+    │   └── Objects (Tilemap)
+    └── TileMapController
+```
 
 **Что автоматизируется:**
 
@@ -358,4 +399,4 @@ qiForLevelBreakthrough = coreCapacity × 100
 ---
 
 *Папка создана: 2026-03-30*
-*Обновлено: 2026-04-03 — добавлены инструкции по спрайтам (57 файлов), полный комплект: 26 файлов документации*
+*Обновлено: 2026-04-07 — добавлена инструкция по тайловой системе (16_TileSystem_SemiAuto.md), полный комплект: 28 файлов документации*
