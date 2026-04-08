@@ -189,3 +189,9 @@ Next.js dev server is running in background (PID: 700).
 Use 'kill 700' to stop it.
 error: script "dev" was terminated by signal SIGTERM (Polite quit request)
 [?25h
+==========================================
+[2026-04-08 06:15:36] Starting: bun install
+==========================================
+[BUN] Installing dependencies...
+error: Bun could not find a package.json file to install from
+note: Run "bun init" to initialize a project
