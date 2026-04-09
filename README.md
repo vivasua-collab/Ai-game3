@@ -26,41 +26,27 @@
 
 ```
 CultivationWorldSimulator/
-├── Assets/                    # Unity ассеты (корневой проект)
-│   ├── Scenes/               # Сцены Unity
-│   ├── Settings/             # URP настройки
-│   └── ...
-├── ProjectSettings/          # Настройки Unity проекта
-├── Packages/                 # Unity пакеты
-├── UnityProject/             # Основной код игры
-│   ├── Assets/
-│   │   ├── Scripts/          # C# скрипты
-│   │   │   ├── Core/         # Ядро (Constants, Enums, Settings)
-│   │   │   ├── Body/         # Система тела
-│   │   │   ├── Combat/       # Боевая система
-│   │   │   ├── Qi/           # Система Ци
-│   │   │   ├── NPC/          # NPC и AI
-│   │   │   ├── Player/       # Игрок
-│   │   │   ├── Inventory/    # Инвентарь
-│   │   │   ├── World/        # Мир и локации
-│   │   │   ├── Save/         # Сохранение
-│   │   │   ├── UI/           # Интерфейс
-│   │   │   ├── Interaction/  # Взаимодействие
-│   │   │   ├── Generators/   # Генераторы данных
-│   │   │   └── Data/ScriptableObjects/  # SO классы
-│   │   └── Data/JSON/        # JSON конфигурации
-│   ├── README.md
-│   └── SETUP_GUIDE.md
-├── docs/                     # Документация
-│   ├── ARCHITECTURE.md       # Архитектура проекта
-│   ├── BODY_SYSTEM.md        # Система тела
+├── UnityProject/             # Unity проект
+│   ├── Assets/Scripts/       # C# скрипты
+│   ├── Assets/Sprites/       # Спрайты
+│   ├── Assets/Scenes/        # Сцены Unity
+│   └── Assets/Data/          # ScriptableObjects, JSON
+├── docs/                     # Документация проекта
+│   ├── ARCHITECTURE.md       # Архитектура систем
 │   ├── COMBAT_SYSTEM.md      # Боевая система
 │   ├── QI_SYSTEM.md          # Система Ци
-│   ├── implementation_plans/ # Планы внедрения
+│   ├── !LISTING.md           # Полный список документов
 │   └── ...
-├── checkpoints/              # Контрольные точки разработки
+├── docs_asset_setup/         # Инструкции внедрения через Unity Editor
+├── docs_examples/            # Примеры реализаций кода
+├── docs_temp/                # Временная документация, черновики
+├── docs_implementation_plans/ # Планы внедрения
+├── docs_old/                 # Старая документация (архив)
+├── checkpoints/              # Чекпоинты работы (ММ_ДД_цель.md)
 ├── upload/                   # Временные файлы (архивы)
-└── worklog.md               # Лог работы
+├── Caveman.md                # Режим коммуникации
+├── START_PROMPT.md           # Стартовый промпт для ИИ агента
+└── worklog.md                # Лог работы
 ```
 
 ---
@@ -97,7 +83,7 @@ git pull --rebase
 git push
 ```
 
-📚 **Подробно:** [GIT_WORKFLOW_TWO_PC.md](docs/GIT_WORKFLOW_TWO_PC.md)
+📚 **Подробно:** [docs_temp/GIT_WORKFLOW_TWO_PC.md](docs_temp/GIT_WORKFLOW_TWO_PC.md)
 
 ---
 
@@ -113,7 +99,7 @@ git push
 | [docs/QI_SYSTEM.md](docs/QI_SYSTEM.md) | Система Ци |
 | [docs/MORTAL_DEVELOPMENT.md](docs/MORTAL_DEVELOPMENT.md) | Развитие смертных |
 | [docs/DEVELOPMENT_PLAN.md](docs/DEVELOPMENT_PLAN.md) | 🎯 План развития проекта |
-| [docs/implementation_plans/](docs/implementation_plans/) | Планы внедрения |
+| [docs/!LISTING.md](docs/!LISTING.md) | Полный список документации |
 
 ---
 
@@ -187,5 +173,5 @@ git push
 
 ---
 
-*Последнее обновление: 2025-04-01*  
+*Последнее обновление: 2026-04-09*  
 *Git branch: main*

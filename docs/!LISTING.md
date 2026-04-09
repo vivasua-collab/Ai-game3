@@ -1,6 +1,6 @@
 # 📂 Unity Documentation Listing
 
-**Версия:** 2.3  
+**Версия:** 2.4  
 **Дата:** 2026-04-09  
 **Проект:** Cultivation World Simulator → Unity Migration
 
@@ -10,12 +10,12 @@
 
 > **Все документы содержат ТОЛЬКО ТЕОРИЮ.**  
 > **НЕТ КОДА** — только теоретические описания систем.  
-> Код перенесён в `docs/examples/` — см. раздел "Примеры реализации".  
+> Код перенесён в `docs_examples/` — см. отдельную папку.  
 > Реализация в Unity: `UnityProject/Local/Assets/Scripts/`.
 
 ---
 
-## 📋 Список документов
+## 📋 Список документов (только папка docs/)
 
 ### 🤖 Справочники
 
@@ -93,80 +93,11 @@
 | [PERK_SYSTEM.md](./PERK_SYSTEM.md) | Система перков | ~2000 |
 | [JOURNAL_SYSTEM.md](./JOURNAL_SYSTEM.md) | Система журнала/летописи | ~2000 |
 
-### Настройка Unity Editor
+### Тестирование
 
 | Файл | Описание | Токенов |
 |------|----------|---------|
-| [asset_setup/README.md](./asset_setup/README.md) | Обзор настроек | ~500 |
-| [asset_setup/01_CultivationLevelData.md](./asset_setup/01_CultivationLevelData.md) | Настройка уровней культивации | ~3000 |
-| [asset_setup/02_MortalStageData.md](./asset_setup/02_MortalStageData.md) | Настройка этапов смертных | ~2500 |
-| [asset_setup/03_ElementData.md](./asset_setup/03_ElementData.md) | Настройка элементов | ~2000 |
-| [asset_setup/04_BasicScene.md](./asset_setup/04_BasicScene.md) | Создание базовой сцены | ~1500 |
-| [asset_setup/04_BasicScene_SemiAuto.md](./asset_setup/04_BasicScene_SemiAuto.md) | Полуавтоматическая настройка сцены | ~1500 |
-| [asset_setup/05_PlayerSetup.md](./asset_setup/05_PlayerSetup.md) | Настройка Player | ~1500 |
-| [asset_setup/05_PlayerSetup_SemiAuto.md](./asset_setup/05_PlayerSetup_SemiAuto.md) | Полуавтоматическая настройка игрока | ~1500 |
-| [asset_setup/06_TechniqueData.md](./asset_setup/06_TechniqueData.md) | Настройка техник | ~2500 |
-| [asset_setup/06_TechniqueData_SemiAuto.md](./asset_setup/06_TechniqueData_SemiAuto.md) | Полуавтоматическая генерация техник | ~2000 |
-| [asset_setup/07_NPCPresetData.md](./asset_setup/07_NPCPresetData.md) | Настройка пресетов NPC | ~2000 |
-| [asset_setup/07_NPCPresetData_SemiAuto.md](./asset_setup/07_NPCPresetData_SemiAuto.md) | Полуавтоматическая генерация NPC | ~1500 |
-| [asset_setup/08_EquipmentData.md](./asset_setup/08_EquipmentData.md) | Настройка экипировки | ~2500 |
-| [asset_setup/08_EquipmentData_SemiAuto.md](./asset_setup/08_EquipmentData_SemiAuto.md) | Полуавтоматическая генерация экипировки | ~2000 |
-| [asset_setup/09_EnemySetup.md](./asset_setup/09_EnemySetup.md) | Настройка врагов | ~2000 |
-| [asset_setup/09_EnemySetup_SemiAuto.md](./asset_setup/09_EnemySetup_SemiAuto.md) | Полуавтоматическая генерация врагов | ~1500 |
-| [asset_setup/10_QuestSetup.md](./asset_setup/10_QuestSetup.md) | Настройка квестов | ~2000 |
-| [asset_setup/10_QuestSetup_SemiAuto.md](./asset_setup/10_QuestSetup_SemiAuto.md) | Полуавтоматическая генерация квестов | ~1500 |
-| [asset_setup/11_ItemData.md](./asset_setup/11_ItemData.md) | Настройка предметов | ~2000 |
-| [asset_setup/11_ItemData_SemiAuto.md](./asset_setup/11_ItemData_SemiAuto.md) | Полуавтоматическая генерация предметов | ~1500 |
-| [asset_setup/12_MaterialData.md](./asset_setup/12_MaterialData.md) | Настройка материалов | ~2000 |
-| [asset_setup/12_MaterialData_SemiAuto.md](./asset_setup/12_MaterialData_SemiAuto.md) | Полуавтоматическая генерация материалов | ~1500 |
-| [asset_setup/13_SpriteSetup.md](./asset_setup/13_SpriteSetup.md) | Настройка спрайтов | ~1500 |
-| [asset_setup/13_SpriteSetup_QuickStart.md](./asset_setup/13_SpriteSetup_QuickStart.md) | Быстрый старт для спрайтов | ~1000 |
-
-### Примеры реализации
-
-| Файл | Описание | Токенов |
-|------|----------|---------|
-| [examples/NPC_L6_ASSEMBLY_EXAMPLE.md](./examples/NPC_L6_ASSEMBLY_EXAMPLE.md) | Пример сборки NPC L6 | ~2000 |
-| [examples/NameGenerator_Russian.md](./examples/NameGenerator_Russian.md) | Русский генератор имён | ~1500 |
-| [examples/TechniqueEffectsSystem.md](./examples/TechniqueEffectsSystem.md) | Система эффектов техник | ~2000 |
-| [examples/CharacterSpriteMirroring.md](./examples/CharacterSpriteMirroring.md) | Зеркалирование спрайтов персонажа | ~1500 |
-| [examples/OrbitalWeaponSystem.md](./examples/OrbitalWeaponSystem.md) | Система орбитального оружия | ~2000 |
-| [examples/BuffSystem_Examples.md](./examples/BuffSystem_Examples.md) | Примеры кода системы баффов | ~2500 |
-| [examples/FormationSystem_Examples.md](./examples/FormationSystem_Examples.md) | Примеры кода системы формаций | ~2500 |
-| [examples/StatThresholdSystem_Examples.md](./examples/StatThresholdSystem_Examples.md) | Примеры кода порогов развития | ~2500 |
-
-### Планы внедрения
-
-| Файл | Описание | Токенов |
-|------|----------|---------|
-| [implementation_plans/ASSET_CREATION_PLAN.md](./implementation_plans/ASSET_CREATION_PLAN.md) | Создание .asset файлов | ~2000 |
-| [implementation_plans/NEXT_ELEMENTS_PLAN.md](./implementation_plans/NEXT_ELEMENTS_PLAN.md) | Следующие элементы разработки | ~2500 |
-| [implementation_plans/IMPLEMENTATION_PLAN_NEXT.md](./implementation_plans/IMPLEMENTATION_PLAN_NEXT.md) | План следующих этапов | ~2000 |
-
----
-
-## 📁 Временная документация
-
-> **Расположение:** `docs/temp_docs/`  
-> **Назначение:** Черновики, временные файлы, отчёты об анализе
-
-| Файл | Описание |
-|------|----------|
-| [temp_docs/LOST_SESSION_ANALYSIS.md](./temp_docs/LOST_SESSION_ANALYSIS.md) | Анализ потерянной сессии |
-| [temp_docs/!CONTRADICTIONS_REPORT.md](./temp_docs/!CONTRADICTIONS_REPORT.md) | Отчёт о противоречиях в документации |
-| [temp_docs/!CONTRADICTIONS_REPORT_v2.md](./temp_docs/!CONTRADICTIONS_REPORT_v2.md) | Отчёт о противоречиях v2 |
-| [temp_docs/!DUPLICATION_REPORT.md](./temp_docs/!DUPLICATION_REPORT.md) | Отчёт о дублировании информации |
-| [temp_docs/!SINGLE_SOURCE_OF_TRUTH_PROPOSAL.md](./temp_docs/!SINGLE_SOURCE_OF_TRUTH_PROPOSAL.md) | Предложение единого источника истины |
-| [temp_docs/ACHIEVEMENT_SYSTEM.md](./temp_docs/ACHIEVEMENT_SYSTEM.md) | Черновик системы достижений |
-| [temp_docs/ANALYSIS_REPORT.md](./temp_docs/ANALYSIS_REPORT.md) | Общий аналитический отчёт |
-| [temp_docs/GIT_WORKFLOW_TWO_PC.md](./temp_docs/GIT_WORKFLOW_TWO_PC.md) | Git workflow для двух ПК |
-| [temp_docs/MIGRATION_ANALYSIS.md](./temp_docs/MIGRATION_ANALYSIS.md) | Анализ миграции |
-| [temp_docs/PROJECT_SETUP_PLAN.md](./temp_docs/PROJECT_SETUP_PLAN.md) | План подготовки проекта |
-| [temp_docs/TECHNIQUE_USAGE_REPORT.md](./temp_docs/TECHNIQUE_USAGE_REPORT.md) | Отчёт об использовании техник |
-| [temp_docs/TILE_SYSTEM_IMPLEMENTATION.md](./temp_docs/TILE_SYSTEM_IMPLEMENTATION.md) | Реализация тайловой системы |
-| [temp_docs/UNITY_63_RESEARCH.md](./temp_docs/UNITY_63_RESEARCH.md) | Исследование Unity 6.3 API |
-| [temp_docs/UNITY_VERSION_COMPARISON.md](./temp_docs/UNITY_VERSION_COMPARISON.md) | Сравнение версий Unity |
-| [temp_docs/WORKFLOW_GITHUB_UNITY.md](./temp_docs/WORKFLOW_GITHUB_UNITY.md) | Workflow GitHub ↔ Unity |
+| [UNIT_TEST_RULES.md](./UNIT_TEST_RULES.md) | Правила написания unit тестов | ~1500 |
 
 ---
 
@@ -174,20 +105,8 @@
 
 | Метрика | Значение |
 |---------|----------|
-| Основных документов | 54 |
-| Временных документов | 15 |
-| Файлов примеров кода | 8 |
-| Общий объём | ~140,000 токенов |
-
----
-
-## ⚠️ Важно о коде
-
-> **В документации НЕТ кода** — только теоретические описания.
-> 
-> Весь код перенесён в `docs/examples/` для удобства разработчиков.
-> 
-> При необходимости посмотреть реализацию — используйте файлы примеров.
+| Основных документов | 40 |
+| Общий объём | ~100,000 токенов |
 
 ---
 
@@ -270,6 +189,17 @@ ARCHITECTURE.md (корневой документ)
 
 ---
 
+## 📁 Связанные папки (в корне проекта)
+
+| Папка | Назначение |
+|-------|------------|
+| `docs_asset_setup/` | Инструкции внедрения через Unity Editor |
+| `docs_examples/` | Примеры реализации кода |
+| `docs_temp/` | Временная документация, черновики |
+| `docs_implementation_plans/` | Планы внедрения |
+
+---
+
 *Документ обновлён: 2026-04-09*  
-*Изменения: Перенос временных документов в temp_docs (15 файлов)*  
+*Изменения: Реструктуризация — вынос asset_setup, examples, temp_docs, implementation_plans в корень*  
 *Проект: Cultivation World Simulator Unity Migration*

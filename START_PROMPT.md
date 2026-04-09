@@ -23,13 +23,14 @@
 │   └── Assets/Data/           # ScriptableObjects, JSON
 ├── checkpoints/               # Чекпоинты работы (ММ_ДД_цель.md)
 ├── docs/                      # Документация проекта
-│   ├── asset_setup/           # Инструкции внедрения через Unity Editor
-│   ├── examples/              # Примеры реализаций
-│   ├── temp_docs/             # Временная документация, черновики
 │   ├── !LISTING.md            # Полный список документации
 │   ├── !Ai_Skills.md          # AI Skills
 │   ├── ARCHITECTURE.md        # Корневой документ архитектуры
 │   └── UNITY_DOCS_LINKS.md    # Ссылки на Unity 6.3 docs
+├── docs_asset_setup/          # Инструкции внедрения через Unity Editor
+├── docs_examples/             # Примеры реализаций
+├── docs_temp/                 # Временная документация, черновики
+├── docs_implementation_plans/ # Планы внедрения
 ├── docs_old/                  # Старая документация (архив)
 ├── Caveman.md                 # Режим коммуникации
 └── START_PROMPT.md            # Этот файл
@@ -98,7 +99,7 @@ git add -A && git commit -m "описание" && git push
 - Создавать Assets/ в корне проекта
 - .md файлы в UnityProject (кроме README.md)
 - Создавать чекпоинты вне `checkpoints/`
-- Создавать временную документацию вне `docs/temp_docs/`
+- Создавать временную документацию вне `docs_temp/`
 
 ---
 
@@ -115,4 +116,4 @@ git add -A && git commit -m "описание" && git push
 ---
 
 *Создано: 2026-04-02 06:37:09 UTC*
-*Редактировано: 2026-04-09 14:35:00 UTC*
+*Редактировано: 2026-04-09 15:00:00 UTC*
