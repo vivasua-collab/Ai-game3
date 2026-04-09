@@ -1,9 +1,12 @@
 // ============================================================================
 // FormationEffects.cs — Применение эффектов формации
 // Cultivation World Simulator
-// Версия: 1.0
+// Версия: 1.1 — Заменён Instantiate/Destroy на VFXPool
 // Создано: 2026-04-03 13:40:00 UTC
-// ============================================================================
+// Редактировано: 2026-04-09 10:45:00 UTC
+//
+// ИЗМЕНЕНИЯ В ВЕРСИИ 1.1:
+// - FIX: Instantiate/Destroy заменены на VFXPool для оптимизации (аудит Unity 6.3)
 //
 // Источник: docs/FORMATION_SYSTEM.md
 // ============================================================================
@@ -155,11 +158,11 @@ namespace CultivationGame.Formation
                     break;
             }
 
-            // Визуальный эффект
+            // Визуальный эффект — используем пул вместо Instantiate/Destroy
             if (effect.vfxPrefab != null)
             {
-                var vfx = UnityEngine.Object.Instantiate(effect.vfxPrefab, target.transform.position, Quaternion.identity);
-                UnityEngine.Object.Destroy(vfx, 2f);
+                // FIX: VFXPool.SpawnDefault автоматически вернёт объект в пул через 2 секунды
+                VFXPool.SpawnDefault(effect.vfxPrefab, target.transform.position);
             }
 
             // Звуковой эффект

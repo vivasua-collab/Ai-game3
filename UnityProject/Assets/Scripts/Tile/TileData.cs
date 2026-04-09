@@ -1,8 +1,12 @@
 // ============================================================================
 // TileData.cs — Данные тайла
 // Cultivation World Simulator
+// Версия: 1.1 — Magic numbers вынесены в TerrainConfig ScriptableObject
 // Создано: 2026-04-07 14:24:05 UTC
-// Редактировано: 2026-04-09 07:12:00 UTC — TileFlags → GameTileFlags
+// Редактировано: 2026-04-09 10:55:00 UTC
+//
+// ИЗМЕНЕНИЯ В ВЕРСИИ 1.1:
+// - FIX: Magic numbers вынесены в TerrainConfig (аудит Unity 6.3)
 // ============================================================================
 
 using System;
@@ -61,51 +65,20 @@ namespace CultivationGame.TileSystem
 
         /// <summary>
         /// Обновить свойства на основе типа поверхности.
+        /// Использует TerrainConfig вместо magic numbers.
         /// </summary>
         public void UpdateTerrainProperties()
         {
-            switch (terrain)
-            {
-                case TerrainType.None:
-                case TerrainType.Void:
-                    moveCost = 0f;
-                    flags = GameTileFlags.None;
-                    break;
-                case TerrainType.Grass:
-                case TerrainType.Dirt:
-                case TerrainType.Stone:
-                    moveCost = 1.0f;
-                    flags = GameTileFlags.Passable;
-                    break;
-                case TerrainType.Water_Shallow:
-                    moveCost = 2.0f;
-                    flags = GameTileFlags.Passable | GameTileFlags.Swimable;
-                    hasWater = true;
-                    waterDepth = 0.5f;
-                    break;
-                case TerrainType.Water_Deep:
-                    moveCost = 0f;
-                    flags = GameTileFlags.Swimable | GameTileFlags.Flyable;
-                    hasWater = true;
-                    waterDepth = 3f;
-                    break;
-                case TerrainType.Sand:
-                    moveCost = 1.2f;
-                    flags = GameTileFlags.Passable;
-                    break;
-                case TerrainType.Snow:
-                    moveCost = 1.5f;
-                    flags = GameTileFlags.Passable;
-                    break;
-                case TerrainType.Ice:
-                    moveCost = 1.5f;
-                    flags = GameTileFlags.Passable | GameTileFlags.Dangerous;
-                    break;
-                case TerrainType.Lava:
-                    moveCost = 0f;
-                    flags = GameTileFlags.Dangerous | GameTileFlags.Flyable;
-                    break;
-            }
+            // FIX: Используем TerrainConfig вместо magic numbers
+            var config = TerrainConfig.GetTerrainConfig(terrain);
+            
+            moveCost = config.moveCost;
+            flags = config.flags;
+            hasWater = config.hasWater;
+            waterDepth = config.waterDepth;
+            baseQiDensity = config.baseQiDensity;
+            currentQiDensity = baseQiDensity;
+            temperature += config.temperatureModifier;
         }
 
         /// <summary>

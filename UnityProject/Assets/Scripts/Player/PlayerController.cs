@@ -1,9 +1,12 @@
 // ============================================================================
 // PlayerController.cs — Главный контроллер игрока
 // Cultivation World Simulator
-// Версия: 1.1 — Исправлены проблемы code review
+// Версия: 1.2 — Заменён FindFirstObjectByType на ServiceLocator
 // Создано: 2026-03-30 14:00:00 UTC
-// Редактировано: 2026-04-02 13:51:19 UTC
+// Редактировано: 2026-04-09 10:35:00 UTC
+//
+// ИЗМЕНЕНИЯ В ВЕРСИИ 1.2:
+// - FIX: FindFirstObjectByType заменён на ServiceLocator.GetOrFind (аудит Unity 6.3)
 // ============================================================================
 
 using System;
@@ -133,14 +136,12 @@ namespace CultivationGame.Player
             if (sleepSystem == null)
                 sleepSystem = GetComponent<SleepSystem>();
             
+            // FIX: Используем ServiceLocator вместо FindFirstObjectByType
+            // GetOrFind найдёт через ServiceLocator O(1) или fallback на FindFirstObjectByType
             if (worldController == null)
-                worldController = FindFirstObjectByType<WorldController>();
+                worldController = ServiceLocator.GetOrFind<WorldController>();
             if (timeController == null)
-                timeController = FindFirstObjectByType<TimeController>();
-            
-            // ПРЕДУПРЕЖДЕНИЕ: FindFirstObjectByType — дорогая операция!
-            // Рекомендуется назначить ссылки в инспекторе или использовать Service Locator.
-            // Данный код работает как fallback для удобства.
+                timeController = ServiceLocator.GetOrFind<TimeController>();
         }
         
         private void InitializePlayer()

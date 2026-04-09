@@ -1,10 +1,13 @@
 // ============================================================================
 // CombatManager.cs — Центральный менеджер боя
 // Cultivation World Simulator
-// Версия: 1.2 — Добавлены null guards в публичные методы
+// Версия: 1.3 — Добавлен OnDestroy для сброса Instance
 // ============================================================================
 // Создан: 2026-03-31 14:12:00 UTC
-// Редактировано: 2026-04-02 15:45:00 UTC
+// Редактировано: 2026-04-09 10:30:00 UTC
+//
+// ИЗМЕНЕНИЯ В ВЕРСИИ 1.3:
+// - FIX: Добавлен OnDestroy для сброса Instance = null (аудит Unity 6.3)
 //
 // ИЗМЕНЕНИЯ В ВЕРСИИ 1.2:
 // - FIX: Добавлены null guards в ExecuteAttack, ExecuteTechniqueAttack, ExecuteBasicAttack
@@ -133,6 +136,24 @@ namespace CultivationGame.Combat
                 return;
             }
             Instance = this;
+        }
+
+        private void OnDestroy()
+        {
+            // FIX: Сбрасываем Instance при уничтожении, чтобы избежать
+            // доступа к уничтоженному объекту через синглтон
+            if (Instance == this)
+            {
+                Instance = null;
+                
+                // Отписываемся от событий смерти всех combatants
+                foreach (var combatant in combatants)
+                {
+                    if (combatant != null)
+                        combatant.OnDeath -= HandleCombatantDeath;
+                }
+                combatants.Clear();
+            }
         }
 
         private void Update()

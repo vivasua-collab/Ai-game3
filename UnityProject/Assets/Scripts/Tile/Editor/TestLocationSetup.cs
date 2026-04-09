@@ -1,8 +1,12 @@
 // ============================================================================
 // TestLocationSetup.cs — Настройка тестовой локации
 // Cultivation World Simulator
+// Версия: 1.1 — UI строки вынесены в константы
 // Создано: 2026-04-07 14:24:05 UTC
-// Редактировано: 2026-04-09 07:14:00 UTC — добавлен using TMPro
+// Редактировано: 2026-04-09 11:00:00 UTC
+//
+// ИЗМЕНЕНИЯ В ВЕРСИИ 1.1:
+// - FIX: UI строки вынесены в константы (аудит Unity 6.3)
 // ============================================================================
 
 #if UNITY_EDITOR
@@ -21,6 +25,37 @@ namespace CultivationGame.TileSystem.Editor
     public static class TestLocationSetup
     {
         private const string SCENE_PATH = "Assets/Scenes/TestLocation.unity";
+
+        #region UI Strings (вынесены из magic strings)
+
+        // Локализация UI
+        private const string UI_LOCATION_NAME = "Test Location";
+        private const string UI_POSITION_FORMAT = "Position: ({0}, {1})";
+        private const string UI_HP_FORMAT = "HP: {0}/{1}";
+        private const string UI_QI_FORMAT = "Ци: {0}/{1}";
+
+        // Инструкции управления
+        private const string UI_INSTRUCTIONS = 
+            "Управление:\n" +
+            "WASD - движение\n" +
+            "Shift - бег\n" +
+            "F5 - медитация\n" +
+            "G - регенерировать карту";
+
+        // Сообщения консоли
+        private const string MSG_SCENE_CREATED = "Created test location scene at {0}";
+        private const string MSG_UI_CREATED = "[TestLocationSetup] UI created";
+        private const string MSG_CONTROLLER_CREATED = "[TestLocationSetup] GameController created with DestructibleObjectController";
+
+        // Инструкции для разработчика
+        private const string[] NEXT_STEPS = new string[]
+        {
+            "1. Tools > Generate Tile Sprites",
+            "2. Assign sprites to TileMapController in Inspector",
+            "3. Assign UI elements to TestLocationGameController"
+        };
+
+        #endregion
 
         [MenuItem("Tools/Setup Test Location Scene")]
         public static void SetupTestLocation()
@@ -87,11 +122,12 @@ namespace CultivationGame.TileSystem.Editor
             // Сохранить сцену
             EditorSceneManager.SaveScene(scene, SCENE_PATH);
             
-            Debug.Log($"Created test location scene at {SCENE_PATH}");
+            Debug.Log(string.Format(MSG_SCENE_CREATED, SCENE_PATH));
             Debug.Log("NEXT STEPS:");
-            Debug.Log("1. Tools > Generate Tile Sprites");
-            Debug.Log("2. Assign sprites to TileMapController in Inspector");
-            Debug.Log("3. Assign UI elements to TestLocationGameController");
+            foreach (var step in NEXT_STEPS)
+            {
+                Debug.Log(step);
+            }
         }
         
         private static void CreateUI(UnityEngine.SceneManagement.Scene scene)
@@ -135,20 +171,20 @@ namespace CultivationGame.TileSystem.Editor
             hudBg.color = new Color(0.1f, 0.1f, 0.15f, 0.85f);
             
             // Location Text
-            var locationText = CreateText(hud, "LocationText", "Test Location", new Vector2(10, -10), 22, TextAnchor.UpperLeft);
+            var locationText = CreateText(hud, "LocationText", UI_LOCATION_NAME, new Vector2(10, -10), 22, TextAnchor.UpperLeft);
             locationText.fontStyle = FontStyles.Bold;
             
             // Position Text
-            var posText = CreateText(hud, "PositionText", "Position: (0, 0)", new Vector2(10, -38), 16, TextAnchor.UpperLeft);
+            var posText = CreateText(hud, "PositionText", string.Format(UI_POSITION_FORMAT, 0, 0), new Vector2(10, -38), 16, TextAnchor.UpperLeft);
             posText.color = new Color(0.7f, 0.7f, 0.8f);
             
             // HP Bar
             CreateSlider(hud, "HealthBar", new Vector2(10, -70), 280, 20, new Color(0.8f, 0.2f, 0.2f));
-            var hpText = CreateText(hud, "HealthText", "HP: 100/100", new Vector2(10, -95), 16, TextAnchor.UpperLeft);
+            var hpText = CreateText(hud, "HealthText", string.Format(UI_HP_FORMAT, 100, 100), new Vector2(10, -95), 16, TextAnchor.UpperLeft);
             
             // Qi Bar
             CreateSlider(hud, "QiBar", new Vector2(10, -120), 280, 20, new Color(0.2f, 0.5f, 0.9f));
-            var qiText = CreateText(hud, "QiText", "Ци: 1000/1000", new Vector2(10, -145), 16, TextAnchor.UpperLeft);
+            var qiText = CreateText(hud, "QiText", string.Format(UI_QI_FORMAT, 1000, 1000), new Vector2(10, -145), 16, TextAnchor.UpperLeft);
             
             // Stamina Bar
             CreateSlider(hud, "StaminaBar", new Vector2(10, -170), 280, 16, new Color(0.2f, 0.8f, 0.3f));
@@ -167,15 +203,9 @@ namespace CultivationGame.TileSystem.Editor
             Image instrBg = instructions.AddComponent<Image>();
             instrBg.color = new Color(0.1f, 0.1f, 0.15f, 0.85f);
             
-            var instrText = CreateText(instructions, "Text", 
-                "Управление:\n" +
-                "WASD - движение\n" +
-                "Shift - бег\n" +
-                "F5 - медитация\n" +
-                "G - регенерировать карту", 
-                new Vector2(15, -10), 16, TextAnchor.UpperLeft);
+            var instrText = CreateText(instructions, "Text", UI_INSTRUCTIONS, new Vector2(15, -10), 16, TextAnchor.UpperLeft);
             
-            Debug.Log("[TestLocationSetup] UI created");
+            Debug.Log(MSG_UI_CREATED);
         }
         
         private static void CreateGameController(GameObject tileMapController)
@@ -195,7 +225,7 @@ namespace CultivationGame.TileSystem.Editor
             destructibleSo.FindProperty("tileMapController").objectReferenceValue = tileMapController.GetComponent<TileMapController>();
             destructibleSo.ApplyModifiedProperties();
             
-            Debug.Log("[TestLocationSetup] GameController created with DestructibleObjectController");
+            Debug.Log(MSG_CONTROLLER_CREATED);
         }
         
         private static TextMeshProUGUI CreateText(GameObject parent, string name, string text, Vector2 position, int fontSize, TextAnchor alignment)
