@@ -1,8 +1,14 @@
-# START_PROMPT.md — Холодный старт ИИ агента
+# START_PROMPT.md — Стартовый промпт для ИИ агента
 
 **Проект:** Cultivation World Simulator (Unity 6.3)
 **Обращение:** "Мой Господин"
 **Режим:** lite (без filler, предложения полные)
+
+---
+
+## КОНТЕКСТ ПРОЕКТА
+
+
 
 ---
 
@@ -14,17 +20,17 @@
 │   ├── Assets/Scripts/        # C# скрипты
 │   ├── Assets/Sprites/        # Спрайты
 │   ├── Assets/Scenes/         # Сцены
-│   ├── Assets/Data/           # ScriptableObjects, JSON
-│   └── Local/                 # ТОЛЬКО ручной перенос (ИИ НЕ ПИСАТЬ)
-├── checkpoints/               # Чекпоинты (ММ_ДД_цель.md)
-├── docs/                      # Документация
-│   ├── asset_setup/           # Инструкции Unity Editor
+│   └── Assets/Data/           # ScriptableObjects, JSON
+├── checkpoints/               # Чекпоинты работы (ММ_ДД_цель.md)
+├── docs/                      # Документация проекта
+│   ├── asset_setup/           # Инструкции внедрения через Unity Editor
 │   ├── examples/              # Примеры реализаций
-│   ├── temp_docs/             # Черновики, временные
-│   ├── !LISTING.md            # Список документации
+│   ├── temp_docs/             # Временная документация, черновики
+│   ├── !LISTING.md            # Полный список документации
 │   ├── !Ai_Skills.md          # AI Skills
-│   └── ARCHITECTURE.md        # Архитектура
-├── docs_old/                  # Архив
+│   ├── ARCHITECTURE.md        # Корневой документ архитектуры
+│   └── UNITY_DOCS_LINKS.md    # Ссылки на Unity 6.3 docs
+├── docs_old/                  # Старая документация (архив)
 ├── Caveman.md                 # Режим коммуникации
 └── START_PROMPT.md            # Этот файл
 ```
@@ -33,26 +39,44 @@
 
 ## ПРАВИЛА РАБОТЫ
 
-### Дата и время
+### 1. Дата и время
 ```bash
 date '+%Y-%m-%d %H:%M:%S %Z'
 ```
+Использовать для всех операций.
 
-### Комментарии
+### 2. Комментарии в файлах
+**Создание:**
 ```csharp
 // Создано: YYYY-MM-DD HH:MM:SS UTC
+```
+
+**Редактирование:**
+```csharp
 // Редактировано: YYYY-MM-DD HH:MM:SS UTC
 ```
 
-### Чекпоинты
+### 3. Актуальность документации
+Файл с датой редактирования ближе к текущей — актуальный.
+
+### 4. Чекпоинты
 **Папка:** `checkpoints/`
 **Формат:** `ММ_ДД_цель.md`
 
-### Git push
+**Содержимое:**
+- Дата и время
+- Статус: in_progress | complete | blocked
+- Выполненные задачи
+- Изменённые файлы
+
+### 5. Git push
 После длинных задач:
 ```bash
 git add -A && git commit -m "описание" && git push
 ```
+
+### 6. GitHub токен
+Если нет в контексте — ПРЕРЫВАТЬ работу, ЗАПРАШИВАТЬ у пользователя.
 
 ---
 
@@ -60,21 +84,21 @@ git add -A && git commit -m "описание" && git push
 
 | Файл | Назначение |
 |------|------------|
-| `docs/!LISTING.md` | Список документации |
-| `docs/!Ai_Skills.md` | AI Skills |
-| `docs/ARCHITECTURE.md` | Архитектура |
-| `checkpoints/README.md` | Инструкция чекпоинтов |
+| `docs/!LISTING.md` | Список всей документации |
+| `docs/!Ai_Skills.md` | AI Skills (Web-Search, VLM, LLM...) |
+| `docs/ARCHITECTURE.md` | Корневой документ архитектуры |
+| `checkpoints/README.md` | Инструкция по чекпоинтам |
 | `Caveman.md` | Режим коммуникации |
 
 ---
 
 ## ЗАПРЕЩЕНО
 
-- Писать в `UnityProject/Local/` — только ручной перенос
+- Писать в `UnityProject/Local/` — только для ручного переноса
 - Создавать Assets/ в корне проекта
 - .md файлы в UnityProject (кроме README.md)
-- Чекпоинты вне `checkpoints/`
-- Временная документация вне `docs/temp_docs/`
+- Создавать чекпоинты вне `checkpoints/`
+- Создавать временную документацию вне `docs/temp_docs/`
 
 ---
 
@@ -84,11 +108,11 @@ git add -A && git commit -m "описание" && git push
 |---------|----------|
 | lite | Без filler, предложения полные |
 | full | Без артиклей, фрагменты OK |
-| ultra | Аббревиатуры, стрелки, минимум |
+| ultra | Аббревиатуры, стрелки, минимум слов |
 
 Триггеры: "caveman mode", "less tokens", "be brief"
 
 ---
 
 *Создано: 2026-04-02 06:37:09 UTC*
-*Редактировано: 2026-04-09 14:30:00 UTC*
+*Редактировано: 2026-04-09 14:35:00 UTC*
