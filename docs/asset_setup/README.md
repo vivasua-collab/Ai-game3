@@ -399,4 +399,22 @@ qiForLevelBreakthrough = coreCapacity × 100
 ---
 
 *Папка создана: 2026-03-30*
-*Обновлено: 2026-04-07 — добавлена инструкция по тайловой системе (16_TileSystem_SemiAuto.md), полный комплект: 28 файлов документации*
+*Обновлено: 2026-04-09 — обновлена инструкция 16_TileSystem_SemiAuto.md (v1.1): добавлены GameTile assets, TestLocationGameController, DestructibleObjectController. Исправлено: TileMapController использует TileBase, не Sprite.*
+
+---
+
+## 📝 Примечания
+
+### Tile System (16_TileSystem_SemiAuto.md)
+
+**Важное изменение в v1.1:**
+- TileMapController использует `TileBase` (GameTile, TerrainTile, ObjectTile), а не Sprite напрямую
+- Необходимо создать GameTile assets из спрайтов
+- Добавлен TestLocationGameController для управления UI и спавном игрока
+- Добавлен DestructibleObjectController для разрушаемых объектов
+
+**Порядок действий:**
+1. `Tools → Generate Tile Sprites` — создать спрайты
+2. `Tools → Setup Test Location Scene` — создать сцену
+3. **Вручную:** Создать GameTile assets (`Create → Cultivation → TerrainTile/ObjectTile`)
+4. **Вручную:** Назначить GameTile assets в TileMapController

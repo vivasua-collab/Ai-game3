@@ -1,7 +1,8 @@
 # Настройка Таиловой Системы (Полуавтомат)
 
 **Создано:** 2026-04-07 14:24:05 UTC
-**Редактировано:** 2026-04-07 14:24:05 UTC
+**Редактировано:** 2026-04-09 11:15:00 UTC
+**Версия:** 1.1 — обновлено для TileBase, добавлены TestLocationGameController и DestructibleObjectController
 
 **Инструменты:** `Tools → Generate Tile Sprites` и `Tools → Setup Test Location Scene`
 
@@ -17,10 +18,14 @@
 | Создание Tilemap (Terrain) | ✅ Автоматически |
 | Создание Tilemap (Objects) | ✅ Автоматически |
 | Создание TileMapController | ✅ Автоматически |
+| Создание TestLocationGameController | ✅ Автоматически |
+| Создание DestructibleObjectController | ✅ Автоматически |
+| Создание UI (HUD, слайдеры, тексты) | ✅ Автоматически |
 | Настройка камеры | ✅ Автоматически |
 | Создание освещения | ✅ Автоматически |
-| Назначение спрайтов в TileMapController | ❌ Руками |
-| Добавление Player | ❌ Руками |
+| Создание GameTile assets | ❌ Руками |
+| Назначение TileBase в TileMapController | ❌ Руками |
+| Добавление Player префаба | ❌ Руками |
 | Настройка коллизий | ❌ Руками |
 
 ---
@@ -66,57 +71,165 @@ Assets/Sprites/Tiles/
 **Результат в Hierarchy:**
 ```
 TestLocation (сцена)
-├── Main Camera           ← Orthographic, Size: 20
+├── Main Camera           ← Orthographic, Size: 15
 ├── Directional Light     ← Intensity: 1
 ├── Grid                  ← cellSize: (2, 2, 1)
 │   ├── Terrain           ← Tilemap для поверхности
 │   └── Objects           ← Tilemap для объектов
-└── TileMapController     ← MonoBehaviour скрипт
-    └── SpawnedObjects    ← Родитель для спавна (runtime)
+├── TileMapController     ← Управление картой
+├── GameController        ← Управление игрой
+│   └── DestructibleObjectController ← Разрушаемые объекты
+└── GameUI                ← Canvas с HUD
+    ├── HUD               ← Панель со статусом
+    │   ├── LocationText  ← Название локации
+    │   ├── PositionText  ← Координаты
+    │   ├── HealthBar     ← HP
+    │   ├── HealthText    ← HP текст
+    │   ├── QiBar         ← Ци
+    │   ├── QiText        ← Ци текст
+    │   └── StaminaBar    ← Выносливость
+    └── Instructions      ← Панель управления
 ```
 
 ---
 
-## Шаг 3: Назначение спрайтов в TileMapController (ВРУКАМИ)
+## Шаг 3: Создание GameTile Assets (ВРУКАМИ) ⚠️ ВАЖНО
 
-**Файл сцены откроется автоматически. Если нет — открой `Assets/Scenes/TestLocation.unity`**
+**TileMapController использует `TileBase` (GameTile), а не Sprite напрямую!**
 
-1. Выбери объект **TileMapController** в Hierarchy
-2. В Inspector найди секции **Terrain Tiles** и **Object Tiles**
-3. Перетащи спрайты из `Assets/Sprites/Tiles/`:
+### 3.1 Создать папку для тайлов:
 
-### Terrain Tiles:
+```
+Assets/Tiles/
+├── Terrain/
+└── Objects/
+```
 
-| Поле в Inspector | Спрайт из Project |
-|-----------------|-------------------|
-| Grass Tile | `terrain_grass` |
-| Dirt Tile | `terrain_dirt` |
-| Stone Tile | `terrain_stone` |
-| Water Shallow Tile | `terrain_water_shallow` |
-| Water Deep Tile | `terrain_water_deep` |
-| Sand Tile | `terrain_sand` |
-| Void Tile | `terrain_void` |
+### 3.2 Создать TerrainTile assets:
 
-### Object Tiles:
+Для каждого типа поверхности:
 
-| Поле в Inspector | Спрайт из Project |
-|-----------------|-------------------|
-| Tree Tile | `obj_tree` |
-| Rock Small Tile | `obj_rock_small` |
-| Rock Medium Tile | `obj_rock_medium` |
-| Bush Tile | `obj_bush` |
-| Chest Tile | `obj_chest` |
+1. Правый клик в `Assets/Tiles/Terrain/`
+2. **Create → Cultivation → TerrainTile**
+3. Назови по типу: `Tile_Grass`, `Tile_Stone`, и т.д.
+4. В Inspector назначь:
+
+| Asset Name | Sprite | Terrain Type | Move Cost | Is Passable | Flags |
+|------------|--------|--------------|-----------|-------------|-------|
+| Tile_Grass | terrain_grass | Grass | 1.0 | ☑ | Passable |
+| Tile_Dirt | terrain_dirt | Dirt | 1.0 | ☑ | Passable |
+| Tile_Stone | terrain_stone | Stone | 1.0 | ☑ | Passable |
+| Tile_WaterShallow | terrain_water_shallow | Water_Shallow | 2.0 | ☑ | Passable, Swimable |
+| Tile_WaterDeep | terrain_water_deep | Water_Deep | 0.0 | ☐ | Swimable, Flyable |
+| Tile_Sand | terrain_sand | Sand | 1.2 | ☑ | Passable |
+| Tile_Void | terrain_void | Void | 0.0 | ☐ | None |
+
+### 3.3 Создать ObjectTile assets:
+
+Для каждого типа объекта:
+
+1. Правый клик в `Assets/Tiles/Objects/`
+2. **Create → Cultivation → ObjectTile**
+3. Назови по типу: `Tile_Tree`, `Tile_RockSmall`, и т.д.
+4. В Inspector назначь:
+
+| Asset Name | Sprite | Object Type | Durability | Blocks Vision | Harvestable |
+|------------|--------|-------------|------------|---------------|-------------|
+| Tile_Tree | obj_tree | Tree_Oak | 200 | ☑ | ☑ |
+| Tile_RockSmall | obj_rock_small | Rock_Small | 100 | ☐ | ☑ |
+| Tile_RockMedium | obj_rock_medium | Rock_Medium | 300 | ☑ | ☑ |
+| Tile_Bush | obj_bush | Bush | 50 | ☐ | ☐ |
+| Tile_Chest | obj_chest | Chest | 50 | ☐ | ☐ |
 
 ---
 
-## Шаг 4: Настройка размеров карты (ВРУКАМИ, опционально)
+## Шаг 4: Назначение TileBase в TileMapController (ВРУКАМИ)
+
+1. Выбери объект **TileMapController** в Hierarchy
+2. В Inspector найди секции **Terrain Tiles** и **Object Tiles**
+3. Перетащи GameTile assets из `Assets/Tiles/`:
+
+### Terrain Tiles (TileBase):
+
+| Поле в Inspector | GameTile Asset |
+|-----------------|----------------|
+| Grass Tile | `Tile_Grass` |
+| Dirt Tile | `Tile_Dirt` |
+| Stone Tile | `Tile_Stone` |
+| Water Shallow Tile | `Tile_WaterShallow` |
+| Water Deep Tile | `Tile_WaterDeep` |
+| Sand Tile | `Tile_Sand` |
+| Void Tile | `Tile_Void` |
+
+### Object Tiles (TileBase):
+
+| Поле в Inspector | GameTile Asset |
+|-----------------|----------------|
+| Tree Tile | `Tile_Tree` |
+| Rock Small Tile | `Tile_RockSmall` |
+| Rock Medium Tile | `Tile_RockMedium` |
+| Bush Tile | `Tile_Bush` |
+| Chest Tile | `Tile_Chest` |
+
+---
+
+## Шаг 5: Настройка TestLocationGameController (ВРУКАМИ)
+
+Выбери **GameController** в Hierarchy. В Inspector:
+
+### References:
+```
+Tile Map Controller:    ← Автоматически назначен
+Player Spawn Point:     ← Опционально (создай Empty GameObject)
+Player Prefab:          ← Переташи Player.prefab (если есть)
+```
+
+### UI References (автоматически найдены по именам):
+```
+Health Bar:    ← Автоматически (имя: "HealthBar")
+Qi Bar:        ← Автоматически (имя: "QiBar")
+Stamina Bar:   ← Автоматически (имя: "StaminaBar")
+Health Text:   ← Автоматически (имя: "HealthText")
+Qi Text:       ← Автоматически (имя: "QiText")
+Location Text: ← Автоматически (имя: "LocationText")
+Position Text: ← Автоматически (имя: "PositionText")
+```
+
+### Settings:
+```
+Spawn Player On Start: ☑  ← Автоматический спавн игрока
+Show Debug Info: ☑        ← Показывать позицию в тайлах
+```
+
+---
+
+## Шаг 6: Настройка DestructibleObjectController (ВРУКАМИ)
+
+Выбери **GameController → DestructibleObjectController** (компонент). В Inspector:
+
+### References:
+```
+Tile Map Controller:  ← Автоматически назначен
+Object Tilemap:       ← Переташи Grid/Objects
+Resource Pickup Prefab: ← Опционально (для дропа)
+```
+
+### Settings:
+```
+Spawn Resource Pickups: ☑  ← Создавать объекты дропа
+Destructible Layer:        ← Слой для разрушаемых объектов
+```
+
+---
+
+## Шаг 7: Настройка размеров карты (ВРУКАМИ, опционально)
 
 Выбери **TileMapController** в Hierarchy:
 
 ```
 Settings:
-├── Default Width:  30     ← ширина в тайлах (60м)
-├── Default Height: 20     ← высота в тайлах (40м)
+├── Default Width:  50     ← ширина в тайлах (100м)
+├── Default Height: 50     ← высота в тайлах (100м)
 └── Generate On Start: ☑   ← авто-генерация при старте
 ```
 
@@ -130,9 +243,9 @@ Settings:
 
 ---
 
-## Шаг 5: Настройка коллизий (ВРУКАМИ)
+## Шаг 8: Настройка коллизий (ВРУКАМИ)
 
-### 5.1 Добавить TilemapCollider2D на Terrain:
+### 8.1 Добавить TilemapCollider2D на Terrain:
 
 1. Выбери объект **Grid → Terrain** в Hierarchy
 2. **Add Component → Tilemap Collider 2D**
@@ -142,7 +255,7 @@ Tilemap Collider 2D:
 └── Used By Composite: ☐ (отключено)
 ```
 
-### 5.2 Опционально: Composite Collider:
+### 8.2 Опционально: Composite Collider:
 
 Для оптимизации коллизий:
 
@@ -159,80 +272,39 @@ Composite Collider 2D:
 
 ---
 
-## Шаг 6: Добавление Player (ВРУКАМИ)
-
-Используй существующий Player или создай новый:
+## Шаг 9: Добавление Player (ВРУКАМИ)
 
 ### Вариант А: Из существующего префаба
 
-1. Перетащи `Assets/Prefabs/Player/Player.prefab` в Hierarchy
-2. Установи Position: (30, 20, 0) — центр карты 30×20 тайлов
+1. Переташи `Assets/Prefabs/Player/Player.prefab` в поле **Player Prefab** в TestLocationGameController
+2. Игрок заспавнится автоматически при старте
 
-### Вариант Б: Через Scene Setup Tools
+### Вариант Б: Без префаба (временно)
 
-1. Открой **Window → Scene Setup Tools**
-2. Нажми **Create Player GameObject**
-3. Настрой позицию вручную
-
----
-
-## Шаг 7: Создание Tile assets (ВРУКАМИ, опционально)
-
-Для продвинутой настройки создай GameTile assets:
-
-### 7.1 Terrain Tile:
-
-1. Правый клик в Project: **Create → Cultivation → Terrain Tile**
-2. Назови `Tile_Grass`
-3. Настрой в Inspector:
-```
-TerrainTile:
-├── Sprite: terrain_grass
-├── Color: Белый
-├── Terrain Type: Grass
-├── Move Cost: 1
-├── Is Passable: ☑
-└── Flags: Passable
-```
-
-### 7.2 Object Tile:
-
-1. Правый клик в Project: **Create → Cultivation → Object Tile**
-2. Назови `Tile_Tree`
-3. Настрой в Inspector:
-```
-ObjectTile:
-├── Sprite: obj_tree
-├── Color: Белый
-├── Object Type: Tree_Oak
-├── Width: 1
-├── Height: 1
-├── Durability: 200
-├── Blocks Vision: ☑
-├── Provides Cover: ☑
-├── Is Interactable: ☐
-├── Is Harvestable: ☑
-├── Move Cost: 0
-├── Is Passable: ☐
-└── Flags: None
-```
+TestLocationGameController создаст базового игрока автоматически:
+- Rigidbody2D (Dynamic, gravity = 0)
+- CircleCollider2D (radius = 0.4)
+- PlayerController, BodyController, QiController
+- Временный спрайт (голубой круг)
 
 ---
 
-## Шаг 8: Сохранение сцены (ВРУКАМИ)
+## Шаг 10: Сохранение сцены (ВРУКАМИ)
 
 1. **Ctrl + S** или **File → Save**
 2. Сцена сохранится в `Assets/Scenes/TestLocation.unity`
 
 ---
 
-## Шаг 9: Проверка
+## Шаг 11: Проверка
 
 ### Нажми Play:
 
 **Console должна показать:**
 ```
-Generated map: 30x20 tiles (60x40 meters)
+Generated map: 50x50 tiles (100x100 meters)
+[TestLocationGameController] Player spawned at (50, 50, 0)
+[DestructibleObjectController] Cached XX destructible objects
 ```
 
 **На сцене должно быть:**
@@ -242,6 +314,7 @@ Generated map: 30x20 tiles (60x40 meters)
 - Деревья по карте (obj_tree)
 - Камни (obj_rock_small/medium)
 - Кусты (obj_bush)
+- Игрок (голубой круг или префаб)
 
 ### Визуальная проверка:
 
@@ -254,6 +327,7 @@ Generated map: 30x20 tiles (60x40 meters)
 | Деревья | Зелёный + коричневый | Случайно |
 | Камни | Серый | Случайно |
 | Кусты | Светло-зелёный | Случайно |
+| Игрок | Голубой круг | Центр карты |
 
 ---
 
@@ -263,35 +337,35 @@ Generated map: 30x20 tiles (60x40 meters)
 
 ### Tilemap References:
 ```
-Terrain Tilemap:    ← ссылка на Grid/Terrain
-Object Tilemap:     ← ссылка на Grid/Objects
+Terrain Tilemap:    ← ссылка на Grid/Terrain (автоматически)
+Object Tilemap:     ← ссылка на Grid/Objects (автоматически)
 Overlay Tilemap:    ← опционально для эффектов
 ```
 
-### Terrain Tiles:
+### Terrain Tiles (TileBase):
 ```
-Grass Tile:         ← terrain_grass sprite
-Dirt Tile:          ← terrain_dirt sprite
-Stone Tile:         ← terrain_stone sprite
-Water Shallow Tile: ← terrain_water_shallow sprite
-Water Deep Tile:    ← terrain_water_deep sprite
-Sand Tile:          ← terrain_sand sprite
-Void Tile:          ← terrain_void sprite
+Grass Tile:         ← Tile_Grass asset
+Dirt Tile:          ← Tile_Dirt asset
+Stone Tile:         ← Tile_Stone asset
+Water Shallow Tile: ← Tile_WaterShallow asset
+Water Deep Tile:    ← Tile_WaterDeep asset
+Sand Tile:          ← Tile_Sand asset
+Void Tile:          ← Tile_Void asset
 ```
 
-### Object Tiles:
+### Object Tiles (TileBase):
 ```
-Tree Tile:          ← obj_tree sprite
-Rock Small Tile:    ← obj_rock_small sprite
-Rock Medium Tile:   ← obj_rock_medium sprite
-Bush Tile:          ← obj_bush sprite
-Chest Tile:         ← obj_chest sprite
+Tree Tile:          ← Tile_Tree asset
+Rock Small Tile:    ← Tile_RockSmall asset
+Rock Medium Tile:   ← Tile_RockMedium asset
+Bush Tile:          ← Tile_Bush asset
+Chest Tile:         ← Tile_Chest asset
 ```
 
 ### Settings:
 ```
-Default Width: 30       ← ширина карты в тайлах
-Default Height: 20      ← высота карты в тайлах
+Default Width: 50       ← ширина карты в тайлах
+Default Height: 50      ← высота карты в тайлах
 Generate On Start: ☑    ← генерация при запуске
 ```
 
@@ -321,15 +395,40 @@ controller.SetTerrain(x, y, TerrainType.Water_Deep);
 controller.AddObject(x, y, TileObjectType.Tree_Oak);
 ```
 
+### Разрушение объектов:
+
+```csharp
+using CultivationGame.TileSystem;
+
+// Получить контроллер
+var destructible = FindFirstObjectByType<DestructibleObjectController>();
+
+// Нанести урон объекту
+int actualDamage = destructible.DamageObjectAtTile(x, y, 50, DamageType.Physical);
+
+// Проверить прочность
+var (current, max) = destructible.GetObjectDurability(x, y);
+```
+
 ### События:
 
 ```csharp
+// TileMapController
 controller.OnTileChanged += (tile) => {
     Debug.Log($"Tile changed: {tile.x}, {tile.y}");
 };
 
 controller.OnMapGenerated += (mapData) => {
     Debug.Log($"Map generated: {mapData.width}x{mapData.height}");
+};
+
+// DestructibleObjectController
+destructible.OnObjectDestroyed += (info) => {
+    Debug.Log($"Object destroyed: {info.ObjectType}");
+};
+
+destructible.OnResourceDropped += (drop) => {
+    Debug.Log($"Resource dropped: {drop.ResourceId} x{drop.Amount}");
 };
 ```
 
@@ -339,11 +438,13 @@ controller.OnMapGenerated += (mapData) => {
 
 | Ошибка | Причина | Решение |
 |--------|---------|---------|
-| Спрайты не назначены | Пустые поля в Inspector | Перетащи спрайты в TileMapController |
-| Карта пустая | Generate On Start отключен | Включи чекбокс или нажми Generate Test Map |
+| Карта пустая | TileBase не назначены | Создай GameTile assets и назначь в TileMapController |
+| Тайлы не отображаются | Sprite не назначен в GameTile | Назначь спрайт в GameTile asset |
+| Карта не генерируется | Generate On Start отключен | Включи чекбокс или нажми Generate Test Map |
 | Коллизии не работают | Нет TilemapCollider2D | Добавь компонент на Terrain |
-| Камера не видит карту | Z позиция или Size | Camera Z: -10, Size: 20 |
+| Камера не видит карту | Z позиция или Size | Camera Z: -10, Size: 15 |
 | Спрайты размыты | Filter Mode не Point | Выбери спрайт → Filter Mode: Point |
+| Игрок не спавнится | Нет Player Prefab | Добавь префаб или включи авто-создание |
 
 ---
 
@@ -353,17 +454,26 @@ controller.OnMapGenerated += (mapData) => {
 Assets/
 ├── Scripts/Tile/
 │   ├── TileEnums.cs              ← Перечисления
-│   ├── TileData.cs               ← Данные тайла
+│   ├── TileData.cs               ← Данные тайла (v1.1)
 │   ├── TileMapData.cs            ← Данные карты
-│   ├── TileMapController.cs      ← Контроллер
+│   ├── TileMapController.cs      ← Контроллер карты
 │   ├── GameTile.cs               ← Custom TileBase
+│   ├── DestructibleObjectController.cs ← Разрушаемые объекты
+│   ├── ResourcePickup.cs         ← Подбор ресурсов
 │   ├── CultivationGame.TileSystem.asmdef
 │   └── Editor/
 │       ├── TileSpriteGenerator.cs    ← Генератор спрайтов
-│       └── TestLocationSetup.cs      ← Создание сцены
+│       └── TestLocationSetup.cs      ← Создание сцены (v1.1)
+├── Scripts/Data/
+│   └── TerrainConfig.cs          ← Конфигурация типов поверхности
+├── Scripts/World/
+│   └── TestLocationGameController.cs ← Контроллер тестовой локации
 ├── Sprites/Tiles/
 │   ├── terrain_*.png             ← Спрайты поверхности
 │   └── obj_*.png                 ← Спрайты объектов
+├── Tiles/
+│   ├── Terrain/                  ← TerrainTile assets
+│   └── Objects/                  ← ObjectTile assets
 └── Scenes/
     └── TestLocation.unity        ← Тестовая сцена
 ```
@@ -378,11 +488,14 @@ Assets/
 | Создать сцену | 🤖 Скрипт |
 | Создать Grid + Tilemap | 🤖 Скрипт |
 | Создать TileMapController | 🤖 Скрипт |
+| Создать TestLocationGameController | 🤖 Скрипт |
+| Создать DestructibleObjectController | 🤖 Скрипт |
+| Создать UI | 🤖 Скрипт |
 | Настроить камеру | 🤖 Скрипт |
-| Назначить спрайты | ✋ Руками |
-| Добавить коллизии | ✋ Руками |
-| Добавить Player | ✋ Руками |
 | Создать GameTile assets | ✋ Руками |
+| Назначить TileBase | ✋ Руками |
+| Добавить коллизии | ✋ Руками |
+| Добавить Player префаб | ✋ Руками |
 
 ---
 
@@ -393,10 +506,30 @@ Assets/
 | Размер тайла | 2×2 м |
 | Tilemap cellSize | (2, 2, 1) |
 | Спрайт PPU | 64 |
-| Размер тестовой карты | 30×20 тайлов |
-| Размер тестовой карты | 60×40 м |
+| Размер тестовой карты | 50×50 тайлов |
+| Размер тестовой карты | 100×100 м |
 | Диапазон высот (Z) | -5 .. +5 |
 
 ---
 
+## Контроллеры сцены
+
+### TileMapController
+- Управляет генерацией и отображением карты
+- Хранит TileMapData с данными всех тайлов
+- Предоставляет API для доступа и изменения тайлов
+
+### TestLocationGameController
+- Управляет спавном игрока
+- Связывает UI с системами игрока
+- Показывает debug информацию (позиция в тайлах)
+
+### DestructibleObjectController
+- Управляет разрушением объектов
+- Создаёт дроп ресурсов при разрушении
+- Кэширует разрушаемые объекты для производительности
+
+---
+
 *Документ создан: 2026-04-07 14:24:05 UTC*
+*Обновлено: 2026-04-09 11:15:00 UTC — версия 1.1*
