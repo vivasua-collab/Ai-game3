@@ -1,21 +1,8 @@
-# START_PROMPT.md — Стартовый промпт для ИИ агента
+# START_PROMPT.md — Холодный старт ИИ агента
 
 **Проект:** Cultivation World Simulator (Unity 6.3)
 **Обращение:** "Мой Господин"
 **Режим:** lite (без filler, предложения полные)
-
----
-
-## КОНТЕКСТ ПРОЕКТА
-
-**Модель В (основная):**
-- Ёмкость Qi = 100 × level³ + сжатие
-- `environmentMult` и `regenerationMultiplier` — ГАЛЛЮЦИНАЦИИ ИИ, не использовать
-- После прорыва: currentQi = 0, проводимость = coreVolume / 360 сек
-
-**P1 задачи:**
-1. Исправить ошибки компиляции Unity
-2. PerformBreakthrough fix (currentQi = 0)
 
 ---
 
@@ -27,17 +14,17 @@
 │   ├── Assets/Scripts/        # C# скрипты
 │   ├── Assets/Sprites/        # Спрайты
 │   ├── Assets/Scenes/         # Сцены
-│   └── Assets/Data/           # ScriptableObjects, JSON
-├── checkpoints/               # Чекпоинты работы (ММ_ДД_цель.md)
-├── docs/                      # Документация проекта
-│   ├── asset_setup/           # Инструкции внедрения через Unity Editor
+│   ├── Assets/Data/           # ScriptableObjects, JSON
+│   └── Local/                 # ТОЛЬКО ручной перенос (ИИ НЕ ПИСАТЬ)
+├── checkpoints/               # Чекпоинты (ММ_ДД_цель.md)
+├── docs/                      # Документация
+│   ├── asset_setup/           # Инструкции Unity Editor
 │   ├── examples/              # Примеры реализаций
-│   ├── temp_docs/             # Временная документация, черновики
-│   ├── !LISTING.md            # Полный список документации
+│   ├── temp_docs/             # Черновики, временные
+│   ├── !LISTING.md            # Список документации
 │   ├── !Ai_Skills.md          # AI Skills
-│   ├── ARCHITECTURE.md        # Корневой документ архитектуры
-│   └── UNITY_DOCS_LINKS.md    # Ссылки на Unity 6.3 docs
-├── docs_old/                  # Старая документация (архив)
+│   └── ARCHITECTURE.md        # Архитектура
+├── docs_old/                  # Архив
 ├── Caveman.md                 # Режим коммуникации
 └── START_PROMPT.md            # Этот файл
 ```
@@ -46,44 +33,26 @@
 
 ## ПРАВИЛА РАБОТЫ
 
-### 1. Дата и время
+### Дата и время
 ```bash
 date '+%Y-%m-%d %H:%M:%S %Z'
 ```
-Использовать для всех операций.
 
-### 2. Комментарии в файлах
-**Создание:**
+### Комментарии
 ```csharp
 // Создано: YYYY-MM-DD HH:MM:SS UTC
-```
-
-**Редактирование:**
-```csharp
 // Редактировано: YYYY-MM-DD HH:MM:SS UTC
 ```
 
-### 3. Актуальность документации
-Файл с датой редактирования ближе к текущей — актуальный.
-
-### 4. Чекпоинты
+### Чекпоинты
 **Папка:** `checkpoints/`
 **Формат:** `ММ_ДД_цель.md`
 
-**Содержимое:**
-- Дата и время
-- Статус: in_progress | complete | blocked
-- Выполненные задачи
-- Изменённые файлы
-
-### 5. Git push
+### Git push
 После длинных задач:
 ```bash
 git add -A && git commit -m "описание" && git push
 ```
-
-### 6. GitHub токен
-Если нет в контексте — ПРЕРЫВАТЬ работу, ЗАПРАШИВАТЬ у пользователя.
 
 ---
 
@@ -91,22 +60,21 @@ git add -A && git commit -m "описание" && git push
 
 | Файл | Назначение |
 |------|------------|
-| `docs/!LISTING.md` | Список всей документации |
-| `docs/!Ai_Skills.md` | AI Skills (Web-Search, VLM, LLM...) |
-| `docs/ARCHITECTURE.md` | Корневой документ архитектуры |
-| `docs/temp_docs/!CONTRADICTIONS_REPORT.md` | Известные противоречия |
-| `checkpoints/README.md` | Инструкция по чекпоинтам |
+| `docs/!LISTING.md` | Список документации |
+| `docs/!Ai_Skills.md` | AI Skills |
+| `docs/ARCHITECTURE.md` | Архитектура |
+| `checkpoints/README.md` | Инструкция чекпоинтов |
 | `Caveman.md` | Режим коммуникации |
 
 ---
 
 ## ЗАПРЕЩЕНО
 
-- Писать в `UnityProject/Local/` — только для ручного переноса
+- Писать в `UnityProject/Local/` — только ручной перенос
 - Создавать Assets/ в корне проекта
 - .md файлы в UnityProject (кроме README.md)
-- Создавать чекпоинты вне `checkpoints/`
-- Создавать временную документацию вне `docs/temp_docs/`
+- Чекпоинты вне `checkpoints/`
+- Временная документация вне `docs/temp_docs/`
 
 ---
 
@@ -116,11 +84,11 @@ git add -A && git commit -m "описание" && git push
 |---------|----------|
 | lite | Без filler, предложения полные |
 | full | Без артиклей, фрагменты OK |
-| ultra | Аббревиатуры, стрелки, минимум слов |
+| ultra | Аббревиатуры, стрелки, минимум |
 
 Триггеры: "caveman mode", "less tokens", "be brief"
 
 ---
 
 *Создано: 2026-04-02 06:37:09 UTC*
-*Редактировано: 2026-04-09 12:00:00 UTC*
+*Редактировано: 2026-04-09 14:30:00 UTC*
