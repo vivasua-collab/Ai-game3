@@ -34,6 +34,9 @@
 ### Новые файлы:
 - `Scripts/Core/VFXPool.cs` — Пул визуальных эффектов
 - `Scripts/Data/TerrainConfig.cs` — Конфигурация типов поверхности
+- `docs/examples/README.md` — Описание папки examples
+- `docs/temp_docs/README.md` — Описание папки temp_docs
+- `docs_old/README.md` — Описание папки docs_old
 
 ### Обновлённые файлы:
 - `Scripts/Combat/CombatManager.cs` — v1.2 → v1.3
@@ -43,6 +46,7 @@
 - `Scripts/Tile/Editor/TestLocationSetup.cs` — v1.0 → v1.1
 - `docs/asset_setup/16_TileSystem_SemiAuto.md` — v1.1
 - `docs/asset_setup/README.md` — добавлены примечания
+- `START_PROMPT.md` — оптимизирован для ИИ агента
 
 ## Контекст проекта
 
