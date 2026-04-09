@@ -2,7 +2,7 @@
     "name": "CultivationGame.TileSystem",
     "rootNamespace": "CultivationGame.TileSystem",
     "references": [
-        "GUID:a0d61ad4bc7045d9a31ff8d1a42f0aa9"
+        "UnityEngine.Tilemap.Module"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

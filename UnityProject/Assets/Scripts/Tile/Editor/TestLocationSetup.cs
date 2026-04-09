@@ -188,7 +188,13 @@ namespace CultivationGame.TileSystem.Editor
             so.FindProperty("tileMapController").objectReferenceValue = tileMapController.GetComponent<TileMapController>();
             so.ApplyModifiedProperties();
             
-            Debug.Log("[TestLocationSetup] GameController created");
+            // Добавить DestructibleObjectController
+            var destructibleController = gameControllerObj.AddComponent<DestructibleObjectController>();
+            var destructibleSo = new SerializedObject(destructibleController);
+            destructibleSo.FindProperty("tileMapController").objectReferenceValue = tileMapController.GetComponent<TileMapController>();
+            destructibleSo.ApplyModifiedProperties();
+            
+            Debug.Log("[TestLocationSetup] GameController created with DestructibleObjectController");
         }
         
         private static TMPro.TextMeshProUGUI CreateText(GameObject parent, string name, string text, Vector2 position, int fontSize, TextAnchor alignment)
