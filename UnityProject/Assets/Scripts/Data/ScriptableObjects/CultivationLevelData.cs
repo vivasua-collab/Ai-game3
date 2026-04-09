@@ -47,10 +47,7 @@ namespace CultivationGame.Data.ScriptableObjects
         [Tooltip("Множитель старения (1.0 = норма, 0.0 = остановлено)")]
         [Range(0f, 1f)]
         public float agingMultiplier = 1.0f;
-        
-        [Tooltip("Множитель регенерации")]
-        public float regenerationMultiplier = 1.0f;
-        
+
         [Tooltip("Множитель проводимости")]
         public float conductivityMultiplier = 1.0f;
         

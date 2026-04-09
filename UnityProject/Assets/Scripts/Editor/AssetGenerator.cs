@@ -355,7 +355,6 @@ namespace CultivationGame.Editor
 
             // Body Effects
             asset.agingMultiplier = data.agingMultiplier;
-            asset.regenerationMultiplier = data.regenerationMultiplier;
             asset.conductivityMultiplier = data.conductivityMultiplier;
 
             // Abilities
@@ -587,7 +586,6 @@ namespace CultivationGame.Editor
             public float coreCapacityMultiplier;
             public long baseCoreCapacity;
             public float agingMultiplier;
-            public float regenerationMultiplier;
             public float conductivityMultiplier;
             public string abilitiesDescription;
             public bool noFoodRequired;
