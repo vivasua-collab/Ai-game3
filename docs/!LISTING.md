@@ -1,7 +1,7 @@
 # 📂 Unity Documentation Listing
 
-**Версия:** 2.2  
-**Дата:** 2026-04-07  
+**Версия:** 2.3  
+**Дата:** 2026-04-09  
 **Проект:** Cultivation World Simulator → Unity Migration
 
 ---
@@ -23,15 +23,7 @@
 |------|----------|---------|
 | [!Ai_Skills.md](./!Ai_Skills.md) | Доступные Skills ИИ-ассистента (ASR, TTS, LLM, Web-Search и др.) | ~3500 |
 | [!LISTING.md](./!LISTING.md) | Этот файл — список всех документов | ~2000 |
-| [!DUPLICATION_REPORT.md](./!DUPLICATION_REPORT.md) | Отчёт о дублировании информации | ~3000 |
-| [!CONTRADICTIONS_REPORT.md](./!CONTRADICTIONS_REPORT.md) | Отчёт о противоречиях в документации | ~2500 |
 | [UNITY_DOCS_LINKS.md](./UNITY_DOCS_LINKS.md) | Листинг 150+ ссылок на документацию Unity 6.3 | ~4500 |
-
-### 🎮 Выбор версии Unity
-
-| Файл | Описание | Токенов |
-|------|----------|---------|
-| [UNITY_VERSION_COMPARISON.md](./UNITY_VERSION_COMPARISON.md) | Сравнение Unity 2022 LTS vs Unity 6.3, рекомендации | ~4000 |
 
 ### Архитектура и основы
 
@@ -39,11 +31,6 @@
 |------|----------|---------|
 | [ARCHITECTURE.md](./ARCHITECTURE.md) | Общая архитектура Unity проекта, паттерны, модули | ~3500 |
 | [DATA_MODELS.md](./DATA_MODELS.md) | Модели данных из Prisma schema, 17 сущностей | ~5000 |
-| [MIGRATION_ANALYSIS.md](./MIGRATION_ANALYSIS.md) | Анализ миграции, что нужно перенести | ~2000 |
-| [WORKFLOW_GITHUB_UNITY.md](./WORKFLOW_GITHUB_UNITY.md) | Workflow: GitHub ↔ локальный Unity | ~3000 |
-| [GIT_WORKFLOW_TWO_PC.md](./GIT_WORKFLOW_TWO_PC.md) | Git workflow для работы на двух ПК | ~2000 |
-| [UNITY_63_RESEARCH.md](./UNITY_63_RESEARCH.md) | Исследование API Unity 6.3 (из оф. документации) | ~3500 |
-| [PROJECT_SETUP_PLAN.md](./PROJECT_SETUP_PLAN.md) | План подготовки проекта БЕЗ доступа к Unity | ~2500 |
 
 ### Системы данных
 
@@ -62,14 +49,14 @@
 | [BODY_SYSTEM.md](./BODY_SYSTEM.md) | Kenshi-style система тела, двойная HP | ~4000 |
 | [INVENTORY_SYSTEM.md](./INVENTORY_SYSTEM.md) | Инвентарь, экипировка, слоты | ~3000 |
 | [EQUIPMENT_SYSTEM.md](./EQUIPMENT_SYSTEM.md) | Экипировка v2: материалы, грейды, прочность | ~3500 |
-| [BUFF_SYSTEM.md](./BUFF_SYSTEM.md) | **🆕** Система баффов/дебаффов | ~2500 |
-| [FORMATION_SYSTEM.md](./FORMATION_SYSTEM.md) | **🆕** Система формаций, физические носители | ~4000 |
+| [BUFF_SYSTEM.md](./BUFF_SYSTEM.md) | Система баффов/дебаффов | ~2500 |
+| [FORMATION_SYSTEM.md](./FORMATION_SYSTEM.md) | Система формаций, физические носители | ~4000 |
 | [CHARGER_SYSTEM.md](./CHARGER_SYSTEM.md) | Зарядные ядра для формаций | ~2000 |
 | [ELEMENTS_SYSTEM.md](./ELEMENTS_SYSTEM.md) | Стихии, противоположности, сродство | ~2500 |
 | [MODIFIERS_SYSTEM.md](./MODIFIERS_SYSTEM.md) | Модификаторы, баффы, дебаффы | ~2500 |
 | [STAT_THRESHOLD_SYSTEM.md](./STAT_THRESHOLD_SYSTEM.md) | Пороги развития характеристик | ~2500 |
-| [GENERATORS_SYSTEM.md](./GENERATORS_SYSTEM.md) | **🆕** Генераторы: NPC, техники, предметы | ~3500 |
-| [GENERATORS_NAME_FIX.md](./GENERATORS_NAME_FIX.md) | **🆕** Исправление грамматики в генераторах | ~1500 |
+| [GENERATORS_SYSTEM.md](./GENERATORS_SYSTEM.md) | Генераторы: NPC, техники, предметы | ~3500 |
+| [GENERATORS_NAME_FIX.md](./GENERATORS_NAME_FIX.md) | Исправление грамматики в генераторах | ~1500 |
 
 ### NPC и AI
 
@@ -82,10 +69,10 @@
 | Файл | Описание | Токенов |
 |------|----------|---------|
 | [WORLD_SYSTEM.md](./WORLD_SYSTEM.md) | Мир, локации, 3D координаты | ~3000 |
-| [WORLD_MAP_SYSTEM.md](./WORLD_MAP_SYSTEM.md) | **🆕** Мировая карта: секторы, местность, навигация | ~6000 |
-| [LOCATION_MAP_SYSTEM.md](./LOCATION_MAP_SYSTEM.md) | **🆕** Локации: генерация зданий, препятствий, ресурсов | ~5500 |
-| [TILE_SYSTEM.md](./TILE_SYSTEM.md) | **🆕** Тайловая система: структура, параметры, генерация | ~6000 |
-| [TRANSITION_SYSTEM.md](./TRANSITION_SYSTEM.md) | **🆕** Система переходов между картами | ~4500 |
+| [WORLD_MAP_SYSTEM.md](./WORLD_MAP_SYSTEM.md) | Мировая карта: секторы, местность, навигация | ~6000 |
+| [LOCATION_MAP_SYSTEM.md](./LOCATION_MAP_SYSTEM.md) | Локации: генерация зданий, препятствий, ресурсов | ~5500 |
+| [TILE_SYSTEM.md](./TILE_SYSTEM.md) | Тайловая система: структура, параметры, генерация | ~6000 |
+| [TRANSITION_SYSTEM.md](./TRANSITION_SYSTEM.md) | Система переходов между картами | ~4500 |
 | [TIME_SYSTEM.md](./TIME_SYSTEM.md) | Система времени, тики, календарь | ~2500 |
 | [FACTION_SYSTEM.md](./FACTION_SYSTEM.md) | Фракции, отношения, нации | ~2500 |
 | [LORE_SYSTEM.md](./LORE_SYSTEM.md) | Лор, истории, миростроение | ~2000 |
@@ -103,8 +90,8 @@
 |------|----------|---------|
 | [MORTAL_DEVELOPMENT.md](./MORTAL_DEVELOPMENT.md) | Этапы развития смертного до культивации | ~4000 |
 | [DEVELOPMENT_PLAN.md](./DEVELOPMENT_PLAN.md) | Общий план развития проекта | ~3000 |
-| [ACHIEVEMENT_SYSTEM.md](./ACHIEVEMENT_SYSTEM.md) | **🆕** Система достижений | ~2500 |
-| [JOURNAL_SYSTEM.md](./JOURNAL_SYSTEM.md) | **🆕** Система журнала/летописи | ~2000 |
+| [PERK_SYSTEM.md](./PERK_SYSTEM.md) | Система перков | ~2000 |
+| [JOURNAL_SYSTEM.md](./JOURNAL_SYSTEM.md) | Система журнала/летописи | ~2000 |
 
 ### Настройка Unity Editor
 
@@ -144,9 +131,9 @@
 | [examples/TechniqueEffectsSystem.md](./examples/TechniqueEffectsSystem.md) | Система эффектов техник | ~2000 |
 | [examples/CharacterSpriteMirroring.md](./examples/CharacterSpriteMirroring.md) | Зеркалирование спрайтов персонажа | ~1500 |
 | [examples/OrbitalWeaponSystem.md](./examples/OrbitalWeaponSystem.md) | Система орбитального оружия | ~2000 |
-| [examples/BuffSystem_Examples.md](./examples/BuffSystem_Examples.md) | **🆕** Примеры кода системы баффов | ~2500 |
-| [examples/FormationSystem_Examples.md](./examples/FormationSystem_Examples.md) | **🆕** Примеры кода системы формаций | ~2500 |
-| [examples/StatThresholdSystem_Examples.md](./examples/StatThresholdSystem_Examples.md) | **🆕** Примеры кода порогов развития | ~2500 |
+| [examples/BuffSystem_Examples.md](./examples/BuffSystem_Examples.md) | Примеры кода системы баффов | ~2500 |
+| [examples/FormationSystem_Examples.md](./examples/FormationSystem_Examples.md) | Примеры кода системы формаций | ~2500 |
+| [examples/StatThresholdSystem_Examples.md](./examples/StatThresholdSystem_Examples.md) | Примеры кода порогов развития | ~2500 |
 
 ### Планы внедрения
 
@@ -156,11 +143,30 @@
 | [implementation_plans/NEXT_ELEMENTS_PLAN.md](./implementation_plans/NEXT_ELEMENTS_PLAN.md) | Следующие элементы разработки | ~2500 |
 | [implementation_plans/IMPLEMENTATION_PLAN_NEXT.md](./implementation_plans/IMPLEMENTATION_PLAN_NEXT.md) | План следующих этапов | ~2000 |
 
-### Аналитические отчёты
+---
 
-| Файл | Описание | Токенов |
-|------|----------|---------|
-| [ANALYSIS_REPORT.md](./ANALYSIS_REPORT.md) | Общий аналитический отчёт | ~3000 |
+## 📁 Временная документация
+
+> **Расположение:** `docs/temp_docs/`  
+> **Назначение:** Черновики, временные файлы, отчёты об анализе
+
+| Файл | Описание |
+|------|----------|
+| [temp_docs/LOST_SESSION_ANALYSIS.md](./temp_docs/LOST_SESSION_ANALYSIS.md) | Анализ потерянной сессии |
+| [temp_docs/!CONTRADICTIONS_REPORT.md](./temp_docs/!CONTRADICTIONS_REPORT.md) | Отчёт о противоречиях в документации |
+| [temp_docs/!CONTRADICTIONS_REPORT_v2.md](./temp_docs/!CONTRADICTIONS_REPORT_v2.md) | Отчёт о противоречиях v2 |
+| [temp_docs/!DUPLICATION_REPORT.md](./temp_docs/!DUPLICATION_REPORT.md) | Отчёт о дублировании информации |
+| [temp_docs/!SINGLE_SOURCE_OF_TRUTH_PROPOSAL.md](./temp_docs/!SINGLE_SOURCE_OF_TRUTH_PROPOSAL.md) | Предложение единого источника истины |
+| [temp_docs/ACHIEVEMENT_SYSTEM.md](./temp_docs/ACHIEVEMENT_SYSTEM.md) | Черновик системы достижений |
+| [temp_docs/ANALYSIS_REPORT.md](./temp_docs/ANALYSIS_REPORT.md) | Общий аналитический отчёт |
+| [temp_docs/GIT_WORKFLOW_TWO_PC.md](./temp_docs/GIT_WORKFLOW_TWO_PC.md) | Git workflow для двух ПК |
+| [temp_docs/MIGRATION_ANALYSIS.md](./temp_docs/MIGRATION_ANALYSIS.md) | Анализ миграции |
+| [temp_docs/PROJECT_SETUP_PLAN.md](./temp_docs/PROJECT_SETUP_PLAN.md) | План подготовки проекта |
+| [temp_docs/TECHNIQUE_USAGE_REPORT.md](./temp_docs/TECHNIQUE_USAGE_REPORT.md) | Отчёт об использовании техник |
+| [temp_docs/TILE_SYSTEM_IMPLEMENTATION.md](./temp_docs/TILE_SYSTEM_IMPLEMENTATION.md) | Реализация тайловой системы |
+| [temp_docs/UNITY_63_RESEARCH.md](./temp_docs/UNITY_63_RESEARCH.md) | Исследование Unity 6.3 API |
+| [temp_docs/UNITY_VERSION_COMPARISON.md](./temp_docs/UNITY_VERSION_COMPARISON.md) | Сравнение версий Unity |
+| [temp_docs/WORKFLOW_GITHUB_UNITY.md](./temp_docs/WORKFLOW_GITHUB_UNITY.md) | Workflow GitHub ↔ Unity |
 
 ---
 
@@ -168,10 +174,10 @@
 
 | Метрика | Значение |
 |---------|----------|
-| Всего документов игры | 69+ |
-| Общий объём | ~182,000 токенов |
-| Средний размер | ~2,500 токенов |
+| Основных документов | 54 |
+| Временных документов | 15 |
 | Файлов примеров кода | 8 |
+| Общий объём | ~140,000 токенов |
 
 ---
 
@@ -188,9 +194,6 @@
 ## 🔗 Связи документов
 
 ```
-UNITY_VERSION_COMPARISON.md (выбор версии)
-    │
-    ▼
 ARCHITECTURE.md (корневой документ)
     ├── DATA_MODELS.md (структуры данных)
     ├── ALGORITHMS.md (формулы)
@@ -230,10 +233,9 @@ ARCHITECTURE.md (корневой документ)
 ## 📝 Рекомендации по чтению
 
 ### Для старта разработки:
-1. UNITY_VERSION_COMPARISON.md — выбор версии Unity
-2. ARCHITECTURE.md — общая картина
-3. DATA_MODELS.md — структуры данных
-4. ALGORITHMS.md — ключевые формулы
+1. ARCHITECTURE.md — общая картина
+2. DATA_MODELS.md — структуры данных
+3. ALGORITHMS.md — ключевые формулы
 
 ### Для боевой системы:
 1. COMBAT_SYSTEM.md — пайплайн урона
@@ -266,10 +268,8 @@ ARCHITECTURE.md (корневой документ)
 
 **Документация:** https://docs.unity3d.com/Manual/index.html
 
-Подробнее: [UNITY_VERSION_COMPARISON.md](./UNITY_VERSION_COMPARISON.md)
-
 ---
 
-*Документ обновлён: 2026-04-07*  
-*Изменения: Добавлен TILE_SYSTEM.md — тайловая система локаций*  
+*Документ обновлён: 2026-04-09*  
+*Изменения: Перенос временных документов в temp_docs (15 файлов)*  
 *Проект: Cultivation World Simulator Unity Migration*
