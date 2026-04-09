@@ -3,7 +3,7 @@
 // Cultivation World Simulator
 // Версия: 1.3 — Добавлен conductivityBonus для системы перков
 // Создано: 2026-03-30 14:00:00 UTC
-// Редактировано: 2026-04-07 12:15:00 UTC
+// Редактировано: 2026-04-09 07:16:00 UTC — после прорыва Ци = 0
 // ============================================================================
 
 using System;
@@ -286,16 +286,20 @@ namespace CultivationGame.Qi
         
         /// <summary>
         /// Выполнить прорыв.
+        /// После прорыва Ци = 0 (ядро пустое).
         /// </summary>
         public bool PerformBreakthrough(bool isMajorLevel)
         {
             if (!CanBreakthrough(isMajorLevel)) return false;
             
+            // Проверка требований
             long required = isMajorLevel 
                 ? (long)(coreCapacity * GameConstants.BIG_BREAKTHROUGH_MULTIPLIER)
                 : (long)(coreCapacity * GameConstants.SMALL_BREAKTHROUGH_MULTIPLIER);
             
-            SpendQi((int)required);
+            // ПОСЛЕ ПРОРЫВА ЦИ = 0
+            // Всё накопленное Ци тратится на прорыв
+            currentQi = 0;
             
             if (isMajorLevel)
             {

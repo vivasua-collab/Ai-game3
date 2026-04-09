@@ -2,7 +2,7 @@
 // TestLocationSetup.cs — Настройка тестовой локации
 // Cultivation World Simulator
 // Создано: 2026-04-07 14:24:05 UTC
-// Редактировано: 2026-04-08 06:17:46 UTC
+// Редактировано: 2026-04-09 07:14:00 UTC — добавлен using TMPro
 // ============================================================================
 
 #if UNITY_EDITOR
@@ -11,6 +11,7 @@ using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine.Tilemaps;
 using UnityEngine.UI;
+using TMPro;
 
 namespace CultivationGame.TileSystem.Editor
 {
@@ -135,7 +136,7 @@ namespace CultivationGame.TileSystem.Editor
             
             // Location Text
             var locationText = CreateText(hud, "LocationText", "Test Location", new Vector2(10, -10), 22, TextAnchor.UpperLeft);
-            locationText.fontStyle = TMPro.FontStyles.Bold;
+            locationText.fontStyle = FontStyles.Bold;
             
             // Position Text
             var posText = CreateText(hud, "PositionText", "Position: (0, 0)", new Vector2(10, -38), 16, TextAnchor.UpperLeft);
@@ -197,7 +198,7 @@ namespace CultivationGame.TileSystem.Editor
             Debug.Log("[TestLocationSetup] GameController created with DestructibleObjectController");
         }
         
-        private static TMPro.TextMeshProUGUI CreateText(GameObject parent, string name, string text, Vector2 position, int fontSize, TextAnchor alignment)
+        private static TextMeshProUGUI CreateText(GameObject parent, string name, string text, Vector2 position, int fontSize, TextAnchor alignment)
         {
             GameObject textGO = new GameObject(name);
             textGO.transform.SetParent(parent.transform, false);
@@ -209,13 +210,13 @@ namespace CultivationGame.TileSystem.Editor
             rect.anchoredPosition = position;
             rect.sizeDelta = new Vector2(280, fontSize + 10);
             
-            var tmp = textGO.AddComponent<TMPro.TextMeshProUGUI>();
+            var tmp = textGO.AddComponent<TextMeshProUGUI>();
             tmp.text = text;
             tmp.fontSize = fontSize;
             tmp.color = Color.white;
-            tmp.alignment = alignment == TextAnchor.UpperLeft ? TMPro.TextAlignmentOptions.TopLeft :
-                           alignment == TextAnchor.UpperCenter ? TMPro.TextAlignmentOptions.Top :
-                           TMPro.TextAlignmentOptions.TopLeft;
+            tmp.alignment = alignment == TextAnchor.UpperLeft ? TextAlignmentOptions.TopLeft :
+                           alignment == TextAnchor.UpperCenter ? TextAlignmentOptions.Top :
+                           TextAlignmentOptions.TopLeft;
             
             return tmp;
         }

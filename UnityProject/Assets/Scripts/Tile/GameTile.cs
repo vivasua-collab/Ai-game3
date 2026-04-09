@@ -2,6 +2,7 @@
 // GameTile.cs — Пользовательский тайл для Tilemap
 // Cultivation World Simulator
 // Создано: 2026-04-07 14:24:05 UTC
+// Редактировано: 2026-04-09 07:10:00 UTC — исправлен конфликт TileFlags
 // ============================================================================
 
 using UnityEngine;
@@ -29,13 +30,14 @@ namespace CultivationGame.TileSystem
         public bool isPassable = true;
 
         [Header("Flags")]
-        public TileFlags flags = TileFlags.Passable;
+        public GameTileFlags flags = GameTileFlags.Passable;
 
         public override void GetTileData(Vector3Int position, ITilemap tilemap, ref TileData tileData)
         {
             tileData.sprite = sprite;
             tileData.color = color;
-            tileData.flags = TileFlags.None;
+            // Используем UnityEngine.Tilemaps.TileFlags для tileData.flags
+            tileData.flags = UnityEngine.Tilemaps.TileFlags.None;
         }
     }
 
@@ -70,7 +72,7 @@ namespace CultivationGame.TileSystem
         private void OnEnable()
         {
             isPassable = false;
-            flags = TileFlags.None;
+            flags = GameTileFlags.None;
         }
     }
 }

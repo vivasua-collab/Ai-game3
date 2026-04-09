@@ -82,9 +82,11 @@ namespace CultivationGame.TileSystem
 
     /// <summary>
     /// Флаги свойств тайла.
+    /// Переименовано в GameTileFlags для избежания конфликта с UnityEngine.Tilemaps.TileFlags.
+    /// Редактировано: 2026-04-09 07:10:00 UTC
     /// </summary>
     [System.Flags]
-    public enum TileFlags
+    public enum GameTileFlags
     {
         None = 0,
         Passable = 1 << 0,          // Можно пройти

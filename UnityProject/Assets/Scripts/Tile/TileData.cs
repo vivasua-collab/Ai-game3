@@ -2,6 +2,7 @@
 // TileData.cs — Данные тайла
 // Cultivation World Simulator
 // Создано: 2026-04-07 14:24:05 UTC
+// Редактировано: 2026-04-09 07:12:00 UTC — TileFlags → GameTileFlags
 // ============================================================================
 
 using System;
@@ -39,7 +40,7 @@ namespace CultivationGame.TileSystem
         public float waterDepth;            // Глубина в метрах
         
         // === Флаги ===
-        public TileFlags flags = TileFlags.Passable;
+        public GameTileFlags flags = GameTileFlags.Passable;
 
         // === Runtime ссылки ===
         [NonSerialized] public List<int> entityIds = new List<int>(); // ID субъектов на тайле
@@ -68,41 +69,41 @@ namespace CultivationGame.TileSystem
                 case TerrainType.None:
                 case TerrainType.Void:
                     moveCost = 0f;
-                    flags = TileFlags.None;
+                    flags = GameTileFlags.None;
                     break;
                 case TerrainType.Grass:
                 case TerrainType.Dirt:
                 case TerrainType.Stone:
                     moveCost = 1.0f;
-                    flags = TileFlags.Passable;
+                    flags = GameTileFlags.Passable;
                     break;
                 case TerrainType.Water_Shallow:
                     moveCost = 2.0f;
-                    flags = TileFlags.Passable | TileFlags.Swimable;
+                    flags = GameTileFlags.Passable | GameTileFlags.Swimable;
                     hasWater = true;
                     waterDepth = 0.5f;
                     break;
                 case TerrainType.Water_Deep:
                     moveCost = 0f;
-                    flags = TileFlags.Swimable | TileFlags.Flyable;
+                    flags = GameTileFlags.Swimable | GameTileFlags.Flyable;
                     hasWater = true;
                     waterDepth = 3f;
                     break;
                 case TerrainType.Sand:
                     moveCost = 1.2f;
-                    flags = TileFlags.Passable;
+                    flags = GameTileFlags.Passable;
                     break;
                 case TerrainType.Snow:
                     moveCost = 1.5f;
-                    flags = TileFlags.Passable;
+                    flags = GameTileFlags.Passable;
                     break;
                 case TerrainType.Ice:
                     moveCost = 1.5f;
-                    flags = TileFlags.Passable | TileFlags.Dangerous;
+                    flags = GameTileFlags.Passable | GameTileFlags.Dangerous;
                     break;
                 case TerrainType.Lava:
                     moveCost = 0f;
-                    flags = TileFlags.Dangerous | TileFlags.Flyable;
+                    flags = GameTileFlags.Dangerous | GameTileFlags.Flyable;
                     break;
             }
         }
@@ -112,9 +113,9 @@ namespace CultivationGame.TileSystem
         /// </summary>
         public bool IsPassable(bool canSwim = false, bool canFly = false)
         {
-            if ((flags & TileFlags.Passable) != 0) return true;
-            if (canSwim && (flags & TileFlags.Swimable) != 0) return true;
-            if (canFly && (flags & TileFlags.Flyable) != 0) return true;
+            if ((flags & GameTileFlags.Passable) != 0) return true;
+            if (canSwim && (flags & GameTileFlags.Swimable) != 0) return true;
+            if (canFly && (flags & GameTileFlags.Flyable) != 0) return true;
             return false;
         }
 
@@ -123,7 +124,7 @@ namespace CultivationGame.TileSystem
         /// </summary>
         public bool BlocksVision()
         {
-            return (flags & TileFlags.BlocksVision) != 0;
+            return (flags & GameTileFlags.BlocksVision) != 0;
         }
 
         /// <summary>
@@ -151,19 +152,19 @@ namespace CultivationGame.TileSystem
         {
             if (!obj.isPassable)
             {
-                flags &= ~TileFlags.Passable;
+                flags &= ~GameTileFlags.Passable;
             }
             if (obj.blocksVision)
             {
-                flags |= TileFlags.BlocksVision;
+                flags |= GameTileFlags.BlocksVision;
             }
             if (obj.providesCover)
             {
-                flags |= TileFlags.ProvidesCover;
+                flags |= GameTileFlags.ProvidesCover;
             }
             if (obj.isInteractable)
             {
-                flags |= TileFlags.Interactable;
+                flags |= GameTileFlags.Interactable;
             }
         }
 
@@ -173,7 +174,7 @@ namespace CultivationGame.TileSystem
         private void RecalculateFlags()
         {
             // Сбросить флаги объектов
-            flags &= ~(TileFlags.BlocksVision | TileFlags.ProvidesCover | TileFlags.Interactable);
+            flags &= ~(GameTileFlags.BlocksVision | GameTileFlags.ProvidesCover | GameTileFlags.Interactable);
             
             // Применить заново
             foreach (var obj in objects)
