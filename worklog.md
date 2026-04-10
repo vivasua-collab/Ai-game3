@@ -69,3 +69,27 @@ Stage Summary:
 - 191 уникальных проблем найдено (32 CRITICAL, 49 HIGH, 63 MEDIUM, 47 LOW)
 - Результаты сохранены в docs_temp/audit_batch3_supplement.md
 - Основной файл AUDIT_2026-04-10.md не удалось обновить из-за прав доступа
+
+---
+Task ID: consolidation
+Agent: Main Agent
+Task: Консолидация всех аудиторских файлов в единый документ + навигация
+
+Work Log:
+- Прочитаны все 7 аудиторских файлов (AUDIT_2026-04-10.md, AUDIT_VERIFICATION.md, audit_core_combat.md, audit_body_qi_player.md, audit_world_npc_formation.md, audit_data_tile_ui_gen.md, audit_batch3_supplement.md)
+- Прочитаны связанные аналитические файлы (ANALYSIS_REPORT.md, !CONTRADICTIONS_REPORT_v2.md, !DUPLICATION_REPORT.md, CODE_AUDIT_Unity_6.3.md)
+- Создан CONSOLIDATED_AUDIT.md — единый консолидированный файл:
+  - 191 уникальная проблема, дедуплицировано
+  - Организовано по 21 системе (Core, Combat, Qi, Body, Player, Buff, NPC, World, Formation, Save, Inventory, Quest, Dialogue, Charger, Data, Generators, UI, Tile, Character, Managers, Tests)
+  - Внутри каждой системы: CRITICAL → HIGH → MEDIUM → LOW
+  - Каждая проблема имеет уникальный ID (системный префикс + номер), ссылку на файл:строку, и источник (S1-S7)
+  - Кросс-системные проблемы выделены отдельно (Qi int→long, JsonUtility, FindFirstObjectByType, Input System, Namespace, Duplicate enums)
+  - Приоритетный план исправлений в 3 фазы (Phase 0: 20 задач, Phase 1: 15 задач, Phase 2: 10 задач)
+  - Приложение A: полный маппинг оригинальных ID → консолидированных ID
+- Обновлён AUDIT_2026-04-10.md — добавлен навигационный раздел с ссылками на все файлы
+
+Stage Summary:
+- Создан: docs_temp/CONSOLIDATED_AUDIT.md — единый файл для написания плана исправлений
+- Обновлён: docs_temp/AUDIT_2026-04-10.md — добавлена навигация
+- 191 проблема консолидирована из 7 источников с дедупликацией
+- Готово к следующему аудиту (ChatGPT) и написанию плана исправлений
