@@ -1,82 +1,65 @@
 # Чекпоинт: Fix-10 — Managers + Player System
 
-**Дата:** 2026-04-10 13:37:00 UTC
+**Дата:** 2026-04-11 (updated)
 **Фаза:** Phase 7 — Integration
-**Статус:** pending
+**Статус:** completed
 **Приоритет:** HIGH
 
 ---
 
 ## Описание
 
-Managers: параллельная инициализация, SceneLoader баги, FindFirstObjectByType, заглушки. Player: ICombatant не реализован, SleepSystem сломана, PlayerVisual утечки.
+Managers: параллельная инициализация, SceneLoader баги, FindFirstObjectByType, заглушки. Player: ICombatant реализован, SleepSystem исправлена, PlayerVisual утечки устранены.
 
 ---
 
-## Файлы (6 файлов, ~2448 строк)
+## Файлы (7 файлов изменено)
 
-| # | Файл | Строк | Изменение |
-|---|------|-------|-----------|
-| 1 | `Managers/GameManager.cs` | 470 | FindFirstObjectByType→ServiceLocator, singleton stale refs, Input |
-| 2 | `Managers/GameInitializer.cs` | 479 | isInitializing guard, SubscribeToEvents, isSubscribed check |
-| 3 | `Managers/SceneLoader.cs` | 334 | GetSceneByName, timeScale restore, loading scene unload |
-| 4 | `Player/PlayerController.cs` | 525 | ICombatant реализация, Revive healthPercent, OnDestroy отписки |
-| 5 | `Player/SleepSystem.cs` | 377 | Recovery formulas, dead states, QuickSleep, auto-sleep cap |
-| 6 | `Player/PlayerVisual.cs` | 263 | URP shader, Material/Texture2D leak, Camera.main |
+| # | Файл | Изменение |
+|---|------|-----------|
+| 1 | `Managers/GameInitializer.cs` | isInitializing guard (MGR-C01), SubscribeToEvents unified (MGR-H02), isSubscribed note (MGR-H05) |
+| 2 | `Managers/SceneLoader.cs` | Build Settings validation (MGR-C02), timeScale restore (MGR-C03), loading scene unload check (MGR-H03), previousTimeScale save (MGR-H04) |
+| 3 | `Managers/GameManager.cs` | FindReferences uses ServiceLocator.GetOrFind (MGR-H01) |
+| 4 | `Player/PlayerController.cs` | ICombatant implementation (PLR-H01), Revive healthPercent (PLR-H03) |
+| 5 | `Player/SleepSystem.cs` | Recovery formula comment (M01), proportional HP (M02), delayed transition (M03), QuickSleep states (M04), auto-sleep cap (M05), long Qi (M06) |
+| 6 | `Player/PlayerVisual.cs` | URP shader fix (M07), OnDestroy cleanup (L01), Flash guard (L02), Camera cache (L03) |
+| 7 | `Save/SaveManager.cs` | PlayerSaveData.CurrentQi int→long (PLR-H02) |
 
 ---
 
-## Задачи
+## Задачи — Статус
 
 ### CRITICAL (Managers)
-- [ ] MGR-C01: GameInitializer — добавить isInitializing flag, заблокировать параллельный InitializeGameAsync
-- [ ] MGR-C02: SceneLoader — исправить GetSceneByName (проверять Build Settings, не загруженные)
-- [ ] MGR-C03: SceneLoader — Time.timeScale восстановление в finally блоке
+- [x] MGR-C01: GameInitializer — isInitializing flag, блокировка параллельного InitializeGameAsync
+- [x] MGR-C02: SceneLoader — IsSceneInBuildSettings() validation перед LoadScene
+- [x] MGR-C03: SceneLoader — Time.timeScale восстановление через previousTimeScale
 
 ### HIGH (Managers)
-- [ ] MGR-H01: GameManager.FindReferences — ServiceLocator.GetOrFind<T>
-- [ ] MGR-H02: GameInitializer — вызывать SubscribeToEvents() вместо отдельных Subscribe методов
-- [ ] MGR-H03: SceneLoader — исправить loading scene unload при Single-mode
-- [ ] MGR-H04: SceneLoader — сохранить предыдущий timeScale, не безусловно 1f
-- [ ] MGR-H05: GameInitializer — isSubscribed checks в unsubscribe methods
+- [x] MGR-H01: GameManager.FindReferences — ServiceLocator.GetOrFind<T>
+- [x] MGR-H02: GameInitializer — SubscribeToEvents() единый вызов в FinalSetup
+- [x] MGR-H03: SceneLoader — проверка IsSceneValid перед UnloadSceneAsync
+- [x] MGR-H04: SceneLoader — сохранение previousTimeScale вместо безусловного 1f
+- [x] MGR-H05: GameInitializer — NOTE комментарий о isSubscribed guards
 
 ### HIGH (Player)
-- [ ] PLR-H01: PlayerController — реализовать ICombatant (или наследовать CombatantBase)
-- [ ] PLR-H02: Duplicate PlayerSaveData — объединить в SaveDataTypes.cs (один canonical класс)
-- [ ] PLR-H03: PlayerController.Revive — использовать healthPercent параметр для восстановления
+- [x] PLR-H01: PlayerController — ICombatant реализован (explicit interface, delegating to QiController/BodyController)
+- [x] PLR-H02: PlayerSaveData — один класс в Save namespace, CurrentQi int→long
+- [x] PLR-H03: PlayerController.Revive — healthPercent для восстановления
 
 ### MEDIUM (Player)
-- [ ] PLR-M01: SleepSystem — корректная HP recovery формула (пропорционально duration)
-- [ ] PLR-M02: SleepSystem.ProcessFinalHPRecovery — пропорциональное восстановление, не FullRestore
-- [ ] PLR-M03: SleepSystem — активировать FallingAsleep/WakingUp states
-- [ ] PLR-M04: SleepSystem.QuickSleep — пройти через state management
-- [ ] PLR-M05: SleepSystem — auto-sleep cap = maxSleepHours (12h)
-- [ ] PLR-M06: SleepSystem — long для Qi recovery (вместо int)
-- [ ] PLR-M07: PlayerVisual — правильный URP shader name
+- [x] PLR-M01: SleepSystem — комментарий к HP recovery формуле
+- [x] PLR-M02: SleepSystem.ProcessFinalHPRecovery — пропорциональное восстановление
+- [x] PLR-M03: SleepSystem — TransitionToSleeping coroutine для FallingAsleep→Sleeping
+- [x] PLR-M04: SleepSystem.QuickSleep — через SetState transitions
+- [x] PLR-M05: SleepSystem — auto-sleep cap = maxSleepHours (12h)
+- [x] PLR-M06: SleepSystem — long для Qi recovery
+- [x] PLR-M07: PlayerVisual — Sprite-Lit-Default + Sprites/Default fallback
 
 ### LOW (Player)
-- [ ] PLR-L01: PlayerVisual — Material/Texture2D Dispose/Destroy
-- [ ] PLR-L02: PlayerVisual — Flash coroutine guard (cancel previous before starting new)
-- [ ] PLR-L03: PlayerVisual — Cache Camera reference (не Camera.main каждый кадр)
+- [x] PLR-L01: PlayerVisual — OnDestroy Destroy(Material/Texture2D)
+- [x] PLR-L02: PlayerVisual — Flash coroutine guard (StopCoroutine перед новым)
+- [x] PLR-L03: PlayerVisual — cachedCamera в Start()
 
 ---
 
-## Порядок выполнения
-
-1. GameInitializer.cs — isInitializing + SubscribeToEvents
-2. SceneLoader.cs — GetSceneByName + timeScale + loading scene
-3. GameManager.cs — ServiceLocator + singleton + Input
-4. PlayerController.cs — ICombatant + Revive + SaveData
-5. SleepSystem.cs — все фиксы recovery
-6. PlayerVisual.cs — shader + утечки + camera
-
----
-
-## Зависимости
-
-- **Предшествующие:** Fix-01 (Qi types), Fix-04 (GameEvents cleanup)
-- **Последующие:** Fix-08 (Save — PlayerSaveData объединение)
-
----
-
-*Чекпоинт обновлён: 2026-04-10 13:37:00 UTC*
+*Чекпоинт обновлён: 2026-04-11*

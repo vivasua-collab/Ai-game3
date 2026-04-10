@@ -56,7 +56,7 @@ namespace CultivationGame.Player
         public float HoursSlept;
         public SleepState EndState;
         public SleepConsolidationResult StatConsolidation;
-        public int QiRecovered;
+        public long QiRecovered; // FIX PLR-M06: Changed from int to long for Qi > int.MaxValue (2026-04-11)
         public float HPRecovered;
         public bool WasInterrupted;
         public string InterruptionReason;
@@ -166,15 +166,23 @@ namespace CultivationGame.Player
 
             hours = Mathf.Clamp(hours, minSleepHours, maxSleepHours);
 
+            // FIX PLR-M03: Use delayed transition for FallingAsleep state (2026-04-11)
             SetState(SleepState.FallingAsleep);
             sleepStartTime = Time.time;
             sleepDuration = 0f;
 
-            // Переходим к сну
+            // PLR-M03: Brief transition delay before entering Sleeping state
+            StartCoroutine(TransitionToSleeping(hours));
+        }
+
+        /// <summary>
+        /// FIX PLR-M03: Delayed transition from FallingAsleep to Sleeping (2026-04-11)
+        /// </summary>
+        private System.Collections.IEnumerator TransitionToSleeping(float hours)
+        {
+            yield return new WaitForSeconds(0.5f); // Brief transition delay
             SetState(SleepState.Sleeping);
-
             OnSleepStarted?.Invoke(hours);
-
             Debug.Log($"[SleepSystem] Started sleeping for {hours:F1} hours");
         }
 
@@ -241,13 +249,23 @@ namespace CultivationGame.Player
 
         /// <summary>
         /// Быстрый сон (мгновенный, для тестов и отдыха).
+        /// FIX PLR-M04: Go through state management so OnSleepStateChanged fires (2026-04-11)
         /// </summary>
         public SleepResult QuickSleep(float hours)
         {
             hours = Mathf.Clamp(hours, minSleepHours, maxSleepHours);
+            
+            // FIX PLR-M04: Use SetState transitions instead of direct assignment (2026-04-11)
+            SetState(SleepState.FallingAsleep);
             sleepDuration = hours;
-
-            return ProcessSleepEnd(false, "");
+            SetState(SleepState.Sleeping);
+            
+            var result = ProcessSleepEnd(false, "");
+            
+            SetState(SleepState.WakingUp);
+            SetState(SleepState.Awake);
+            
+            return result;
         }
 
         #endregion
@@ -283,9 +301,11 @@ namespace CultivationGame.Player
         private void ProcessRecovery(float hours)
         {
             // Восстановление HP
+            // FIX PLR-M01: Formula is proportional: hours * hpRecoveryRate * 100 = percent of max HP (2026-04-11)
+            // e.g., 1 hour * 0.125 * 100 = 12.5% of max HP per hour, 8 hours = 100%
             if (bodyController != null)
             {
-                float hpAmount = hours * hpRecoveryRate * 100; // Процент от макс HP
+                float hpAmount = hours * hpRecoveryRate * 100;
                 bodyController.HealAll(hpAmount, hpAmount * 0.3f);
             }
 
@@ -295,18 +315,21 @@ namespace CultivationGame.Player
             // Ци восстанавливается естественным путём через QiController
         }
 
+        // FIX PLR-M02: Proportional HP recovery based on sleep duration, not FullRestore (2026-04-11)
         private float ProcessFinalHPRecovery()
         {
             if (bodyController == null) return 0f;
 
             float beforeHP = bodyController.HealthPercent * 100;
-            bodyController.FullRestore();
-            float afterHP = 100f;
+            float recoveryPercent = Mathf.Min(100f, sleepDuration * hpRecoveryRate * 100);
+            bodyController.HealAll(recoveryPercent, recoveryPercent * 0.3f);
+            float afterHP = bodyController.HealthPercent * 100;
 
             return afterHP - beforeHP;
         }
 
-        private int ProcessFinalQiRecovery()
+        // FIX PLR-M06: Return long instead of int for Qi values exceeding int.MaxValue (2026-04-11)
+        private long ProcessFinalQiRecovery()
         {
             if (qiController == null) return 0;
 
@@ -314,7 +337,7 @@ namespace CultivationGame.Player
             qiController.RestoreFull();
             long afterQi = qiController.MaxQi;
 
-            return (int)(afterQi - beforeQi);
+            return afterQi - beforeQi;
         }
 
         #endregion
@@ -343,7 +366,9 @@ namespace CultivationGame.Player
                 hours += qiMissing * 2f;
             }
 
-            return Mathf.Clamp(hours, minSleepHours, optimalSleepHours);
+            // FIX PLR-M05: Cap at maxSleepHours (12h), not optimalSleepHours (8h) (2026-04-11)
+            // minSleepHours clamp is already handled in StartSleep
+            return Mathf.Clamp(hours, minSleepHours, maxSleepHours);
         }
 
         private void SetState(SleepState newState)

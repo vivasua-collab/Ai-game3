@@ -39,6 +39,14 @@ namespace CultivationGame.Player
         private GameObject visualObj;
         private GameObject shadowObj;
         
+        // FIX PLR-L02: Guard for Flash coroutine to prevent multiple simultaneous flashes (2026-04-11)
+        private UnityEngine.Coroutine flashCoroutine;
+        // FIX PLR-L03: Cached camera reference to avoid expensive Camera.main calls (2026-04-11)
+        private Camera cachedCamera;
+        // FIX PLR-L01: Track created texture for proper cleanup (2026-04-11)
+        private Texture2D createdTexture;
+        private Material createdMaterial;
+        
         private void Awake()
         {
             CreateVisual();
@@ -66,12 +74,15 @@ namespace CultivationGame.Player
             mainSprite.color = playerColor;
             mainSprite.sortingOrder = 10;
             
-            // ВАЖНО: Устанавливаем материал для URP
-            mainSprite.material = new Material(Shader.Find("Universal Render Pipeline/2D/Sprite-Unlit-Default"));
-            if (mainSprite.material == null)
-            {
-                mainSprite.material = new Material(Shader.Find("Sprites/Default"));
-            }
+            // FIX PLR-M07: Try correct URP 2D sprite shader first, then fallback (2026-04-11)
+            // "Universal Render Pipeline/2D/Sprite-Unlit-Default" does not exist in URP.
+            // The correct shader is "Universal Render Pipeline/2D/Sprite-Lit-Default".
+            Shader spriteShader = Shader.Find("Universal Render Pipeline/2D/Sprite-Lit-Default");
+            if (spriteShader == null)
+                spriteShader = Shader.Find("Sprites/Default");
+            
+            createdMaterial = new Material(spriteShader);
+            mainSprite.material = createdMaterial;
             
             // Создаём тень
             if (createShadow)
@@ -103,6 +114,9 @@ namespace CultivationGame.Player
             Texture2D texture = new Texture2D(resolution, resolution, TextureFormat.RGBA32, false);
             texture.filterMode = FilterMode.Bilinear;
             texture.wrapMode = TextureWrapMode.Clamp;
+            
+            // FIX PLR-L01: Track texture for proper cleanup in OnDestroy (2026-04-11)
+            createdTexture = texture;
             
             Vector2 center = new Vector2(resolution / 2f, resolution / 2f);
             float radius = resolution / 2f - 2f;
@@ -154,12 +168,15 @@ namespace CultivationGame.Player
         
         /// <summary>
         /// Мигнуть цветом (для урона и т.д.)
+        /// FIX PLR-L02: Stop previous flash coroutine before starting new one (2026-04-11)
         /// </summary>
         public void Flash(Color flashColor, float duration = 0.1f)
         {
             if (mainSprite != null)
             {
-                StartCoroutine(FlashCoroutine(flashColor, duration));
+                if (flashCoroutine != null)
+                    StopCoroutine(flashCoroutine);
+                flashCoroutine = StartCoroutine(FlashCoroutine(flashColor, duration));
             }
         }
         
@@ -184,10 +201,11 @@ namespace CultivationGame.Player
         
         /// <summary>
         /// Проверить, что камера настроена правильно для 2D
+        /// FIX PLR-L03: Use cached camera reference instead of Camera.main each call (2026-04-11)
         /// </summary>
         public static void EnsureCamera2DSetup()
         {
-            Camera cam = Camera.main;
+            Camera cam = Camera.main; // Static method must use Camera.main; instance methods use cache
             if (cam != null)
             {
                 // Камера должна быть ортографической
@@ -219,7 +237,31 @@ namespace CultivationGame.Player
         private void Start()
         {
             // Проверяем настройку камеры
+            // FIX PLR-L03: Cache camera on first access (2026-04-11)
+            cachedCamera = Camera.main;
             EnsureCamera2DSetup();
+        }
+        
+        // FIX PLR-L01: Destroy created Material and Texture2D to prevent memory leaks (2026-04-11)
+        private void OnDestroy()
+        {
+            if (flashCoroutine != null)
+            {
+                StopCoroutine(flashCoroutine);
+                flashCoroutine = null;
+            }
+            
+            if (createdMaterial != null)
+            {
+                Destroy(createdMaterial);
+                createdMaterial = null;
+            }
+            
+            if (createdTexture != null)
+            {
+                Destroy(createdTexture);
+                createdTexture = null;
+            }
         }
         
 #if UNITY_EDITOR

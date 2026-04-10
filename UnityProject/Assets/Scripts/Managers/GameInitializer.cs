@@ -50,6 +50,7 @@ namespace CultivationGame.Managers
         #region Runtime
         
         private bool isInitialized = false;
+        private bool isInitializing = false; // FIX MGR-C01: Guard against parallel InitializeGameAsync (2026-04-11)
         private bool isSubscribed = false;  // FIX: Флаг для защиты от дублирования подписок
         private int systemsInitialized = 0;
         private int totalSystems = 8;
@@ -129,6 +130,13 @@ namespace CultivationGame.Managers
                 return;
             }
             
+            // FIX MGR-C01: Also check isInitializing to prevent parallel init (2026-04-11)
+            if (isInitializing)
+            {
+                Debug.LogWarning("[GameInitializer] Already initializing");
+                return;
+            }
+            
             StartCoroutine(InitializeGameAsync());
         }
         
@@ -141,6 +149,13 @@ namespace CultivationGame.Managers
             if (!isInitialized)
             {
                 Debug.LogWarning("[GameInitializer] Not initialized, nothing to reinitialize");
+                return;
+            }
+            
+            // FIX MGR-C01: Guard against parallel reinitialize (2026-04-11)
+            if (isInitializing)
+            {
+                Debug.LogWarning("[GameInitializer] Already initializing, cannot reinitialize");
                 return;
             }
             
@@ -158,6 +173,14 @@ namespace CultivationGame.Managers
         
         private IEnumerator InitializeGameAsync()
         {
+            // FIX MGR-C01: Prevent parallel initialization (2026-04-11)
+            if (isInitializing)
+            {
+                Debug.LogWarning("[GameInitializer] Already initializing!");
+                yield break;
+            }
+            isInitializing = true;
+            
             Log("[GameInitializer] Starting initialization...");
             OnInitializationStart?.Invoke();
             
@@ -188,6 +211,7 @@ namespace CultivationGame.Managers
             yield return InitializeSystem("FinalSetup", FinalSetup);
             
             isInitialized = true;
+            isInitializing = false; // FIX MGR-C01: Clear flag on completion (2026-04-11)
             
             Log("[GameInitializer] ✅ Initialization complete!");
             OnInitializationComplete?.Invoke();
@@ -289,8 +313,7 @@ namespace CultivationGame.Managers
             
             if (saveManager != null)
             {
-                // FIX: Подписываемся через named methods
-                SubscribeToSaveEvents();
+                // FIX MGR-H02: SubscribeToSaveEvents handled by SubscribeToEvents() below (2026-04-11)
             }
             else
             {
@@ -309,8 +332,7 @@ namespace CultivationGame.Managers
                 cachedBodyController = player.GetComponent<BodyController>();
                 cachedQiController = player.GetComponent<QiController>();
                 
-                // FIX: Подписываемся через named methods
-                SubscribeToPlayerEvents();
+                // FIX MGR-H02: SubscribeToPlayerEvents handled by SubscribeToEvents() below (2026-04-11)
                 
                 Log($"[GameInitializer] Player initialized: {player.PlayerName}");
             }
@@ -330,6 +352,10 @@ namespace CultivationGame.Managers
         
         private IEnumerator FinalSetup()
         {
+            // FIX MGR-H02: Subscribe to ALL events via unified method (2026-04-11)
+            // This replaces separate SubscribeToSaveEvents/SubscribeToPlayerEvents calls
+            SubscribeToEvents();
+            
             // Финальная настройка после всех систем
             
             bool hasPlayer = FindFirstObjectByType<PlayerController>() != null;
@@ -390,6 +416,10 @@ namespace CultivationGame.Managers
             
             isSubscribed = false;
         }
+        
+        // NOTE MGR-H05: Individual Subscribe methods (SubscribeToSaveEvents, SubscribeToPlayerEvents,
+        // SubscribeToTimeEvents) are called from SubscribeToEvents() which already checks isSubscribed.
+        // No additional isSubscribed checks needed in these individual methods. (2026-04-11)
         
         private void SubscribeToSaveEvents()
         {

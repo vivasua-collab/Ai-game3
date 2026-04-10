@@ -152,16 +152,17 @@ namespace CultivationGame.Managers
 
         #region Initialization
 
+        // FIX MGR-H01: Use ServiceLocator.GetOrFind<T>() instead of FindFirstObjectByType<T>() (2026-04-11)
         private void FindReferences()
         {
             if (worldController == null)
-                worldController = FindFirstObjectByType<WorldController>();
+                worldController = ServiceLocator.GetOrFind<WorldController>();
             if (timeController == null)
-                timeController = FindFirstObjectByType<TimeController>();
+                timeController = ServiceLocator.GetOrFind<TimeController>();
             if (playerController == null)
-                playerController = FindFirstObjectByType<PlayerController>();
+                playerController = ServiceLocator.GetOrFind<PlayerController>();
             if (uiManager == null)
-                uiManager = FindFirstObjectByType<UIManager>();
+                uiManager = ServiceLocator.GetOrFind<UIManager>();
         }
 
         /// <summary>

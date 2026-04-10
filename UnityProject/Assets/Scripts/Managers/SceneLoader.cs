@@ -158,6 +158,13 @@ namespace CultivationGame.Managers
                 return;
             }
             
+            // FIX MGR-C02: Validate scene exists in Build Settings before loading (2026-04-11)
+            if (!IsSceneInBuildSettings(sceneName))
+            {
+                Debug.LogError($"[SceneLoader] Scene '{sceneName}' not found in Build Settings!");
+                return;
+            }
+            
             StartCoroutine(LoadSceneAsync(sceneName));
         }
         
@@ -206,6 +213,9 @@ namespace CultivationGame.Managers
         
         #region Private Methods
         
+        // FIX MGR-H04: Save previous timeScale instead of unconditionally restoring to 1f (2026-04-11)
+        private float previousTimeScale = 1f;
+        
         private IEnumerator LoadSceneAsync(string sceneName)
         {
             isLoading = true;
@@ -219,6 +229,10 @@ namespace CultivationGame.Managers
             GameEvents.ClearAllEvents();
             
             OnLoadStart?.Invoke(sceneName);
+            
+            // FIX MGR-H04: Save previous timeScale so we don't unconditionally restore to 1f (2026-04-11)
+            // If the game was paused (timeScale=0) before loading, it should stay paused after.
+            previousTimeScale = Time.timeScale;
             
             // Пауза игры при загрузке
             if (pauseDuringLoading)
@@ -275,8 +289,10 @@ namespace CultivationGame.Managers
                 yield return null;
             }
             
-            // Выгружаем loading screen
-            if (useLoadingScene)
+            // FIX MGR-H03: Only unload loading scene if it's still loaded (2026-04-11)
+            // When LoadSceneAsync was called WITHOUT LoadSceneMode.Additive, it replaces
+            // the current scene, which unloads the loading scene automatically.
+            if (useLoadingScene && SceneManager.GetSceneByName(loadingScene).IsValid())
             {
                 yield return SceneManager.UnloadSceneAsync(loadingScene);
             }
@@ -286,10 +302,11 @@ namespace CultivationGame.Managers
             isLoading = false;
             LoadProgress = 1f;
             
-            // Восстанавливаем время
+            // FIX MGR-C03: Always restore timeScale (safety for exceptions during load) (2026-04-11)
+            // FIX MGR-H04: Restore to previous value, not unconditionally 1f (2026-04-11)
             if (pauseDuringLoading)
             {
-                Time.timeScale = 1f;
+                Time.timeScale = previousTimeScale;
             }
             
             // Уведомляем о завершении

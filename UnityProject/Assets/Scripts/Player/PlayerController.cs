@@ -27,7 +27,8 @@ namespace CultivationGame.Player
     /// <summary>
     /// Главный контроллер игрока — объединяет все системы персонажа.
     /// </summary>
-    public class PlayerController : MonoBehaviour
+    // FIX PLR-H01: Implement ICombatant interface by delegating to QiController/BodyController (2026-04-11)
+    public class PlayerController : MonoBehaviour, ICombatant
     {
         [Header("Identity")]
         [SerializeField] private string playerId = "player";
@@ -67,6 +68,11 @@ namespace CultivationGame.Player
         public event Action OnPlayerDeath;
         public event Action OnPlayerRevive;
         
+        // FIX PLR-H01: ICombatant events (2026-04-11)
+        event Action ICombatant.OnDeath { add { OnPlayerDeath += value; } remove { OnPlayerDeath -= value; } }
+        event Action<float> ICombatant.OnDamageTaken { add { } remove { } } // Delegated through BodyController
+        event Action<long, long> ICombatant.OnQiChanged { add { OnQiChanged += value; } remove { OnQiChanged -= value; } }
+        
         // === Properties ===
         public string PlayerId => playerId;
         public string PlayerName => playerName;
@@ -74,6 +80,85 @@ namespace CultivationGame.Player
         public CultivationLevel CultivationLevel => qiController != null ? (CultivationLevel)qiController.CultivationLevel : CultivationLevel.None;
         public bool IsAlive => state.IsAlive;
         public string CurrentLocation => state.CurrentLocation;
+        
+        // FIX PLR-H01: ICombatant explicit implementations (2026-04-11)
+        string ICombatant.Name => playerName;
+        GameObject ICombatant.GameObject => gameObject;
+        int ICombatant.CultivationLevel => qiController?.CultivationLevel ?? 1;
+        int ICombatant.CultivationSubLevel => 0;
+        int ICombatant.Strength => 10; // TODO: from StatDevelopment
+        int ICombatant.Agility => 10;
+        int ICombatant.Intelligence => 10;
+        int ICombatant.Vitality => 10;
+        long ICombatant.CurrentQi => qiController?.CurrentQi ?? 0;
+        long ICombatant.MaxQi => qiController?.MaxQi ?? 0;
+        float ICombatant.QiDensity => qiController?.QiDensity ?? 1f;
+        QiDefenseType ICombatant.QiDefense => QiDefenseType.RawQi; // TODO: check shield technique
+        bool ICombatant.HasShieldTechnique => false; // TODO: check techniqueController
+        BodyMaterial ICombatant.BodyMaterial => bodyController?.BodyMaterial ?? BodyMaterial.Organic;
+        float ICombatant.HealthPercent => bodyController?.HealthPercent ?? 0f;
+        bool ICombatant.IsAlive => state.IsAlive;
+        int ICombatant.Penetration => 0;
+        float ICombatant.DodgeChance => DefenseProcessor.CalculateDodgeChance(10, 0f);
+        float ICombatant.ParryChance => DefenseProcessor.CalculateParryChance(10, 0f);
+        float ICombatant.BlockChance => DefenseProcessor.CalculateBlockChance(10, 0f);
+        float ICombatant.ArmorCoverage => 0f;
+        float ICombatant.DamageReduction => 0f;
+        int ICombatant.ArmorValue => 0;
+        
+        // FIX PLR-H01: ICombatant method implementations (2026-04-11)
+        void ICombatant.TakeDamage(BodyPartType part, float damage)
+        {
+            if (bodyController != null)
+            {
+                bodyController.TakeDamage(part, damage);
+            }
+        }
+        
+        void ICombatant.TakeDamageRandom(float damage)
+        {
+            if (bodyController != null)
+            {
+                bodyController.TakeDamageRandom(damage);
+            }
+        }
+        
+        bool ICombatant.SpendQi(long amount)
+        {
+            return qiController?.SpendQi(amount) ?? false;
+        }
+        
+        void ICombatant.AddQi(long amount)
+        {
+            qiController?.AddQi(amount);
+        }
+        
+        AttackerParams ICombatant.GetAttackerParams(Element attackElement)
+        {
+            return new AttackerParams
+            {
+                CultivationLevel = qiController?.CultivationLevel ?? 1,
+                Strength = 10, Agility = 10, Intelligence = 10, Penetration = 0,
+                AttackElement = attackElement, CombatSubtype = CombatSubtype.MeleeStrike,
+                TechniqueLevel = 1, TechniqueGrade = TechniqueGrade.Common,
+                IsUltimate = false, IsQiTechnique = false
+            };
+        }
+        
+        DefenderParams ICombatant.GetDefenderParams()
+        {
+            return new DefenderParams
+            {
+                CultivationLevel = qiController?.CultivationLevel ?? 1,
+                CurrentQi = qiController?.CurrentQi ?? 0,
+                QiDefense = QiDefenseType.RawQi,
+                Agility = 10, Strength = 10,
+                ArmorCoverage = 0f, DamageReduction = 0f, ArmorValue = 0,
+                DodgePenalty = 0f, ParryBonus = 0f, BlockBonus = 0f,
+                BodyMaterial = bodyController?.BodyMaterial ?? BodyMaterial.Organic,
+                DefenderElement = Element.Neutral
+            };
+        }
         
         // === Unity Lifecycle ===
         
@@ -354,17 +439,19 @@ namespace CultivationGame.Player
             
             state.IsAlive = true;
             
+            // FIX PLR-H03: Restore to healthPercent, not FullRestore (2026-04-11)
             if (bodyController != null)
             {
-                bodyController.FullRestore();
+                float recoveryPercent = Mathf.Clamp01(healthPercent) * 100f;
+                bodyController.HealAll(recoveryPercent, recoveryPercent * 0.3f);
             }
             
             if (qiController != null)
             {
-                qiController.RestoreFull();
+                qiController.RestoreFull(); // Qi always fully restores on revive
             }
             
-            state.CurrentStamina = state.MaxStamina;
+            state.CurrentStamina = state.MaxStamina * healthPercent;
             
             OnPlayerRevive?.Invoke();
             

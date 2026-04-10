@@ -787,7 +787,7 @@ namespace CultivationGame.Save
         public string PlayerId;
         public string Name;
         public int CultivationLevel;
-        public int CurrentQi;
+        public long CurrentQi; // FIX PLR-H02: Changed from int to long — Qi can exceed int.MaxValue (2026-04-11)
         public string CurrentLocationId;
     }
 }
