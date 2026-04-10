@@ -126,7 +126,7 @@ namespace CultivationGame.Combat
         public static event Action<ICombatant, TechniqueUseResult> OnTechniqueUsed;
 
         /// <summary>Ци поглотило урон</summary>
-        public static event Action<ICombatant, float, int> OnQiAbsorbedDamage;
+        public static event Action<ICombatant, float, long> OnQiAbsorbedDamage; // FIX: int→long (QiConsumed)
 
         // === Dispatch Methods ===
 
@@ -178,7 +178,7 @@ namespace CultivationGame.Combat
                     break;
 
                 case CombatEventType.QiAbsorbed:
-                    OnQiAbsorbedDamage?.Invoke(data.Target, data.Value, (int)data.DamageResult.QiConsumed);
+                    OnQiAbsorbedDamage?.Invoke(data.Target, data.Value, data.DamageResult.QiConsumed); // FIX: long — без truncation
                     break;
 
                 case CombatEventType.TechniqueUsed:

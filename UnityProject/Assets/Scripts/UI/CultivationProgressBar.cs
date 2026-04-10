@@ -253,8 +253,8 @@ namespace CultivationGame.UI
 
             if (breakthroughCostText != null)
             {
-                // Стоимость прорыва = coreCapacity * 10 (малый прорыв)
-                long cost = (long)(qiController.CoreCapacity * GameConstants.SMALL_BREAKTHROUGH_MULTIPLIER);
+                // FIX: Модель В — стоимость прорыва = capacity(next) × density
+                long cost = qiController.CalculateBreakthroughRequirement(false);
                 breakthroughCostText.text = $"Прорыв: {FormatQi(cost)} Ци";
             }
         }
