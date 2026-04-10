@@ -51,7 +51,71 @@ namespace CultivationGame.World
         public int DayOccurred;
         public string LocationId;
         public List<string> InvolvedNpcIds = new List<string>();
-        public Dictionary<string, object> EventData = new Dictionary<string, object>();
+        
+        // FIX WLD-H03: Replace Dictionary<string,object> with serializable structure (2026-04-11)
+        // JsonUtility cannot serialize Dictionary<string,object>. Using List<WorldEventDataEntry> instead.
+        public List<WorldEventDataEntry> EventData = new List<WorldEventDataEntry>();
+        
+        /// <summary>
+        /// Helper: get event data value by key.
+        /// </summary>
+        public WorldEventData GetEventData(string key)
+        {
+            foreach (var entry in EventData)
+            {
+                if (entry.key == key)
+                    return entry.value;
+            }
+            return null;
+        }
+        
+        /// <summary>
+        /// Helper: set event data value by key.
+        /// </summary>
+        public void SetEventData(string key, WorldEventData value)
+        {
+            for (int i = 0; i < EventData.Count; i++)
+            {
+                if (EventData[i].key == key)
+                {
+                    EventData[i] = new WorldEventDataEntry { key = key, value = value };
+                    return;
+                }
+            }
+            EventData.Add(new WorldEventDataEntry { key = key, value = value });
+        }
+    }
+    
+    /// <summary>
+    /// FIX WLD-H03: Serializable key-value entry for WorldEvent.EventData (2026-04-11)
+    /// Replaces Dictionary<string, object> which JsonUtility cannot serialize.
+    /// </summary>
+    [Serializable]
+    public class WorldEventDataEntry
+    {
+        public string key;
+        public WorldEventData value;
+    }
+    
+    /// <summary>
+    /// FIX WLD-H03: Serializable data value for WorldEvent.EventData (2026-04-11)
+    /// Provides typed fields instead of object boxing which JsonUtility cannot handle.
+    /// </summary>
+    [Serializable]
+    public class WorldEventData
+    {
+        public string StringValue = "";
+        public int IntValue;
+        public float FloatValue;
+        public long LongValue;
+        public bool BoolValue;
+        
+        // Static factory helpers
+        public static WorldEventData FromString(string v) => new WorldEventData { StringValue = v };
+        public static WorldEventData FromInt(int v) => new WorldEventData { IntValue = v };
+        public static WorldEventData FromFloat(float v) => new WorldEventData { FloatValue = v };
+        public static WorldEventData FromLong(long v) => new WorldEventData { LongValue = v };
+        public static WorldEventData FromBool(bool v) => new WorldEventData { BoolValue = v };
     }
     
     /// <summary>

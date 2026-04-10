@@ -458,10 +458,23 @@ namespace CultivationGame.World
         
         public FactionSystemSaveData GetSaveData()
         {
+            // FIX WLD-H04: Actually populate Memberships list for save data (2026-04-11)
+            var membershipList = new List<FactionMembershipSaveData>();
+            foreach (var kvp in playerMemberships)
+            {
+                membershipList.Add(new FactionMembershipSaveData
+                {
+                    MemberId = kvp.Key,
+                    FactionId = kvp.Value.FactionId,
+                    Rank = (int)kvp.Value.Rank,
+                    ContributionPoints = kvp.Value.ContributionPoints
+                });
+            }
+            
             return new FactionSystemSaveData
             {
                 Factions = new List<FactionData>(factions.Values),
-                Memberships = new List<FactionMembershipSaveData>()
+                Memberships = membershipList
             };
         }
         
@@ -473,6 +486,22 @@ namespace CultivationGame.World
             foreach (var faction in data.Factions)
             {
                 factions[faction.FactionId] = faction;
+            }
+            
+            // FIX WLD-H04: Restore playerMemberships from save data (2026-04-11)
+            // Previously cleared but never repopulated, causing all memberships to be lost on load.
+            if (data.Memberships != null)
+            {
+                foreach (var membershipData in data.Memberships)
+                {
+                    playerMemberships[membershipData.MemberId] = new FactionMembership
+                    {
+                        FactionId = membershipData.FactionId,
+                        Rank = (FactionRank)membershipData.Rank,
+                        ContributionPoints = membershipData.ContributionPoints,
+                        JoinTime = 0f // Can't restore real Time.time, but that's OK
+                    };
+                }
             }
         }
     }

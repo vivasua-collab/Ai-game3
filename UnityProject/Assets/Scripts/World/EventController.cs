@@ -113,6 +113,9 @@ namespace CultivationGame.World
         // === State ===
         private float checkTimer = 0f;
         
+        // FIX WLD-M04: Track last game time for delta calculation (2026-04-11)
+        private double lastCheckGameSeconds = 0;
+        
         // === Events ===
         public event Action<ActiveEvent> OnEventStarted;
         public event Action<ActiveEvent> OnEventEnded;
@@ -133,7 +136,15 @@ namespace CultivationGame.World
         
         private void Update()
         {
-            checkTimer += Time.deltaTime;
+            // FIX WLD-M04: Use game time for event check interval instead of real time (2026-04-11)
+            double currentGameSeconds = timeController != null ? timeController.TotalGameSeconds : 0;
+            double gameDelta = currentGameSeconds - lastCheckGameSeconds;
+            lastCheckGameSeconds = currentGameSeconds;
+            
+            // Fallback to real time if game time is not advancing (paused or no TimeController)
+            float delta = gameDelta > 0 ? (float)gameDelta : Time.deltaTime;
+            
+            checkTimer += delta;
             
             if (checkTimer >= eventCheckInterval)
             {
@@ -198,10 +209,10 @@ namespace CultivationGame.World
             if (currentYear < template.MinYear || currentYear > template.MaxYear)
                 return false;
             
-            // Проверка кулдауна
+            // FIX WLD-H02: Use game time for cooldown instead of real Time.time (2026-04-11)
             if (lastOccurrence.TryGetValue(template.TemplateId, out float lastTime))
             {
-                float currentTime = Time.time;
+                float currentTime = timeController != null ? (float)timeController.TotalGameSeconds : Time.time;
                 float cooldownSeconds = template.CooldownDays * 86400f / 60f; // Учитывая ускорение времени
                 if (currentTime - lastTime < cooldownSeconds)
                     return false;
@@ -249,13 +260,13 @@ namespace CultivationGame.World
                     MonthOccurred = timeController?.Month ?? 1,
                     DayOccurred = timeController?.Day ?? 1
                 },
-                StartTime = Time.time,
+                StartTime = timeController != null ? (float)timeController.TotalGameSeconds : Time.time, // FIX WLD-H02: game time (2026-04-11)
                 Duration = 60f, // По умолчанию 1 минута реального времени
                 IsActive = true
             };
             
             activeEvents.Add(activeEvent);
-            lastOccurrence[template.TemplateId] = Time.time;
+            lastOccurrence[template.TemplateId] = timeController != null ? (float)timeController.TotalGameSeconds : Time.time; // FIX WLD-H02: game time (2026-04-11)
             
             // Применяем эффекты
             ApplyEffects(template.Effects, activeEvent);
@@ -324,7 +335,8 @@ namespace CultivationGame.World
                     EndEvent(activeEvent);
                     activeEvents.RemoveAt(i);
                 }
-                else if (Time.time - activeEvent.StartTime >= activeEvent.Duration)
+                // FIX WLD-H02: Use game time for event duration check (2026-04-11)
+                else if ((timeController != null ? (float)timeController.TotalGameSeconds : Time.time) - activeEvent.StartTime >= activeEvent.Duration)
                 {
                     activeEvent.IsActive = false;
                 }

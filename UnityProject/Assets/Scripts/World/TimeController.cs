@@ -1,14 +1,21 @@
 // ============================================================================
 // TimeController.cs — Система игрового времени
 // Cultivation World Simulator
-// Версия: 1.2 — Исправлены баги time accounting и time-of-day transition
+// Версия: 1.3 — Fix-09: LoadSaveData validation, cascading guard, GetTotalDays accuracy
 // ============================================================================
 // Создано: 2026-03-30 14:00:00 UTC
-// Редактировано: 2026-04-02 15:15:00 UTC
+// Редактировано: 2026-04-11 UTC
 //
 // ИЗМЕНЕНИЯ В ВЕРСИИ 1.2:
 // - FIX: totalGameSeconds теперь увеличивается на 60 за минуту (не на 1)
 // - FIX: oldTimeOfDay вычисляется ДО мутации hour (корректные переходы)
+//
+// ИЗМЕНЕНИЯ В ВЕРСИИ 1.3 (Fix-09):
+// - FIX WLD-H01: OnHourPassed fires with post-increment value (documented)
+// - FIX WLD-H06: LoadSaveData validates and clamps all fields
+// - FIX WLD-M01: SetTime/SetTime fire transition events
+// - FIX WLD-M02: Cascading event guard (isAdvancing)
+// - FIX WLD-M06: GetTotalDays uses totalGameSeconds for accuracy
 // ============================================================================
 
 using System;
@@ -54,6 +61,9 @@ namespace CultivationGame.World
         private double totalGameSeconds = 0;
         private float deterministicAccumulator = 0f;
         private int currentTick = 0;
+        
+        // FIX WLD-M02: Guard against cascading event re-entrancy (2026-04-11)
+        private bool isAdvancing = false;
         
         // === Events ===
         
@@ -176,6 +186,24 @@ namespace CultivationGame.World
         /// </summary>
         public void AdvanceMinute()
         {
+            // FIX WLD-M02: Guard against external re-entrancy during cascade (2026-04-11)
+            if (isAdvancing) return;
+            isAdvancing = true;
+            try
+            {
+                AdvanceMinuteInternal();
+            }
+            finally
+            {
+                isAdvancing = false;
+            }
+        }
+        
+        /// <summary>
+        /// Internal minute advance (allows cascading to hour/day/month/year).
+        /// </summary>
+        private void AdvanceMinuteInternal()
+        {
             currentMinute++;
             totalGameSeconds += 60;  // FIX: минута = 60 секунд, не 1
             
@@ -184,26 +212,51 @@ namespace CultivationGame.World
             if (currentMinute >= minutesPerHour)
             {
                 currentMinute = 0;
-                AdvanceHour();
+                AdvanceHourInternal();
             }
         }
         
         /// <summary>
-        /// Продвинуть время на 1 час.
+        /// Продвинуть время на 1 час (public entry point with re-entrancy guard).
         /// </summary>
         public void AdvanceHour()
         {
-            // FIX: Вычисляем oldTimeOfDay ДО мутации hour
+            // FIX WLD-M02: If already advancing (called from AdvanceMinute cascade), use internal (2026-04-11)
+            if (isAdvancing)
+            {
+                AdvanceHourInternal();
+                return;
+            }
+            isAdvancing = true;
+            try
+            {
+                AdvanceHourInternal();
+            }
+            finally
+            {
+                isAdvancing = false;
+            }
+        }
+        
+        /// <summary>
+        /// Internal hour advance logic.
+        /// FIX WLD-H01: OnHourPassed fires with the NEW hour value after increment (2026-04-11).
+        /// This is intentional — "HourPassed" means the transition to this hour has occurred.
+        /// </summary>
+        private void AdvanceHourInternal()
+        {
+            // Вычисляем oldTimeOfDay ДО мутации hour
             TimeOfDay oldTimeOfDay = CalculateTimeOfDay();
             
             currentHour++;
             
+            // FIX WLD-H01: Fire with post-increment value — subscribers receive the new hour (2026-04-11)
             OnHourPassed?.Invoke(currentHour);
             
             if (currentHour >= hoursPerDay)
             {
                 currentHour = 0;
-                AdvanceDay();
+                AdvanceDayInternal();
             }
             
             // Проверяем смену времени суток
@@ -215,9 +268,30 @@ namespace CultivationGame.World
         }
         
         /// <summary>
-        /// Продвинуть время на 1 день.
+        /// Продвинуть время на 1 день (public entry point with re-entrancy guard).
         /// </summary>
         public void AdvanceDay()
+        {
+            if (isAdvancing)
+            {
+                AdvanceDayInternal();
+                return;
+            }
+            isAdvancing = true;
+            try
+            {
+                AdvanceDayInternal();
+            }
+            finally
+            {
+                isAdvancing = false;
+            }
+        }
+        
+        /// <summary>
+        /// Internal day advance logic.
+        /// </summary>
+        private void AdvanceDayInternal()
         {
             currentDay++;
             Season oldSeason = CalculateSeason();
@@ -227,7 +301,7 @@ namespace CultivationGame.World
             if (currentDay > daysPerMonth)
             {
                 currentDay = 1;
-                AdvanceMonth();
+                AdvanceMonthInternal();
             }
             
             // Проверяем смену сезона
@@ -239,9 +313,30 @@ namespace CultivationGame.World
         }
         
         /// <summary>
-        /// Продвинуть время на 1 месяц.
+        /// Продвинуть время на 1 месяц (public entry point with re-entrancy guard).
         /// </summary>
         public void AdvanceMonth()
+        {
+            if (isAdvancing)
+            {
+                AdvanceMonthInternal();
+                return;
+            }
+            isAdvancing = true;
+            try
+            {
+                AdvanceMonthInternal();
+            }
+            finally
+            {
+                isAdvancing = false;
+            }
+        }
+        
+        /// <summary>
+        /// Internal month advance logic.
+        /// </summary>
+        private void AdvanceMonthInternal()
         {
             currentMonth++;
             
@@ -250,14 +345,35 @@ namespace CultivationGame.World
             if (currentMonth > monthsPerYear)
             {
                 currentMonth = 1;
-                AdvanceYear();
+                AdvanceYearInternal();
             }
         }
         
         /// <summary>
-        /// Продвинуть время на 1 год.
+        /// Продвинуть время на 1 год (public entry point with re-entrancy guard).
         /// </summary>
         public void AdvanceYear()
+        {
+            if (isAdvancing)
+            {
+                AdvanceYearInternal();
+                return;
+            }
+            isAdvancing = true;
+            try
+            {
+                AdvanceYearInternal();
+            }
+            finally
+            {
+                isAdvancing = false;
+            }
+        }
+        
+        /// <summary>
+        /// Internal year advance logic.
+        /// </summary>
+        private void AdvanceYearInternal()
         {
             currentYear++;
             OnYearPassed?.Invoke(currentYear);
@@ -298,8 +414,17 @@ namespace CultivationGame.World
         /// </summary>
         public void SetTime(int hour, int minute = 0)
         {
+            // FIX WLD-M01: Fire transition events when time-of-day changes (2026-04-11)
+            TimeOfDay oldTimeOfDay = CalculateTimeOfDay();
+            
             currentHour = Mathf.Clamp(hour, 0, hoursPerDay - 1);
             currentMinute = Mathf.Clamp(minute, 0, minutesPerHour - 1);
+            
+            TimeOfDay newTimeOfDay = CalculateTimeOfDay();
+            if (oldTimeOfDay != newTimeOfDay)
+            {
+                OnTimeOfDayChanged?.Invoke(newTimeOfDay);
+            }
         }
         
         /// <summary>
@@ -307,9 +432,18 @@ namespace CultivationGame.World
         /// </summary>
         public void SetDate(int day, int month, int year)
         {
+            // FIX WLD-M01: Fire transition events when season changes (2026-04-11)
+            Season oldSeason = CalculateSeason();
+            
             currentDay = Mathf.Clamp(day, 1, daysPerMonth);
             currentMonth = Mathf.Clamp(month, 1, monthsPerYear);
             currentYear = Mathf.Max(1, year);
+            
+            Season newSeason = CalculateSeason();
+            if (oldSeason != newSeason)
+            {
+                OnSeasonChanged?.Invoke(newSeason);
+            }
         }
         
         /// <summary>
@@ -357,12 +491,11 @@ namespace CultivationGame.World
         
         /// <summary>
         /// Получить общее количество дней с начала игры.
+        /// FIX WLD-M06: Use totalGameSeconds for accuracy instead of calendar calculation (2026-04-11)
         /// </summary>
         public int GetTotalDays()
         {
-            return (currentYear - 1) * monthsPerYear * daysPerMonth +
-                   (currentMonth - 1) * daysPerMonth +
-                   currentDay;
+            return (int)(totalGameSeconds / (hoursPerDay * minutesPerHour * 60));
         }
         
         /// <summary>
@@ -391,13 +524,14 @@ namespace CultivationGame.World
         
         public void LoadSaveData(TimeSaveData data)
         {
-            currentYear = data.Year;
-            currentMonth = data.Month;
-            currentDay = data.Day;
-            currentHour = data.Hour;
-            currentMinute = data.Minute;
-            totalGameSeconds = data.TotalGameSeconds;
-            currentTimeSpeed = (TimeSpeed)data.TimeSpeed;
+            // FIX WLD-H06: Validate and clamp loaded values (2026-04-11)
+            currentYear = Mathf.Max(1, data.Year);
+            currentMonth = Mathf.Clamp(data.Month, 1, monthsPerYear);
+            currentDay = Mathf.Clamp(data.Day, 1, daysPerMonth);
+            currentHour = Mathf.Clamp(data.Hour, 0, hoursPerDay - 1);
+            currentMinute = Mathf.Clamp(data.Minute, 0, minutesPerHour - 1);
+            totalGameSeconds = Mathf.Max(0, data.TotalGameSeconds);
+            currentTimeSpeed = (TimeSpeed)Mathf.Clamp(data.TimeSpeed, 0, 3);
         }
     }
     

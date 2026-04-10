@@ -325,14 +325,18 @@ namespace CultivationGame.World
         
         private void CompleteTravel()
         {
+            // FIX WLD-C01: Save destinationId and destination data BEFORE clearing travel state (2026-04-11)
+            // Previously travelDestinationId was set to null before ShouldTriggerTravelEvent read it,
+            // causing the destination lookup to always return null.
             string destinationId = travelDestinationId;
+            LocationData destinationData = GetLocation(travelDestinationId);
             
             isTraveling = false;
             travelDestinationId = null;
             travelProgress = 0f;
             
-            // Проверяем на случайное событие
-            if (ShouldTriggerTravelEvent())
+            // Проверяем на случайное событие — передаём сохранённые данные
+            if (ShouldTriggerTravelEvent(destinationData))
             {
                 OnTravelInterrupted?.Invoke(destinationId);
                 return;
@@ -343,14 +347,13 @@ namespace CultivationGame.World
             OnTravelCompleted?.Invoke(destinationId);
         }
         
-        private bool ShouldTriggerTravelEvent()
+        private bool ShouldTriggerTravelEvent(LocationData destination = null)
         {
             // Базовый шанс события
             float chance = travelDangerBaseChance;
             
             // Учитываем опасность локаций
             LocationData current = GetLocation(currentLocationId);
-            LocationData destination = GetLocation(travelDestinationId);
             
             if (current != null) chance += current.DangerLevel * 0.001f;
             if (destination != null) chance += destination.DangerLevel * 0.001f;
