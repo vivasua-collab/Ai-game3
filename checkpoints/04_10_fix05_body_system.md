@@ -2,57 +2,38 @@
 
 **Дата:** 2026-04-10 13:37:00 UTC
 **Фаза:** Phase 7 — Integration
-**Статус:** pending
+**Статус:** complete
 **Приоритет:** P0
+**Завершено:** 2026-04-11 18:45:00 UTC
 
 ---
 
-## Описание
-
-Сердце не должно иметь blackHP, HP значения не соответствуют документации, двойной 70/30 split, мутабельный список, деление на ноль.
-
----
-
-## Файлы (3 файла, ~931 строк)
-
-| # | Файл | Строк | Изменение |
-|---|------|-------|-----------|
-| 1 | `Body/BodyPart.cs` | 304 | Heart: maxBlackHP=0, currentBlackHP=0 |
-| 2 | `Body/BodyController.cs` | 380 | FullRestore Heart fix, BodyParts readonly, InitializeBody guard, Heal /0 |
-| 3 | `Body/BodyDamage.cs` | 247 | HP значения по документации, двойной 70/30 split, Quadruped Torso |
-
----
-
-## Задачи
+## Выполненные задачи
 
 ### CRITICAL
-- [ ] CORE-C01: BodyPart.cs:93-95 — если partType == Heart: maxBlackHP = 0, currentBlackHP = 0
-- [ ] BOD-C01: BodyDamage.CreateHumanoidBody — HP значения по BODY_SYSTEM.md
+- [x] CORE-C01: BodyPart.cs — если partType == Heart: maxBlackHP = 0, currentBlackHP = 0
+- [x] BOD-C01: BodyDamage.CreateHumanoidBody — HP значения по BODY_SYSTEM.md
+  - Head=50, Torso=100, Heart=80, Arm=40, Hand=20, Leg=50, Foot=25 (при VIT=10)
+  - CreateQuadrupedBody аналогично обновлены HP
 
 ### MEDIUM
-- [ ] BOD-M01: BodyDamage.ApplyDamage — убрать двойной 70/30 split (один в BodyDamage, другой в BodyPart). Оставить split в BodyPart.ApplyDamage, убрать из BodyDamage
-- [ ] BOD-M02: BodyController.FullRestore — после Fix CORE-C01, Heart blackHP будет 0 корректно
-- [ ] BOD-M03: BodyController.BodyParts — вернуть IReadOnlyList или копию вместо мутабельного внутреннего списка
+- [x] BOD-M01: BodyDamage.ApplyDamage — убран двойной 70/30 split. Теперь только BodyPart.ApplyDamage делает split
+- [x] BOD-M02: BodyController.FullRestore — Heart blackHP=0 корректно (CORE-C01)
+- [x] BOD-M03: BodyController.BodyParts — IReadOnlyList вместо List
 
 ### LOW
-- [ ] BOD-L01: BodyController.InitializeBody — добавить guard `if (_isInitialized) return;`
-- [ ] BOD-L02: BodyController.Heal — проверить `bodyParts.Count > 0` перед делением
-- [ ] BOD-L03: BodyDamage Quadruped Torso — isVital=false по документации
+- [x] BOD-L01: BodyController.InitializeBody — guard `if (_isInitialized) return;`
+- [x] BOD-L02: BodyController.Heal — проверка `bodyParts.Count == 0` перед делением
+- [x] BOD-L03: BodyDamage Quadruped Torso — isVital=false по документации
+
+## Изменённые файлы (3 файла)
+
+| # | Файл | Изменение |
+|---|------|-----------|
+| 1 | `Body/BodyPart.cs` | CORE-C01: Heart blackHP=0 |
+| 2 | `Body/BodyController.cs` | BOD-M02/03, BOD-L01/02 |
+| 3 | `Body/BodyDamage.cs` | BOD-C01 (HP по доке), BOD-M01 (double split), BOD-L03 (Quadruped Torso) |
 
 ---
 
-## Порядок выполнения
-
-1. BodyPart.cs — Heart blackHP fix
-2. BodyDamage.cs — HP значения + двойной split + Quadruped
-3. BodyController.cs — FullRestore + BodyParts + InitializeBody + Heal
-
----
-
-## Зависимости
-
-- **Предшествующие:** Fix-04 (CORE-C01 подтверждён как часть Core)
-
----
-
-*Чекпоинт обновлён: 2026-04-10 13:37:00 UTC*
+*Чекпоинт обновлён: 2026-04-11 18:45:00 UTC*

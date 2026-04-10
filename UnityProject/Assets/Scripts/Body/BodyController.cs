@@ -42,6 +42,7 @@ namespace CultivationGame.Body
         private List<BodyPart> bodyParts = new List<BodyPart>();
         private Morphology morphology = Morphology.Humanoid;
         private SoulType soulType = SoulType.Character;
+        private bool _isInitialized = false;  // FIX BOD-L01: Guard flag
         
         // === Events ===
         
@@ -51,7 +52,8 @@ namespace CultivationGame.Body
         
         // === Properties ===
         
-        public List<BodyPart> BodyParts => bodyParts;
+        // FIX BOD-M03: Возвращаем IReadOnlyList вместо мутабельного списка
+        public IReadOnlyList<BodyPart> BodyParts => bodyParts.AsReadOnly();
         public BodyMaterial BodyMaterial => bodyMaterial;
         public Morphology Morphology => morphology;
         public SoulType SoulType => soulType;
@@ -80,9 +82,13 @@ namespace CultivationGame.Body
         /// <summary>
         /// Инициализировать тело на основе данных вида.
         /// Источник: ENTITY_TYPES.md §6 "SoulEntity"
+        /// FIX BOD-L01: Добавлен guard от повторной инициализации.
         /// </summary>
         public void InitializeBody()
         {
+            // FIX BOD-L01: Guard от повторной инициализации
+            if (_isInitialized) return;
+            
             if (speciesData != null)
             {
                 InitializeFromSpecies(speciesData);
@@ -91,6 +97,8 @@ namespace CultivationGame.Body
             {
                 InitializeDefaultHumanoid();
             }
+            
+            _isInitialized = true;
         }
         
         /// <summary>
@@ -247,12 +255,13 @@ namespace CultivationGame.Body
         
         /// <summary>
         /// Полное восстановление.
+        /// FIX BOD-M02: Heart blackHP корректно = 0 (CORE-C01).
         /// </summary>
         public void FullRestore()
         {
             foreach (var part in bodyParts)
             {
-                // Используем SetHP для установки HP (internal method)
+                // Для сердца MaxBlackHP=0 (CORE-C01), SetHP учтёт это
                 part.SetHP(part.MaxRedHP, part.MaxBlackHP);
             }
         }
@@ -278,6 +287,9 @@ namespace CultivationGame.Body
         public void Heal(int amount)
         {
             if (amount <= 0) return;
+            
+            // FIX BOD-L02: Проверка bodyParts.Count > 0 перед делением
+            if (bodyParts.Count == 0) return;
             
             // Распределяем лечение по всем частям
             float healPerPart = (float)amount / bodyParts.Count;

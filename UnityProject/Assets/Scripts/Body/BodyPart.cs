@@ -89,10 +89,17 @@ namespace CultivationGame.Body
             
             // Структурная HP = функциональная × 2
             // Источник: BODY_SYSTEM.md "Соотношение HP"
-            // ⚠️ ВНИМАНИЕ: Для сердца должна быть только красная HP (blackHP = 0)
-            // Текущая реализация устанавливает blackHP всегда, что не соответствует документации
-            this.maxBlackHP = maxRedHP * GameConstants.STRUCTURAL_HP_MULTIPLIER;
-            this.currentBlackHP = this.maxBlackHP;
+            // FIX CORE-C01: Сердце имеет ТОЛЬКО функциональную HP (blackHP = 0)
+            if (partType == BodyPartType.Heart)
+            {
+                this.maxBlackHP = 0f;
+                this.currentBlackHP = 0f;
+            }
+            else
+            {
+                this.maxBlackHP = maxRedHP * GameConstants.STRUCTURAL_HP_MULTIPLIER;
+                this.currentBlackHP = this.maxBlackHP;
+            }
             
             this.state = BodyPartState.Healthy;
             

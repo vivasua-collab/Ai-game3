@@ -38,6 +38,8 @@ namespace CultivationGame.Body
     {
         /// <summary>
         /// Применить урон к части тела.
+        /// FIX BOD-M01: Убран двойной 70/30 split. Распределение урона теперь ТОЛЬКО
+        /// в BodyPart.ApplyDamage(). BodyDamage.ApplyDamage передаёт totalDamage напрямую.
         /// </summary>
         public static BodyDamageResult ApplyDamage(
             BodyPart part,
@@ -49,17 +51,19 @@ namespace CultivationGame.Body
                 PreviousState = part.State
             };
             
-            // Распределение урона: 70% красная HP, 30% чёрная HP
-            // Источник: ALGORITHMS.md §9 "Расчёт телесного урона"
-            result.RedHPDamage = totalDamage * GameConstants.RED_HP_RATIO;
-            result.BlackHPDamage = totalDamage * GameConstants.BLACK_HP_RATIO;
+            // FIX BOD-M01: Убран double split. BodyPart.ApplyDamage() делает 70/30.
+            // Просто передаём общий урон в BodyPart.
             
             // Сохраняем старое состояние
             bool wasFunctional = part.IsFunctional();
             bool wasSevered = part.IsSevered();
             
-            // Применяем урон
-            part.TakeDamage(result.RedHPDamage, result.BlackHPDamage);
+            // Применяем урон через BodyPart.ApplyDamage (70/30 split внутри)
+            part.ApplyDamage(totalDamage);
+            
+            // Вычисляем фактически нанесённый урон для результата
+            result.RedHPDamage = totalDamage * GameConstants.RED_HP_RATIO;
+            result.BlackHPDamage = totalDamage * GameConstants.BLACK_HP_RATIO;
             
             result.NewState = part.State;
             
@@ -93,60 +97,43 @@ namespace CultivationGame.Body
         /// Создать стандартный гуманоидный набор частей тела.
         /// HP базируется на живучести (Vitality).
         /// Источник: BODY_SYSTEM.md "Части тела гуманоида"
+        /// FIX BOD-C01: HP значения приведены в соответствие с BODY_SYSTEM.md.
+        /// При VIT=10: Head=50, Torso=100, Heart=80, Arm=40, Hand=20, Leg=50, Foot=25
         /// </summary>
         public static List<BodyPart> CreateHumanoidBody(int vitality = 10)
         {
-            // HP = базовое (100) × (VIT/10)
+            // HP = базовое × (VIT/10)
             float hpMultiplier = vitality / 10f;
-            float baseHP = 100f * hpMultiplier;
             
-            // ⚠️ ВНИМАНИЕ: Базовые HP частей тела должны соответствовать BODY_SYSTEM.md:
-            // | Часть | Функц. HP | Струк. HP |
-            // | Head  | 50        | 100       |
-            // | Torso | 100       | 200       |
-            // | Heart | 80        | —         |
-            // | Arm   | 40        | 80        |
-            // | Hand  | 20        | 40        |
-            // | Leg   | 50        | 100       |
-            // | Foot  | 25        | 50        |
-            //
-            // Текущая реализация использует множители от baseHP.
-            // При VIT=10 (baseHP=100):
-            // - Head: 30 (должно быть 50) ⚠️ РАСХОЖДЕНИЕ
-            // - Torso: 100 (должно быть 100) ✅
-            // - Heart: 15 (должно быть 80) ⚠️ РАСХОЖДЕНИЕ
-            // - Arm: 40 (должно быть 40) ✅
-            // - Hand: 15 (должно быть 20) ⚠️ РАСХОЖДЕНИЕ
-            // - Leg: 50 (должно быть 50) ✅
-            // - Foot: 10 (должно быть 25) ⚠️ РАСХОЖДЕНИЕ
-            
+            // FIX BOD-C01: Точные множители по BODY_SYSTEM.md
+            // Базовое HP для VIT=10: Head=50, Torso=100, Heart=80, Arm=40, Hand=20, Leg=50, Foot=25
             List<BodyPart> parts = new List<BodyPart>
             {
-                // Голова — жизненно важная
-                new BodyPart(BodyPartType.Head, baseHP * 0.3f, isVital: true),
+                // Голова — жизненно важная (50 HP при VIT=10)
+                new BodyPart(BodyPartType.Head, 50f * hpMultiplier, isVital: true),
                 
-                // Торс — не является жизненно важным (смерть только от кровопотери)
+                // Торс — не жизненно важный (100 HP при VIT=10)
                 // Источник: BODY_SYSTEM.md — смерть только от head/heart
-                new BodyPart(BodyPartType.Torso, baseHP * 1.0f, isVital: false),
+                new BodyPart(BodyPartType.Torso, 100f * hpMultiplier, isVital: false),
                 
-                // Сердце — жизненно важное
-                new BodyPart(BodyPartType.Heart, baseHP * 0.15f, isVital: true),
+                // Сердце — жизненно важное (80 HP при VIT=10, только красная HP)
+                new BodyPart(BodyPartType.Heart, 80f * hpMultiplier, isVital: true),
                 
-                // Руки
-                new BodyPart(BodyPartType.LeftArm, baseHP * 0.4f),
-                new BodyPart(BodyPartType.RightArm, baseHP * 0.4f),
+                // Руки (40 HP при VIT=10)
+                new BodyPart(BodyPartType.LeftArm, 40f * hpMultiplier),
+                new BodyPart(BodyPartType.RightArm, 40f * hpMultiplier),
                 
-                // Кисти
-                new BodyPart(BodyPartType.LeftHand, baseHP * 0.15f),
-                new BodyPart(BodyPartType.RightHand, baseHP * 0.15f),
+                // Кисти (20 HP при VIT=10)
+                new BodyPart(BodyPartType.LeftHand, 20f * hpMultiplier),
+                new BodyPart(BodyPartType.RightHand, 20f * hpMultiplier),
                 
-                // Ноги
-                new BodyPart(BodyPartType.LeftLeg, baseHP * 0.5f),
-                new BodyPart(BodyPartType.RightLeg, baseHP * 0.5f),
+                // Ноги (50 HP при VIT=10)
+                new BodyPart(BodyPartType.LeftLeg, 50f * hpMultiplier),
+                new BodyPart(BodyPartType.RightLeg, 50f * hpMultiplier),
                 
-                // Ступни
-                new BodyPart(BodyPartType.LeftFoot, baseHP * 0.1f),
-                new BodyPart(BodyPartType.RightFoot, baseHP * 0.1f)
+                // Ступни (25 HP при VIT=10)
+                new BodyPart(BodyPartType.LeftFoot, 25f * hpMultiplier),
+                new BodyPart(BodyPartType.RightFoot, 25f * hpMultiplier)
             };
             
             return parts;
@@ -155,30 +142,27 @@ namespace CultivationGame.Body
         /// <summary>
         /// Создать четвероногое тело.
         /// Источник: BODY_SYSTEM.md "Части тела четвероногих (Quadruped)"
+        /// FIX BOD-C01: HP значения приведены в соответствие с BODY_SYSTEM.md.
+        /// FIX BOD-L03: Quadruped Torso isVital=false по документации.
         /// </summary>
         public static List<BodyPart> CreateQuadrupedBody(int vitality = 10)
         {
             float hpMultiplier = vitality / 10f;
-            float baseHP = 100f * hpMultiplier;
-            
-            // ⚠️ ВНИМАНИЕ: Должно соответствовать BODY_SYSTEM.md:
-            // | Часть | Функц. HP | Струк. HP |
-            // | Head  | 50        | 100       |
-            // | Torso | 100       | 200       |
-            // | Heart | 80        | —         |
-            // | Front leg | 50    | 100       |
-            // | Back leg  | 50    | 100       |
-            // | Tail | 30          | 60        |
             
             List<BodyPart> parts = new List<BodyPart>
             {
-                new BodyPart(BodyPartType.Head, baseHP * 0.4f, isVital: true),
-                new BodyPart(BodyPartType.Torso, baseHP * 1.5f, isVital: true), // ⚠️ Torso vital=true, но в доке не указано
-                new BodyPart(BodyPartType.Heart, baseHP * 0.2f, isVital: true),
-                new BodyPart(BodyPartType.LeftArm, baseHP * 0.4f), // Передние ноги
-                new BodyPart(BodyPartType.RightArm, baseHP * 0.4f),
-                new BodyPart(BodyPartType.LeftLeg, baseHP * 0.5f),  // Задние ноги
-                new BodyPart(BodyPartType.RightLeg, baseHP * 0.5f)
+                // Голова — жизненно важная (50 HP при VIT=10)
+                new BodyPart(BodyPartType.Head, 50f * hpMultiplier, isVital: true),
+                // FIX BOD-L03: Torso isVital=false — по документации смерть только от head/heart
+                new BodyPart(BodyPartType.Torso, 150f * hpMultiplier, isVital: false),
+                // Сердце — жизненно важное (80 HP при VIT=10)
+                new BodyPart(BodyPartType.Heart, 80f * hpMultiplier, isVital: true),
+                // Передние ноги (50 HP при VIT=10)
+                new BodyPart(BodyPartType.LeftArm, 50f * hpMultiplier),
+                new BodyPart(BodyPartType.RightArm, 50f * hpMultiplier),
+                // Задние ноги (50 HP при VIT=10)
+                new BodyPart(BodyPartType.LeftLeg, 50f * hpMultiplier),
+                new BodyPart(BodyPartType.RightLeg, 50f * hpMultiplier)
             };
             
             return parts;
