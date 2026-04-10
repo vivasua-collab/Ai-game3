@@ -1,11 +1,11 @@
 # КОНСОЛИДИРОВАННЫЙ АУДИТ — Cultivation World Simulator
 
 **Дата консолидации:** 2026-04-10  
-**Обновлено:** 2026-04-10 (интеграция GPT-аудита)  
+**Обновлено:** 2026-04-11 (интеграция Claude.ai аудита + GPT-аудита)  
 **Проект:** Cultivation World Simulator v0.1.0-alpha  
 **Unity:** 6000.3 (2D URP)  
 **Файлов просканировано:** 115 C# файлов, 21+ система  
-**Аудиторов:** 7 параллельных агентов + ручная верификация + внешний GPT-аудит  
+**Аудиторов:** 7 параллельных агентов + ручная верификация + внешний GPT-аудит + Claude.ai аудит  
 
 ---
 
@@ -13,11 +13,11 @@
 
 | Категория | Уникальных проблем |
 |-----------|-------------------|
-| 🔴 CRITICAL | 32 |
-| 🟠 HIGH | 54 |
-| 🟡 MEDIUM | 65 |
-| 🟢 LOW | 47 |
-| **Итого** | **198** |
+| 🔴 CRITICAL | 36 |
+| 🟠 HIGH | 59 |
+| 🟡 MEDIUM | 70 |
+| 🟢 LOW | 45 |
+| **Итого** | **210** |
 
 > **Примечание:** Дедупликация выполнена путём объединения пересекающихся проблем из разных файлов. Маппинг оригинальных ID → консолидированных ID приведён в Приложении A.
 
@@ -37,6 +37,7 @@
 | [S8](./CODE_AUDIT_Unity_6.3.md) | Unity 6.3 совместимость (ранний аудит) | — | 5+8 |
 | S9 | GPT ChatGPT Audit #1 (GameInitializer, SceneLoader, Qi, Save, Time) | 7 файлов | 10 |
 | S10 | GPT ChatGPT Audit #2 (SaveManager cache/encryption, DefenseProcessor, chances) | 5 файлов | 12 |
+| S11 | Claude.ai Audit (FormationController singleton, SaveData gaps, Quest rewards, HitDetector factions, equipment/weapon bonuses, doc-code discrepancies) | 12 файлов | 17 |
 
 **Связанные аналитические файлы:**
 - [ANALYSIS_REPORT.md](./ANALYSIS_REPORT.md) — Анализ документации
@@ -69,8 +70,10 @@
 20. [Managers](#20-managers)
 21. [Tests](#21-tests)
 22. [Кросс-системные проблемы](#22-кросс-системные-проблемы)
-23. [Приоритетный план исправлений](#23-приоритетный-план-исправлений)
-24. [Приложение A: Маппинг ID](#приложение-a-маппинг-id)
+23. [Архитектура и дизайн-решения](#23-архитектура-и-дизайн-решения)
+24. [Несоответствия код↔документация](#24-несоответствия-коддокументация)
+25. [Приоритетный план исправлений](#25-приоритетный-план-исправлений)
+26. [Приложение A: Маппинг ID](#приложение-a-маппинг-id)
 
 ---
 
@@ -141,6 +144,7 @@
 | CMB-C07 | CombatLog подписывается в статическом конструкторе — может не выполниться | CombatEvents.cs:274-277 | S1(C-10), S2(M-NEW-06) |
 | CMB-C08 | CombatantBase не отписывается от QiController.OnQiChanged (lambda leak) | Combatant.cs:195 | S1(M-09→CRIT), S2(C-NEW-06) |
 | CMB-C09 | TechniqueEffectFactory.DetermineEffectType: Poison→FireSlash (загрязнение пула) | TechniqueEffectFactory.cs:254-263 | S2(H-NEW-04) |
+| CMB-C10 | HitDetector.IsValidTarget() — TargetType.Ally и .Neutral ВСЕГДА false (фракции не интегрированы) | HitDetector.cs:177-186 | S11 |
 
 ### 🟠 HIGH
 
@@ -154,6 +158,7 @@
 | CMB-H06 | HitDetector.GetComponent\<ICombatant\>() — дорого и ненадёжно | HitDetector.cs:109 | S2(M-NEW-11) |
 | CMB-H07 | OrbitalWeaponController — race condition на _currentAngle (Update vs Coroutine) | OrbitalWeaponController.cs:98-121 | S2(M-NEW-14) |
 | CMB-H08 | TechniqueEffectFactory double-dequeue из пула | TechniqueEffectFactory.cs:147-151 | S2(M-NEW-13) |
+| CMB-H09 | Combatant.cs: оружие/броня/щит бонусы захардкожены в 0f (TODO), EquipmentController данные не используются | Combatant.cs:147-165 | S11 |
 
 ### 🟡 MEDIUM
 
@@ -165,6 +170,7 @@
 | CMB-M04 | DirectionalEffect/OrbitalWeapon — Instantiate/Destroy вместо пулинга | DirectionalEffect.cs:193-194 | S2(M-NEW-03) |
 | CMB-M05 | FormationArrayEffect/ExpandingEffect — разная квалификация ICombatTarget | FormationArrayEffect.cs:112 vs ExpandingEffect.cs:126 | S2(H-NEW-05) |
 | CMB-M06 | CalculateDodgeChance/ParryChance/BlockChance — нет верхнего капа [0,1], шанс может превысить 100% | DefenseProcessor.cs | S10(#8) |
+| CMB-M07 | HitDetector.SizeClass не интегрирован — размер цели не влияет на вероятность попадания | HitDetector.cs:331 | S11 |
 
 > **Примечание GPT-аудита:** CMB-M06 — формулы ограничены снизу `0`, но не сверху `1`. При больших статах/бонусах шанс >100%, что нарушает вероятностную модель. Является расширением проблемы CMB-C03 (двойной расчёт), но даже после исправления CMB-C03 верхний кламп необходим.
 
@@ -418,7 +424,13 @@
 ## 9. Formation System
 
 > **Файлы:** FormationController.cs, FormationCore.cs, FormationQiPool.cs, FormationEffects.cs, FormationData.cs, FormationUI.cs  
-> **Источник:** S4
+> **Источник:** S4, S11
+
+### 🔴 CRITICAL
+
+| ID | Проблема | Файл:строка | Источник |
+|----|----------|-------------|----------|
+| FRM-C01 | FormationController не сбрасывает _instance в OnDestroy — после перезагрузки сцены _instance указывает на уничтоженный объект. Исправлено в CombatManager (v1.3), но не перенесено | FormationController.cs:194-197 | S11 |
 
 ### 🟠 HIGH
 
@@ -426,6 +438,7 @@
 |----|----------|-------------|----------|
 | FRM-H01 | FormationCore.ApplyEffects — OverlapCircleAll без layer mask | FormationCore.cs:454 | S4 |
 | FRM-H02 | FormationEffects.IsAlly() — faction detection никогда не работает | FormationEffects.cs:69-101 | S4 |
+| FRM-H03 | FormationArrayEffect.ApplyBuff/ApplyDebuff — баффы и дебаффы применяются напрямую (TODO заглушки), минуя BuffManager. Не попадают в стек ActiveBuff, не тикают корректно | FormationArrayEffect.cs:131-158 | S11 |
 
 ### 🟡 MEDIUM
 
@@ -464,7 +477,7 @@
 |----|----------|-------------|----------|
 | SAV-H01 | SaveDataTypes: Dictionary fields не JsonUtility-совместимы (KeyBindings, Objectives, customBonuses, skills) | SaveDataTypes.cs:130,209 | S4 |
 | SAV-H02 | SaveManager.TotalPlayTimeHours использует game-time вместо real play time | SaveManager.cs:143 | S4 |
-| SAV-H03 | SaveManager.CollectSaveData не сохраняет Player/NPC/Formation/Quest/Inventory/Equipment | SaveManager.cs:232-234 | S4 |
+| SAV-H03 | SaveManager.CollectSaveData не сохраняет Player/NPC/Formation/Quest/Inventory/Equipment — отсутствуют FormationSaveData, BuffSaveData, TileSaveData, ChargerSaveData классы | SaveManager.cs:232-234, SaveDataTypes.cs | S4, S11 |
 | SAV-H04 | SaveManager: RefreshSlotCache не читает файлы при cache miss — UI видит пустые слоты | SaveManager.cs | S10(#2) |
 | SAV-H05 | SaveManager: после FromJson нет проверки null/битых полей перед ApplySaveData — NRE или повреждённый state | SaveManager.cs | S10(#5) |
 
@@ -502,14 +515,14 @@
 
 | ID | Проблема | Файл:строка | Источник |
 |----|----------|-------------|----------|
-| INV-H01 | CraftingController.Craft() не применяет рассчитанный grade | CraftingController.cs:194-197 | S4 |
+| INV-H01 | CraftingController.Craft() не применяет рассчитанный grade к созданному предмету | CraftingController.cs:194-197 | S4, S11 |
 | INV-H02 | CraftingController.AddSkillExperience: random 20% level-up вместо XP | CraftingController.cs:426-438 | S4 |
+| INV-H03 | EquipmentController.CanEquip всегда true — требования к уровню культивации и характеристикам не реализованы (TODO) | EquipmentController.cs:244-245 | S11(↑INV-L01) |
 
 ### 🟢 LOW
 
 | ID | Проблема | Файл:строка | Источник |
 |----|----------|-------------|----------|
-| INV-L01 | EquipmentController.CanEquip всегда true | EquipmentController.cs:239-248 | S4 |
 | INV-L02 | CraftingController.CraftCustom всегда успешен | CraftingController.cs:218-269 | S4 |
 
 ---
@@ -524,13 +537,12 @@
 | ID | Проблема | Файл:строка | Источник |
 |----|----------|-------------|----------|
 | QST-C01 | QuestData objectives на shared ScriptableObject — state corruption | QuestData.cs + QuestObjective.cs | S4 |
-| QST-C02 | QuestController.LoadSaveData не восстанавливает активные квесты | QuestController.cs:641-650 | S4 |
+| QST-C02 | QuestController.LoadSaveData не восстанавливает активные квесты — TODO явно указывает на неполную загрузку | QuestController.cs:647 | S4, S11 |
+| QST-C03 | QuestController.GrantRewards() — заглушка (только Debug.Log), интеграция с InventoryController/XP/золото отсутствует, квесты завершаются без наград | QuestController.cs:575-579 | S11(↑QST-L01) |
 
 ### 🟢 LOW
 
-| ID | Проблема | Файл:строка | Источник |
-|----|----------|-------------|----------|
-| QST-L01 | GrantRewards — TODO stub | QuestController.cs:283 | S4 |
+> *Нет оставшихся LOW проблем в системе квестов (QST-L01 повышен до QST-C03)*
 
 ---
 
@@ -710,6 +722,7 @@
 | UI-M03 | HUDController divide by zero в cooldown | HUDController.cs | S6(UT-M-03) |
 | UI-M04 | CultivationProgressBar оба бара одинаковое значение | CultivationProgressBar.cs | S6(UT-M-06) |
 | UI-M05 | CharacterPanelUI CultivationLevel как int вместо имени | CharacterPanelUI.cs | S6(UT-M-09) |
+| UI-M06 | InventoryUI: UseItem — заглушка, сортировка не реализована, детали предметов — заглушки (4 TODO подряд) | InventoryUI.cs:435-523 | S11 |
 
 ### 🟢 LOW
 
@@ -724,7 +737,7 @@
 ## 18. Tile System
 
 > **Файлы:** TileMapController.cs, GameTile.cs, ResourcePickup.cs, TileData.cs, TileMapData.cs, DestructibleObjectController.cs, DestructibleSystem.cs  
-> **Источник:** S6
+> **Источник:** S6, S11
 
 ### 🔴 CRITICAL
 
@@ -732,6 +745,12 @@
 |----|----------|-------------|----------|
 | TIL-C01 | TileData temperature accumulation bug (+= вместо =) | TileData.cs:81 | S6(UT-C-01) |
 | TIL-C02 | TileMapData DateTime не сериализуется JsonUtility | TileMapData.cs:35 | S6(UT-C-02) |
+
+### 🟠 HIGH
+
+| ID | Проблема | Файл:строка | Источник |
+|----|----------|-------------|----------|
+| TIL-H01 | ResourcePickup и DestructibleObjectController не интегрированы с InventoryController — подбор ресурсов не добавляет предметы в инвентарь (TODO в обоих файлах) | ResourcePickup.cs:122, DestructibleObjectController.cs:279 | S11 |
 
 ### 🟡 MEDIUM
 
@@ -924,7 +943,48 @@
 
 ---
 
-## 23. Приоритетный план исправлений
+## 23. Архитектура и дизайн-решения
+
+> **Проблемы архитектурного уровня, требующие принятия проектных решений перед реализацией.**  
+> **Источник:** S11
+
+### 🔴 CRITICAL
+
+| ID | Проблема | Описание | Источник |
+|----|----------|----------|----------|
+| ARC-C01 | Weather System и Loot Generation — модули в ARCHITECTURE.md, но без кода | ARCHITECTURE.md явно перечисляет Weather System (в World) и Loot Generation (в Combat) как модули системы. Ни одного .cs файла для этих систем нет. Нет соответствующих docs-разделов. Статус: не запланированы или забыты. | S11 |
+
+### 🟠 HIGH
+
+| ID | Проблема | Описание | Источник |
+|----|----------|----------|----------|
+| ARC-H01 | Нерешённый выбор Модели А/Б для ёмкости ядра | Чекпоинт 04_09_p1_critical_fixes.md фиксирует P2-задачу: "Выбрать модель А или Б (ёмкость ядра)". Текущий код использует формулу 1000 × 1.1^subLevels (Модель А из QI_SYSTEM.md), однако чекпоинт упоминает альтернативу "100 × level³". Решение не задокументировано как финальное. | S11 |
+
+---
+
+## 24. Несоответствия код↔документация
+
+> **Расхождения между реализацией и документацией, выявленные кросс-референс анализом.**  
+> **Источник:** S11
+
+### 🟡 MEDIUM
+
+| ID | Документ | Описание расхождения | Код | Статус |
+|----|----------|---------------------|-----|--------|
+| DOC-M01 | ARCHITECTURE.md | Weather System указан как реализованный модуль наравне с Time/Location/NPC | Ни файла, ни документа, ни плана реализации не существует | ❌ Док опережает код |
+| DOC-M02 | SAVE_SYSTEM.md | Описывает сохранение формаций и баффов как полное | SaveDataTypes.cs содержит только Player, Quest, Journal, Achievement, Settings. Системы Formation, Buff, Charger, Tile полностью выпадают из сохранений | ❌ Док не соответствует коду |
+| DOC-M03 | COMBAT_SYSTEM.md | 10-слойный пайплайн: Loot Generation как часть Combat | В коде CombatManager отсутствует лут-логика. Слой 10 (последствия) реализован частично: кровотечение есть, shock/death условны | ⚠️ Частичное соответствие |
+
+### 🟢 VERIFIED (без проблем)
+
+| Документ | Проверка | Результат |
+|----------|----------|-----------|
+| QI_SYSTEM.md | проводимость = coreCapacity / 360 | ✅ QiController корректно реализует формулу |
+| ALGORITHMS.md | Damage pipeline layers 1-9 | ✅ Совпадает с CombatManager.cs комментариями |
+
+---
+
+## 25. Приоритетный план исправлений
 
 ### Phase 0: Критические баги (блокируют gameplay)
 
@@ -940,55 +1000,67 @@
 | 8 | DefenseProcessor System.Random→UnityEngine.Random | CMB-C06 | DefenseProcessor.cs |
 | 9 | [SerializeField] без MonoBehaviour | CORE-C04, CHR-C01 | StatDevelopment.cs, Charger/*.cs |
 | 10 | CombatLog надёжная инициализация | CMB-C07 | CombatEvents.cs |
-| 11 | BodyDamage HP значения по документации | BOD-C01 | BodyDamage.cs |
-| 12 | SceneSetupTools #if UNITY_EDITOR | GEN-C01 | Editor/SceneSetupTools.cs |
-| 13 | InventorySlot.GetCondition durability=0→Broken | INV-C01 | InventorySlot.cs |
-| 14 | FormationEffects control восстановление | BUF-C04 | FormationEffects.cs |
-| 15 | BuffManager float.Parse→TryParse | BUF-C01 | BuffManager.cs |
-| 16 | BuffManager Independent stacking | BUF-C02 | BuffManager.cs |
-| 17 | NPCSaveData MaxQi/MaxHealth | NPC-C01 | NPCController.cs |
-| 18 | QuestData clone objectives | QST-C01 | QuestData.cs |
-| 19 | DialogueSystem JsonUtility array root | DLG-C01 | DialogueSystem.cs |
-| 20 | TileData temperature accumulation | TIL-C01 | TileData.cs |
+| 11 | FormationController._instance = null в OnDestroy | FRM-C01 | FormationController.cs |
+| 12 | HitDetector: Ally/Neutral цели всегда false — интегрировать фракции | CMB-C10 | HitDetector.cs |
+| 13 | QuestController.GrantRewards — реализовать выдачу наград | QST-C03 | QuestController.cs |
+| 14 | BodyDamage HP значения по документации | BOD-C01 | BodyDamage.cs |
+| 15 | SceneSetupTools #if UNITY_EDITOR | GEN-C01 | Editor/SceneSetupTools.cs |
+| 16 | InventorySlot.GetCondition durability=0→Broken | INV-C01 | InventorySlot.cs |
+| 17 | FormationEffects control восстановление | BUF-C04 | FormationEffects.cs |
+| 18 | BuffManager float.Parse→TryParse | BUF-C01 | BuffManager.cs |
+| 19 | BuffManager Independent stacking | BUF-C02 | BuffManager.cs |
+| 20 | NPCSaveData MaxQi/MaxHealth | NPC-C01 | NPCController.cs |
+| 21 | QuestData clone objectives | QST-C01 | QuestData.cs |
+| 22 | DialogueSystem JsonUtility array root | DLG-C01 | DialogueSystem.cs |
+| 23 | TileData temperature accumulation | TIL-C01 | TileData.cs |
+| 24 | Combatant: интегрировать EquipmentController бонусы (armor/weapon/shield ≠ 0) | CMB-H09 | Combatant.cs, EquipmentController.cs |
 
 ### Phase 1: Высокие проблемы (влияют на баланс/корректность)
 
 | # | Задача | ID |
 |---|--------|-----|
-| 21 | Заменить FindFirstObjectByType на ServiceLocator (19 файлов) | WLD-M05 |
-| 22 | Реализовать формулу мастерства из документации | CMB-H01 |
-| 23 | Уточнить единицу cooldown | CMB-H02 |
-| 24 | Разделить totalDamageDealt/Taken | CMB-H03 |
-| 25 | Реализовать ICombatant на PlayerController | PLR-H01 |
-| 26 | Объединить PlayerSaveData | PLR-H02 |
-| 27 | Добавить defenderElement в DefenderParams | CMB-H05 |
-| 28 | Fix QiController.coreCapacity stale after breakthrough | QI-H02 |
-| 29 | Fix ConductivityModifier dead code | BUF-C03 |
-| 30 | Добавить очистку GameEvents при смене сцены | CORE-H02 |
-| 31 | Fix Duplicate enums (FactionRelationType, LocationType) | DAT-C01, DAT-C02 |
-| 32 | JsonUtility Dictionary serialization wrapper | SAV-H01 и др. |
-| 33 | Fix LocationController.CompleteTravel | WLD-C01 |
-| 34 | Fix NPCAI/TimeController/EventController game time | WLD-H01, WLD-H02, WLD-H04, NPC-H05 |
-| 35 | Fix Charger Qi int→long | CHR-C02 |
+| 25 | Заменить FindFirstObjectByType на ServiceLocator (19 файлов) | WLD-M05 |
+| 26 | Реализовать формулу мастерства из документации | CMB-H01 |
+| 27 | Уточнить единицу cooldown | CMB-H02 |
+| 28 | Разделить totalDamageDealt/Taken | CMB-H03 |
+| 29 | Реализовать ICombatant на PlayerController | PLR-H01 |
+| 30 | Объединить PlayerSaveData | PLR-H02 |
+| 31 | Добавить defenderElement в DefenderParams | CMB-H05 |
+| 32 | Fix QiController.coreCapacity stale after breakthrough | QI-H02 |
+| 33 | Fix ConductivityModifier dead code | BUF-C03 |
+| 34 | Добавить очистку GameEvents при смене сцены | CORE-H02 |
+| 35 | Fix Duplicate enums (FactionRelationType, LocationType) | DAT-C01, DAT-C02 |
+| 36 | JsonUtility Dictionary serialization wrapper | SAV-H01 и др. |
+| 37 | Fix LocationController.CompleteTravel | WLD-C01 |
+| 38 | Fix NPCAI/TimeController/EventController game time | WLD-H01, WLD-H02, WLD-H04, NPC-H05 |
+| 39 | Fix Charger Qi int→long | CHR-C02 |
+| 40 | FormationArrayEffect: интегрировать с BuffManager вместо заглушек | FRM-H03 |
+| 41 | EquipmentController: реализовать CanEquip с требованиями | INV-H03 |
+| 42 | ResourcePickup/DestructibleObject: интеграция с InventoryController | TIL-H01 |
+| 43 | Принять решение Модель А/Б для ёмкости ядра Qi | ARC-H01 |
 
 ### Phase 2: Средние проблемы (качество/оптимизация)
 
 | # | Задача | ID |
 |---|--------|-----|
-| 36 | VFXPool per-prefab limits + prewarm | CORE-H03, CORE-M05, CORE-M06 |
-| 37 | Разделить Disposition на Attitude + PersonalityTrait | CORE-M01 |
-| 38 | Fix EquipmentSlot под документацию | CORE-M02 |
-| 39 | NPCAI threat decay + cultivating Qi | NPC-M01, NPC-M02 |
-| 40 | SleepSystem: fix recovery formulas + dead states | PLR-M01..M06 |
-| 41 | Save system: полная интеграция всех подсистем | SAV-H03 |
-| 42 | Formation: fix IsAlly + layer mask + persistent IDs | FRM-H01, FRM-H02, FRM-M02 |
-| 43 | Interaction/Dialogue: save/load + scanning interval | DLG-M01..M04 |
-| 44 | UI: GameState enum + Qi sliders + old Input | UI-H01, UI-H04, UI-H06 |
-| 45 | Remove dead code (SaveFileHandler, Naming, buffers) | SAV-M01, GEN-H03, CMB-L02 |
+| 44 | VFXPool per-prefab limits + prewarm | CORE-H03, CORE-M05, CORE-M06 |
+| 45 | Разделить Disposition на Attitude + PersonalityTrait | CORE-M01 |
+| 46 | Fix EquipmentSlot под документацию | CORE-M02 |
+| 47 | NPCAI threat decay + cultivating Qi | NPC-M01, NPC-M02 |
+| 48 | SleepSystem: fix recovery formulas + dead states | PLR-M01..M06 |
+| 49 | Save system: полная интеграция всех подсистем + FormationSaveData, BuffSaveData, TileSaveData, ChargerSaveData | SAV-H03 |
+| 50 | Formation: fix IsAlly + layer mask + persistent IDs | FRM-H01, FRM-H02, FRM-M02 |
+| 51 | Interaction/Dialogue: save/load + scanning interval | DLG-M01..M04 |
+| 52 | HitDetector.SizeClass: интегрировать в формулу попадания | CMB-M07 |
+| 53 | InventoryUI: реализовать UseItem, сортировку, детали | UI-M06 |
+| 54 | Документация: обновить ARCHITECTURE.md, SAVE_SYSTEM.md, COMBAT_SYSTEM.md | DOC-M01, DOC-M02, DOC-M03 |
+| 55 | Weather System и Loot Generation: принять решение о реализации | ARC-C01 |
+| 56 | UI: GameState enum + Qi sliders + old Input | UI-H01, UI-H04, UI-H06 |
+| 57 | Remove dead code (SaveFileHandler, Naming, buffers) | SAV-M01, GEN-H03, CMB-L02 |
 
 ---
 
-## Приложение A: Маппинг ID
+## 26. Приложение A: Маппинг ID
 
 ### Маппинг S1 (основной аудит) → Консолидированный
 
