@@ -31,7 +31,8 @@ namespace CultivationGame.Formation
         public FormationParticipant(GameObject practitioner, float rate)
         {
             this.practitioner = practitioner;
-            this.practitionerId = practitioner.GetInstanceID().ToString();
+            // FIX FRM-M02: Use persistent ID (name) instead of GetInstanceID() which changes across sessions (2026-04-11)
+            this.practitionerId = practitioner != null ? practitioner.name : "";
             this.contributionRate = rate;
             this.totalContributed = 0;
             this.isActive = true;
@@ -64,6 +65,10 @@ namespace CultivationGame.Formation
         [Header("Data")]
         [SerializeField] private FormationData formationData;
         [SerializeField] private FormationCoreData coreData;
+        
+        // FIX FRM-H01: Layer mask for effect target detection (2026-04-11)
+        [Header("Detection")]
+        [SerializeField] private LayerMask effectLayerMask = -1; // Default: everything
 
         #endregion
 
@@ -213,7 +218,8 @@ namespace CultivationGame.Formation
             coreData = core;
             center = position;
             owner = creator;
-            ownerId = creator != null ? creator.GetInstanceID().ToString() : "";
+            // FIX FRM-M02: Use persistent ID (name) instead of GetInstanceID() which changes across sessions (2026-04-11)
+            ownerId = creator != null ? creator.name : "";
 
             // Настройка радиуса
             currentRadius = data.effectRadius;
@@ -401,7 +407,14 @@ namespace CultivationGame.Formation
             if (stage != FormationStage.Filling && stage != FormationStage.Active)
                 return 0;
 
-            long accepted = qiPool.AcceptQi(amount, transferRate);
+            // FIX FRM-M01: Check maxCapacity before accepting Qi (2026-04-11)
+            if (qiPool.IsFull) return 0;
+            
+            // Clamp to remaining capacity
+            long remaining = qiPool.capacity - qiPool.currentQi;
+            long clampedAmount = Math.Min(amount, remaining);
+
+            long accepted = qiPool.AcceptQi(clampedAmount, transferRate);
 
             // Записываем вклад участника
             var participant = participants.Find(p => p.practitioner == practitioner);
@@ -452,7 +465,8 @@ namespace CultivationGame.Formation
             if (formationData == null) return;
 
             // Находим цели в радиусе
-            Collider2D[] hits = Physics2D.OverlapCircleAll(center, currentRadius);
+            // FIX FRM-H01: Add layer mask to OverlapCircleAll (2026-04-11)
+            Collider2D[] hits = Physics2D.OverlapCircleAll(center, currentRadius, effectLayerMask);
 
             int allyCount = 0;
             int enemyCount = 0;

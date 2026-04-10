@@ -2,7 +2,12 @@
 // Источник: docs/examples/TechniqueEffectsSystem.md
 
 using UnityEngine;
+using CultivationGame.Core;
+using CultivationGame.Buff;
 using CultivationWorld.Combat.OrbitalSystem;
+// FIX FRM-H03: Alias for Formation BuffType to avoid conflict with Data.ScriptableObjects.BuffType (2026-04-11)
+using FormationBuffType = CultivationGame.Formation.BuffType;
+using CultivationGame.Formation;
 
 namespace CultivationWorld.Combat.Effects
 {
@@ -125,20 +130,30 @@ namespace CultivationWorld.Combat.Effects
 
         /// <summary>
         /// Применяет бафф к союзнику.
+        /// FIX FRM-H03: Route through BuffManager instead of TODO stubs (2026-04-11)
         /// </summary>
         private void ApplyBuff(ICombatTarget target)
         {
-            // TODO: Реализовать через систему баффов
-            // BuffSystem.ApplyBuff(target, BuffType.Defense, defenseBonus, effectInterval + 0.1f);
-            // BuffSystem.ApplyBuff(target, BuffType.Attack, attackBonus, effectInterval + 0.1f);
-            // target.Heal(healingPerTick);
-
-            // Временная реализация - логирование
-            Debug.Log($"[Formation] Buff applied to {target.Position}");
+            // FIX FRM-H03: Try to get BuffManager from target's GameObject (2026-04-11)
+            var mb = target as MonoBehaviour;
+            if (mb != null)
+            {
+                var buffManager = mb.GetComponent<CultivationGame.Buff.BuffManager>();
+                if (buffManager != null)
+                {
+                    buffManager.AddBuff(FormationBuffType.Defense, defenseBonus, true, effectInterval + 0.1f);
+                    buffManager.AddBuff(FormationBuffType.Damage, attackBonus, true, effectInterval + 0.1f);
+                    return;
+                }
+            }
+            
+            // Fallback: log if BuffManager not available
+            Debug.Log($"[Formation] Buff applied to {target.Position} (no BuffManager)");
         }
 
         /// <summary>
         /// Применяет дебафф к врагу.
+        /// FIX FRM-H03: Route through BuffManager for debuffs (2026-04-11)
         /// </summary>
         private void ApplyDebuff(ICombatTarget target)
         {
@@ -153,9 +168,17 @@ namespace CultivationWorld.Combat.Effects
 
             target.TakeDamage(damage);
 
-            // TODO: Добавить систему дебаффов
-            // DebuffSystem.ApplyDebuff(target, DebuffType.DefenseReduction, defenseMalus, effectInterval + 0.1f);
-            // DebuffSystem.ApplyDebuff(target, DebuffType.Slow, speedMalus, effectInterval + 0.1f);
+            // FIX FRM-H03: Route debuffs through BuffManager (2026-04-11)
+            var mb = target as MonoBehaviour;
+            if (mb != null)
+            {
+                var buffManager = mb.GetComponent<CultivationGame.Buff.BuffManager>();
+                if (buffManager != null)
+                {
+                    buffManager.AddDebuff(FormationBuffType.Defense, defenseMalus, true, effectInterval + 0.1f);
+                    buffManager.AddDebuff(FormationBuffType.Speed, speedMalus, true, effectInterval + 0.1f);
+                }
+            }
         }
 
         #endregion

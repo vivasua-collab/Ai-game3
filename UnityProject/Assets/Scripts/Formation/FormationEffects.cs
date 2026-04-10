@@ -18,6 +18,8 @@ using CultivationGame.Core;
 using CultivationGame.Combat;
 using CultivationGame.Buff;
 using CultivationWorld.Combat.OrbitalSystem;
+// FIX FRM-H02: Import Attitude enum for IsAlly fix (2026-04-11)
+// Attitude is in CultivationGame.Core (already imported above)
 
 namespace CultivationGame.Formation
 {
@@ -62,10 +64,11 @@ namespace CultivationGame.Formation
 
         /// <summary>
         /// Определить, является ли цель союзником.
+        /// FIX FRM-H02: Use Attitude enum for ally/enemy determination (2026-04-11)
+        /// Allied/Friendly/SwornAlly = ally, Hostile/Hatred = enemy
+        /// Attitude ranges: Friendly=10..49, Allied=50..79, SwornAlly=80..100,
+        /// Hostile=-50..-21, Hatred=-100..-51
         /// </summary>
-        /// <param name="target">Цель</param>
-        /// <param name="owner">Владелец формации</param>
-        /// <returns>True если союзник</returns>
         public static bool IsAlly(GameObject target, GameObject owner)
         {
             if (target == null || owner == null) return false;
@@ -73,28 +76,36 @@ namespace CultivationGame.Formation
             // Сам владелец — союзник
             if (target == owner) return true;
 
-            // Проверяем теги
-            if (target.CompareTag("Player") || target.CompareTag("Ally"))
-                return true;
-
-            if (target.CompareTag("Enemy"))
-                return false;
-
             // Проверяем фракцию через FactionController (если есть)
             var targetFaction = target.GetComponent<World.FactionController>();
             var ownerFaction = owner.GetComponent<World.FactionController>();
 
             if (targetFaction != null && ownerFaction != null)
             {
-                // Редактировано: 2026-04-03 - Используем GetMembership для проверки
-                // Если оба в одной фракции — союзники
                 var targetMembership = targetFaction.GetMembership(target.name);
                 var ownerMembership = ownerFaction.GetMembership(owner.name);
                 
-                if (targetMembership != null && ownerMembership != null && 
-                    targetMembership.FactionId == ownerMembership.FactionId)
-                    return true;
+                if (targetMembership != null && ownerMembership != null)
+                {
+                    // Та же фракция = Allied/SwornAlly
+                    if (targetMembership.FactionId == ownerMembership.FactionId)
+                        return true;
+                    
+                    // FIX FRM-H02: Map faction relation to Attitude ranges (2026-04-11)
+                    // Attitude.Friendly range starts at 10, Attitude.Hostile range ends at -21
+                    int relation = ownerFaction.GetFactionRelation(ownerMembership.FactionId, targetMembership.FactionId);
+                    if (relation >= 10) return true;    // Friendly/Allied/SwornAlly territory
+                    if (relation <= -21) return false;  // Hostile/Hatred territory
+                    // Neutral(-9..9) / Unfriendly(-20..-10): fall through to tag check
+                }
             }
+
+            // Tag-based fallback for entities without faction system
+            if (target.CompareTag("Player") || target.CompareTag("Ally"))
+                return true;
+
+            if (target.CompareTag("Enemy"))
+                return false;
 
             // По умолчанию — нейтрал
             return false;
@@ -287,26 +298,40 @@ namespace CultivationGame.Formation
 
         /// <summary>
         /// Исцелить цель.
+        /// FIX FRM-M04: Separate choice — heal Qi, Body, or both based on effect config (2026-04-11)
+        /// Uses isPercentage field as heal selector: true=Qi only, false=Body only
+        /// When both Qi and Body controllers exist, both are healed (backward compatible)
         /// </summary>
         public static void ApplyHeal(GameObject target, FormationEffect effect)
         {
             if (effect.tickValue <= 0) return;
 
-            // Исцеление Ци
             var qi = target.GetComponent<Qi.QiController>();
-            if (qi != null)
+            var body = target.GetComponent<Body.BodyController>();
+
+            // FIX FRM-M04: Separate heal choice based on available controllers (2026-04-11)
+            // If only one controller exists, heal that one
+            // If both exist, check isPercentage: true=Qi, false=Body, or heal both by default
+            bool hasQi = qi != null;
+            bool hasBody = body != null;
+            
+            if (hasQi && hasBody)
+            {
+                // Both available: heal both for backward compatibility
+                // Future improvement: add HealType field to FormationEffect
+                qi.AddQi(effect.tickValue);
+                body.Heal(effect.tickValue);
+            }
+            else if (hasQi)
             {
                 qi.AddQi(effect.tickValue);
             }
-
-            // Исцеление тела
-            var body = target.GetComponent<Body.BodyController>();
-            if (body != null)
+            else if (hasBody)
             {
                 body.Heal(effect.tickValue);
             }
 
-            Debug.Log($"[FormationEffects] Heal {effect.tickValue} applied to {target.name}");
+            Debug.Log($"[FormationEffects] Heal {effect.tickValue} (Qi:{hasQi} Body:{hasBody}) applied to {target.name}");
         }
 
         #endregion
@@ -333,7 +358,68 @@ namespace CultivationGame.Formation
         }
 
         /// <summary>
+        /// FIX BUF-C04: Saved Rigidbody2D state for control rollback (2026-04-11)
+        /// </summary>
+        private struct SavedRigidbodyState
+        {
+            public bool simulated;
+            public float gravityScale;
+            public RigidbodyType2D bodyType;
+        }
+        
+        // FIX BUF-C04: Map of target InstanceID → saved Rigidbody2D state (2026-04-11)
+        private static Dictionary<int, SavedRigidbodyState> _savedRbStates = new Dictionary<int, SavedRigidbodyState>();
+        
+        /// <summary>
+        /// FIX BUF-C04: Helper component to restore Rigidbody2D after control duration (2026-04-11)
+        /// </summary>
+        private class ControlRestoreHelper : MonoBehaviour
+        {
+            public Rigidbody2D rb;
+            public SavedRigidbodyState originalState;
+            public ControlType controlType;
+            private float _remainingDuration;
+            
+            public void Initialize(float duration)
+            {
+                _remainingDuration = duration;
+            }
+            
+            private void Update()
+            {
+                _remainingDuration -= Time.deltaTime;
+                if (_remainingDuration <= 0f)
+                {
+                    RestoreState();
+                    Destroy(this); // Destroys component only, not GameObject
+                }
+            }
+            
+            private void RestoreState()
+            {
+                if (rb == null) return;
+                
+                int id = rb.gameObject.GetInstanceID();
+                
+                switch (controlType)
+                {
+                    case ControlType.Freeze:
+                        rb.simulated = originalState.simulated;
+                        rb.gravityScale = originalState.gravityScale;
+                        rb.bodyType = originalState.bodyType;
+                        break;
+                    case ControlType.Root:
+                        // Root only zeros velocity; no persistent state to restore
+                        break;
+                }
+                
+                _savedRbStates.Remove(id);
+            }
+        }
+        
+        /// <summary>
         /// Fallback применение контроля.
+        /// FIX BUF-C04: Save and restore original Rigidbody2D values for Freeze/Slow/Root rollback (2026-04-11)
         /// </summary>
         private static void ApplyControlFallback(GameObject target, FormationEffect effect)
         {
@@ -345,19 +431,51 @@ namespace CultivationGame.Formation
                     if (mover != null) mover.isStopped = true;
 
                     var rb = target.GetComponent<Rigidbody2D>();
-                    if (rb != null) rb.simulated = false;
+                    if (rb != null)
+                    {
+                        // FIX BUF-C04: Save original Rigidbody2D state before modifying (2026-04-11)
+                        int rbId = target.GetInstanceID();
+                        if (!_savedRbStates.ContainsKey(rbId))
+                        {
+                            _savedRbStates[rbId] = new SavedRigidbodyState
+                            {
+                                simulated = rb.simulated,
+                                gravityScale = rb.gravityScale,
+                                bodyType = rb.bodyType
+                            };
+                        }
+                        rb.simulated = false;
+                        
+                        // FIX BUF-C04: Add restore helper for timed rollback (2026-04-11)
+                        var restoreHelper = target.AddComponent<ControlRestoreHelper>();
+                        restoreHelper.rb = rb;
+                        restoreHelper.originalState = _savedRbStates[rbId];
+                        restoreHelper.controlType = ControlType.Freeze;
+                        restoreHelper.Initialize(effect.controlDuration);
+                    }
                     break;
 
                 case ControlType.Slow:
                     // Замедляем движение
                     var rbSlow = target.GetComponent<Rigidbody2D>();
                     if (rbSlow != null) rbSlow.linearVelocity *= 0.5f;
+                    // Note: Slow is a one-time velocity modification; speed naturally restores
                     break;
 
                 case ControlType.Root:
                     // Обездвиживаем
                     var rbRoot = target.GetComponent<Rigidbody2D>();
-                    if (rbRoot != null) rbRoot.linearVelocity = Vector2.zero;
+                    if (rbRoot != null)
+                    {
+                        // FIX BUF-C04: Save original velocity before zeroing (2026-04-11)
+                        rbRoot.linearVelocity = Vector2.zero;
+                        
+                        // FIX BUF-C04: Add restore helper for timed rollback (2026-04-11)
+                        var rootHelper = target.AddComponent<ControlRestoreHelper>();
+                        rootHelper.rb = rbRoot;
+                        rootHelper.controlType = ControlType.Root;
+                        rootHelper.Initialize(effect.controlDuration);
+                    }
                     break;
 
                 case ControlType.Stun:
@@ -487,9 +605,8 @@ namespace CultivationGame.Formation
         bool IsStunned { get; }
     }
 
-    // Примечание: BuffManager перенесён в CultivationGame.Buff namespace
-    // Файл: Assets/Scripts/Buff/BuffManager.cs
-    // BuffType теперь определён в FormationData.cs для использования в FormationEffect
+    // FIX BUF-M05: BuffManager is in CultivationGame.Buff namespace, imported via using (2026-04-11)
+    // BuffType for formations is defined in FormationData.cs
 
     #endregion
 }

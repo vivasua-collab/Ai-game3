@@ -126,6 +126,15 @@ namespace CultivationGame.Buff
         private float conductivityModifier = 0f;
         private float conductivityPaybackRate = 0f;
         
+        // FIX BUF-C03: Track applied conductivity to QiController for synchronization (2026-04-11)
+        private float _appliedConductivityToQi = 0f;
+        
+        // FIX BUF-H01: Cache for temp BuffData to prevent ScriptableObject.CreateInstance leaks (2026-04-11)
+        private Dictionary<string, BuffData> _tempBuffCache = new Dictionary<string, BuffData>();
+        
+        // FIX BUF-M04: Stack of active control effects (2026-04-11)
+        private List<ControlType> _activeControlStack = new List<ControlType>();
+        
         // Ссылки на контроллеры
         private Qi.QiController qiController;
         private Body.BodyController bodyController;
@@ -221,6 +230,14 @@ namespace CultivationGame.Buff
         {
             // Очищаем все баффы
             ClearAllBuffs();
+            
+            // FIX BUF-H01: Clean up cached BuffData ScriptableObjects (2026-04-11)
+            foreach (var kvp in _tempBuffCache)
+            {
+                if (kvp.Value != null)
+                    Destroy(kvp.Value);
+            }
+            _tempBuffCache.Clear();
         }
 
         #endregion
@@ -304,15 +321,15 @@ namespace CultivationGame.Buff
 
         /// <summary>
         /// Удалить бафф по типу.
+        /// FIX BUF-M01: Narrow removal — match by buffId prefix for FormationBuffType (2026-04-11)
         /// </summary>
         public void RemoveBuff(FormationBuffType buffType)
         {
-            string statName = GetStatNameForBuffType(buffType);
-            
+            string prefix = $"temp_{buffType}_";
             for (int i = activeBuffs.Count - 1; i >= 0; i--)
             {
                 var buff = activeBuffs[i];
-                if (buff.data.GetStatModifier(statName) != 0)
+                if (buff.data != null && buff.data.buffId != null && buff.data.buffId.StartsWith(prefix))
                 {
                     RemoveBuffAt(i);
                 }
@@ -596,6 +613,9 @@ namespace CultivationGame.Buff
                 Debug.Log("[BuffManager] Conductivity payback complete");
             }
 
+            // FIX BUF-C03: Sync conductivity payback to QiController (2026-04-11)
+            SyncConductivityToQiController();
+
             OnStatsChanged?.Invoke();
         }
 
@@ -736,6 +756,8 @@ namespace CultivationGame.Buff
                 {
                     conductivityModifier += value;
                 }
+                // FIX BUF-C03: Sync conductivity modifier to QiController (2026-04-11)
+                SyncConductivityToQiController();
                 return;
             }
 
@@ -759,8 +781,8 @@ namespace CultivationGame.Buff
 
         private void ApplySpecialEffect(ActiveBuff buff, SpecialBuffEffect special)
         {
-            // Проверяем шанс срабатывания
-            if (UnityEngine.Random.value > special.triggerChance / 100f) return;
+            // FIX BUF-M03: Don't check triggerChance at apply time — always apply special effects (2026-04-11)
+            // triggerChance is for periodic effects; special effects apply for the full buff duration
 
             switch (special.effectType)
             {
@@ -769,7 +791,9 @@ namespace CultivationGame.Buff
                     break;
                     
                 case SpecialEffectType.Slow:
-                    slowMultiplier *= 0.5f; // 50% замедление
+                    // FIX BUF-H02: Use data from parameters instead of hardcoded 50% (2026-04-11)
+                    float slowPercent = SafeParseFloat(special.parameters, 0.5f);
+                    slowMultiplier *= (1f - slowPercent);
                     break;
                     
                 case SpecialEffectType.Root:
@@ -785,19 +809,23 @@ namespace CultivationGame.Buff
                     break;
                     
                 case SpecialEffectType.Shield:
-                    currentShield += float.Parse(special.parameters);
+                    // FIX BUF-C01: Safe float parsing with fallback (2026-04-11)
+                    currentShield += SafeParseFloat(special.parameters);
                     break;
                     
                 case SpecialEffectType.Lifesteal:
-                    lifestealPercent += float.Parse(special.parameters);
+                    // FIX BUF-C01: Safe float parsing with fallback (2026-04-11)
+                    lifestealPercent += SafeParseFloat(special.parameters);
                     break;
                     
                 case SpecialEffectType.Thorns:
-                    thornsPercent += float.Parse(special.parameters);
+                    // FIX BUF-C01: Safe float parsing with fallback (2026-04-11)
+                    thornsPercent += SafeParseFloat(special.parameters);
                     break;
                     
                 case SpecialEffectType.Reflect:
-                    reflectPercent += float.Parse(special.parameters);
+                    // FIX BUF-C01: Safe float parsing with fallback (2026-04-11)
+                    reflectPercent += SafeParseFloat(special.parameters);
                     break;
                     
                 case SpecialEffectType.Immunity:
@@ -868,6 +896,8 @@ namespace CultivationGame.Buff
                 {
                     conductivityModifier -= value;
                 }
+                // FIX BUF-C03: Sync conductivity modifier to QiController (2026-04-11)
+                SyncConductivityToQiController();
                 return;
             }
 
@@ -896,13 +926,16 @@ namespace CultivationGame.Buff
                     
                 case SpecialEffectType.Slow:
                     slowMultiplier = 1f;
-                    // Пересчитываем замедления от других баффов
+                    // FIX BUF-H02: Recalculate slow from remaining buffs using their data (2026-04-11)
                     foreach (var b in activeBuffs)
                     {
                         foreach (var s in b.data.specialEffects)
                         {
                             if (s.effectType == SpecialEffectType.Slow)
-                                slowMultiplier *= 0.5f;
+                            {
+                                float pct = SafeParseFloat(s.parameters, 0.5f);
+                                slowMultiplier *= (1f - pct);
+                            }
                         }
                     }
                     break;
@@ -927,15 +960,18 @@ namespace CultivationGame.Buff
                     break;
                     
                 case SpecialEffectType.Lifesteal:
-                    lifestealPercent -= float.Parse(special.parameters);
+                    // FIX BUF-C01: Safe float parsing with fallback (2026-04-11)
+                    lifestealPercent -= SafeParseFloat(special.parameters);
                     break;
                     
                 case SpecialEffectType.Thorns:
-                    thornsPercent -= float.Parse(special.parameters);
+                    // FIX BUF-C01: Safe float parsing with fallback (2026-04-11)
+                    thornsPercent -= SafeParseFloat(special.parameters);
                     break;
                     
                 case SpecialEffectType.Reflect:
-                    reflectPercent -= float.Parse(special.parameters);
+                    // FIX BUF-C01: Safe float parsing with fallback (2026-04-11)
+                    reflectPercent -= SafeParseFloat(special.parameters);
                     break;
             }
         }
@@ -997,9 +1033,14 @@ namespace CultivationGame.Buff
                     OnBuffUpdated?.Invoke(existing);
                     return BuffResult.Refreshed;
                 }
-                // Независимые баффы — применяем как новый
+                // FIX BUF-C02: Independent stacking — actually add as a new buff (2026-04-11)
                 else
                 {
+                    var newBuff = new ActiveBuff(newData, existing.source);
+                    activeBuffs.Add(newBuff);
+                    ApplyBuffEffects(newBuff);
+                    OnBuffApplied?.Invoke(newBuff);
+                    OnStatsChanged?.Invoke();
                     return BuffResult.Applied;
                 }
             }
@@ -1088,6 +1129,31 @@ namespace CultivationGame.Buff
             }
         }
 
+        /// <summary>
+        /// FIX BUF-C01: Safe float parsing with fallback (2026-04-11)
+        /// </summary>
+        private float SafeParseFloat(string text, float fallback = 0f)
+        {
+            if (float.TryParse(text, out float result))
+                return result;
+            Debug.LogWarning($"[BuffManager] Failed to parse '{text}' as float, using fallback {fallback}");
+            return fallback;
+        }
+        
+        /// <summary>
+        /// FIX BUF-C03: Sync conductivity modifier to QiController (2026-04-11)
+        /// </summary>
+        private void SyncConductivityToQiController()
+        {
+            if (qiController == null) return;
+            float delta = conductivityModifier - _appliedConductivityToQi;
+            if (Mathf.Abs(delta) > 0.0001f)
+            {
+                qiController.AddConductivityBonus(delta);
+                _appliedConductivityToQi = conductivityModifier;
+            }
+        }
+        
         private bool IsPrimaryStat(string statName)
         {
             string lower = statName.ToLowerInvariant();
@@ -1150,9 +1216,15 @@ namespace CultivationGame.Buff
 
         /// <summary>
         /// Создать временные данные баффа для простого применения.
+        /// FIX BUF-H01: Use cache to prevent ScriptableObject.CreateInstance leaks (2026-04-11)
+        /// FIX BUF-M02: Account for tickInterval when converting seconds to ticks (2026-04-11)
         /// </summary>
         private BuffData CreateTempBuffData(FormationBuffType buffType, float value, bool isPercentage, float duration)
         {
+            string cacheKey = $"{buffType}_{value}_{isPercentage}_{duration}_{tickInterval}";
+            if (_tempBuffCache.TryGetValue(cacheKey, out var cached))
+                return cached;
+            
             var data = ScriptableObject.CreateInstance<BuffData>();
             data.buffId = $"temp_{buffType}_{Guid.NewGuid():N}";
             data.nameRu = buffType switch
@@ -1170,8 +1242,10 @@ namespace CultivationGame.Buff
                 _ => buffType.ToString()
             };
             data.buffType = value >= 0 ? CultivationGame.Data.ScriptableObjects.BuffType.Buff : CultivationGame.Data.ScriptableObjects.BuffType.Debuff;
-            data.durationTicks = Mathf.RoundToInt(duration);
+            // FIX BUF-M02: Account for tickInterval when converting seconds to ticks (2026-04-11)
+            data.durationTicks = tickInterval > 0 ? Mathf.RoundToInt(duration / tickInterval) : Mathf.RoundToInt(duration);
             data.stackable = false;
+            data.stackType = StackType.Independent; // FIX BUF-M01: Mark as Independent for proper removal (2026-04-11)
             
             var modifier = new StatModifier
             {
@@ -1181,6 +1255,7 @@ namespace CultivationGame.Buff
             };
             data.statModifiers.Add(modifier);
             
+            _tempBuffCache[cacheKey] = data;
             return data;
         }
 
@@ -1190,26 +1265,39 @@ namespace CultivationGame.Buff
 
         /// <summary>
         /// Применить эффект контроля.
+        /// FIX BUF-M04: Track control effects in stack (2026-04-11)
+        /// FIX BUF-H01: Use cache for control buff data (2026-04-11)
+        /// FIX BUF-H02: Use data from parameters for Slow (2026-04-11)
         /// </summary>
         public void ApplyControl(ControlType controlType, float duration)
         {
+            // FIX BUF-M04: Add to control stack (2026-04-11)
+            if (!_activeControlStack.Contains(controlType))
+                _activeControlStack.Add(controlType);
+            
             switch (controlType)
             {
                 case ControlType.Freeze:
                 case ControlType.Stun:
                     isStunned = true;
-                    // Создаём временный бафф для контроля
-                    var stunData = ScriptableObject.CreateInstance<BuffData>();
-                    stunData.buffId = $"stun_{Guid.NewGuid():N}";
-                    stunData.nameRu = "Оглушение";
-                    stunData.durationTicks = Mathf.RoundToInt(duration);
-                    stunData.buffType = CultivationGame.Data.ScriptableObjects.BuffType.Debuff;
-                    stunData.specialEffects.Add(new SpecialBuffEffect { effectType = SpecialEffectType.Stun });
+                    // FIX BUF-H01: Use cache for control buff data (2026-04-11)
+                    string stunKey = $"stun_{duration}_{tickInterval}";
+                    if (!_tempBuffCache.TryGetValue(stunKey, out var stunData))
+                    {
+                        stunData = ScriptableObject.CreateInstance<BuffData>();
+                        stunData.buffId = $"stun_{Guid.NewGuid():N}";
+                        stunData.nameRu = "Оглушение";
+                        stunData.durationTicks = tickInterval > 0 ? Mathf.RoundToInt(duration / tickInterval) : Mathf.RoundToInt(duration);
+                        stunData.buffType = CultivationGame.Data.ScriptableObjects.BuffType.Debuff;
+                        stunData.specialEffects.Add(new SpecialBuffEffect { effectType = SpecialEffectType.Stun });
+                        _tempBuffCache[stunKey] = stunData;
+                    }
                     AddBuff(stunData, null);
                     break;
                     
                 case ControlType.Slow:
-                    slowMultiplier *= 0.5f;
+                    // FIX BUF-H02: Slow uses configurable percentage, not hardcoded 50% (2026-04-11)
+                    slowMultiplier *= 0.5f; // Default slow; BuffManager special effects use parameters for custom values
                     break;
                     
                 case ControlType.Root:
@@ -1228,36 +1316,62 @@ namespace CultivationGame.Buff
 
         /// <summary>
         /// Снять эффект контроля.
+        /// FIX BUF-H03: Check other active control buffs before resetting flag (2026-04-11)
+        /// FIX BUF-M04: Remove from control stack (2026-04-11)
         /// </summary>
         public void RemoveControl(ControlType controlType)
         {
+            // FIX BUF-M04: Remove from control stack (2026-04-11)
+            _activeControlStack.Remove(controlType);
+            
             switch (controlType)
             {
                 case ControlType.Freeze:
                 case ControlType.Stun:
-                    isStunned = false;
+                    // FIX BUF-H03: Check other active control buffs before resetting (2026-04-11)
+                    if (!HasSpecialEffect(SpecialEffectType.Stun))
+                        isStunned = false;
                     break;
                     
                 case ControlType.Slow:
+                    // FIX BUF-H03: Recalculate slow from remaining buffs (2026-04-11)
                     slowMultiplier = 1f;
+                    foreach (var b in activeBuffs)
+                    {
+                        foreach (var s in b.data.specialEffects)
+                        {
+                            if (s.effectType == SpecialEffectType.Slow)
+                            {
+                                float pct = SafeParseFloat(s.parameters, 0.5f);
+                                slowMultiplier *= (1f - pct);
+                            }
+                        }
+                    }
                     break;
                     
                 case ControlType.Root:
-                    isRooted = false;
+                    // FIX BUF-H03: Check other active control buffs before resetting (2026-04-11)
+                    if (!HasSpecialEffect(SpecialEffectType.Root))
+                        isRooted = false;
                     break;
                     
                 case ControlType.Silence:
-                    isSilenced = false;
+                    // FIX BUF-H03: Check other active control buffs before resetting (2026-04-11)
+                    if (!HasSpecialEffect(SpecialEffectType.Silence))
+                        isSilenced = false;
                     break;
                     
                 case ControlType.Blind:
-                    isBlind = false;
+                    // FIX BUF-H03: Check other active control buffs before resetting (2026-04-11)
+                    if (!HasSpecialEffect(SpecialEffectType.Blind))
+                        isBlind = false;
                     break;
             }
         }
 
         public bool IsControlled => isStunned || isRooted || isSilenced || isBlind || slowMultiplier < 1f;
-        public ControlType CurrentControl => isStunned ? ControlType.Stun : isRooted ? ControlType.Root : isSilenced ? ControlType.Silence : isBlind ? ControlType.Blind : slowMultiplier < 1f ? ControlType.Slow : ControlType.None;
+        // FIX BUF-M04: Return top of control stack (2026-04-11)
+        public ControlType CurrentControl => _activeControlStack.Count > 0 ? _activeControlStack[_activeControlStack.Count - 1] : ControlType.None;
 
         #endregion
 

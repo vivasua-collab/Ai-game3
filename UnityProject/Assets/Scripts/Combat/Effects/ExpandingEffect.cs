@@ -4,6 +4,8 @@
 
 using UnityEngine;
 using CultivationGame.Core;
+// FIX: Add explicit using for OrbitalSystem types (ICombatTarget, DamageInfo) (2026-04-11)
+using CultivationWorld.Combat.OrbitalSystem;
 
 namespace CultivationWorld.Combat.Effects
 {
@@ -123,7 +125,8 @@ namespace CultivationWorld.Combat.Effects
         /// </summary>
         protected virtual void ProcessTarget(Collider2D target)
         {
-            var combatTarget = target.GetComponent<OrbitalSystem.ICombatTarget>();
+            // FIX: Use fully qualified ICombatTarget from OrbitalSystem namespace (2026-04-11)
+            var combatTarget = target.GetComponent<ICombatTarget>();
             if (combatTarget == null) return;
 
             // Проверяем дружественность/враждебность
@@ -138,8 +141,9 @@ namespace CultivationWorld.Combat.Effects
 
         /// <summary>
         /// Применяет эффект к цели.
+        /// FIX: Use ICombatTarget from imported OrbitalSystem namespace (2026-04-11)
         /// </summary>
-        protected virtual void ApplyEffect(OrbitalSystem.ICombatTarget target)
+        protected virtual void ApplyEffect(ICombatTarget target)
         {
             // Редактировано: 2026-04-03
             switch (element)
@@ -171,10 +175,11 @@ namespace CultivationWorld.Combat.Effects
 
         /// <summary>
         /// Применяет эффект яда.
+        /// FIX: Use ICombatTarget from imported OrbitalSystem namespace (2026-04-11)
         /// </summary>
-        protected virtual void ApplyPoison(OrbitalSystem.ICombatTarget target)
+        protected virtual void ApplyPoison(ICombatTarget target)
         {
-            var damage = new OrbitalSystem.DamageInfo
+            var damage = new DamageInfo
             {
                 Amount = baseDamage,
                 Element = Element.Poison,
@@ -187,10 +192,11 @@ namespace CultivationWorld.Combat.Effects
 
         /// <summary>
         /// Применяет огненный урон.
+        /// FIX: Use ICombatTarget from imported OrbitalSystem namespace (2026-04-11)
         /// </summary>
-        protected virtual void ApplyFireDamage(OrbitalSystem.ICombatTarget target)
+        protected virtual void ApplyFireDamage(ICombatTarget target)
         {
-            var damage = new OrbitalSystem.DamageInfo
+            var damage = new DamageInfo
             {
                 Amount = baseDamage,
                 Element = Element.Fire,
@@ -203,10 +209,11 @@ namespace CultivationWorld.Combat.Effects
 
         /// <summary>
         /// Применяет водный эффект.
+        /// FIX: Use ICombatTarget from imported OrbitalSystem namespace (2026-04-11)
         /// </summary>
-        protected virtual void ApplyWaterEffect(OrbitalSystem.ICombatTarget target)
+        protected virtual void ApplyWaterEffect(ICombatTarget target)
         {
-            var damage = new OrbitalSystem.DamageInfo
+            var damage = new DamageInfo
             {
                 Amount = baseDamage / 2,
                 Element = Element.Water,
@@ -219,8 +226,9 @@ namespace CultivationWorld.Combat.Effects
 
         /// <summary>
         /// Применяет исцеление.
+        /// FIX: Use ICombatTarget from imported OrbitalSystem namespace (2026-04-11)
         /// </summary>
-        protected virtual void ApplyHealing(OrbitalSystem.ICombatTarget target)
+        protected virtual void ApplyHealing(ICombatTarget target)
         {
             // TODO: Добавить систему исцеления через интерфейс
             // target.Heal(baseHealing);
@@ -228,10 +236,11 @@ namespace CultivationWorld.Combat.Effects
 
         /// <summary>
         /// Применяет базовый урон.
+        /// FIX: Use ICombatTarget from imported OrbitalSystem namespace (2026-04-11)
         /// </summary>
-        protected virtual void ApplyGenericDamage(OrbitalSystem.ICombatTarget target)
+        protected virtual void ApplyGenericDamage(ICombatTarget target)
         {
-            var damage = new OrbitalSystem.DamageInfo
+            var damage = new DamageInfo
             {
                 Amount = baseDamage,
                 Element = element,
