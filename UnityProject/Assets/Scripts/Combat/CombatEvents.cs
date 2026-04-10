@@ -262,18 +262,43 @@ namespace CultivationGame.Combat
 
     /// <summary>
     /// Лог боя для UI и отладки.
+    /// FIX CMB-C07: Убрана подписка из статического конструктора (недетерминированный порядок).
+    /// Добавлена явная инициализация и очистка.
     /// </summary>
     public class CombatLog
     {
         private static readonly int MaxEntries = 100;
         private static readonly System.Collections.Generic.List<CombatEventData> entries =
             new System.Collections.Generic.List<CombatEventData>();
+        
+        private static bool isInitialized = false; // FIX CMB-C07
 
         public static event Action<CombatEventData> OnEntryAdded;
 
-        static CombatLog()
+        // FIX CMB-C07: Убран статический конструктор с подпиской.
+        // Инициализация через явный вызов Initialize().
+
+        /// <summary>
+        /// Явная инициализация CombatLog.
+        /// Вызывать из CombatManager.Awake() или аналогичного места.
+        /// FIX CMB-C07: заменяет подписку в статическом конструкторе.
+        /// </summary>
+        public static void Initialize()
         {
+            if (isInitialized) return;
+            isInitialized = true;
             CombatEvents.OnCombatEvent += AddEntry;
+        }
+        
+        /// <summary>
+        /// Очистка при завершении боя.
+        /// FIX CMB-C07: отписка + сброс.
+        /// </summary>
+        public static void Cleanup()
+        {
+            CombatEvents.OnCombatEvent -= AddEntry;
+            entries.Clear();
+            isInitialized = false;
         }
 
         public static void AddEntry(CombatEventArgs args)

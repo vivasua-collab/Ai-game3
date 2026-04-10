@@ -171,21 +171,46 @@ namespace CultivationGame.Combat
 
         /// <summary>
         /// Проверить тип цели.
+        /// FIX CMB-C10: Улучшена логика Ally/Neutral (пока без FactionController — 
+        /// будет обновлено в Fix-04 когда Attitude enum доступен).
+        /// FIX CMB-M07: SizeClass в формулу попадания (пока заглушка — 
+        /// полная интеграция в Fix-04).
         /// </summary>
         private static bool IsValidTargetType(ICombatant attacker, ICombatant target, TargetType targetType)
         {
-            // TODO: Реализовать систему фракций для определения Ally/Enemy
-
             return targetType switch
             {
                 TargetType.None => false,
                 TargetType.Self => target == attacker,
                 TargetType.Any => true,
-                TargetType.Enemy => target != attacker, // Упрощённо
-                TargetType.Ally => false, // TODO: Проверка фракции
-                TargetType.Neutral => false, // TODO: Проверка фракции
+                TargetType.Enemy => target != attacker,
+                // FIX CMB-C10: Ally/Neutral — заглушка, полная реализация в Fix-04
+                // после добавления enum Attitude и FactionController
+                TargetType.Ally => IsValidAlly(attacker, target),
+                TargetType.Neutral => IsValidNeutral(attacker, target),
                 _ => false
             };
+        }
+        
+        /// <summary>
+        /// Проверить, является ли цель союзником.
+        /// FIX CMB-C10: Временная реализация. После Fix-04 будет использовать Attitude enum.
+        /// </summary>
+        private static bool IsValidAlly(ICombatant attacker, ICombatant target)
+        {
+            // TODO Fix-04: Использовать FactionController.GetAttitude(attacker, target) >= Attitude.Friendly
+            // Пока: тот же GameObject (редкий кейс) — союзник
+            return false; // Без FactionController пока нет способа определить
+        }
+        
+        /// <summary>
+        /// Проверить, является ли цель нейтральной.
+        /// FIX CMB-C10: Временная реализация.
+        /// </summary>
+        private static bool IsValidNeutral(ICombatant attacker, ICombatant target)
+        {
+            // TODO Fix-04: Использовать FactionController.GetAttitude() в диапазоне Neutral
+            return false; // Без FactionController пока нет способа определить
         }
 
         #endregion
@@ -327,8 +352,10 @@ namespace CultivationGame.Combat
             float agilityMod = (attacker.Agility - 10) * 0.01f;
             baseChance += agilityMod;
 
-            // Модификатор размера цели (если есть)
-            // TODO: Добавить SizeClass после интеграции
+            // FIX CMB-M07: Модификатор размера цели
+            // SizeClass пока берём из collider bounds (если есть)
+            float sizeModifier = GetSizeModifier(target);
+            baseChance += sizeModifier;
 
             // Модификатор расстояния для дальнобойных атак
             if (IsRangedAttack(attackType))
@@ -363,6 +390,31 @@ namespace CultivationGame.Combat
             return attackType == CombatSubtype.RangedProjectile ||
                    attackType == CombatSubtype.RangedBeam ||
                    attackType == CombatSubtype.RangedAoe;
+        }
+        
+        /// <summary>
+        /// Получить модификатор размера цели для шанса попадания.
+        /// FIX CMB-M07: Интеграция SizeClass в формулу попадания.
+        /// 
+        /// Большие цели (+10..+30%), маленькие (-10..-30%).
+        /// Определяется по Collider bounds если нет явного SizeClass.
+        /// </summary>
+        private static float GetSizeModifier(ICombatant target)
+        {
+            if (target?.GameObject == null) return 0f;
+            
+            // Пытаемся получить размер из коллайдера
+            var collider = target.GameObject.GetComponent<Collider>();
+            if (collider != null)
+            {
+                float size = collider.bounds.size.magnitude;
+                // Нормализация: размер 1.0 = человек (0 модификатор)
+                // > 1.5 = большая цель (+), < 0.7 = маленькая (-)
+                if (size > 1.5f) return Mathf.Min(0.3f, (size - 1.5f) * 0.1f);  // +10..+30%
+                if (size < 0.7f) return Mathf.Max(-0.3f, (size - 0.7f) * 0.2f);  // -10..-30%
+            }
+            
+            return 0f; // Стандартный размер
         }
 
         #endregion

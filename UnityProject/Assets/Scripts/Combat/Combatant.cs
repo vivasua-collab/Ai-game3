@@ -171,6 +171,14 @@ namespace CultivationGame.Combat
         public virtual float DamageReduction => 0f;
         public virtual int ArmorValue => 0;
         
+        // FIX CMB-C03: Сырые бонусы экипировки (не финальные шансы!)
+        // Финальные шансы считаются в DamageCalculator через DefenseProcessor
+        public virtual float WeaponParryBonus => 0f;  // TODO: из EquipmentController
+        public virtual float ShieldBlockBonus => 0f;   // TODO: из EquipmentController
+        
+        // FIX CMB-H05: Элемент защитника для стихийных взаимодействий
+        public virtual Element DefenderElement => Element.Neutral;
+        
         // === Unity Lifecycle ===
         
         protected virtual void Awake()
@@ -281,23 +289,26 @@ namespace CultivationGame.Combat
         
         /// <summary>
         /// Получить параметры защищающегося для DamageCalculator.
+        /// FIX CMB-C03: Передаём СЫРЫЕ бонусы экипировки, не финальные шансы.
+        /// DamageCalculator сам вызовет CalculateParryChance/CalculateBlockChance.
         /// </summary>
         public DefenderParams GetDefenderParams()
         {
             return new DefenderParams
             {
                 CultivationLevel = CultivationLevel,
-                CurrentQi = CurrentQi, // FIX: long — без truncation
+                CurrentQi = CurrentQi,
                 QiDefense = QiDefense,
                 Agility = Agility,
                 Strength = Strength,
                 ArmorCoverage = ArmorCoverage,
                 DamageReduction = DamageReduction,
                 ArmorValue = ArmorValue,
-                DodgePenalty = 0f,
-                ParryBonus = ParryChance,
-                BlockBonus = BlockChance,
-                BodyMaterial = BodyMaterial
+                DodgePenalty = 0f, // TODO: из equipped armor
+                ParryBonus = WeaponParryBonus,   // FIX CMB-C03: сырой бонус оружия
+                BlockBonus = ShieldBlockBonus,    // FIX CMB-C03: сырой бонус щита
+                BodyMaterial = BodyMaterial,
+                DefenderElement = DefenderElement  // FIX CMB-H05
             };
         }
     }
