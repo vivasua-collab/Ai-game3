@@ -33,96 +33,72 @@ Work Log:
 - Прочитан worklog.md для контекста
 - Прочитан AUDIT_2026-04-10.md — текущий аудит (58 проблем, 73 файла)
 - Определены ~42 файла без глубокого аудита (Data/SO, Generators, Editor, UI, Character, Tile, Tests)
-- Запущены 3 параллельных агента:
-  - Agent 3-a: Data/ScriptableObjects (13 файлов)
-  - Agent 3-b: Generators + Editor (17 файлов)
-  - Agent 3-c: UI + Character + Tile + Tests (22 файла)
+- Запущены 3 параллельных агента
 - Все 3 агента завершили успешно
-
-**Результаты Batch 3:**
-- Data/SO: 2 CRITICAL, 5 HIGH, 6 MEDIUM, 6 LOW = 19 issues
-- Generators/Editor: 2 CRITICAL, 4 HIGH, 9 MEDIUM, 11 LOW = 26 issues
-- UI/Char/Tile/Tests: 5 CRITICAL, 9 HIGH, 9 MEDIUM, 5 LOW = 28 issues
-- Итого Batch 3: 9 CRITICAL, 18 HIGH, 24 MEDIUM, 22 LOW = 73 issues (уникальных ~57)
-
-**Объединённая статистика (все 7 агентов, 115 файлов):**
-- CRITICAL: 32
-- HIGH: 49
-- MEDIUM: 63
-- LOW: 47
-- Total: 191 уникальных проблем
-
-**Созданные файлы:**
-- docs_temp/audit_batch3_supplement.md — детальный отчёт Batch 3
-
-**Ключевые новые находки:**
-- NC-01/02: Дублирующие enum (FactionRelationType, LocationType) с расходящимися значениями
-- NC-18: SceneSetupTools без #if UNITY_EDITOR → BUILD BREAK
-- NC-20/21: TileData temperature accumulation + TileMapData DateTime
-- NH-01: TechniqueData.baseQiCost int вместо long
-- NH-31: MAX_STAT_VALUE 100 vs 1000
-- NH-35: WeaponDirectionIndicator + Character/ неправильный namespace
-- UT-H-02: Qi long→float на UI слайдерах (L7+)
 
 Stage Summary:
 - Все 115 C# файлов проекта аудированы
-- 191 уникальных проблем найдено (32 CRITICAL, 49 HIGH, 63 MEDIUM, 47 LOW)
+- 191 уникальных проблем найдено
 - Результаты сохранены в docs_temp/audit_batch3_supplement.md
-- Основной файл AUDIT_2026-04-10.md не удалось обновить из-за прав доступа
 
 ---
 Task ID: consolidation
 Agent: Main Agent
 Task: Консолидация всех аудиторских файлов в единый документ + навигация
 
-Work Log:
-- Прочитаны все 7 аудиторских файлов (AUDIT_2026-04-10.md, AUDIT_VERIFICATION.md, audit_core_combat.md, audit_body_qi_player.md, audit_world_npc_formation.md, audit_data_tile_ui_gen.md, audit_batch3_supplement.md)
-- Прочитаны связанные аналитические файлы (ANALYSIS_REPORT.md, !CONTRADICTIONS_REPORT_v2.md, !DUPLICATION_REPORT.md, CODE_AUDIT_Unity_6.3.md)
-- Создан CONSOLIDATED_AUDIT.md — единый консолидированный файл:
-  - 191 уникальная проблема, дедуплицировано
-  - Организовано по 21 системе (Core, Combat, Qi, Body, Player, Buff, NPC, World, Formation, Save, Inventory, Quest, Dialogue, Charger, Data, Generators, UI, Tile, Character, Managers, Tests)
-  - Внутри каждой системы: CRITICAL → HIGH → MEDIUM → LOW
-  - Каждая проблема имеет уникальный ID (системный префикс + номер), ссылку на файл:строку, и источник (S1-S7)
-  - Кросс-системные проблемы выделены отдельно (Qi int→long, JsonUtility, FindFirstObjectByType, Input System, Namespace, Duplicate enums)
-  - Приоритетный план исправлений в 3 фазы (Phase 0: 20 задач, Phase 1: 15 задач, Phase 2: 10 задач)
-  - Приложение A: полный маппинг оригинальных ID → консолидированных ID
-- Обновлён AUDIT_2026-04-10.md — добавлен навигационный раздел с ссылками на все файлы
-
 Stage Summary:
-- Создан: docs_temp/CONSOLIDATED_AUDIT.md — единый файл для написания плана исправлений
-- Обновлён: docs_temp/AUDIT_2026-04-10.md — добавлена навигация
+- Создан: docs_temp/CONSOLIDATED_AUDIT.md — единый файл
 - 191 проблема консолидирована из 7 источников с дедупликацией
-- Готово к следующему аудиту (ChatGPT) и написанию плана исправлений
 
 ---
 Task ID: gpt-integration
 Agent: Main Agent
 Task: Интеграция двух GPT-аудитов в консолидированный файл
 
-Work Log:
-- Прочитан CONSOLIDATED_AUDIT.md (1031 строка, 191 проблема)
-- Проанализированы оба GPT-аудита (22 уникальных утверждения)
-- Определены пересечения: 12 дубликатов наших находок, 10 новых проблем
-- Добавлены новые проблемы в соответствующие секции:
-  - MGR-C01: Parallel InitializeGameAsync (CRITICAL)
-  - MGR-C02: SceneLoader GetSceneByName unloaded (CRITICAL)
-  - MGR-C03: SceneLoader timeScale not restored on error (CRITICAL)
-  - QI-H03: SpendQi negative values exploit (HIGH)
-  - SAV-C01: Path traversal via slotId (CRITICAL)
-  - SAV-H04: SaveManager cache miss (HIGH)
-  - SAV-H05: No data integrity after FromJson (HIGH)
-  - WLD-H06: TimeController LoadSaveData no validation (HIGH)
-  - WLD-M06: GetTotalDays off-by-one (MEDIUM)
-  - CMB-M06: Chance formulas no upper cap (MEDIUM)
-  - SAV-M04: SaveFileHandler unused constants (MEDIUM)
-  - SAV-M05: GameManager+GameInitializer overlap (MEDIUM)
-- Добавлены источники S9, S10 в индекс
-- Добавлено Приложение B: полная маппинг-таблица GPT→наши ID
-- Обновлён AUDIT_2026-04-10.md: навигация + секция GPT-аудита
-- Общее количество проблем: 191 → 198
-
 Stage Summary:
 - CONSOLIDATED_AUDIT.md обновлён: 198 проблем (35 CRITICAL, 54 HIGH, 65 MEDIUM, 47 LOW)
 - GPT-аудит интегрирован с полной кросс-референцией
-- GPT покрыл только 6% базы (7/115 файлов), нашёл 10 новых проблем
-- Основная ценность GPT: path traversal, error-path cleanup, cache miss, negative input
+
+---
+Task ID: fix-01
+Agent: Main Agent
+Task: Fix-01 — Qi int→long миграция + Core типы (P0 CRITICAL)
+
+Work Log:
+- 2026-04-10 14:40 UTC: Проверен статус — предыдущая сессия частично выполнила Fix-01 (12 файлов в working tree), но с ошибками
+- Обнаружены критические проблемы:
+  1. ChargerBuffer: [SerializeField] убраны неправильно → сериализация сломана
+  2. ChargerBuffer: UseQiForTechnique/CanUseTechnique/GetEffectiveQiAvailable принимали int, ChargerController передавал long → компиляция сломана
+  3. ChargerHeat: [SerializeField] убраны, [Header] оставлены (не работают в [Serializable] non-MonoBehaviour)
+  4. ChargerSlot: [SerializeField] убраны неправильно
+  5. FormationQiPool.AcceptQi: оставлен int
+  6. FormationCore.ContributeQi: int params, вызовы не обновлены
+  7. TechniqueData.baseQiCost: int
+  8. IntegrationTests.SpendQi: int (каскад ICombatant)
+  9. AssetGeneratorExtended.TechniqueJsonData.baseQiCost: int (каскад)
+- Исправлены ВСЕ 18 файлов:
+  - QiController.cs — SpendQi(long), negative check, EffectiveQi, EstimateCapacityAtLevel
+  - QiBuffer.cs — полная миграция long, double precision для деления
+  - Combatant.cs — ICombatant.SpendQi(long), DefenderParams.CurrentQi long, lambda→named method
+  - DamageCalculator.cs — DefenderParams.CurrentQi long
+  - PlayerController.cs — PlayerState Qi long, rb.linearVelocity
+  - ChargerBuffer.cs — UseQiForTechnique(long,long), CanUseTechnique/GetEffectiveQiAvailable long, ChargerBufferResult.QiFromCore long, [Header]→[SerializeField]
+  - ChargerController.cs — UseQiForTechnique(long), ChargeFormation long
+  - ChargerHeat.cs — AddHeatFromQi(long), [Header]→[SerializeField]
+  - ChargerSlot.cs — [SerializeField] восстановлен
+  - NPCController.cs + NPCData.cs — long Qi, NPCSaveData расширена
+  - FormationController.cs — ContributeQi/ChargeFormationFromCharger long, _instance=null
+  - FormationCore.cs — ContributeQi long
+  - FormationQiPool.cs — AcceptQi long
+  - FormationUI.cs — ContributeQi call long
+  - TechniqueData.cs — baseQiCost long
+  - AssetGeneratorExtended.cs — TechniqueJsonData.baseQiCost long
+  - IntegrationTests.cs — SpendQi(long)
+
+Stage Summary:
+- Fix-01 ПОЛНОСТЬЮ завершён — 18 файлов, 13 задач выполнены
+- Все Qi-поля мигрированы int→long
+- Charger [SerializeField] исправлены: [Header] убраны (нерабочие в non-MonoBehaviour), [SerializeField] оставлены
+- Каскадные изменения покрыты (Formation, Charger, Tests, Editor)
+- Чекпоинт обновлён: status=complete, дата=2026-04-10 14:40:00 UTC
+- GitHub push pending

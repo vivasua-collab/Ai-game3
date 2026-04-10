@@ -313,21 +313,22 @@ namespace CultivationGame.Formation
 
         /// <summary>
         /// Принять Ци от практика.
+        /// FIX FRM-M03: amount → long для Qi > 2.1B на L5+
         /// </summary>
         /// <param name="amount">Предлагаемое количество</param>
         /// <param name="transferRate">Скорость передачи (проводимость × плотность)</param>
         /// <returns>Принятое количество</returns>
-        public int AcceptQi(int amount, float transferRate)
+        public long AcceptQi(long amount, float transferRate)
         {
             if (amount <= 0 || IsFull) return 0;
 
             // Ограничение по проводимости формации
-            int maxAccept = Mathf.CeilToInt(conductivity * 60f); // За минуту
-            int accepted = Mathf.Min(amount, maxAccept);
+            long maxAccept = (long)(conductivity * 60f); // За минуту
+            long accepted = Math.Min(amount, maxAccept);
 
             // Не больше чем осталось до полного
             long space = capacity - currentQi;
-            accepted = (int)Mathf.Min(accepted, space);
+            accepted = Math.Min(accepted, space);
 
             if (accepted > 0)
             {

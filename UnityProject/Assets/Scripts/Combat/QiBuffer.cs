@@ -1,10 +1,9 @@
 // ============================================================================
 // QiBuffer.cs — Буфер Ци (защита от урона)
 // Cultivation World Simulator
-// Версия: 1.0
-// ============================================================================
+// Версия: 1.1 — Fix-01: int→long для Qi > 2.1B
 // Создан: 2026-03-30 10:00:00 UTC
-// Редактирован: 2026-03-31 09:24:43 UTC
+// Редактирован: 2026-04-10 13:49:00 UTC
 // ============================================================================
 
 using System;
@@ -14,13 +13,14 @@ namespace CultivationGame.Combat
 {
     /// <summary>
     /// Результат обработки урона через буфер Ци.
+    /// FIX: QiConsumed/QiRemaining → long для поддержки Qi > 2.1B на L5+
     /// </summary>
     public struct QiBufferResult
     {
         public float AbsorbedDamage;     // Поглощённый урон
         public float PiercingDamage;     // Пробивший урон (к HP)
-        public int QiConsumed;           // Потраченное Ци
-        public int QiRemaining;          // Оставшееся Ци
+        public long QiConsumed;          // Потраченное Ци (FIX: int→long)
+        public long QiRemaining;         // Оставшееся Ци (FIX: int→long)
         public bool WasShieldActive;     // Был ли активен щит
         public bool WasQiDepleted;       // Закончилось ли Ци
     }
@@ -70,10 +70,6 @@ namespace CultivationGame.Combat
     /// ║  - Нет резонанса — Ци "гасит" физику грубо, без точности                  ║
     /// ║  - Труднее блокировать меч, чем сгусток Ци                                 ║
     /// ╚═══════════════════════════════════════════════════════════════════════════╝
-    /// 
-    /// ⚠️ ВНИМАНИЕ: Текущая реализация ProcessDamage() использует ТОЛЬКО параметры
-    ///    для техник Ци. Для физического урона нужно использовать ProcessPhysicalDamage().
-    ///    Это РАСХОЖДЕНИЕ с документацией!
     /// </summary>
     public static class QiBuffer
     {
@@ -90,12 +86,12 @@ namespace CultivationGame.Combat
         private const float PHYSICAL_SHIELD_RATIO = 2.0f;           // 2:1
         
         /// <summary>
-        /// Обработать урон от ТЕХНИКИ ЦИ через буфер.
-        /// Источник: ALGORITHMS.md §2.3 "Техники Ци"
+        /// Обработать урон от ТЕХНИКИ ЦИ через буфер (alias).
+        /// FIX: currentQi long
         /// </summary>
         public static QiBufferResult ProcessDamage(
             float incomingDamage,
-            int currentQi,
+            long currentQi,
             QiDefenseType defenseType)
         {
             return ProcessQiTechniqueDamage(incomingDamage, currentQi, defenseType);
@@ -104,20 +100,11 @@ namespace CultivationGame.Combat
         /// <summary>
         /// Обработать урон от ТЕХНИКИ ЦИ через буфер.
         /// Источник: ALGORITHMS.md §2.3 "Техники Ци"
-        /// 
-        /// Сырая Ци:
-        /// - Поглощение: 90% урона
-        /// - Соотношение: 3 Ци за 1 поглощённый урон
-        /// - Пробитие: 10% ВСЕГДА
-        /// 
-        /// Щитовая техника:
-        /// - Поглощение: 100% урона
-        /// - Соотношение: 1 Ци за 1 поглощённый урон
-        /// - Пробитие: 0%
+        /// FIX: currentQi long для Qi > 2.1B
         /// </summary>
         public static QiBufferResult ProcessQiTechniqueDamage(
             float incomingDamage,
-            int currentQi,
+            long currentQi,
             QiDefenseType defenseType)
         {
             QiBufferResult result = new QiBufferResult
@@ -128,7 +115,6 @@ namespace CultivationGame.Combat
             
             if (defenseType == QiDefenseType.None || currentQi < GameConstants.MIN_QI_FOR_BUFFER)
             {
-                // Нет защиты или недостаточно Ци
                 result.AbsorbedDamage = 0f;
                 result.PiercingDamage = incomingDamage;
                 result.QiConsumed = 0;
@@ -138,18 +124,12 @@ namespace CultivationGame.Combat
             
             if (defenseType == QiDefenseType.RawQi)
             {
-                // === СЫРАЯ ЦИ (для техник Ци) ===
-                // 90% урона можно поглотить
                 float absorbableDamage = incomingDamage * QI_TECHNIQUE_RAW_ABSORPTION;
-                // 10% ВСЕГДА пробивает
                 float guaranteedPiercing = incomingDamage * QI_TECHNIQUE_RAW_PIERCING;
-                
-                // Ци для поглощения (соотношение 3:1)
-                int requiredQi = (int)(absorbableDamage * QI_TECHNIQUE_RAW_RATIO);
+                long requiredQi = (long)(absorbableDamage * QI_TECHNIQUE_RAW_RATIO);
                 
                 if (currentQi >= requiredQi)
                 {
-                    // Достаточно Ци для полного поглощения
                     result.AbsorbedDamage = absorbableDamage;
                     result.PiercingDamage = guaranteedPiercing;
                     result.QiConsumed = requiredQi;
@@ -157,9 +137,8 @@ namespace CultivationGame.Combat
                 }
                 else
                 {
-                    // Недостаточно Ци — поглощаем сколько можем
-                    float absorbRatio = currentQi / (requiredQi * 1f);
-                    result.AbsorbedDamage = absorbableDamage * absorbRatio;
+                    double absorbRatio = (double)currentQi / requiredQi;
+                    result.AbsorbedDamage = absorbableDamage * (float)absorbRatio;
                     result.PiercingDamage = incomingDamage - result.AbsorbedDamage;
                     result.QiConsumed = currentQi;
                     result.QiRemaining = 0;
@@ -168,13 +147,10 @@ namespace CultivationGame.Combat
             }
             else if (defenseType == QiDefenseType.Shield)
             {
-                // === ЩИТОВАЯ ТЕХНИКА (для техник Ци) ===
-                // 100% поглощение, соотношение 1:1
-                int requiredQi = (int)(incomingDamage * QI_TECHNIQUE_SHIELD_RATIO);
+                long requiredQi = (long)(incomingDamage * QI_TECHNIQUE_SHIELD_RATIO);
                 
                 if (currentQi >= requiredQi)
                 {
-                    // Щит держит
                     result.AbsorbedDamage = incomingDamage;
                     result.PiercingDamage = 0f;
                     result.QiConsumed = requiredQi;
@@ -182,9 +158,8 @@ namespace CultivationGame.Combat
                 }
                 else
                 {
-                    // Щит пробит
-                    float absorbedRatio = currentQi / (incomingDamage * QI_TECHNIQUE_SHIELD_RATIO);
-                    result.AbsorbedDamage = incomingDamage * absorbedRatio;
+                    double absorbedRatio = (double)currentQi / (incomingDamage * QI_TECHNIQUE_SHIELD_RATIO);
+                    result.AbsorbedDamage = incomingDamage * (float)absorbedRatio;
                     result.PiercingDamage = incomingDamage - result.AbsorbedDamage;
                     result.QiConsumed = currentQi;
                     result.QiRemaining = 0;
@@ -198,24 +173,11 @@ namespace CultivationGame.Combat
         /// <summary>
         /// Обработать ФИЗИЧЕСКИЙ урон через буфер Ци.
         /// Источник: ALGORITHMS.md §2.3 "Физический урон"
-        /// 
-        /// Сырая Ци:
-        /// - Поглощение: 80% урона
-        /// - Соотношение: 5 Ци за 1 поглощённый урон
-        /// - Пробитие: 20% ВСЕГДА
-        /// 
-        /// Щитовая техника:
-        /// - Поглощение: 100% урона
-        /// - Соотношение: 2 Ци за 1 поглощённый урон
-        /// - Пробитие: 0%
-        /// 
-        /// Лорное обоснование:
-        /// "Нет резонанса — Ци гасит физику грубо, без точности.
-        ///  Труднее блокировать меч, чем сгусток Ци."
+        /// FIX: currentQi long для Qi > 2.1B
         /// </summary>
         public static QiBufferResult ProcessPhysicalDamage(
             float incomingDamage,
-            int currentQi,
+            long currentQi,
             QiDefenseType defenseType)
         {
             QiBufferResult result = new QiBufferResult
@@ -226,7 +188,6 @@ namespace CultivationGame.Combat
             
             if (defenseType == QiDefenseType.None || currentQi < GameConstants.MIN_QI_FOR_BUFFER)
             {
-                // Нет защиты или недостаточно Ци
                 result.AbsorbedDamage = 0f;
                 result.PiercingDamage = incomingDamage;
                 result.QiConsumed = 0;
@@ -236,18 +197,12 @@ namespace CultivationGame.Combat
             
             if (defenseType == QiDefenseType.RawQi)
             {
-                // === СЫРАЯ ЦИ (для физического урона) ===
-                // 80% урона можно поглотить
                 float absorbableDamage = incomingDamage * PHYSICAL_RAW_ABSORPTION;
-                // 20% ВСЕГДА пробивает
                 float guaranteedPiercing = incomingDamage * PHYSICAL_RAW_PIERCING;
-                
-                // Ци для поглощения (соотношение 5:1)
-                int requiredQi = (int)(absorbableDamage * PHYSICAL_RAW_RATIO);
+                long requiredQi = (long)(absorbableDamage * PHYSICAL_RAW_RATIO);
                 
                 if (currentQi >= requiredQi)
                 {
-                    // Достаточно Ци для полного поглощения
                     result.AbsorbedDamage = absorbableDamage;
                     result.PiercingDamage = guaranteedPiercing;
                     result.QiConsumed = requiredQi;
@@ -255,9 +210,8 @@ namespace CultivationGame.Combat
                 }
                 else
                 {
-                    // Недостаточно Ци — поглощаем сколько можем
-                    float absorbRatio = currentQi / (requiredQi * 1f);
-                    result.AbsorbedDamage = absorbableDamage * absorbRatio;
+                    double absorbRatio = (double)currentQi / requiredQi;
+                    result.AbsorbedDamage = absorbableDamage * (float)absorbRatio;
                     result.PiercingDamage = incomingDamage - result.AbsorbedDamage;
                     result.QiConsumed = currentQi;
                     result.QiRemaining = 0;
@@ -266,13 +220,10 @@ namespace CultivationGame.Combat
             }
             else if (defenseType == QiDefenseType.Shield)
             {
-                // === ЩИТОВАЯ ТЕХНИКА (для физического урона) ===
-                // 100% поглощение, соотношение 2:1
-                int requiredQi = (int)(incomingDamage * PHYSICAL_SHIELD_RATIO);
+                long requiredQi = (long)(incomingDamage * PHYSICAL_SHIELD_RATIO);
                 
                 if (currentQi >= requiredQi)
                 {
-                    // Щит держит
                     result.AbsorbedDamage = incomingDamage;
                     result.PiercingDamage = 0f;
                     result.QiConsumed = requiredQi;
@@ -280,9 +231,8 @@ namespace CultivationGame.Combat
                 }
                 else
                 {
-                    // Щит пробит
-                    float absorbedRatio = currentQi / (incomingDamage * PHYSICAL_SHIELD_RATIO);
-                    result.AbsorbedDamage = incomingDamage * absorbedRatio;
+                    double absorbedRatio = (double)currentQi / (incomingDamage * PHYSICAL_SHIELD_RATIO);
+                    result.AbsorbedDamage = incomingDamage * (float)absorbedRatio;
                     result.PiercingDamage = incomingDamage - result.AbsorbedDamage;
                     result.QiConsumed = currentQi;
                     result.QiRemaining = 0;
@@ -295,8 +245,9 @@ namespace CultivationGame.Combat
         
         /// <summary>
         /// Рассчитать необходимое Ци для поглощения урона.
+        /// FIX: long return для Qi > 2.1B
         /// </summary>
-        public static int CalculateRequiredQi(float damage, QiDefenseType defenseType, DamageSourceType damageSource = DamageSourceType.QiTechnique)
+        public static long CalculateRequiredQi(float damage, QiDefenseType defenseType, DamageSourceType damageSource = DamageSourceType.QiTechnique)
         {
             if (defenseType == QiDefenseType.None) return 0;
             
@@ -310,16 +261,17 @@ namespace CultivationGame.Combat
                 ? (isPhysical ? PHYSICAL_RAW_RATIO : QI_TECHNIQUE_RAW_RATIO)
                 : (isPhysical ? PHYSICAL_SHIELD_RATIO : QI_TECHNIQUE_SHIELD_RATIO);
             
-            return (int)(absorbable * ratio);
+            return (long)(absorbable * ratio);
         }
         
         /// <summary>
         /// Проверить, достаточно ли Ци для защиты.
+        /// FIX: currentQi long
         /// </summary>
-        public static bool CanAbsorbDamage(float damage, int currentQi, QiDefenseType defenseType, DamageSourceType damageSource = DamageSourceType.QiTechnique)
+        public static bool CanAbsorbDamage(float damage, long currentQi, QiDefenseType defenseType, DamageSourceType damageSource = DamageSourceType.QiTechnique)
         {
             if (defenseType == QiDefenseType.None) return false;
-            int required = CalculateRequiredQi(damage, defenseType, damageSource);
+            long required = CalculateRequiredQi(damage, defenseType, damageSource);
             return currentQi >= required;
         }
         

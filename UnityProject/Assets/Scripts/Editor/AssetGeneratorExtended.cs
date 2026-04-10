@@ -1061,7 +1061,7 @@ namespace CultivationGame.Editor
             public int minLevel;
             public int maxLevel;
             public bool canEvolve;
-            public int baseQiCost;
+            public long baseQiCost; // FIX DAT-H01: int→long
             public float physicalFatigueCost;
             public float mentalFatigueCost;
             public int cooldown;

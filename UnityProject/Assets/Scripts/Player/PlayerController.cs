@@ -220,7 +220,7 @@ namespace CultivationGame.Player
             }
             
             // Применяем движение
-            rb.velocity = moveInput * speed;
+            rb.linearVelocity = moveInput * speed; // FIX: Unity 6 — velocity→linearVelocity
         }
         
         private void UpdateState()
@@ -228,8 +228,8 @@ namespace CultivationGame.Player
             // Обновляем состояние на основе систем
             if (qiController != null)
             {
-                state.CurrentQi = (int)qiController.CurrentQi;
-                state.MaxQi = (int)qiController.MaxQi;
+                state.CurrentQi = qiController.CurrentQi; // FIX: long — без truncation
+                state.MaxQi = qiController.MaxQi; // FIX: long — без truncation
                 state.CultivationLevel = (CultivationLevel)qiController.CultivationLevel;
             }
             
@@ -501,8 +501,8 @@ namespace CultivationGame.Player
         
         // Cultivation
         public CultivationLevel CultivationLevel;
-        public int CurrentQi;
-        public int MaxQi;
+        public long CurrentQi; // FIX: int→long для Qi > 2.1B
+        public long MaxQi; // FIX: int→long для Qi > 2.1B
         
         // Health
         public float HealthPercent;

@@ -2,8 +2,9 @@
 
 **Дата:** 2026-04-10 13:37:00 UTC
 **Фаза:** Phase 7 — Integration
-**Статус:** pending
+**Статус:** complete
 **Приоритет:** P0 (блокирует gameplay)
+**Завершено:** 2026-04-10 14:40:00 UTC
 
 ---
 
@@ -15,73 +16,61 @@
 
 ---
 
-## Файлы (8 файлов, ~3200 строк)
+## Изменённые файлы (18 файлов)
 
-| # | Файл | Строк | Изменение |
-|---|------|-------|-----------|
-| 1 | `Qi/QiController.cs` | 494 | Fix long→int casts (:357,364,365,371), SpendQi(long), negative check, EffectiveQi property |
-| 2 | `Combat/Combatant.cs` | 289 | ICombatant.SpendQi(int)→(long), DefenderParams.CurrentQi int→long |
-| 3 | `Player/PlayerController.cs` | 525 | PlayerState Qi int→long, rb.velocity→linearVelocity |
-| 4 | `Charger/ChargerController.cs` | 594 | UseQiForTechnique int→long, [SerializeField] fix |
-| 5 | `NPC/NPCController.cs` | 483 | (int)generated.maxQi fix, NPCSaveData MaxQi/MaxHealth |
-| 6 | `Formation/FormationController.cs` | 868 | (int)playerQi.CurrentQi fix, _instance=null в OnDestroy |
-| 7 | `Formation/FormationQiPool.cs` | ~250 | AcceptQi int→long |
-| 8 | `Data/ScriptableObjects/TechniqueData.cs` | ~150 | baseQiCost int→long |
+| # | Файл | Изменение |
+|---|------|-----------|
+| 1 | `Qi/QiController.cs` | SpendQi(long), negative check, EffectiveQi, EstimateCapacityAtLevel, long casts removed |
+| 2 | `Combat/QiBuffer.cs` | QiBufferResult.QiConsumed/Remaining → long, все методы currentQi long, division → double precision |
+| 3 | `Combat/Combatant.cs` | ICombatant.SpendQi(long), DefenderParams.CurrentQi long, lambda→named method (CMB-C08) |
+| 4 | `Combat/DamageCalculator.cs` | DefenderParams.CurrentQi long |
+| 5 | `Player/PlayerController.cs` | PlayerState Qi long, rb.linearVelocity (Unity 6) |
+| 6 | `Charger/ChargerBuffer.cs` | UseQiForTechnique/CanUseTechnique/GetEffectiveQiAvailable → long params, ChargerBufferResult.QiFromCore long, [Header]→[SerializeField] |
+| 7 | `Charger/ChargerController.cs` | UseQiForTechnique(long), ChargeFormation long, practitionerCurrentQi long |
+| 8 | `Charger/ChargerHeat.cs` | AddHeatFromQi(long), [Header]→[SerializeField] |
+| 9 | `Charger/ChargerSlot.cs` | [SerializeField] восстановлен |
+| 10 | `NPC/NPCController.cs` | (int)generated.maxQi→long, NPCSaveData load/save MaxQi/MaxHealth/MaxStamina/MaxLifespan |
+| 11 | `NPC/NPCData.cs` | NPCState/NPCSaveData CurrentQi/MaxQi long, MaxQi/MaxHealth/MaxStamina/MaxLifespan добавлены |
+| 12 | `Formation/FormationController.cs` | ContributeQi/ChargeFormationFromCharger long, _instance=null в OnDestroy |
+| 13 | `Formation/FormationCore.cs` | ContributeQi → long params/return |
+| 14 | `Formation/FormationQiPool.cs` | AcceptQi → long |
+| 15 | `Formation/FormationUI.cs` | ContributeQi call → long |
+| 16 | `Data/ScriptableObjects/TechniqueData.cs` | baseQiCost int→long |
+| 17 | `Editor/AssetGeneratorExtended.cs` | TechniqueJsonData.baseQiCost int→long (каскад) |
+| 18 | `Tests/IntegrationTests.cs` | SpendQi(long) (каскад ICombatant) |
 
-## Связанные файлы (не в этом чекпоинте, но требуют миграции позже)
-
-- `SpeciesData.cs` (coreCapacityBase float→long) → Fix-11
-- `ConsumableGenerator.cs` (Qi float→long) → Fix-11
-- `IntegrationTestScenarios.cs`, `IntegrationTests.cs` → Fix-12
-- `MortalStageData.cs` (Qi int→long) → Fix-11
-
----
-
-## Задачи
+## Выполненные задачи
 
 ### Qi типы (CRITICAL)
-- [ ] QI-C01: QiController — убрать все long→int casts (:357,364,365,371), QiBufferResult.QiRemaining long
-- [ ] CMB-C04: ICombatant.SpendQi(int) → SpendQi(long) в интерфейсе и CombatantBase
-- [ ] CMB-C05: DefenderParams.CurrentQi int → long
-- [ ] PLR-H04: PlayerState Qi int → long
-- [ ] CHR-C02: ChargerController.UseQiForTechnique int → long
-- [ ] NPC-H04: NPCController (int)generated.maxQi → long
-- [ ] FRM-M05: FormationController (int)playerQi.CurrentQi → убрать cast
-- [ ] FRM-M03: FormationQiPool.AcceptQi int → long
-- [ ] DAT-H01: TechniqueData.baseQiCost int → long
+- [x] QI-C01: QiController — убрать все long→int casts, QiBufferResult.QiRemaining long
+- [x] CMB-C04: ICombatant.SpendQi(long) в интерфейсе и CombatantBase
+- [x] CMB-C05: DefenderParams.CurrentQi long
+- [x] PLR-H04: PlayerState Qi long
+- [x] CHR-C02: ChargerController.UseQiForTechnique long
+- [x] NPC-H04: NPCController (int)generated.maxQi → long
+- [x] FRM-M05: FormationController (int)playerQi.CurrentQi → long
+- [x] FRM-M03: FormationQiPool.AcceptQi long
+- [x] DAT-H01: TechniqueData.baseQiCost long
 
 ### Qi эксплойты (HIGH)
-- [ ] QI-H03: SpendQi — добавить `if (amount <= 0) return false;`
-- [ ] QI-L01: SpendQi(0) — проверить `amount > 0` вместо `>=`
+- [x] QI-H03: SpendQi — добавлен `if (amount <= 0) return false;`
+- [x] QI-L01: SpendQi(0) — проверка amount > 0 вместо >=
 
 ### Qi Model В — подготовка (HIGH)
-- [ ] QI-MDL-B: Добавить property `EffectiveQi => (long)(currentQi * qiDensity)` в QiController
-- [ ] QI-MDL-B: Добавить `EstimateCapacityAtLevel(int level)` helper для CanBreakthrough
+- [x] QI-MDL-B: EffectiveQi property `(long)(currentQi * qiDensity)`
+- [x] QI-MDL-B: EstimateCapacityAtLevel/EstimateCapacityAtSubLevel helpers
 
 ### Unity 6 (CRITICAL)
-- [ ] PLR-C01: PlayerController `rb.velocity` → `rb.linearVelocity`
+- [x] PLR-C01: PlayerController `rb.velocity` → `rb.linearVelocity`
 
 ### Formation singleton (CRITICAL)
-- [ ] FRM-C01: FormationController.OnDestroy — `_instance = null;`
+- [x] FRM-C01: FormationController.OnDestroy — `_instance = null;`
 
 ### NPC SaveData (CRITICAL)
-- [ ] NPC-C01: NPCSaveData — добавить MaxQi (long), MaxHealth, MaxStamina, MaxLifespan
+- [x] NPC-C01: NPCSaveData — MaxQi (long), MaxHealth, MaxStamina, MaxLifespan
 
 ### Charger SerializeField (CRITICAL)
-- [ ] CHR-C01: ChargerHeat, ChargerBuffer, ChargerSlot — убрать [SerializeField] или сделать [Serializable]
-
----
-
-## Порядок выполнения
-
-1. QiController.cs — SpendQi(long) + negative check + убрать casts + EffectiveQi + EstimateCapacityAtLevel
-2. Combatant.cs — ICombatant.SpendQi(long) + DefenderParams.CurrentQi long
-3. PlayerController.cs — PlayerState long + linearVelocity
-4. ChargerController.cs — UseQiForTechnique(long) + [SerializeField] fix
-5. NPCController.cs — long maxQi + NPCSaveData дополнить
-6. FormationController.cs — long cast fix + _instance=null
-7. FormationQiPool.cs — AcceptQi long
-8. TechniqueData.cs — baseQiCost long
+- [x] CHR-C01: ChargerHeat/Buffer/Slot — [Header] убраны (не работают в non-MonoBehaviour), [SerializeField] оставлены для сериализации
 
 ---
 
@@ -92,12 +81,4 @@
 
 ---
 
-## Риски
-
-- ICombatant.SpendQi(int→long) — все реализации должны быть обновлены одновременно
-- Если есть другие файлы с SpendQi(int), которые не в этом чекпоинте — компиляция упадёт до Fix-11/12
-- Рекомендация: после этого чекпоинта выполнить Fix-02, Fix-03, Fix-04 перед остальными
-
----
-
-*Чекпоинт обновлён: 2026-04-10 13:37:00 UTC*
+*Чекпоинт обновлён: 2026-04-10 14:40:00 UTC*

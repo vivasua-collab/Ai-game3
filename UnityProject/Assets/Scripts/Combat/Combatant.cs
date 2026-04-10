@@ -58,7 +58,7 @@ namespace CultivationGame.Combat
         // === Actions ===
         void TakeDamage(BodyPartType part, float damage);
         void TakeDamageRandom(float damage);
-        bool SpendQi(int amount);
+        bool SpendQi(long amount); // FIX: int→long для Qi > 2.1B
         void AddQi(long amount);
         
         // === Combat Parameters ===
@@ -190,9 +190,10 @@ namespace CultivationGame.Combat
                 bodyController.OnDeath += HandleDeath;
             }
             
+            // FIX: Замена lambda на named method — предотвращает утечку памяти (CMB-C08)
             if (qiController != null)
             {
-                qiController.OnQiChanged += (current, max) => OnQiChanged?.Invoke(current, max);
+                qiController.OnQiChanged += HandleQiChanged;
             }
         }
         
@@ -201,6 +202,12 @@ namespace CultivationGame.Combat
             if (bodyController != null)
             {
                 bodyController.OnDeath -= HandleDeath;
+            }
+            
+            // FIX: Отписка от QiController — предотвращает утечку (CMB-C08)
+            if (qiController != null)
+            {
+                qiController.OnQiChanged -= HandleQiChanged;
             }
         }
         
@@ -224,7 +231,7 @@ namespace CultivationGame.Combat
             }
         }
         
-        public virtual bool SpendQi(int amount)
+        public virtual bool SpendQi(long amount) // FIX: int→long
         {
             return qiController?.SpendQi(amount) ?? false;
         }
@@ -239,6 +246,14 @@ namespace CultivationGame.Combat
         protected virtual void HandleDeath()
         {
             OnDeath?.Invoke();
+        }
+        
+        /// <summary>
+        /// FIX: Named method для QiController.OnQiChanged — позволяет отписаться
+        /// </summary>
+        private void HandleQiChanged(long current, long max)
+        {
+            OnQiChanged?.Invoke(current, max);
         }
         
         // === Utility ===
@@ -272,7 +287,7 @@ namespace CultivationGame.Combat
             return new DefenderParams
             {
                 CultivationLevel = CultivationLevel,
-                CurrentQi = (int)Math.Min(CurrentQi, int.MaxValue),
+                CurrentQi = CurrentQi, // FIX: long — без truncation
                 QiDefense = QiDefense,
                 Agility = Agility,
                 Strength = Strength,

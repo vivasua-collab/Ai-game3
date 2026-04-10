@@ -68,7 +68,7 @@ namespace CultivationGame.Combat
     public struct DefenderParams
     {
         public int CultivationLevel;
-        public int CurrentQi;
+        public long CurrentQi; // FIX: int→long для Qi > 2.1B на L5+
         public QiDefenseType QiDefense;
         
         public int Agility;

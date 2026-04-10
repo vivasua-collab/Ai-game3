@@ -581,8 +581,8 @@ namespace CultivationGame.Formation
             if (selectedActiveCore == null || controller == null) return;
 
             // Вносим Ци
-            int maxContribution = 1000; // Максимум за клик
-            int contributed = controller.ContributeQi(selectedActiveCore, maxContribution);
+            long maxContribution = 1000; // Максимум за клик
+            long contributed = controller.ContributeQi(selectedActiveCore, maxContribution); // FIX: long
 
             Debug.Log($"[FormationUI] Внесено Ци: {contributed}");
         }

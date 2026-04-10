@@ -1,9 +1,9 @@
 // ============================================================================
 // ChargerBuffer.cs — Буфер Ци зарядника
 // Cultivation World Simulator
-// Версия: 1.0
-// ============================================================================
+// Версия: 1.1 — Fix-01: long для practitionerCurrentQi, [Header] убраны
 // Создано: 2026-04-03 08:25:00 UTC
+// Редактировано: 2026-04-10 — Fix-01: Qi int→long migration
 // ============================================================================
 
 using System;
@@ -14,35 +14,39 @@ namespace CultivationGame.Charger
 {
     /// <summary>
     /// Результат использования буфера зарядника.
+    /// FIX: QiFromCore → long (из ядра практика, может быть > 2.1B)
     /// </summary>
     public struct ChargerBufferResult
     {
-        public int QiFromCore;          // Ци из ядра практика
-        public int QiFromBuffer;        // Ци из буфера зарядника
-        public int QiRemaining;         // Остаток в буфере
-        public int QiLost;              // Потери (10%)
-        public bool WasBufferUsed;      // Использован ли буфер
-        public bool WasBufferDepleted;  // Опустошён ли буфер
+        public long QiFromCore;          // Ци из ядра практика (FIX: long)
+        public int QiFromBuffer;         // Ци из буфера зарядника (буфер малый)
+        public int QiRemaining;          // Остаток в буфере
+        public int QiLost;               // Потери (10%)
+        public bool WasBufferUsed;       // Использован ли буфер
+        public bool WasBufferDepleted;   // Опустошён ли буфер
     }
     
     /// <summary>
     /// Буфер Ци зарядника.
     /// Управляет накоплением и отдачей Ци.
     /// Источник: CHARGER_SYSTEM.md §2.2 "Буфер Ци"
+    /// 
+    /// FIX CHR-C01: Убраны [Header] (не работают в [Serializable] non-MonoBehaviour),
+    /// оставлены [SerializeField] (нужны для Unity serialization).
     /// </summary>
     [Serializable]
     public class ChargerBuffer
     {
-        [Header("Capacity")]
+        // Capacity — [Header] убран, [SerializeField] оставлен для сериализации
         [SerializeField] private int capacity = 500;
         [SerializeField] private int currentQi;
         
-        [Header("Rates")]
+        // Rates
         [SerializeField] private float conductivity = 10f;      // Проводимость (5-100 Ци/сек)
         [SerializeField] private float inputRate = 10f;         // Скорость входящего потока
         [SerializeField] private float outputRate = 10f;        // Скорость исходящего потока
         
-        [Header("Efficiency")]
+        // Efficiency
         [SerializeField] private float efficiencyLoss = 0.1f;   // Потери 10%
         
         // === Runtime ===
@@ -161,11 +165,12 @@ namespace CultivationGame.Charger
         /// Порядок: сначала ядро, потом буфер.
         /// 
         /// Источник: CHARGER_SYSTEM.md §4.2 "Механика использования"
+        /// FIX: practitionerCurrentQi → long для Qi > 2.1B на L5+
         /// </summary>
         /// <param name="qiCost">Стоимость техники</param>
         /// <param name="practitionerCurrentQi">Текущее Ци практика</param>
         /// <returns>Результат использования</returns>
-        public ChargerBufferResult UseQiForTechnique(int qiCost, int practitionerCurrentQi)
+        public ChargerBufferResult UseQiForTechnique(long qiCost, long practitionerCurrentQi)
         {
             ChargerBufferResult result = new ChargerBufferResult
             {
@@ -187,7 +192,7 @@ namespace CultivationGame.Charger
             
             // 2. Используем всё из ядра
             result.QiFromCore = practitionerCurrentQi;
-            int remaining = qiCost - practitionerCurrentQi;
+            long remaining = qiCost - practitionerCurrentQi;
             
             // 3. Добираем из буфера (с потерями)
             if (currentQi > 0 && remaining > 0)
@@ -217,22 +222,23 @@ namespace CultivationGame.Charger
         
         /// <summary>
         /// Проверить, можно ли использовать технику.
+        /// FIX: practitionerCurrentQi → long
         /// </summary>
-        public bool CanUseTechnique(int qiCost, int practitionerCurrentQi)
+        public bool CanUseTechnique(long qiCost, long practitionerCurrentQi)
         {
-            int totalAvailable = practitionerCurrentQi + currentQi;
             // С учётом потерь в буфере
-            int effectiveAvailable = practitionerCurrentQi + Mathf.FloorToInt(currentQi * (1f - efficiencyLoss));
+            long effectiveAvailable = practitionerCurrentQi + (long)(currentQi * (1f - efficiencyLoss));
             
             return effectiveAvailable >= qiCost;
         }
         
         /// <summary>
         /// Рассчитать доступное Ци с учётом потерь.
+        /// FIX: practitionerCurrentQi → long, return → long
         /// </summary>
-        public int GetEffectiveQiAvailable(int practitionerCurrentQi)
+        public long GetEffectiveQiAvailable(long practitionerCurrentQi)
         {
-            return practitionerCurrentQi + Mathf.FloorToInt(currentQi * (1f - efficiencyLoss));
+            return practitionerCurrentQi + (long)(currentQi * (1f - efficiencyLoss));
         }
         
         // === Accumulation (per-frame) ===

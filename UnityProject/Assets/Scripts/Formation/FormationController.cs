@@ -193,6 +193,7 @@ namespace CultivationGame.Formation
 
         private void OnDestroy()
         {
+            _instance = null;
             UnsubscribeFromEvents();
         }
 
@@ -499,15 +500,16 @@ namespace CultivationGame.Formation
 
         /// <summary>
         /// Внести Ци в формацию.
+        /// FIX: long для Qi > 2.1B
         /// </summary>
-        public int ContributeQi(FormationCore core, int maxAmount)
+        public long ContributeQi(FormationCore core, long maxAmount)
         {
             if (core == null || playerQi == null) return 0;
 
-            int amount = Mathf.Min(maxAmount, (int)playerQi.CurrentQi);
+            long amount = Math.Min(maxAmount, playerQi.CurrentQi);
             float transferRate = playerQi.Conductivity * playerQi.QiDensity;
 
-            int accepted = core.ContributeQi(playerQi.gameObject, amount, transferRate);
+            long accepted = core.ContributeQi(playerQi.gameObject, amount, transferRate);
 
             if (accepted > 0)
             {
@@ -631,14 +633,15 @@ namespace CultivationGame.Formation
 
         /// <summary>
         /// Подпитать формацию от зарядника.
+        /// FIX: long для Qi > 2.1B
         /// </summary>
-        public int ChargeFormationFromCharger(FormationCore core)
+        public long ChargeFormationFromCharger(FormationCore core)
         {
             if (core == null || playerCharger == null) return 0;
             if (!playerCharger.IsOperational || !playerCharger.HasStones) return 0;
 
             // Ограничено проводимостью зарядника
-            int maxTransfer = Mathf.RoundToInt(playerCharger.Buffer.Conductivity * Time.deltaTime * 60);
+            long maxTransfer = (long)(playerCharger.Buffer.Conductivity * Time.deltaTime * 60);
 
             // Используем Ци из буфера
             var result = playerCharger.Buffer.UseQiForTechnique(maxTransfer, 0);

@@ -178,6 +178,7 @@ namespace CultivationGame.Charger
     [Serializable]
     public class ChargerSlot
     {
+        // FIX CHR-C01: [SerializeField] оставлен для Unity serialization в [Serializable] классе
         [SerializeField] private int slotIndex;
         [SerializeField] private QiStone insertedStone;
         [SerializeField] private bool isActive = true;

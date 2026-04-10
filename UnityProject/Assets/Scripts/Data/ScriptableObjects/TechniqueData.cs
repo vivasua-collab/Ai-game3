@@ -67,7 +67,7 @@ namespace CultivationGame.Data.ScriptableObjects
         
         [Header("Costs")]
         [Tooltip("Базовая стоимость Ци")]
-        public int baseQiCost = 10;
+        public long baseQiCost = 10; // FIX DAT-H01: int→long для Qi > 2.1B на L5+
         
         [Tooltip("Физическая усталость (%)")]
         [Range(0f, 100f)]

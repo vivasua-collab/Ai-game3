@@ -34,8 +34,8 @@ namespace CultivationGame.NPC
         public float DormantCoreProgress; // 0-100% для пробуждения ядра
         
         // === Resources ===
-        public int CurrentQi;
-        public int MaxQi;
+        public long CurrentQi;
+        public long MaxQi;
         public int CurrentHealth;
         public int MaxHealth;
         public float CurrentStamina;
@@ -175,9 +175,15 @@ namespace CultivationGame.NPC
         public float DormantCoreProgress;
         
         // Resources
-        public int CurrentQi;
+        public long CurrentQi;
         public int CurrentHealth;
         public float CurrentStamina;
+        
+        // Max Resources
+        public long MaxQi;
+        public float MaxHealth;
+        public float MaxStamina;
+        public float MaxLifespan;
         
         // Body
         public float BodyStrength;

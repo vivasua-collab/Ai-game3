@@ -390,17 +390,18 @@ namespace CultivationGame.Formation
 
         /// <summary>
         /// Внести Ци в формацию.
+        /// FIX: long для Qi > 2.1B на L5+
         /// </summary>
         /// <param name="practitioner">Практик</param>
         /// <param name="amount">Количество Ци</param>
         /// <param name="transferRate">Скорость передачи</param>
         /// <returns>Принятое количество</returns>
-        public int ContributeQi(GameObject practitioner, int amount, float transferRate)
+        public long ContributeQi(GameObject practitioner, long amount, float transferRate)
         {
             if (stage != FormationStage.Filling && stage != FormationStage.Active)
                 return 0;
 
-            int accepted = qiPool.AcceptQi(amount, transferRate);
+            long accepted = qiPool.AcceptQi(amount, transferRate);
 
             // Записываем вклад участника
             var participant = participants.Find(p => p.practitioner == practitioner);

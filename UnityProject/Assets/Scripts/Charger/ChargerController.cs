@@ -323,7 +323,7 @@ namespace CultivationGame.Charger
         /// </summary>
         /// <param name="qiCost">Стоимость техники</param>
         /// <returns>True если Ци достаточно</returns>
-        public bool UseQiForTechnique(int qiCost)
+        public bool UseQiForTechnique(long qiCost)
         {
             if (IsOverheated)
             {
@@ -331,7 +331,7 @@ namespace CultivationGame.Charger
                 return false;
             }
             
-            int practitionerCurrentQi = practitionerQi != null ? (int)practitionerQi.CurrentQi : 0;
+            long practitionerCurrentQi = practitionerQi != null ? practitionerQi.CurrentQi : 0;
             
             // Проверяем возможность
             if (!buffer.CanUseTechnique(qiCost, practitionerCurrentQi))
@@ -367,7 +367,7 @@ namespace CultivationGame.Charger
         {
             if (IsOverheated) return false;
             
-            int practitionerCurrentQi = practitionerQi != null ? (int)practitionerQi.CurrentQi : 0;
+            long practitionerCurrentQi = practitionerQi != null ? practitionerQi.CurrentQi : 0;
             return buffer.CanUseTechnique(qiCost, practitionerCurrentQi);
         }
         
@@ -376,7 +376,7 @@ namespace CultivationGame.Charger
         /// </summary>
         public int GetAvailableQi()
         {
-            int practitionerCurrentQi = practitionerQi != null ? (int)practitionerQi.CurrentQi : 0;
+            long practitionerCurrentQi = practitionerQi != null ? practitionerQi.CurrentQi : 0;
             return buffer.GetEffectiveQiAvailable(practitionerCurrentQi);
         }
         
@@ -532,23 +532,24 @@ namespace CultivationGame.Charger
 
         /// <summary>
         /// Подпитать формацию от камней Ци.
+        /// FIX: long для Qi > 2.1B
         /// Источник: FORMATION_SYSTEM.md
         /// </summary>
         /// <param name="formation">Формация для подпитки</param>
         /// <returns>Количество переданного Ци</returns>
-        public int ChargeFormation(Formation.FormationCore formation)
+        public long ChargeFormation(Formation.FormationCore formation)
         {
             if (!IsOperational || !HasStones || formation == null) return 0;
 
             // Ограничено проводимостью зарядника
-            int maxTransfer = Mathf.RoundToInt(buffer.Conductivity * Time.deltaTime * 60);
+            long maxTransfer = (long)(buffer.Conductivity * Time.deltaTime * 60);
 
             // Используем Ци из буфера
             ChargerBufferResult result = buffer.UseQiForTechnique(maxTransfer, 0);
 
             if (result.QiFromBuffer > 0)
             {
-                int accepted = formation.ContributeQi(practitionerQi?.gameObject, result.QiFromBuffer, buffer.Conductivity);
+                long accepted = formation.ContributeQi(practitionerQi?.gameObject, result.QiFromBuffer, buffer.Conductivity);
 
                 // Добавляем тепло от использования буфера
                 if (accepted > 0)

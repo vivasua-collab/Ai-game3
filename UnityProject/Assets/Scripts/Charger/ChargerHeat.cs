@@ -1,9 +1,9 @@
 // ============================================================================
 // ChargerHeat.cs — Тепловой баланс зарядника
 // Cultivation World Simulator
-// Версия: 1.0
-// ============================================================================
+// Версия: 1.1 — Fix-01: [Header] убраны, [SerializeField] оставлены
 // Создано: 2026-04-03 08:30:00 UTC
+// Редактировано: 2026-04-10 — Fix-01: CHR-C01 fix
 // ============================================================================
 
 using System;
@@ -40,25 +40,28 @@ namespace CultivationGame.Charger
     /// Тепловой баланс зарядника.
     /// Управляет нагревом, рассеиванием и перегревом.
     /// Источник: CHARGER_SYSTEM.md §4.3 "Тепловой баланс"
+    /// 
+    /// FIX CHR-C01: Убраны [Header] (не работают в [Serializable] non-MonoBehaviour),
+    /// оставлены [SerializeField] (нужны для Unity serialization).
     /// </summary>
     [Serializable]
     public class ChargerHeat
     {
-        [Header("Heat Levels")]
-        [SerializeField][Range(0f, 100f)] private float currentHeat = 0f;
+        // Heat Levels
+        [SerializeField] [Range(0f, 100f)] private float currentHeat = 0f;
         [SerializeField] private float maxHeat = 100f;
         
-        [Header("Dissipation")]
+        // Dissipation
         [SerializeField] private float baseDissipationRate = 1f;    // %/сек пассивно
         [SerializeField] private float combatDissipationRate = 0.5f; // %/сек в бою
         [SerializeField] private float postCombatDissipationRate = 2f; // %/сек после боя
         
-        [Header("Overheat")]
+        // Overheat
         [SerializeField] private float overheatThreshold = 100f;
         [SerializeField] private float overheatCooldown = 30f;       // секунд блокировки
         [SerializeField] private float cooldownTimer = 0f;
         
-        [Header("State")]
+        // State
         [SerializeField] private bool isOverheated = false;
         [SerializeField] private bool isInCombat = false;
         
@@ -96,7 +99,7 @@ namespace CultivationGame.Charger
         /// </summary>
         /// <param name="qiUsed">Количество использованного Ци</param>
         /// <returns>Результат теплового воздействия</returns>
-        public HeatResult AddHeatFromQi(int qiUsed)
+        public HeatResult AddHeatFromQi(long qiUsed)
         {
             float heatGained = qiUsed * HEAT_PER_QI;
             return AddHeat(heatGained);

@@ -856,7 +856,7 @@ namespace CultivationGame.Tests
             OnDamageTaken?.Invoke(damage);
         }
 
-        public bool SpendQi(int amount)
+        public bool SpendQi(long amount) // FIX: int→long (Fix-01 cascade)
         {
             return qiController?.SpendQi(amount) ?? false;
         }

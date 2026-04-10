@@ -356,8 +356,8 @@ namespace CultivationGame.NPC
             CalculateResourcesFromLevel();
 
             // Qi (используем формулу из документации)
-            state.MaxQi = (int)generated.maxQi;
-            state.CurrentQi = (int)generated.currentQi;
+            state.MaxQi = (long)generated.maxQi;
+            state.CurrentQi = (long)generated.currentQi;
 
             // AI параметры
             if (aiController != null)
@@ -430,6 +430,10 @@ namespace CultivationGame.NPC
                 CurrentQi = state.CurrentQi,
                 CurrentHealth = state.CurrentHealth,
                 CurrentStamina = state.CurrentStamina,
+                MaxQi = state.MaxQi,
+                MaxHealth = state.MaxHealth,
+                MaxStamina = state.MaxStamina,
+                MaxLifespan = state.MaxLifespan,
                 BodyStrength = state.BodyStrength,
                 BodyDefense = state.BodyDefense,
                 Constitution = state.Constitution,
@@ -462,6 +466,10 @@ namespace CultivationGame.NPC
             state.CurrentQi = data.CurrentQi;
             state.CurrentHealth = data.CurrentHealth;
             state.CurrentStamina = data.CurrentStamina;
+            state.MaxQi = data.MaxQi;
+            state.MaxHealth = data.MaxHealth;
+            state.MaxStamina = data.MaxStamina;
+            state.MaxLifespan = data.MaxLifespan;
             state.BodyStrength = data.BodyStrength;
             state.BodyDefense = data.BodyDefense;
             state.Constitution = data.Constitution;

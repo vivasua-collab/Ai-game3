@@ -3,7 +3,7 @@
 // Cultivation World Simulator
 // Версия: 1.3 — Добавлен conductivityBonus для системы перков
 // Создано: 2026-03-30 14:00:00 UTC
-// Редактировано: 2026-04-09 07:16:00 UTC — после прорыва Ци = 0
+// Редактировано: 2026-04-10 13:49:00 UTC — Fix-01: SpendQi(long), negative check, EffectiveQi, EstimateCapacityAtLevel, long casts removed
 // ============================================================================
 
 using System;
@@ -62,6 +62,13 @@ namespace CultivationGame.Qi
         public float QiDensity => qiDensity;
         public bool IsFull => currentQi >= maxQiCapacity;
         public bool IsEmpty => currentQi <= 0;
+        
+        /// <summary>
+        /// Эффективное Ци = текущее Ци × плотность.
+        /// Используется для расчёта мощности техник и UI.
+        /// Модель В: effectiveQi = coreCapacity × qiDensity
+        /// </summary>
+        public long EffectiveQi => (long)(currentQi * qiDensity);
         
         // === Unity Lifecycle ===
         
@@ -157,10 +164,13 @@ namespace CultivationGame.Qi
         
         /// <summary>
         /// Потратить Ци.
+        /// FIX: int→long для поддержки Qi > 2.1B на L5+
+        /// FIX: Проверка amount > 0 предотвращает эксплойт (negative = добавление Qi)
         /// </summary>
         /// <returns>True если хватило Ци</returns>
-        public bool SpendQi(int amount)
+        public bool SpendQi(long amount)
         {
+            if (amount <= 0) return false; // FIX: QI-H03 — отрицательное/нулевое значение
             if (currentQi >= amount)
             {
                 currentQi -= amount;
@@ -354,21 +364,21 @@ namespace CultivationGame.Qi
                     AbsorbedDamage = 0f,
                     PiercingDamage = damage,
                     QiConsumed = 0,
-                    QiRemaining = (int)currentQi,
+                    QiRemaining = currentQi, // FIX: long вместо int
                     WasShieldActive = false,
                     WasQiDepleted = false
                 };
             }
             
             QiBufferResult result = isQiTechnique
-                ? QiBuffer.ProcessQiTechniqueDamage(damage, (int)currentQi, QiDefense)
-                : QiBuffer.ProcessPhysicalDamage(damage, (int)currentQi, QiDefense);
+                ? QiBuffer.ProcessQiTechniqueDamage(damage, currentQi, QiDefense) // FIX: long
+                : QiBuffer.ProcessPhysicalDamage(damage, currentQi, QiDefense);   // FIX: long
             
             // Тратим Ци
             if (result.QiConsumed > 0)
             {
                 SpendQi(result.QiConsumed);
-                result.QiRemaining = (int)currentQi;
+                result.QiRemaining = currentQi; // FIX: long
             }
             
             return result;
@@ -383,16 +393,16 @@ namespace CultivationGame.Qi
                 return false;
             
             DamageSourceType sourceType = isQiTechnique ? DamageSourceType.QiTechnique : DamageSourceType.Physical;
-            return QiBuffer.CanAbsorbDamage(damage, (int)currentQi, QiDefense, sourceType);
+            return QiBuffer.CanAbsorbDamage(damage, currentQi, QiDefense, sourceType); // FIX: long
         }
         
         /// <summary>
         /// Рассчитать необходимое Ци для поглощения урона.
         /// </summary>
-        public int CalculateRequiredQiForDamage(float damage, bool isQiTechnique = true)
+        public long CalculateRequiredQiForDamage(float damage, bool isQiTechnique = true)
         {
             DamageSourceType sourceType = isQiTechnique ? DamageSourceType.QiTechnique : DamageSourceType.Physical;
-            return QiBuffer.CalculateRequiredQi(damage, QiDefense, sourceType);
+            return QiBuffer.CalculateRequiredQi(damage, QiDefense, sourceType); // FIX: long return
         }
         
         // === Utility ===
@@ -453,16 +463,14 @@ namespace CultivationGame.Qi
 
         /// <summary>
         /// Передать Ци в формацию.
+        /// FIX: long для Qi > 2.1B
         /// Источник: FORMATION_SYSTEM.md
         /// </summary>
-        /// <param name="formation">Формация-приёмник</param>
-        /// <param name="maxAmount">Максимальное количество</param>
-        /// <returns>Переданное количество</returns>
-        public int TransferToFormation(Formation.FormationCore formation, int maxAmount)
+        public long TransferToFormation(Formation.FormationCore formation, long maxAmount)
         {
             if (formation == null || currentQi <= 0) return 0;
 
-            int amount = Mathf.Min((int)currentQi, maxAmount);
+            long amount = Math.Min(currentQi, maxAmount);
 
             if (amount > 0)
             {
@@ -470,7 +478,7 @@ namespace CultivationGame.Qi
                 float transferRate = conductivity * qiDensity;
 
                 // Формация принимает с учётом своей проводимости
-                int accepted = formation.ContributeQi(gameObject, amount, transferRate);
+                long accepted = formation.ContributeQi(gameObject, amount, transferRate);
 
                 if (accepted > 0)
                 {
@@ -489,6 +497,35 @@ namespace CultivationGame.Qi
         public float GetTransferRate()
         {
             return conductivity * qiDensity;
+        }
+        
+        // === Model B Helpers ===
+        
+        /// <summary>
+        /// Оценить ёмкость ядра на указанном уровне.
+        /// Используется для расчёта требований прорыва (Модель В).
+        /// </summary>
+        public long EstimateCapacityAtLevel(int level)
+        {
+            long baseCapacity = GameConstants.BASE_CORE_CAPACITY;
+            float qualityMult = GetQualityMultiplier();
+            float subLevelGrowth = Mathf.Pow(GameConstants.CORE_CAPACITY_GROWTH, (level - 1) * 10);
+            double rawCapacity = (double)baseCapacity * qualityMult * subLevelGrowth;
+            const long MAX_SAFE = long.MaxValue / 2;
+            return rawCapacity > MAX_SAFE ? MAX_SAFE : (long)rawCapacity;
+        }
+        
+        /// <summary>
+        /// Оценить ёмкость ядра на указанном подуровне.
+        /// </summary>
+        public long EstimateCapacityAtSubLevel(int level, int subLevel)
+        {
+            long baseCapacity = GameConstants.BASE_CORE_CAPACITY;
+            float qualityMult = GetQualityMultiplier();
+            float subLevelGrowth = Mathf.Pow(GameConstants.CORE_CAPACITY_GROWTH, (level - 1) * 10 + subLevel);
+            double rawCapacity = (double)baseCapacity * qualityMult * subLevelGrowth;
+            const long MAX_SAFE = long.MaxValue / 2;
+            return rawCapacity > MAX_SAFE ? MAX_SAFE : (long)rawCapacity;
         }
     }
 }
