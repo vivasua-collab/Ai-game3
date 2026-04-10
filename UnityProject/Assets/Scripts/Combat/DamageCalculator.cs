@@ -1,10 +1,9 @@
 // ============================================================================
 // DamageCalculator.cs — Главный калькулятор урона
 // Cultivation World Simulator
-// Версия: 1.0
-// ============================================================================
+// Версия: 1.1 — Fix-02: Elemental interaction Variant A, AttackType.Normal, defenderElement
 // Создан: 2026-03-30 10:00:00 UTC
-// Редактирован: 2026-03-31 09:24:43 UTC
+// Редактировано: 2026-04-10 14:43:00 UTC
 // ============================================================================
 
 using System;
@@ -40,7 +39,7 @@ namespace CultivationGame.Combat
         public BodyPartType HitPart;        // СЛОЙ 3: Поражённая часть
         
         // Дополнительно
-        public int QiConsumed;              // Потраченное Ци
+        public long QiConsumed;             // FIX: long — Потраченное Ци
         public bool IsFatal;                // СЛОЙ 10: Смертельный удар?
     }
     
@@ -64,6 +63,7 @@ namespace CultivationGame.Combat
     
     /// <summary>
     /// Параметры защищающегося.
+    /// FIX CMB-H05: добавлено DefenderElement для стихийных взаимодействий
     /// </summary>
     public struct DefenderParams
     {
@@ -82,6 +82,9 @@ namespace CultivationGame.Combat
         public float BlockBonus;
         
         public BodyMaterial BodyMaterial;
+        
+        // FIX CMB-H05: Элемент защитника для стихийных взаимодействий
+        public Element DefenderElement;
     }
     
     /// <summary>
@@ -90,33 +93,14 @@ namespace CultivationGame.Combat
     /// 
     /// Источник: ALGORITHMS.md §5 "Пайплайн урона (10 слоёв)"
     /// 
-    /// ╔═══════════════════════════════════════════════════════════════════════════╗
-    /// ║  ПОРЯДОК ПРОХОЖДЕНИЯ УРОНА (10 СЛОЁВ)                                      ║
-    /// ╠═══════════════════════════════════════════════════════════════════════════╣
-    /// ║  СЛОЙ 1:  Исходный урон                                                    ║
-    /// ║  СЛОЙ 2:  Level Suppression (подавление уровнем)                           ║
-    /// ║  СЛОЙ 3:  Определение части тела                                           ║
-    /// ║  СЛОЙ 4:  Активная защита (dodge/parry/block)                              ║
-    /// ║  СЛОЙ 5:  Qi Buffer (поглощение Ци)                                        ║
-    /// ║  СЛОЙ 6:  Покрытие брони                                                   ║
-    /// ║  СЛОЙ 7:  Снижение бронёй                                                  ║
-    /// ║  СЛОЙ 8:  Материал тела                                                    ║
-    /// ║  СЛОЙ 9:  Распределение по HP (70% красная, 30% чёрная)                    ║
-    /// ║  СЛОЙ 10: Последствия (кровотечение, шок, смерть)                          ║
-    /// ╚═══════════════════════════════════════════════════════════════════════════╝
-    /// 
-    /// ⚠️ ВАЖНО: Level Suppression (СЛОЙ 2) должен применяться ДО Qi Buffer!
-    /// 
-    /// ⚠️ ВАЖНО: Qi Buffer различает:
-    /// - Техники Ци (isQiTechnique=true): 90%/3:1/10%
-    /// - Физический урон (isQiTechnique=false): 80%/5:1/20%
+    /// FIX CMB-C01: CalculateElementalInteraction вызывается с defenderElement
+    /// FIX CMB-C02: AttackType учитывает IsQiTechnique (Normal для физ. атак)
+    /// FIX CMB-H05: defenderElement в DefenderParams
     /// </summary>
     public static class DamageCalculator
     {
         /// <summary>
         /// Полный расчёт урона по 10-слойному пайплайну.
-        /// 
-        /// Источник: ALGORITHMS.md §5 "Пайплайн урона (10 слоёв)"
         /// </summary>
         public static DamageResult CalculateDamage(
             int techniqueCapacity,
@@ -125,13 +109,15 @@ namespace CultivationGame.Combat
         {
             DamageResult result = new DamageResult
             {
-                AttackType = attacker.IsUltimate ? AttackType.Ultimate : AttackType.Technique,
+                // FIX CMB-C02: AttackType учитывает IsQiTechnique
+                AttackType = attacker.IsUltimate ? AttackType.Ultimate
+                    : attacker.IsQiTechnique ? AttackType.Technique
+                    : AttackType.Normal,
                 HitPart = BodyPartType.Torso
             };
             
             // ========================================
             // СЛОЙ 1: Исходный урон
-            // Источник: ALGORITHMS.md §5.2 "Слой 1"
             // ========================================
             
             result.RawDamage = TechniqueCapacity.CalculateDamage(
@@ -144,8 +130,7 @@ namespace CultivationGame.Combat
             
             // ========================================
             // СЛОЙ 2: Level Suppression
-            // Источник: ALGORITHMS.md §5.2 "Слой 2"
-            // ⚠️ ВАЖНО: Применяется ДО Qi Buffer!
+            // ⚠️ Применяется ДО Qi Buffer!
             // ========================================
             
             result.SuppressionMultiplier = LevelSuppression.CalculateSuppression(
@@ -160,31 +145,25 @@ namespace CultivationGame.Combat
             if (damage <= 0f)
             {
                 result.FinalDamage = 0f;
-                return result; // Урон невозможен из-за подавления
+                return result;
             }
             
             // ========================================
             // Элементальный множитель
-            // (Не является отдельным слоем, применяется после подавления)
+            // FIX CMB-C01: Вызываем CalculateElementalInteraction с defenderElement
             // ========================================
             
-            result.ElementMultiplier = CalculateElementMultiplier(attacker.AttackElement);
+            result.ElementMultiplier = CalculateElementalInteraction(attacker.AttackElement, defender.DefenderElement);
             damage *= result.ElementMultiplier;
             
             // ========================================
             // СЛОЙ 3: Определение части тела
-            // Источник: ALGORITHMS.md §5.2 "Слой 3"
             // ========================================
             
             result.HitPart = DefenseProcessor.RollBodyPart();
             
             // ========================================
             // СЛОЙ 4: Активная защита
-            // Источник: ALGORITHMS.md §5.2 "Слой 4"
-            // Формулы:
-            // - dodgeChance = 5% + (AGI-10) × 0.5% - armorDodgePenalty
-            // - parryChance = weaponParryBonus + (AGI-10) × 0.3%
-            // - blockChance = shieldBlock + (STR-10) × 0.2%
             // ========================================
             
             DefenseData defenseData = new DefenseData
@@ -211,28 +190,22 @@ namespace CultivationGame.Combat
             if (RollChance(defenseData.ParryChance))
             {
                 result.WasParried = true;
-                damage *= 0.5f; // 50% урона при парировании
+                damage *= 0.5f;
             }
             
             // Проверяем блок
             if (RollChance(defenseData.BlockChance))
             {
                 result.WasBlocked = true;
-                damage *= 0.3f; // 30% урона при блоке
+                damage *= 0.3f;
             }
             
             // ========================================
             // СЛОЙ 5: Qi Buffer
-            // Источник: ALGORITHMS.md §5.2 "Слой 5"
-            // 
-            // ⚠️ КРИТИЧНО: Различаем техники Ци и физический урон!
-            // - Техники Ци: 90%/3:1/10% или 100%/1:1/0% (щит)
-            // - Физический: 80%/5:1/20% или 100%/2:1/0% (щит)
             // ========================================
             
             if (defender.QiDefense != QiDefenseType.None && defender.CurrentQi >= GameConstants.MIN_QI_FOR_BUFFER)
             {
-                // Выбираем правильный метод в зависимости от типа атаки
                 QiBufferResult qiResult = attacker.IsQiTechnique
                     ? QiBuffer.ProcessQiTechniqueDamage(damage, defender.CurrentQi, defender.QiDefense)
                     : QiBuffer.ProcessPhysicalDamage(damage, defender.CurrentQi, defender.QiDefense);
@@ -245,26 +218,21 @@ namespace CultivationGame.Combat
             
             // ========================================
             // СЛОЙ 6-7: Броня (покрытие + снижение)
-            // Источник: ALGORITHMS.md §5.2 "Слои 6-7"
             // ========================================
             
             if (RollChance(defender.ArmorCoverage))
             {
                 result.HitArmor = true;
                 
-                // Снижение урона (кап 80%)
                 float dr = Math.Min(GameConstants.MAX_DAMAGE_REDUCTION, defender.DamageReduction);
                 damage *= (1f - dr);
                 
-                // Плоское вычитание (с учётом пробития)
                 int effectiveArmor = Math.Max(0, defender.ArmorValue - attacker.Penetration);
                 damage = Math.Max(1f, damage - effectiveArmor * 0.5f);
             }
             
             // ========================================
             // СЛОЙ 8: Материал тела
-            // Источник: ALGORITHMS.md §5.2 "Слой 8"
-            // Источник: ENTITY_TYPES.md §5 "Материалы тела"
             // ========================================
             
             if (GameConstants.BodyMaterialReduction.TryGetValue(defender.BodyMaterial, out float matReduction))
@@ -274,11 +242,6 @@ namespace CultivationGame.Combat
             
             // ========================================
             // СЛОЙ 9: Распределение по HP
-            // Источник: ALGORITHMS.md §5.2 "Слой 9"
-            // Источник: ALGORITHMS.md §9 "Расчёт телесного урона"
-            // 
-            // redHP -= damage × 0.7  (функциональная)
-            // blackHP -= damage × 0.3 (структурная)
             // ========================================
             
             result.FinalDamage = Math.Max(0f, damage);
@@ -287,11 +250,6 @@ namespace CultivationGame.Combat
             
             // ========================================
             // СЛОЙ 10: Последствия
-            // Источник: ALGORITHMS.md §5.2 "Слой 10"
-            // - Кровотечение
-            // - Шок
-            // - Оглушение
-            // - Смерть (heart HP ≤ 0 или head HP ≤ 0)
             // ========================================
             
             result.IsFatal = (result.HitPart == BodyPartType.Heart || result.HitPart == BodyPartType.Head) 
@@ -301,38 +259,44 @@ namespace CultivationGame.Combat
         }
         
         /// <summary>
-        /// Рассчитать элементальный множитель.
-        /// Источник: ALGORITHMS.md §10 "Система элементов"
-        /// </summary>
-        private static float CalculateElementMultiplier(Element element)
-        {
-            if (element == Element.Void)
-                return GameConstants.VOID_ELEMENT_MULTIPLIER;
-            if (element == Element.Neutral)
-                return 1.0f;
-            return 1.0f;
-        }
-        
-        /// <summary>
         /// Рассчитать множитель для атаки элементом по элементу.
-        /// Источник: ALGORITHMS.md §10.2 "Множители эффективности атаки"
         /// 
-        /// - Противоположные элементы: ×1.5 урона
-        /// - Сродство: ×0.8 урона
-        /// - Void: ×1.2 по любому
-        /// - Neutral: ×1.0
+        /// FIX CMB-C01: Полная реализация Variant A (решение пользователя)
+        /// 
+        /// Схема противоположностей (Variant A):
+        /// - Fire ↔ Water: ×1.5 opposite, ×0.8 affinity
+        /// - Earth ↔ Air: ×1.5 opposite, ×0.8 affinity
+        /// - Lightning ↔ Void: ×1.5 opposite, ×0.8 affinity
+        /// - Fire → Poison: ×1.2 (выжигание токсинов, одностороннее)
+        /// - Void → All: ×1.2 (поглощение)
+        /// - Neutral → All: ×1.0
         /// </summary>
         public static float CalculateElementalInteraction(Element attacker, Element defender)
         {
-            // Противоположные элементы
+            // Neutral — без бонусов
+            if (attacker == Element.Neutral)
+                return 1.0f;
+            
+            // Проверяем противоположные элементы
             if (GameConstants.OppositeElements.TryGetValue(attacker, out Element opposite))
             {
                 if (defender == opposite)
-                    return GameConstants.OPPOSITE_ELEMENT_MULTIPLIER;
+                    return GameConstants.OPPOSITE_ELEMENT_MULTIPLIER; // ×1.5
             }
             
-            // Void особый случай
-            if (attacker == Element.Void)
+            // Проверяем сродство (атакующий бьёт по своему элементу → слабее)
+            if (GameConstants.OppositeElements.TryGetValue(defender, out Element defenderOpposite))
+            {
+                if (attacker == defenderOpposite)
+                    return GameConstants.AFFINITY_ELEMENT_MULTIPLIER; // ×0.8
+            }
+            
+            // Fire → Poison: ×1.2 (выжигание токсинов, одностороннее)
+            if (attacker == Element.Fire && defender == Element.Poison)
+                return GameConstants.FIRE_TO_POISON_MULTIPLIER;
+            
+            // Void → All (кроме противоположного Lightning): ×1.2
+            if (attacker == Element.Void && defender != Element.Lightning)
                 return GameConstants.VOID_ELEMENT_MULTIPLIER;
             
             return 1.0f;

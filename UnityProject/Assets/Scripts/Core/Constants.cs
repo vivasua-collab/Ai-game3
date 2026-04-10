@@ -585,15 +585,17 @@ namespace CultivationGame.Core
         #region Elements
         
         /// <summary>
-        /// Противоположные элементы
-        /// Источник: ALGORITHMS.md §10.1 "Стихии"
+        /// Противоположные элементы (Variant A — решение пользователя)
+        /// Fire ↔ Water, Earth ↔ Air, Lightning ↔ Void
         /// </summary>
         public static readonly Dictionary<Element, Element> OppositeElements = new Dictionary<Element, Element>
         {
             { Element.Fire, Element.Water },
             { Element.Water, Element.Fire },
             { Element.Earth, Element.Air },
-            { Element.Air, Element.Earth }
+            { Element.Air, Element.Earth },
+            { Element.Lightning, Element.Void },      // FIX CMB-C01: Variant A
+            { Element.Void, Element.Lightning }        // FIX CMB-C01: Variant A
         };
         
         /// <summary>
@@ -613,6 +615,12 @@ namespace CultivationGame.Core
         /// Источник: ALGORITHMS.md §10.2 "Множители эффективности атаки"
         /// </summary>
         public const float VOID_ELEMENT_MULTIPLIER = 1.2f;
+        
+        /// <summary>
+        /// Множитель урона Fire по Poison (выжигание токсинов, одностороннее)
+        /// FIX CMB-C01: Variant A — Fire → Poison ×1.2
+        /// </summary>
+        public const float FIRE_TO_POISON_MULTIPLIER = 1.2f;
         
         #endregion
         

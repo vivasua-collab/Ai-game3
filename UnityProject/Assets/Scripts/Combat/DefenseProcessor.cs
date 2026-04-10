@@ -1,10 +1,9 @@
 // ============================================================================
 // DefenseProcessor.cs — Обработка защиты (10-слойный пайплайн)
 // Cultivation World Simulator
-// Версия: 1.0
-// ============================================================================
+// Версия: 1.1 — Fix-02: System.Random→UnityEngine.Random, Clamp01 для шансов
 // Создан: 2026-03-30 10:00:00 UTC
-// Редактирован: 2026-03-31 09:24:43 UTC
+// Редактировано: 2026-04-10 14:43:00 UTC
 // ============================================================================
 
 using System;
@@ -47,43 +46,15 @@ namespace CultivationGame.Combat
     /// 
     /// Источник: ALGORITHMS.md §5 "Пайплайн урона (10 слоёв)"
     /// 
-    /// Обрабатывает слои:
-    /// - СЛОЙ 3: Определение части тела
-    /// - СЛОЙ 4: Активная защита (dodge/parry/block)
-    /// - СЛОЙ 6: Покрытие брони
-    /// - СЛОЙ 7: Снижение бронёй
-    /// - СЛОЙ 8: Материал тела
-    /// 
-    /// ╔═══════════════════════════════════════════════════════════════════════════╗
-    /// ║  ФОРМУЛЫ АКТИВНОЙ ЗАЩИТЫ (СЛОЙ 4)                                          ║
-    /// ╠═══════════════════════════════════════════════════════════════════════════╣
-    /// ║                                                                            ║
-    /// ║  Уклонение:                                                                ║
-    /// ║  dodgeChance = 5% + (AGI-10) × 0.5% - armorDodgePenalty                    ║
-    /// ║  → Успех: damage = 0, END                                                  ║
-    /// ║                                                                            ║
-    /// ║  Парирование:                                                              ║
-    /// ║  parryChance = weaponParryBonus + (AGI-10) × 0.3%                          ║
-    /// ║  → Успех: damage ×= 0.5 (50% урона)                                        ║
-    /// ║                                                                            ║
-    /// ║  Блок щитом:                                                               ║
-    /// ║  blockChance = shieldBlock + (STR-10) × 0.2%                               ║
-    /// ║  → Успех: damage ×= 0.3 (30% урона)                                        ║
-    /// ║                                                                            ║
-    /// ╚═══════════════════════════════════════════════════════════════════════════╝
+    /// FIX CMB-C06: System.Random → UnityEngine.Random (потокобезопасность Unity)
+    /// FIX CMB-M06: Mathf.Clamp01 для DodgeChance, ParryChance, BlockChance
     /// </summary>
     public static class DefenseProcessor
     {
-        private static readonly Random random = new Random();
+        // FIX CMB-C06: Убран System.Random — используем UnityEngine.Random.value
         
         /// <summary>
         /// Обработать урон через все слои защиты.
-        /// 
-        /// Порядок слоёв:
-        /// 1. СЛОЙ 4: Активная защита (dodge → parry → block)
-        /// 2. СЛОЙ 6: Покрытие брони
-        /// 3. СЛОЙ 7: Снижение бронёй
-        /// 4. СЛОЙ 8: Материал тела
         /// </summary>
         public static DefenseResult ProcessDefense(float rawDamage, DefenseData defense)
         {
@@ -95,10 +66,13 @@ namespace CultivationGame.Combat
             float damage = rawDamage;
             
             // === СЛОЙ 4: Активная защита ===
-            // Источник: ALGORITHMS.md §5.2 "Слой 4"
+            // FIX CMB-M06: Clamp01 для всех шансов
+            float dodgeChance = Mathf.Clamp01(defense.DodgeChance);
+            float parryChance = Mathf.Clamp01(defense.ParryChance);
+            float blockChance = Mathf.Clamp01(defense.BlockChance);
             
             // Уклонение (полный промах)
-            if (RollChance(defense.DodgeChance))
+            if (RollChance(dodgeChance))
             {
                 result.WasDodged = true;
                 result.FinalDamage = 0f;
@@ -106,28 +80,26 @@ namespace CultivationGame.Combat
             }
             
             // Парирование (50% урона)
-            if (RollChance(defense.ParryChance))
+            if (RollChance(parryChance))
             {
                 result.WasParried = true;
                 damage *= 0.5f;
             }
             
             // Блок (30% урона)
-            if (RollChance(defense.BlockChance))
+            if (RollChance(blockChance))
             {
                 result.WasBlocked = true;
                 damage *= 0.3f;
             }
             
             // === СЛОЙ 6: Покрытие брони ===
-            // Источник: ALGORITHMS.md §5.2 "Слой 6"
             
-            if (RollChance(defense.ArmorCoverage))
+            if (RollChance(Mathf.Clamp01(defense.ArmorCoverage)))
             {
                 result.HitArmor = true;
                 
                 // === СЛОЙ 7: Снижение бронёй ===
-                // Источник: ALGORITHMS.md §5.2 "Слой 7"
                 
                 // Процентное снижение (кап 80%)
                 float dr = Math.Min(GameConstants.MAX_DAMAGE_REDUCTION, defense.DamageReduction);
@@ -139,8 +111,6 @@ namespace CultivationGame.Combat
             }
             
             // === СЛОЙ 8: Материал тела ===
-            // Источник: ALGORITHMS.md §5.2 "Слой 8"
-            // Источник: ENTITY_TYPES.md §5 "Материалы тела"
             
             if (GameConstants.BodyMaterialReduction.TryGetValue(defense.BodyMaterial, out float materialReduction))
             {
@@ -153,83 +123,44 @@ namespace CultivationGame.Combat
         
         /// <summary>
         /// Рассчитать шанс уклонения.
-        /// 
-        /// Источник: ALGORITHMS.md §5.2 "Слой 4"
-        /// 
-        /// Формула:
-        /// dodgeChance = 5% + (AGI-10) × 0.5% - armorDodgePenalty
-        /// 
-        /// Примеры:
-        /// - AGI=10, no armor: 5%
-        /// - AGI=20, no armor: 5% + 5% = 10%
-        /// - AGI=10, heavy armor (-10%): 5% - 10% = -5% → 0%
+        /// FIX CMB-M06: добавлен Clamp01 в результат
         /// </summary>
         public static float CalculateDodgeChance(int agility, float armorDodgePenalty = 0f)
         {
             // Базовый 5% + (AGI-10) × 0.5% - штраф брони
-            return Math.Max(0f, 0.05f + (agility - 10) * 0.005f - armorDodgePenalty);
+            float chance = 0.05f + (agility - 10) * 0.005f - armorDodgePenalty;
+            return Mathf.Clamp01(Math.Max(0f, chance)); // FIX CMB-M06: Clamp01
         }
         
         /// <summary>
         /// Рассчитать шанс парирования.
-        /// 
-        /// Источник: ALGORITHMS.md §5.2 "Слой 4"
-        /// 
-        /// Формула:
-        /// parryChance = weaponParryBonus + (AGI-10) × 0.3%
-        /// 
-        /// Примеры:
-        /// - AGI=10, weapon +5%: 5%
-        /// - AGI=20, weapon +5%: 5% + 3% = 8%
+        /// FIX CMB-M06: добавлен Clamp01 в результат
         /// </summary>
         public static float CalculateParryChance(int agility, float weaponParryBonus = 0f)
         {
             // Бонус оружия + (AGI-10) × 0.3%
-            return Math.Max(0f, weaponParryBonus + (agility - 10) * 0.003f);
+            float chance = weaponParryBonus + (agility - 10) * 0.003f;
+            return Mathf.Clamp01(Math.Max(0f, chance)); // FIX CMB-M06: Clamp01
         }
         
         /// <summary>
         /// Рассчитать шанс блока.
-        /// 
-        /// Источник: ALGORITHMS.md §5.2 "Слой 4"
-        /// 
-        /// Формула:
-        /// blockChance = shieldBlock + (STR-10) × 0.2%
-        /// 
-        /// Примеры:
-        /// - STR=10, shield +15%: 15%
-        /// - STR=20, shield +15%: 15% + 2% = 17%
+        /// FIX CMB-M06: добавлен Clamp01 в результат
         /// </summary>
         public static float CalculateBlockChance(int strength, float shieldBlockBonus = 0f)
         {
             // Бонус щита + (STR-10) × 0.2%
-            return Math.Max(0f, shieldBlockBonus + (strength - 10) * 0.002f);
+            float chance = shieldBlockBonus + (strength - 10) * 0.002f;
+            return Mathf.Clamp01(Math.Max(0f, chance)); // FIX CMB-M06: Clamp01
         }
         
         /// <summary>
         /// Бросить часть тела (гуманоид).
-        /// 
-        /// Источник: ALGORITHMS.md §8 "Шансы попадания по частям тела"
-        /// 
-        /// Базовые шансы (гуманоид):
-        /// | Часть тела | Шанс |
-        /// |------------|------|
-        /// | head       | 5%   |
-        /// | torso      | 40%  |
-        /// | heart      | 2%   |
-        /// | left_arm   | 10%  |
-        /// | right_arm  | 10%  |
-        /// | left_leg   | 12%  |
-        /// | right_leg  | 12%  |
-        /// | left_hand  | 4%   |
-        /// | right_hand | 4%   |
-        /// | left_foot  | 0.5% |
-        /// | right_foot | 0.5% |
-        /// | ИТОГО      | 100% |
+        /// FIX CMB-C06: System.Random → UnityEngine.Random
         /// </summary>
         public static BodyPartType RollBodyPart()
         {
-            float roll = (float)random.NextDouble();
+            float roll = UnityEngine.Random.value; // FIX CMB-C06: был System.Random
             float cumulative = 0f;
             
             foreach (var kvp in GameConstants.BodyPartHitChances)
@@ -241,21 +172,11 @@ namespace CultivationGame.Combat
                 }
             }
             
-            return BodyPartType.Torso; // По умолчанию
+            return BodyPartType.Torso;
         }
         
         /// <summary>
         /// Применить мягкий кап (diminishing returns).
-        /// 
-        /// Источник: ALGORITHMS.md §6 "Мягкие капы (Soft Caps)"
-        /// 
-        /// Формула:
-        /// effectiveBonus = cap × (1 - e^(-bonus / (cap × decayRate)))
-        /// 
-        /// Пример (damage cap +100%, decay 1.0):
-        /// - Бонус +50%:  effective = 100 × (1 - e^(-0.5)) = 39.3%
-        /// - Бонус +100%: effective = 100 × (1 - e^(-1.0)) = 63.2%
-        /// - Бонус +200%: effective = 100 × (1 - e^(-2.0)) = 86.5%
         /// </summary>
         public static float ApplySoftCap(float bonus, float cap, float decayRate)
         {
@@ -265,10 +186,11 @@ namespace CultivationGame.Combat
         
         /// <summary>
         /// Проверить шанс.
+        /// FIX CMB-C06: UnityEngine.Random вместо System.Random
         /// </summary>
         private static bool RollChance(float chance)
         {
-            return random.NextDouble() < chance;
+            return UnityEngine.Random.value < chance; // FIX CMB-C06
         }
     }
 }
