@@ -229,3 +229,60 @@ Stage Summary:
 - 5 files modified: TimeController.cs, LocationController.cs, FactionController.cs, EventController.cs, WorldController.cs
 - 10 tasks completed (1 CRITICAL, 5 HIGH, 4 MEDIUM)
 - Key fixes: travel event order bug, game time for all EventController operations, JsonUtility-compatible EventData serialization, playerMemberships save/load, data validation on load, cascading event guard, transition events in SetTime/SetDate
+
+---
+Task ID: 4
+Agent: Sub Agent
+Task: Fix-10 — Managers + Player System (21 задач)
+
+Work Log:
+- 2026-04-11 UTC: Read all 7 target files + ICombatant interface + ServiceLocator + PlayerSaveData
+- Verified ICombatant interface defined in Combatant.cs (not separate ICombatant.cs file)
+- Verified PlayerSaveData: one class in CultivationGame.Save namespace, used by PlayerController via using
+- Found type mismatch: SaveManager PlayerSaveData.CurrentQi was int, should be long (fixed)
+
+Implemented 21 tasks across 7 files:
+
+**GameInitializer.cs (MGR-C01, MGR-H02, MGR-H05):**
+- MGR-C01: Added isInitializing bool flag; checked in InitializeGameAsync (yield break if true), Initialize(), and Reinitialize(); cleared on completion
+- MGR-H02: Replaced separate SubscribeToSaveEvents/SubscribeToPlayerEvents calls with unified SubscribeToEvents() in FinalSetup; SubscribeToEvents also calls SubscribeToTimeEvents
+- MGR-H05: Added NOTE comment about isSubscribed guards being unnecessary in individual methods since SubscribeToEvents already checks
+
+**SceneLoader.cs (MGR-C02, MGR-C03, MGR-H03, MGR-H04):**
+- MGR-C02: Added IsSceneInBuildSettings() validation in LoadScene() before starting async load
+- MGR-C03: timeScale restoration always happens (not conditional on no-exception path); uses previousTimeScale
+- MGR-H03: Before UnloadSceneAsync(loadingScene), check SceneManager.GetSceneByName(loadingScene).IsValid() to avoid double-unload in Single-mode
+- MGR-H04: Added previousTimeScale field; saved before setting 0f; restored instead of hardcoded 1f
+
+**GameManager.cs (MGR-H01):**
+- MGR-H01: FindReferences uses ServiceLocator.GetOrFind<T>() for all 4 references (WorldController, TimeController, PlayerController, UIManager)
+
+**PlayerController.cs (PLR-H01, PLR-H03):**
+- PLR-H01: PlayerController now implements ICombatant with explicit interface implementations:
+  - Properties delegating to qiController/bodyController (Name, CurrentQi, MaxQi, HealthPercent, etc.)
+  - DefenseProcessor calls for DodgeChance/ParryChance/BlockChance
+  - Methods: TakeDamage, TakeDamageRandom, SpendQi, AddQi, GetAttackerParams, GetDefenderParams
+  - Events: OnDeath→OnPlayerDeath, OnQiChanged→OnQiChanged, OnDamageTaken (stub)
+- PLR-H03: Revive uses healthPercent parameter for proportional HP/Stamina restoration instead of FullRestore; Qi still fully restores
+
+**SaveManager.cs (PLR-H02):**
+- PLR-H02: Verified single PlayerSaveData class in CultivationGame.Save namespace; fixed CurrentQi from int to long
+
+**SleepSystem.cs (PLR-M01-06):**
+- PLR-M01: Added formula comment to ProcessRecovery (hours * hpRecoveryRate * 100)
+- PLR-M02: ProcessFinalHPRecovery uses proportional recovery instead of FullRestore
+- PLR-M03: Added TransitionToSleeping coroutine with 0.5s delay between FallingAsleep and Sleeping states
+- PLR-M04: QuickSleep uses SetState transitions (FallingAsleep→Sleeping→WakingUp→Awake)
+- PLR-M05: CalculateOptimalSleepTime caps at maxSleepHours (12h) instead of optimalSleepHours (8h)
+- PLR-M06: SleepResult.QiRecovered changed from int to long; ProcessFinalQiRecovery returns long
+
+**PlayerVisual.cs (PLR-M07, PLR-L01/02/03):**
+- PLR-M07: Shader.Find tries "Universal Render Pipeline/2D/Sprite-Lit-Default" first, then "Sprites/Default" fallback
+- PLR-L01: OnDestroy added — destroys createdMaterial and createdTexture; stops flashCoroutine
+- PLR-L02: Flash method stops previous flashCoroutine before starting new one
+- PLR-L03: cachedCamera field cached in Start(); EnsureCamera2DSetup static method still uses Camera.main (inherent limitation)
+
+Stage Summary:
+- 7 files modified, 21 tasks completed (3 CRITICAL, 5 HIGH Managers, 3 HIGH Player, 7 MEDIUM Player, 3 LOW Player)
+- Key fixes: parallel initialization guard, scene validation, timeScale preservation, ICombatant implementation, proportional sleep recovery, memory leak cleanup
+- Commit: 5669350, no push
