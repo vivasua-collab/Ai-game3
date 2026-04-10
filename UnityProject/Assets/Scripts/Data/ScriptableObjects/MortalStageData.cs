@@ -71,11 +71,11 @@ namespace CultivationGame.Data.ScriptableObjects
         [Header("Qi Capacity")]
         [Tooltip("Минимальная естественная ёмкость Ци")]
         [Range(1, 500)]
-        public int minQiCapacity = 1;
+        public long minQiCapacity = 1; // FIX DAT-M05: int→long for Qi > 2.1B (2026-04-11)
 
         [Tooltip("Максимальная естественная ёмкость Ци")]
         [Range(1, 500)]
-        public int maxQiCapacity = 30;
+        public long maxQiCapacity = 30; // FIX DAT-M05: int→long for Qi > 2.1B (2026-04-11)
 
         [Tooltip("Множитель поглощения Ци из среды")]
         [Range(0f, 1f)]
@@ -183,9 +183,9 @@ namespace CultivationGame.Data.ScriptableObjects
         /// <summary>
         /// Получает случайную ёмкость Ци для этого этапа
         /// </summary>
-        public int GetRandomQiCapacity()
+        public long GetRandomQiCapacity() // FIX DAT-M05: int→long (2026-04-11)
         {
-            return UnityEngine.Random.Range(minQiCapacity, maxQiCapacity + 1);
+            return (long)UnityEngine.Random.Range((int)minQiCapacity, (int)maxQiCapacity + 1);
         }
 
         /// <summary>
@@ -226,6 +226,8 @@ namespace CultivationGame.Data.ScriptableObjects
         {
             if (age < minAge) return minCoreFormation;
             if (age > maxAge) return maxCoreFormation;
+            // FIX DAT-C03: Guard division by zero when maxAge <= minAge (2026-04-11)
+            if (maxAge <= minAge) return minCoreFormation;
 
             float progress = (float)(age - minAge) / (maxAge - minAge);
             return Mathf.Lerp(minCoreFormation, maxCoreFormation, progress);

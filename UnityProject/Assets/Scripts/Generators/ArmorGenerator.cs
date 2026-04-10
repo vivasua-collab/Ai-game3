@@ -369,7 +369,7 @@ namespace CultivationGame.Generators
                 _ => MaterialCategory.Metal
             };
 
-            var grade = WeaponGenerator.GenerateGrade(rng, cultivationLevel);
+            var grade = GenerateGrade(rng, cultivationLevel); // FIX GEN-H02: Use local GenerateGrade instead of WeaponGenerator (2026-04-11)
 
             var parameters = new ArmorGenerationParams
             {
@@ -545,6 +545,37 @@ namespace CultivationGame.Generators
             parts.Add($"Прочность: {armor.currentDurability}/{armor.maxDurability}");
 
             return string.Join(". ", parts) + ".";
+        }
+
+        /// <summary>
+        /// Сгенерировать Grade по распределению (локальная копия).
+        /// FIX GEN-H02: Extracted from WeaponGenerator to remove cross-dependency (2026-04-11)
+        /// </summary>
+        private static EquipmentGrade GenerateGrade(SeededRandom rng, int level = 1)
+        {
+            float[] distribution;
+            if (level <= 1)
+                distribution = new[] { 0.30f, 0.60f, 0.10f, 0.00f, 0.00f };
+            else if (level <= 3)
+                distribution = new[] { 0.10f, 0.50f, 0.35f, 0.05f, 0.00f };
+            else if (level <= 5)
+                distribution = new[] { 0.05f, 0.30f, 0.45f, 0.20f, 0.00f };
+            else if (level <= 7)
+                distribution = new[] { 0.00f, 0.20f, 0.40f, 0.35f, 0.05f };
+            else
+                distribution = new[] { 0.00f, 0.10f, 0.30f, 0.40f, 0.20f };
+
+            float roll = rng.NextFloat();
+            float cumulative = 0f;
+
+            for (int i = 0; i < distribution.Length; i++)
+            {
+                cumulative += distribution[i];
+                if (roll < cumulative)
+                    return (EquipmentGrade)i;
+            }
+
+            return EquipmentGrade.Common;
         }
 
         /// <summary>

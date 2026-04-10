@@ -72,6 +72,18 @@ namespace CultivationGame.Generators
         /// <summary>
         /// Конструктор с автоматическим образованием форм (для простых случаев)
         /// Работает только для прилагательных с окончаниями -ый/-ий
+        /// 
+        /// FIX GEN-M01: WARNING — This auto-derivation is INCORRECT for many Russian adjectives (2026-04-11).
+        /// Russian adjective declension is far more complex than simple suffix substitution:
+        /// - Stem consonant mutations (г→ж, к→ч, х→ш): дорогий → дорогая (NOT дорогоя)
+        /// - Mixed declension patterns (горячий → горячая, горячее, горячие)
+        /// - Possessive adjectives (лисий → лисья, лисье, лисьи)
+        /// - Short form adjectives don't follow this pattern at all
+        /// - The -ой ending rules are oversimplified
+        /// 
+        /// For production use, prefer the full constructor with explicit forms.
+        /// This auto-derivation should only be used for simple -ый/-ий adjectives
+        /// where no stem mutation occurs.
         /// </summary>
         /// <param name="masculineForm">Мужская форма (например "Пылающий")</param>
         public AdjectiveForms(string masculineForm)

@@ -19,6 +19,20 @@ namespace CultivationGame.Data.ScriptableObjects
     [CreateAssetMenu(fileName = "Species", menuName = "Cultivation/Species")]
     public class SpeciesData : ScriptableObject
     {
+        // FIX DAT-M04: OnValidate to check weaknesses/resistances overlap (2026-04-11)
+        private void OnValidate()
+        {
+            if (weaknesses != null && resistances != null)
+            {
+                foreach (var w in weaknesses)
+                {
+                    if (resistances.Contains(w))
+                    {
+                        Debug.LogWarning($"[SpeciesData] Element {w} is in both weaknesses and resistances — this is invalid.");
+                    }
+                }
+            }
+        }
         [Header("Basic Info")]
         [Tooltip("Уникальный ID вида")]
         public string speciesId;
@@ -71,7 +85,7 @@ namespace CultivationGame.Data.ScriptableObjects
         public int maxCultivationLevel = 0;
         
         [Tooltip("Базовая ёмкость ядра")]
-        public MinMaxRange coreCapacityBase;
+        public LongMinMaxRange coreCapacityBase; // FIX DAT-H02: MinMaxRange→LongMinMaxRange for Qi Model B (2026-04-11)
         
         [Tooltip("Базовая проводимость")]
         [Range(0.1f, 5f)]
@@ -137,6 +151,22 @@ namespace CultivationGame.Data.ScriptableObjects
         public float GetRandom()
         {
             return UnityEngine.Random.Range(min, max);
+        }
+    }
+
+    /// <summary>
+    /// Диапазон значений (long) — для Qi Model B, где ёмкость > 2.1B
+    /// FIX DAT-H02: Added for coreCapacityBase (2026-04-11)
+    /// </summary>
+    [System.Serializable]
+    public class LongMinMaxRange
+    {
+        public long min;
+        public long max;
+
+        public long GetRandom()
+        {
+            return (long)UnityEngine.Random.Range((float)min, (float)max);
         }
     }
     

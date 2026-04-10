@@ -1,5 +1,7 @@
 using UnityEngine;
+#if UNITY_EDITOR
 using UnityEditor;
+#endif
 using UnityEngine.UI;
 using TMPro;
 using UnityEngine.InputSystem.UI;
@@ -34,6 +36,7 @@ using CultivationGame.Save;
 // Interaction
 using CultivationGame.Interaction;
 
+#if UNITY_EDITOR // FIX GEN-C01: Wrap entire class in #if UNITY_EDITOR (2026-04-11)
 /// <summary>
 /// Инструменты для полуавтоматической настройки сцены.
 /// Window → Scene Setup Tools
@@ -41,7 +44,7 @@ using CultivationGame.Interaction;
 /// Совместимость: Unity 6.3+
 /// 
 /// Создано: 2026-03-31
-/// Редактировано: 2026-04-02 07:01:13 UTC
+/// Редактировано: 2026-04-11 UTC — GEN-C01: #if UNITY_EDITOR guard
 /// </summary>
 public class SceneSetupTools : EditorWindow
 {
@@ -626,3 +629,4 @@ public class SceneSetupTools : EditorWindow
     
     #endregion
 }
+#endif // FIX GEN-C01: End #if UNITY_EDITOR (2026-04-11)

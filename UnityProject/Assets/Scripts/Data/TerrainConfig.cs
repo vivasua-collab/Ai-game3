@@ -44,7 +44,7 @@ namespace CultivationGame.TileSystem
         [Range(0, 500)] public int baseQiDensity = 100;
         
         [Tooltip("Множитель температуры (0 = норма)")]
-        [Range(-50f, 50f)] public float temperatureModifier = 0f;
+        [Range(-200f, 200f)] public float temperatureModifier = 0f; // FIX DAT-C04: Expanded from -50..50 to -200..200 for Lava (2026-04-11)
 
         /// <summary>
         /// Конструктор по умолчанию.
@@ -214,6 +214,13 @@ namespace CultivationGame.TileSystem
         #region Static Access
 
         private static TerrainConfig _instance;
+
+        // FIX DAT-M03: Reset singleton on domain reload for clean play mode (2026-04-11)
+        [UnityEngine.RuntimeInitializeOnLoadMethod(UnityEngine.RuntimeInitializeLoadType.SubsystemRegistration)]
+        static void ResetStatic()
+        {
+            _instance = null;
+        }
 
         /// <summary>
         /// Экземпляр конфигурации по умолчанию.

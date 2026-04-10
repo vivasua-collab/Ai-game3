@@ -499,13 +499,16 @@ namespace CultivationGame.Core
     
     /// <summary>
     /// Тип отношения между фракциями
+    /// FIX DAT-C01: Enhanced with Overlord/Rival (was duplicate in FactionData.cs) (2026-04-11)
     /// </summary>
     public enum FactionRelationType
     {
         Ally,           // Союзник
         Enemy,          // Враг
         Neutral,        // Нейтрал
-        Vassal          // Вассал
+        Vassal,         // Вассал
+        Overlord,       // Сюзерен
+        Rival           // Соперник
     }
     
     #endregion
@@ -514,13 +517,16 @@ namespace CultivationGame.Core
     
     /// <summary>
     /// Тип локации
+    /// FIX DAT-C02: Enhanced with Dungeon/Secret (was duplicate in LocationData.cs) (2026-04-11)
     /// </summary>
     public enum LocationType
     {
         Region,         // Регион (большая область)
         Area,           // Область (часть региона)
         Building,       // Здание
-        Room            // Комната
+        Room,           // Комната
+        Dungeon,        // Подземелье
+        Secret          // Секретная область
     }
     
     /// <summary>

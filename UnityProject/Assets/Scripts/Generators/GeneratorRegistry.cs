@@ -45,8 +45,12 @@ namespace CultivationGame.Generators
         private bool isInitialized = false;
 
         // === Cache ===
+        // FIX GEN-M06: Bounded cache with eviction (2026-04-11)
+        private const int MaxCacheSize = 100;
         private Dictionary<string, GeneratedNPC> cachedNPCs = new Dictionary<string, GeneratedNPC>();
         private Dictionary<string, GeneratedTechnique> cachedTechniques = new Dictionary<string, GeneratedTechnique>();
+        private LinkedList<string> cacheOrderNPCs = new LinkedList<string>();
+        private LinkedList<string> cacheOrderTechniques = new LinkedList<string>();
 
         #endregion
 
@@ -97,7 +101,7 @@ namespace CultivationGame.Generators
         public void Initialize(long worldSeed)
         {
             currentSeed = worldSeed;
-            worldRng = new SeededRandom((int)(worldSeed % int.MaxValue));
+            worldRng = new SeededRandom(worldSeed); // FIX GEN-H01: SeededRandom now accepts long (2026-04-11)
             isInitialized = true;
 
             // Очищаем кэш
@@ -131,7 +135,8 @@ namespace CultivationGame.Generators
             var npc = NPCGenerator.Generate(parameters, worldRng);
 
             // Кэшируем
-            cachedNPCs[npc.id] = npc;
+            // FIX GEN-M06: Bounded cache — evict oldest when full (2026-04-11)
+            AddToNPCCache(npc.id, npc);
 
             OnNPCGenerated?.Invoke(npc);
 
@@ -150,7 +155,7 @@ namespace CultivationGame.Generators
             for (int i = 0; i < parameters.count; i++)
             {
                 var npc = NPCGenerator.Generate(parameters, worldRng);
-                cachedNPCs[npc.id] = npc;
+                AddToNPCCache(npc.id, npc);
                 npcs.Add(npc);
                 OnNPCGenerated?.Invoke(npc);
             }
@@ -166,7 +171,7 @@ namespace CultivationGame.Generators
             EnsureInitialized();
 
             var npc = NPCGenerator.GenerateEnemyForPlayer(playerLevel, worldRng);
-            cachedNPCs[npc.id] = npc;
+            AddToNPCCache(npc.id, npc);
             OnNPCGenerated?.Invoke(npc);
 
             return npc;
@@ -210,7 +215,8 @@ namespace CultivationGame.Generators
             var technique = TechniqueGenerator.Generate(parameters, worldRng);
 
             // Кэшируем
-            cachedTechniques[technique.id] = technique;
+            // FIX GEN-M06: Bounded cache — evict oldest when full (2026-04-11)
+            AddToTechniqueCache(technique.id, technique);
 
             OnTechniqueGenerated?.Invoke(technique);
 
@@ -229,7 +235,7 @@ namespace CultivationGame.Generators
             for (int i = 0; i < parameters.count; i++)
             {
                 var technique = TechniqueGenerator.Generate(parameters, worldRng);
-                cachedTechniques[technique.id] = technique;
+                AddToTechniqueCache(technique.id, technique);
                 techniques.Add(technique);
                 OnTechniqueGenerated?.Invoke(technique);
             }
@@ -245,7 +251,7 @@ namespace CultivationGame.Generators
             EnsureInitialized();
 
             var technique = TechniqueGenerator.GenerateForLevel(cultivationLevel, worldRng);
-            cachedTechniques[technique.id] = technique;
+            AddToTechniqueCache(technique.id, technique);
             OnTechniqueGenerated?.Invoke(technique);
 
             return technique;
@@ -362,6 +368,37 @@ namespace CultivationGame.Generators
         {
             cachedNPCs.Clear();
             cachedTechniques.Clear();
+            cacheOrderNPCs.Clear();
+            cacheOrderTechniques.Clear();
+        }
+
+        // FIX GEN-M06: Bounded cache helper methods (2026-04-11)
+        private void AddToNPCCache(string id, GeneratedNPC npc)
+        {
+            if (cachedNPCs.Count >= MaxCacheSize && !cachedNPCs.ContainsKey(id))
+            {
+                // Evict oldest
+                string oldestId = cacheOrderNPCs.First.Value;
+                cacheOrderNPCs.RemoveFirst();
+                cachedNPCs.Remove(oldestId);
+            }
+            cachedNPCs[id] = npc;
+            cacheOrderNPCs.Remove(id); // Remove if exists (refresh)
+            cacheOrderNPCs.AddLast(id);
+        }
+
+        private void AddToTechniqueCache(string id, GeneratedTechnique technique)
+        {
+            if (cachedTechniques.Count >= MaxCacheSize && !cachedTechniques.ContainsKey(id))
+            {
+                // Evict oldest
+                string oldestId = cacheOrderTechniques.First.Value;
+                cacheOrderTechniques.RemoveFirst();
+                cachedTechniques.Remove(oldestId);
+            }
+            cachedTechniques[id] = technique;
+            cacheOrderTechniques.Remove(id); // Remove if exists (refresh)
+            cacheOrderTechniques.AddLast(id);
         }
 
         private void EnsureInitialized()

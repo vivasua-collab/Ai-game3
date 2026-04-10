@@ -31,18 +31,7 @@ namespace CultivationGame.Data.ScriptableObjects
         Religious       // Религиозный орден
     }
 
-    /// <summary>
-    /// Тип отношения между фракциями
-    /// </summary>
-    public enum FactionRelationType
-    {
-        Ally,           // Союзник
-        Enemy,          // Враг
-        Neutral,        // Нейтрал
-        Vassal,         // Вассал
-        Overlord,       // Сюзерен
-        Rival           // Соперник
-    }
+    // FIX DAT-C01: FactionRelationType moved to Enums.cs (2026-04-11)
 
     /// <summary>
     /// Данные фракции.
@@ -79,7 +68,7 @@ namespace CultivationGame.Data.ScriptableObjects
         public string nationId;
         
         [Tooltip("Главная локация")]
-        public LocationData headquarters;
+        public LocationAsset headquarters; // FIX DAT-H03: LocationData→LocationAsset (2026-04-11)
         
         [Header("Power")]
         [Tooltip("Уровень силы (1-10)")]
@@ -177,15 +166,22 @@ namespace CultivationGame.Data.ScriptableObjects
         
         /// <summary>
         /// Получить ранг по репутации
+        /// FIX DAT-M01: Sort ranks before binary search (2026-04-11)
         /// </summary>
         public FactionRank GetRankByReputation(int reputation)
         {
-            foreach (var rank in ranks)
+            if (ranks == null || ranks.Count == 0) return null;
+            
+            // FIX DAT-M01: Sort by minReputation descending to find highest qualifying rank (2026-04-11)
+            var sortedRanks = new List<FactionRank>(ranks);
+            sortedRanks.Sort((a, b) => b.minReputation.CompareTo(a.minReputation));
+            
+            foreach (var rank in sortedRanks)
             {
                 if (reputation >= rank.minReputation)
                     return rank;
             }
-            return ranks.Count > 0 ? ranks[0] : null;
+            return sortedRanks[sortedRanks.Count - 1]; // Return lowest rank as fallback
         }
     }
     

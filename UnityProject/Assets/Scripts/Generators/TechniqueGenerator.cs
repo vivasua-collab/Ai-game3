@@ -181,7 +181,7 @@ namespace CultivationGame.Generators
         // Названия техник по типам
         private static readonly Dictionary<TechniqueType, string[]> TechniqueNames = new Dictionary<TechniqueType, string[]>
         {
-            { TechniqueType.Combat, new[] { "Удар", "Атака", "Удар", "Атака", "Удар" } },
+            { TechniqueType.Combat, new[] { "Удар кулаком", "Атака", "Удар ладонью", "Рубящий удар", "Толчковый удар" } }, // FIX GEN-M02: Disambiguated duplicate "Удар" ×3 (2026-04-11)
             { TechniqueType.Defense, new[] { "Защита", "Блок", "Щит", "Стена", "Барьер" } },
             { TechniqueType.Healing, new[] { "Исцеление", "Восстановление", "Лечение", "Регенерация", "Оздоровление" } },
             { TechniqueType.Support, new[] { "Поддержка", "Усиление", "Помощь", "Бонус", "Прирост" } },

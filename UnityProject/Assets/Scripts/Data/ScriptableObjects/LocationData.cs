@@ -18,25 +18,15 @@ using CultivationGame.Core;
 
 namespace CultivationGame.Data.ScriptableObjects
 {
-    /// <summary>
-    /// Тип локации
-    /// </summary>
-    public enum LocationType
-    {
-        Region,         // Регион (большая область)
-        Area,           // Область (часть региона)
-        Building,       // Здание
-        Room,           // Комната
-        Dungeon,        // Подземелье
-        Secret          // Секретная область
-    }
+    // FIX DAT-C02: LocationType moved to Enums.cs (2026-04-11)
 
     /// <summary>
-    /// Данные локации.
-    /// Создаётся как ScriptableObject для каждой локации в мире.
+    /// Данные локации (ScriptableObject).
+    /// FIX DAT-H03: Renamed from LocationData to LocationAsset to avoid collision
+    /// with World.LocationData (runtime class) (2026-04-11)
     /// </summary>
     [CreateAssetMenu(fileName = "Location", menuName = "Cultivation/Location")]
-    public class LocationData : ScriptableObject
+    public class LocationAsset : ScriptableObject
     {
         [Header("Basic Info")]
         [Tooltip("Уникальный ID локации")]
@@ -63,10 +53,10 @@ namespace CultivationGame.Data.ScriptableObjects
         public TerrainType terrainType;
         
         [Tooltip("Родительская локация (для Area/Building/Room)")]
-        public LocationData parentLocation;
+        public LocationAsset parentLocation;
         
         [Tooltip("Дочерние локации")]
-        public List<LocationData> childLocations = new List<LocationData>();
+        public List<LocationAsset> childLocations = new List<LocationAsset>();
         
         [Header("Coordinates")]
         [Tooltip("Восток(+)/Запад(-)")]
@@ -167,7 +157,7 @@ namespace CultivationGame.Data.ScriptableObjects
         /// <summary>
         /// Получить расстояние до другой локации
         /// </summary>
-        public float GetDistanceTo(LocationData other)
+        public float GetDistanceTo(LocationAsset other)
         {
             float dx = coordX - other.coordX;
             float dy = coordY - other.coordY;
@@ -244,7 +234,7 @@ namespace CultivationGame.Data.ScriptableObjects
     public class LocationConnection
     {
         [Tooltip("Целевая локация")]
-        public LocationData targetLocation;
+        public LocationAsset targetLocation;
         
         [Tooltip("Расстояние (метры)")]
         public int distance = 100;

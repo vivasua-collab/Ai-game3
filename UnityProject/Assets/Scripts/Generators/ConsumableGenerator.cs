@@ -124,9 +124,15 @@ namespace CultivationGame.Generators
     public class ConsumableEffect
     {
         public string effectType;
-        public float value;
+        public long valueLong;  // FIX GEN-H04: Qi values as long (2026-04-11)
+        public float valueFloat; // Kept for non-Qi effects (percentages, etc.)
         public int duration;            // 0 = мгновенно
         public bool isPercentage;
+        public bool isLongValue;         // FIX GEN-H04: Flag to distinguish long vs float (2026-04-11)
+
+        // Backward-compatible property
+        [System.Obsolete("Use valueLong or valueFloat depending on isLongValue")]
+        public float value { get => isLongValue ? (float)valueLong : valueFloat; set { if (isLongValue) valueLong = (long)value; else valueFloat = value; } }
     }
 
     /// <summary>
@@ -393,7 +399,8 @@ namespace CultivationGame.Generators
                     consumable.effects.Add(new ConsumableEffect
                     {
                         effectType = "restoreQi",
-                        value = baseValue * 100, // Базовое Ци
+                        valueLong = (long)(baseValue * 100), // FIX GEN-H04: Qi as long (2026-04-11)
+                        isLongValue = true,
                         duration = consumable.duration,
                         isPercentage = false
                     });
@@ -429,14 +436,16 @@ namespace CultivationGame.Generators
                     consumable.effects.Add(new ConsumableEffect
                     {
                         effectType = "cultivationExp",
-                        value = baseValue,
+                        valueFloat = baseValue,
+                        isLongValue = false,
                         duration = 0,
                         isPercentage = false
                     });
                     consumable.effects.Add(new ConsumableEffect
                     {
                         effectType = "qiRegen",
-                        value = 0.2f,
+                        valueFloat = 0.2f,
+                        isLongValue = false,
                         duration = 120, // 2 часа
                         isPercentage = true
                     });
@@ -446,10 +455,13 @@ namespace CultivationGame.Generators
                     // Постоянный эффект (очень редкий)
                     string[] permanentEffects = { "maxHP", "maxQi", "strength", "agility", "intelligence" };
                     string permEffect = rng.NextElement(permanentEffects);
+                    bool isQiEffect = permEffect == "maxQi";
                     consumable.effects.Add(new ConsumableEffect
                     {
                         effectType = permEffect,
-                        value = 1 + (int)consumable.rarity,
+                        valueLong = isQiEffect ? (long)(1 + (int)consumable.rarity) : 0, // FIX GEN-H04: Qi as long (2026-04-11)
+                        valueFloat = isQiEffect ? 0f : 1 + (int)consumable.rarity,
+                        isLongValue = isQiEffect,
                         duration = 0,
                         isPercentage = false
                     });
@@ -530,7 +542,8 @@ namespace CultivationGame.Generators
             // Эффекты
             foreach (var effect in consumable.effects)
             {
-                string valueStr = effect.isPercentage ? $"{effect.value * 100:F0}%" : effect.value.ToString();
+                string valueStr = effect.isPercentage ? $"{effect.valueFloat * 100:F0}%" : 
+                    effect.isLongValue ? effect.valueLong.ToString() : effect.valueFloat.ToString(); // FIX GEN-H04 (2026-04-11)
                 string durationStr = effect.duration > 0 ? $" на {effect.duration} тиков" : "";
                 parts.Add($"  • {effect.effectType}: {valueStr}{durationStr}");
             }
@@ -598,7 +611,7 @@ namespace CultivationGame.Generators
 
                 foreach (var e in consumable.effects)
                 {
-                    string val = e.isPercentage ? $"{e.value * 100:F0}%" : e.value.ToString();
+                    string val = e.isPercentage ? $"{e.valueFloat * 100:F0}%" : e.isLongValue ? e.valueLong.ToString() : e.valueFloat.ToString(); // FIX GEN-H04
                     string dur = e.duration > 0 ? $" ({e.duration} тиков)" : "";
                     sb.AppendLine($"  Эффект: {e.effectType} = {val}{dur}");
                 }

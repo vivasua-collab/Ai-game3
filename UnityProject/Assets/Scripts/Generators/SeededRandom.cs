@@ -19,23 +19,26 @@ namespace CultivationGame.Generators
     /// <summary>
     /// Детерминированный генератор случайных чисел на основе seed.
     /// Одинаковый seed всегда даёт одинаковую последовательность.
+    /// FIX GEN-H01: Seed field changed from int to long (2026-04-11)
     /// </summary>
     public class SeededRandom
     {
         private Random random;
-        private int seed;
+        private long seed; // FIX GEN-H01: int→long (2026-04-11)
         private int steps;
 
-        public int Seed => seed;
+        public long Seed => seed; // FIX GEN-H01: int→long (2026-04-11)
         public int Steps => steps;
 
         /// <summary>
         /// Создать генератор с указанным seed
+        /// FIX GEN-H01: Accept long seed, use hash for System.Random (2026-04-11)
         /// </summary>
-        public SeededRandom(int seed)
+        public SeededRandom(long seed)
         {
             this.seed = seed;
-            this.random = new Random(seed);
+            // Use deterministic hash from long seed — avoids truncation of worldSeed
+            this.random = new Random((int)(seed ^ (seed >> 32)));
             this.steps = 0;
         }
 
@@ -45,17 +48,18 @@ namespace CultivationGame.Generators
         public SeededRandom()
         {
             this.seed = UnityEngine.Random.Range(int.MinValue, int.MaxValue);
-            this.random = new Random(seed);
+            this.random = new Random((int)(seed ^ (seed >> 32)));
             this.steps = 0;
         }
 
         /// <summary>
         /// Сбросить генератор на начальное состояние
+        /// FIX GEN-H01: Accept long? seed (2026-04-11)
         /// </summary>
-        public void Reset(int? newSeed = null)
+        public void Reset(long? newSeed = null) // FIX GEN-H01: int?→long? (2026-04-11)
         {
             seed = newSeed ?? seed;
-            random = new Random(seed);
+            random = new Random((int)(seed ^ (seed >> 32)));
             steps = 0;
         }
 
@@ -200,7 +204,8 @@ namespace CultivationGame.Generators
         public float NextGaussian(float mean = 0f, float stdDev = 1f)
         {
             steps += 2;
-            double u1 = random.NextDouble();
+            // FIX GEN-M08: Guard log(0) → -Infinity by clamping u1 to Epsilon minimum (2026-04-11)
+            double u1 = Math.Max(double.Epsilon, random.NextDouble());
             double u2 = random.NextDouble();
             double z0 = Math.Sqrt(-2.0 * Math.Log(u1)) * Math.Cos(2.0 * Math.PI * u2);
             return mean + (float)z0 * stdDev;
