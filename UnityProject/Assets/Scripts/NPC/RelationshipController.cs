@@ -1,32 +1,34 @@
 // ============================================================================
 // RelationshipController.cs — Система отношений
 // Cultivation World Simulator
-// Версия: 1.0
+// Версия: 1.1
 // Создано: 2026-03-30 10:00:00 UTC
-// Редактировано: 2026-03-31 10:38:00 UTC
+// Редактировано: 2026-04-11 00:00:00 UTC — Fix-07
 // ============================================================================
 
 using System;
 using System.Collections.Generic;
 using UnityEngine;
 using CultivationGame.Core;
+using CultivationGame.World;
 
 namespace CultivationGame.NPC
 {
     /// <summary>
     /// Тип отношения между персонажами.
+    /// FIX NPC-M06: Added Stranger and SwornAlly to match Attitude enum ranges.
     /// </summary>
     public enum RelationshipType
     {
-        Stranger,        // Незнакомец (-∞ to -50)
-        Hostile,         // Враждебный (-50 to -20)
-        Unfriendly,      // Недружелюбный (-20 to -5)
-        Neutral,         // Нейтральный (-5 to 5)
-        Friendly,        // Дружелюбный (5 to 20)
-        Friend,          // Друг (20 to 50)
-        CloseFriend,     // Близкий друг (50 to 75)
-        Family,          // Семья (75 to 100)
-        SwornSibling,    // Побратим (90+)
+        Stranger,        // Незнакомец (no interaction yet)
+        Hatred,          // Ненависть (-100..-51)
+        Hostile,         // Враждебный (-50..-21)
+        Unfriendly,      // Недружелюбный (-20..-10)
+        Neutral,         // Нейтральный (-9..9)
+        Friendly,        // Дружелюбный (10..49)
+        Allied,          // Союзник (50..79)
+        SwornAlly,       // Побратим (80..100)
+        // Special role-based types
         Master,          // Учитель
         Disciple,        // Ученик
         Lover,           // Возлюбленный
@@ -97,6 +99,9 @@ namespace CultivationGame.NPC
         private Dictionary<string, RelationshipRecord> relationships = new Dictionary<string, RelationshipRecord>();
         private string ownerId;
         
+        // FIX NPC-H05: TimeController reference for game time
+        private TimeController timeController;
+        
         // === Events ===
         public event Action<string, int, int> OnRelationshipChanged;  // targetId, oldValue, newValue
         public event Action<string, RelationshipType, RelationshipType> OnRelationshipTypeChanged;
@@ -104,8 +109,20 @@ namespace CultivationGame.NPC
         
         // === Initialization ===
         
+        private void Start()
+        {
+            // FIX NPC-H05: Get TimeController via ServiceLocator
+            ServiceLocator.Request<TimeController>(tc => timeController = tc);
+        }
+        
         public void Initialize(string ownerNpcId)
         {
+            // FIX NPC-M03: Validate ownerId (2026-04-11)
+            if (string.IsNullOrEmpty(ownerNpcId))
+            {
+                Debug.LogWarning("[RelationshipController] Initialize called with null/empty ownerId");
+                return;
+            }
             ownerId = ownerNpcId;
         }
         
@@ -116,6 +133,9 @@ namespace CultivationGame.NPC
         /// </summary>
         public int GetRelationship(string targetId)
         {
+            // FIX NPC-M03: Validate targetId
+            if (string.IsNullOrEmpty(targetId)) return 0;
+            
             string key = GetKey(targetId);
             if (relationships.TryGetValue(key, out RelationshipRecord record))
             {
@@ -140,24 +160,66 @@ namespace CultivationGame.NPC
                 if (record.Flags.Contains("lover")) return RelationshipType.Lover;
                 if (record.Flags.Contains("rival")) return RelationshipType.Rival;
                 if (record.Flags.Contains("enemy")) return RelationshipType.Enemy;
-                if (record.Flags.Contains("sworn")) return RelationshipType.SwornSibling;
-                if (record.Flags.Contains("family")) return RelationshipType.Family;
+                if (record.Flags.Contains("sworn")) return RelationshipType.SwornAlly;
+                if (record.Flags.Contains("family")) return RelationshipType.Allied;
+            }
+            
+            // Если нет записи — Stranger
+            if (!relationships.ContainsKey(key))
+            {
+                return RelationshipType.Stranger;
             }
             
             // Определяем по значению
             return CalculateRelationshipType(value);
         }
         
+        // FIX NPC-M06: CalculateRelationshipType aligned with Attitude enum ranges (2026-04-11)
+        /// <summary>
+        /// Calculate relationship type from numeric value.
+        /// Ranges now match the Attitude enum:
+        ///   Hatred:     -100..-51
+        ///   Hostile:    -50..-21
+        ///   Unfriendly: -20..-10
+        ///   Neutral:    -9..9
+        ///   Friendly:   10..49
+        ///   Allied:     50..79
+        ///   SwornAlly:  80..100
+        /// </summary>
         private RelationshipType CalculateRelationshipType(int value)
         {
-            if (value <= -50) return RelationshipType.Hostile;
-            if (value <= -20) return RelationshipType.Unfriendly;
-            if (value <= -5) return RelationshipType.Neutral;
-            if (value < 5) return RelationshipType.Neutral;
-            if (value < 20) return RelationshipType.Friendly;
-            if (value < 50) return RelationshipType.Friend;
-            if (value < 75) return RelationshipType.CloseFriend;
-            return RelationshipType.Family;
+            if (value <= -51) return RelationshipType.Hatred;
+            if (value <= -21) return RelationshipType.Hostile;
+            if (value <= -10) return RelationshipType.Unfriendly;
+            if (value <= 9) return RelationshipType.Neutral;
+            if (value <= 49) return RelationshipType.Friendly;
+            if (value <= 79) return RelationshipType.Allied;
+            return RelationshipType.SwornAlly;
+        }
+        
+        // FIX NPC-ATT-03: CalculateAttitude from numeric value (2026-04-11)
+        /// <summary>
+        /// Calculate Attitude enum from a numeric relationship value.
+        /// This replaces the old GetDisposition() pattern.
+        /// </summary>
+        public Attitude CalculateAttitude(string targetId)
+        {
+            int value = GetRelationship(targetId);
+            return ValueToAttitude(value);
+        }
+        
+        /// <summary>
+        /// Convert numeric value to Attitude enum.
+        /// </summary>
+        public static Attitude ValueToAttitude(int value)
+        {
+            if (value <= -51) return Attitude.Hatred;
+            if (value <= -21) return Attitude.Hostile;
+            if (value <= -10) return Attitude.Unfriendly;
+            if (value <= 9) return Attitude.Neutral;
+            if (value <= 49) return Attitude.Friendly;
+            if (value <= 79) return Attitude.Allied;
+            return Attitude.SwornAlly;
         }
         
         /// <summary>
@@ -165,6 +227,18 @@ namespace CultivationGame.NPC
         /// </summary>
         public void ModifyRelationship(string targetId, int change, string reason = "")
         {
+            // FIX NPC-M03: Validate ownerId and targetId
+            if (string.IsNullOrEmpty(ownerId))
+            {
+                Debug.LogWarning("[RelationshipController] ownerId not set, cannot modify relationship");
+                return;
+            }
+            if (string.IsNullOrEmpty(targetId))
+            {
+                Debug.LogWarning("[RelationshipController] targetId is null/empty, cannot modify relationship");
+                return;
+            }
+            
             string key = GetKey(targetId);
             
             int oldValue = GetRelationship(targetId);
@@ -193,7 +267,8 @@ namespace CultivationGame.NPC
                 record.AddEvent(reason, change);
             }
             
-            record.LastInteractionTime = Time.time;
+            // FIX NPC-H05: Use game time for LastInteractionTime
+            record.LastInteractionTime = GetGameTime();
             record.InteractionCount++;
             
             // Проверяем изменение типа отношений
@@ -304,7 +379,10 @@ namespace CultivationGame.NPC
         /// </summary>
         public List<string> GetEnemies()
         {
-            return GetTargetsByType(RelationshipType.Hostile);
+            List<string> result = new List<string>();
+            result.AddRange(GetTargetsByType(RelationshipType.Hatred));
+            result.AddRange(GetTargetsByType(RelationshipType.Hostile));
+            return result;
         }
         
         /// <summary>
@@ -313,19 +391,25 @@ namespace CultivationGame.NPC
         public List<string> GetFriends()
         {
             List<string> result = new List<string>();
-            result.AddRange(GetTargetsByType(RelationshipType.Friend));
-            result.AddRange(GetTargetsByType(RelationshipType.CloseFriend));
-            result.AddRange(GetTargetsByType(RelationshipType.Family));
+            result.AddRange(GetTargetsByType(RelationshipType.Friendly));
+            result.AddRange(GetTargetsByType(RelationshipType.Allied));
+            result.AddRange(GetTargetsByType(RelationshipType.SwornAlly));
             return result;
         }
         
         // === Decay ===
         
+        // FIX NPC-H05: ProcessDecay uses game time (TimeController) instead of Time.time (2026-04-11)
         /// <summary>
         /// Обновить затухание отношений (вызывать раз в игровой день).
+        /// Uses game time from TimeController for accurate decay calculation.
         /// </summary>
+        /// <param name="currentGameTime">Current game time in seconds (from TimeController.TotalGameSeconds)</param>
         public void ProcessDecay(float currentGameTime)
         {
+            // FIX NPC-M03: Validate ownerId before processing
+            if (string.IsNullOrEmpty(ownerId)) return;
+            
             foreach (var kvp in relationships)
             {
                 RelationshipRecord record = kvp.Value;
@@ -356,6 +440,15 @@ namespace CultivationGame.NPC
                     record.Type = CalculateRelationshipType(record.Value);
                 }
             }
+        }
+        
+        /// <summary>
+        /// FIX NPC-H05: Process decay using TimeController (auto-resolves game time).
+        /// </summary>
+        public void ProcessDecay()
+        {
+            float gameTime = GetGameTime();
+            ProcessDecay(gameTime);
         }
         
         // === Save/Load ===
@@ -408,6 +501,19 @@ namespace CultivationGame.NPC
         private string GetKey(string targetId)
         {
             return $"{ownerId}_{targetId}";
+        }
+        
+        // FIX NPC-H05: Get game time from TimeController, fallback to Time.time
+        /// <summary>
+        /// Get current game time. Uses TimeController if available, otherwise falls back to Time.time.
+        /// </summary>
+        private float GetGameTime()
+        {
+            if (timeController != null)
+            {
+                return (float)timeController.TotalGameSeconds;
+            }
+            return Time.time;
         }
     }
     

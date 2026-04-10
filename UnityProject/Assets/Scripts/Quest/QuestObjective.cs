@@ -1,9 +1,9 @@
 // ============================================================================
 // QuestObjective.cs — Цели квестов
 // Cultivation World Simulator
-// Версия: 1.0
-// ============================================================================
+// Версия: 1.1
 // Создано: 2026-04-03 08:55:00 UTC
+// Редактировано: 2026-04-11 00:00:00 UTC — Fix-07
 // ============================================================================
 
 using System;
@@ -254,6 +254,36 @@ namespace CultivationGame.Quest
             
             currentAmount = data.currentAmount;
             state = data.state;
+        }
+        
+        // FIX QST-C01: Clone method for quest instance isolation (2026-04-11)
+        /// <summary>
+        /// Create a deep copy of this objective.
+        /// Each quest instance must have its own objectives to avoid sharing state.
+        /// Events are not cloned — they are re-subscribed by QuestController.
+        /// </summary>
+        public QuestObjective Clone()
+        {
+            QuestObjective clone = new QuestObjective();
+            // Copy all fields (events are NOT cloned — subscriber re-wires them)
+            clone.objectiveId = this.objectiveId;
+            clone.objectiveName = this.objectiveName;
+            clone.description = this.description;
+            clone.type = this.type;
+            clone.targetId = this.targetId;
+            clone.targetName = this.targetName;
+            clone.requiredAmount = this.requiredAmount;
+            clone.currentAmount = this.currentAmount;
+            clone.locationId = this.locationId;
+            clone.targetPosition = this.targetPosition;
+            clone.prerequisiteObjective = this.prerequisiteObjective;
+            clone.minLevel = this.minLevel;
+            clone.minCultivation = this.minCultivation;
+            clone.bonusExp = this.bonusExp;
+            clone.bonusGold = this.bonusGold;
+            clone.bonusItemId = this.bonusItemId;
+            clone.state = this.state;
+            return clone;
         }
         
         // === Utility ===

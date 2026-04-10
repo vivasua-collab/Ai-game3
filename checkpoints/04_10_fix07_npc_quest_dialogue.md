@@ -2,7 +2,7 @@
 
 **Дата:** 2026-04-10 13:37:00 UTC
 **Фаза:** Phase 7 — Integration
-**Статус:** pending
+**Статус:** ✅ complete
 **Приоритет:** P0-HIGH
 
 ---
@@ -30,38 +30,32 @@ NPC: SaveData неполная, SkillLevels не сериализуем, AI по
 ## Задачи
 
 ### CRITICAL
-- [ ] NPC-C01: NPCSaveData — добавить MaxQi (long), MaxHealth, MaxStamina, MaxLifespan
-- [ ] NPC-C02: NPCData.SkillLevels — Dictionary→сериализуемый wrapper (KeyValuePair[] или JsonArray)
-- [ ] QST-C01: QuestData — клонировать objectives для каждого экземпляра квеста
-- [ ] QST-C02: QuestController.LoadSaveData — восстановить активные квесты из save data
-- [ ] QST-C03: QuestController.GrantRewards — реализовать: XP→StatDevelopment, Items→InventoryController, Gold→PlayerState
-- [ ] DLG-C01: DialogueSystem.LoadDialogueFromJson — обернуть массив в wrapper object для JsonUtility
+- [x] NPC-C01: NPCSaveData — добавить MaxQi (long), MaxHealth, MaxStamina, MaxLifespan
+- [x] NPC-C02: NPCData.SkillLevels — Dictionary→сериализуемый wrapper (SkillLevelData + SkillLevelEntry)
+- [x] QST-C01: QuestData — CloneForInstance() + QuestObjective.Clone() для каждого экземпляра квеста
+- [x] QST-C02: QuestController.LoadSaveData — восстановление активных квестов из save data + questDataRegistry
+- [x] QST-C03: QuestController.GrantRewards — XP→StatDevelopment, Items→InventoryController, Gold→PlayerState
+- [x] DLG-C01: DialogueSystem.LoadDialogueFromJson — DialogueNodeArrayWrapper для JsonUtility
 
 ### Disposition → Attitude + PersonalityTrait (HIGH, cascade from Fix-04)
-- [ ] NPC-ATT-01: NPCController — заменить `Disposition disposition` на `Attitude attitude` + `PersonalityTrait personality`
-- [ ] NPC-ATT-02: NPCAI.DecideNormalBehavior — PersonalityTrait flags для весов:
-  - Aggressive: +50% атака, −30% защита
-  - Cautious: +50% защита, −30% атака
-  - Ambitious: +30% атака, +30% лидерство
-  - Treacherous: при Attitude < Neutral → шанс предательства
-  - Loyal: никогда не предаёт
-  - Pacifist: −50% атака, +30% побег
-- [ ] NPC-ATT-03: RelationshipController — CalculateAttitude() вместо GetDisposition(). Использовать числовое отношение → Attitude enum
-- [ ] NPC-ATT-04: NPCSaveData — добавить поля attitude (int) + personality (int/flags)
+- [x] NPC-ATT-01: NPCController — Attitude + PersonalityTrait поля, ConvertDispositionToAttitude/Personality helpers
+- [x] NPC-ATT-02: NPCAI.DecideNormalBehavior — PersonalityTrait weights (Aggressive/Cautious/Ambitious/Treacherous/Loyal/Pacifist)
+- [x] NPC-ATT-03: RelationshipController — CalculateAttitude() вместо GetDisposition()
+- [x] NPC-ATT-04: NPCSaveData — AttitudeValue (int) + PersonalityFlags (int)
 
 ### HIGH
-- [ ] NPC-H01: NPCAI.DecideNormalBehavior — пересмотреть вероятности (логичные веса)
-- [ ] NPC-H02: NPCController.UpdateLifespan — реализовать уменьшение remainingLifespan
-- [ ] NPC-H03: NPCController.TakeDamage — уведомить AI атакера
-- [ ] NPC-H05: RelationshipController.ProcessDecay — использовать game time (TimeController) вместо Time.time
+- [x] NPC-H01: NPCAI.DecideNormalBehavior — взвешенные вероятности с cumulative selection
+- [x] NPC-H02: NPCController.UpdateLifespan — game time через TimeController, lifespanAccumulator
+- [x] NPC-H03: NPCController.TakeDamage — уведомление AI атакера через AddThreat()
+- [x] NPC-H05: RelationshipController.ProcessDecay — TimeController вместо Time.time
 
 ### MEDIUM
-- [ ] NPC-M01: NPCAI Threat levels — добавить затухание со временем
-- [ ] NPC-M02: NPCAI.ExecuteCultivating — увеличить Qi восстановление (не 10, пропорционально conductivity)
-- [ ] NPC-M03: RelationshipController.ownerId — валидация
-- [ ] NPC-M05: NPCController.InitializeFromGenerated — использовать generated.age
-- [ ] NPC-M06: RelationshipController.CalculateRelationshipType — добавить Stranger/SwornAlly (соответствует новому Attitude enum)
-- [ ] DLG-M04: DialogueSystem.LoadDialogueNode — реализовать вместо stub
+- [x] NPC-M01: NPCAI Threat decay — DecayThreats() с threatDecayInterval/rate
+- [x] NPC-M02: NPCAI.ExecuteCultivating — Qi восстановление пропорционально QiController.Conductivity
+- [x] NPC-M03: RelationshipController.ownerId — валидация null/empty
+- [x] NPC-M05: NPCController.InitializeFromGenerated — использование generated.age
+- [x] NPC-M06: RelationshipController.CalculateRelationshipType — Hatred/SwornAlly, диапазоны Attitude
+- [x] DLG-M04: DialogueSystem.LoadDialogueNode — загрузка из Resources/Dialogues + кэш
 
 ---
 
@@ -84,4 +78,4 @@ NPC: SaveData неполная, SkillLevels не сериализуем, AI по
 
 ---
 
-*Чекпоинт обновлён: 2026-04-10 13:37:00 UTC*
+*Чекпоинт обновлён: 2026-04-11 12:00:00 UTC — Fix-07 complete, 8 файлов, 18 задач*

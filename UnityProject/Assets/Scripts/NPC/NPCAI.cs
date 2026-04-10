@@ -1,15 +1,16 @@
 // ============================================================================
 // NPCAI.cs — AI принятие решений
 // Cultivation World Simulator
-// Версия: 1.0
+// Версия: 1.1
 // Создано: 2026-03-30 10:00:00 UTC
-// Редактировано: 2026-03-31 10:38:00 UTC
+// Редактировано: 2026-04-11 00:00:00 UTC — Fix-07
 // ============================================================================
 
 using System;
 using System.Collections.Generic;
 using UnityEngine;
 using CultivationGame.Core;
+using CultivationGame.Qi;
 
 namespace CultivationGame.NPC
 {
@@ -37,9 +38,17 @@ namespace CultivationGame.NPC
         private List<string> knownTargets = new List<string>();
         private Dictionary<string, float> threatLevels = new Dictionary<string, float>();
         
+        // FIX NPC-M01: Threat decay tracking
+        private float threatDecayTimer = 0f;
+        [SerializeField] private float threatDecayInterval = 5f;   // seconds between decay ticks
+        [SerializeField] private float threatDecayRate = 2f;       // threat points lost per tick
+        
         // === Patrol ===
         private Vector3[] patrolPoints;
         private int currentPatrolIndex;
+        
+        // FIX NPC-ATT-02: Store personality traits for behavior weights
+        private PersonalityTrait personalityFlags = PersonalityTrait.None;
         
         // === Events ===
         public event Action<NPCAIState, NPCAIState> OnStateChanged;
@@ -73,6 +82,9 @@ namespace CultivationGame.NPC
                 decisionTimer = 0f;
                 MakeDecision();
             }
+            
+            // FIX NPC-M01: Decay threat levels over time
+            DecayThreats();
             
             ExecuteCurrentState();
         }
@@ -122,8 +134,13 @@ namespace CultivationGame.NPC
         {
             if (state == null) return false;
             
-            float healthPercent = (float)state.CurrentHealth / state.MaxHealth;
-            return healthPercent <= fleeHealthThreshold && cautiousness > aggressiveness;
+            float healthPercent = (float)state.CurrentHealth / Mathf.Max(1, state.MaxHealth);
+            
+            // FIX NPC-ATT-02: Pacifist flees more readily
+            bool isPacifist = (personalityFlags & PersonalityTrait.Pacifist) != 0;
+            float effectiveFleeThreshold = isPacifist ? fleeHealthThreshold * 2f : fleeHealthThreshold;
+            
+            return healthPercent <= effectiveFleeThreshold && cautiousness > aggressiveness;
         }
         
         private string GetHighestThreat()
@@ -143,35 +160,130 @@ namespace CultivationGame.NPC
             return highestThreat;
         }
         
+        // FIX NPC-H01 + NPC-ATT-02: Revised probabilities with PersonalityTrait weights (2026-04-11)
+        /// <summary>
+        /// Decide normal behavior based on personality traits and weighted probabilities.
+        /// 
+        /// PersonalityTrait effects:
+        /// - Aggressive: +50% attack, −30% defense
+        /// - Cautious: +50% defense, −30% attack
+        /// - Ambitious: +30% attack, +30% leadership (patrol/guard)
+        /// - Treacherous: when Attitude < Neutral, chance of betrayal
+        /// - Loyal: never betrays
+        /// - Pacifist: −50% attack, +30% flee/rest
+        /// </summary>
         private void DecideNormalBehavior()
         {
-            // На основе личности выбираем действие
-            float rand = UnityEngine.Random.value;
+            // Base weights for each behavior
+            float idleWeight = 0.10f;
+            float wanderWeight = 0.15f;
+            float talkWeight = socialness * 0.20f;
+            float cultivateWeight = ambition * 0.25f;
+            float restWeight = 0.15f;
+            float workWeight = 0.10f;
+            float patrolWeight = 0.05f;
             
-            if (rand < socialness * 0.3f)
+            // FIX NPC-ATT-02: Apply PersonalityTrait modifiers
+            bool isAggressive = (personalityFlags & PersonalityTrait.Aggressive) != 0;
+            bool isCautious = (personalityFlags & PersonalityTrait.Cautious) != 0;
+            bool isAmbitious = (personalityFlags & PersonalityTrait.Ambitious) != 0;
+            bool isTreacherous = (personalityFlags & PersonalityTrait.Treacherous) != 0;
+            bool isLoyal = (personalityFlags & PersonalityTrait.Loyal) != 0;
+            bool isPacifist = (personalityFlags & PersonalityTrait.Pacifist) != 0;
+            bool isVengeful = (personalityFlags & PersonalityTrait.Vengeful) != 0;
+            bool isCurious = (personalityFlags & PersonalityTrait.Curious) != 0;
+            
+            // Aggressive: +50% attack (patrol as proxy), −30% rest
+            if (isAggressive)
             {
-                ChangeState(NPCAIState.Wandering);
+                patrolWeight *= 1.5f;
+                restWeight *= 0.7f;
             }
-            else if (rand < socialness * 0.5f)
+            
+            // Cautious: +50% defense (rest/patrol), −30% attack (patrol aggressive)
+            if (isCautious)
             {
-                ChangeState(NPCAIState.Talking);
+                restWeight *= 1.5f;
+                patrolWeight *= 0.7f;
             }
-            else if (rand < ambition * 0.4f)
+            
+            // Ambitious: +30% cultivate, +30% leadership (patrol/guard)
+            if (isAmbitious)
             {
-                ChangeState(NPCAIState.Cultivating);
+                cultivateWeight *= 1.3f;
+                patrolWeight *= 1.3f;
+                workWeight *= 1.2f;
             }
-            else if (rand < 0.6f)
+            
+            // Pacifist: −50% attack, +30% rest/flee
+            if (isPacifist)
             {
-                ChangeState(NPCAIState.Resting);
+                patrolWeight *= 0.5f;
+                restWeight *= 1.3f;
+                cultivateWeight *= 1.2f;
             }
-            else if (rand < 0.8f)
+            
+            // Curious: more wandering and talking
+            if (isCurious)
             {
-                ChangeState(NPCAIState.Working);
+                wanderWeight *= 1.4f;
+                talkWeight *= 1.3f;
             }
-            else
+            
+            // Vengeful: more patrol (seeking enemies)
+            if (isVengeful)
             {
-                ChangeState(NPCAIState.Idle);
+                patrolWeight *= 1.3f;
             }
+            
+            // Treacherous: when Attitude < Neutral, increase chance of betrayal actions
+            // (represented as more working/patrol and less talking)
+            if (isTreacherous && state != null && (int)state.Attitude < (int)Attitude.Neutral)
+            {
+                talkWeight *= 0.5f;
+                patrolWeight *= 1.4f;
+                // Note: actual betrayal mechanics would be implemented in combat/interaction
+            }
+            
+            // Loyal: never abandons — increase work/talk, decrease idle
+            if (isLoyal)
+            {
+                idleWeight *= 0.5f;
+                workWeight *= 1.3f;
+                talkWeight *= 1.2f;
+            }
+            
+            // Calculate total weight for normalization
+            float totalWeight = idleWeight + wanderWeight + talkWeight + cultivateWeight + 
+                                restWeight + workWeight + patrolWeight;
+            
+            // Roll and pick behavior
+            float rand = UnityEngine.Random.value * totalWeight;
+            float cumulative = 0f;
+            
+            cumulative += idleWeight;
+            if (rand < cumulative) { ChangeState(NPCAIState.Idle); return; }
+            
+            cumulative += wanderWeight;
+            if (rand < cumulative) { ChangeState(NPCAIState.Wandering); return; }
+            
+            cumulative += talkWeight;
+            if (rand < cumulative) { ChangeState(NPCAIState.Talking); return; }
+            
+            cumulative += cultivateWeight;
+            if (rand < cumulative) { ChangeState(NPCAIState.Cultivating); return; }
+            
+            cumulative += restWeight;
+            if (rand < cumulative) { ChangeState(NPCAIState.Resting); return; }
+            
+            cumulative += workWeight;
+            if (rand < cumulative) { ChangeState(NPCAIState.Working); return; }
+            
+            cumulative += patrolWeight;
+            if (rand < cumulative) { ChangeState(NPCAIState.Patrolling); return; }
+            
+            // Fallback
+            ChangeState(NPCAIState.Idle);
         }
         
         // === State Execution ===
@@ -262,13 +374,28 @@ namespace CultivationGame.NPC
             // Атака цели через CombatSystem
         }
         
+        // FIX NPC-M02: Qi restoration proportional to conductivity (2026-04-11)
+        /// <summary>
+        /// Cultivating — Qi restoration proportional to conductivity.
+        /// Base: 10 Qi, scaled by conductivity (from QiController).
+        /// </summary>
         private void ExecuteCultivating()
         {
-            // Культивация — восстановление Ци
             if (state.StateTimer > 30f)
             {
-                // Восстанавливаем Ци
-                state.CurrentQi = Mathf.Min(state.MaxQi, state.CurrentQi + 10);
+                // Base Qi recovery, scaled by conductivity
+                float conductivity = 1.0f; // default
+                if (npcController != null)
+                {
+                    QiController qiCtrl = npcController.GetComponent<QiController>();
+                    if (qiCtrl != null)
+                    {
+                        conductivity = qiCtrl.Conductivity;
+                    }
+                }
+                
+                long qiGain = (long)(10f * conductivity);
+                state.CurrentQi = Math.Min(state.MaxQi, state.CurrentQi + qiGain);
                 ChangeState(NPCAIState.Idle);
             }
         }
@@ -344,6 +471,47 @@ namespace CultivationGame.NPC
             knownTargets.Clear();
         }
         
+        // FIX NPC-M01: Threat decay over time (2026-04-11)
+        /// <summary>
+        /// Decay threat levels over time. Threats that are not reinforced gradually fade.
+        /// </summary>
+        private void DecayThreats()
+        {
+            threatDecayTimer += Time.deltaTime;
+            
+            if (threatDecayTimer < threatDecayInterval)
+                return;
+            
+            threatDecayTimer = 0f;
+            
+            List<string> toRemove = null;
+            
+            foreach (var kvp in threatLevels)
+            {
+                float newThreat = kvp.Value - threatDecayRate;
+                if (newThreat <= 0f)
+                {
+                    if (toRemove == null) toRemove = new List<string>();
+                    toRemove.Add(kvp.Key);
+                }
+                else
+                {
+                    threatLevels[kvp.Key] = newThreat;
+                }
+            }
+            
+            // Remove expired threats
+            if (toRemove != null)
+            {
+                foreach (string sourceId in toRemove)
+                {
+                    threatLevels.Remove(sourceId);
+                    knownTargets.Remove(sourceId);
+                    OnTargetLost?.Invoke(sourceId);
+                }
+            }
+        }
+        
         // === Patrol Setup ===
         
         /// <summary>
@@ -368,9 +536,58 @@ namespace CultivationGame.NPC
             ambition = Mathf.Clamp01(ambit);
         }
         
+        // FIX NPC-ATT-02: Replace ApplyDispositionModifiers with ApplyPersonalityModifiers (2026-04-11)
         /// <summary>
-        /// Модифицировать личность на основе характера.
+        /// Apply PersonalityTrait flags to modify personality weights.
+        /// Each trait adjusts the base personality parameters.
         /// </summary>
+        public void ApplyPersonalityModifiers(PersonalityTrait traits)
+        {
+            personalityFlags = traits;
+            
+            if ((traits & PersonalityTrait.Aggressive) != 0)
+            {
+                aggressiveness = Mathf.Clamp01(aggressiveness + 0.3f);
+                cautiousness = Mathf.Clamp01(cautiousness - 0.1f);
+            }
+            if ((traits & PersonalityTrait.Cautious) != 0)
+            {
+                cautiousness = Mathf.Clamp01(cautiousness + 0.3f);
+                aggressiveness = Mathf.Clamp01(aggressiveness - 0.1f);
+            }
+            if ((traits & PersonalityTrait.Ambitious) != 0)
+            {
+                ambition = Mathf.Clamp01(ambition + 0.3f);
+            }
+            if ((traits & PersonalityTrait.Treacherous) != 0)
+            {
+                ambition = Mathf.Clamp01(ambition + 0.2f);
+                socialness = Mathf.Clamp01(socialness - 0.1f);
+            }
+            if ((traits & PersonalityTrait.Loyal) != 0)
+            {
+                socialness = Mathf.Clamp01(socialness + 0.2f);
+            }
+            if ((traits & PersonalityTrait.Pacifist) != 0)
+            {
+                aggressiveness = Mathf.Clamp01(aggressiveness - 0.3f);
+                cautiousness = Mathf.Clamp01(cautiousness + 0.2f);
+            }
+            if ((traits & PersonalityTrait.Vengeful) != 0)
+            {
+                aggressiveness = Mathf.Clamp01(aggressiveness + 0.2f);
+            }
+            if ((traits & PersonalityTrait.Curious) != 0)
+            {
+                socialness = Mathf.Clamp01(socialness + 0.2f);
+            }
+        }
+        
+        /// <summary>
+        /// Legacy: Apply disposition modifiers.
+        /// FIX NPC-ATT-02: Migrated to ApplyPersonalityModifiers. (2026-04-11)
+        /// </summary>
+        [Obsolete("Use ApplyPersonalityModifiers(PersonalityTrait) instead.")]
         public void ApplyDispositionModifiers(Disposition disposition)
         {
             switch (disposition)

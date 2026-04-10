@@ -1,9 +1,9 @@
 // ============================================================================
 // NPCData.cs — Runtime данные NPC
 // Cultivation World Simulator
-// Версия: 1.0
+// Версия: 1.2
 // Создано: 2026-03-30 10:00:00 UTC
-// Редактировано: 2026-03-31 10:38:00 UTC
+// Редактировано: 2026-04-11 00:00:00 UTC — Fix-07
 // ============================================================================
 
 using System;
@@ -15,6 +15,66 @@ using CultivationGame.Qi;
 
 namespace CultivationGame.NPC
 {
+    // FIX NPC-C02: Serializable wrapper for SkillLevels dictionary
+    // JsonUtility cannot serialize Dictionary<,>, so we use an array of entries.
+    [Serializable]
+    public struct SkillLevelEntry
+    {
+        public string skillId;
+        public float level;
+
+        public SkillLevelEntry(string id, float lvl)
+        {
+            skillId = id;
+            level = lvl;
+        }
+    }
+
+    /// <summary>
+    /// FIX NPC-C02: Serializable container for skill levels.
+    /// Converts to/from Dictionary for runtime, serializes as array for save.
+    /// </summary>
+    [Serializable]
+    public class SkillLevelData
+    {
+        public SkillLevelEntry[] entries = Array.Empty<SkillLevelEntry>();
+
+        public SkillLevelData() { }
+
+        public SkillLevelData(Dictionary<string, float> dict)
+        {
+            FromDictionary(dict);
+        }
+
+        public void FromDictionary(Dictionary<string, float> dict)
+        {
+            if (dict == null)
+            {
+                entries = Array.Empty<SkillLevelEntry>();
+                return;
+            }
+            entries = new SkillLevelEntry[dict.Count];
+            int i = 0;
+            foreach (var kvp in dict)
+            {
+                entries[i++] = new SkillLevelEntry(kvp.Key, kvp.Value);
+            }
+        }
+
+        public Dictionary<string, float> ToDictionary()
+        {
+            var dict = new Dictionary<string, float>();
+            if (entries != null)
+            {
+                foreach (var entry in entries)
+                {
+                    dict[entry.skillId] = entry.level;
+                }
+            }
+            return dict;
+        }
+    }
+
     /// <summary>
     /// Runtime состояние NPC.
     /// </summary>
@@ -55,8 +115,15 @@ namespace CultivationGame.NPC
         public float Wisdom;
         
         // === Personality ===
+        // FIX NPC-ATT-01: Replace Disposition with Attitude + PersonalityTrait (2026-04-11)
+        [Obsolete("Use Attitude + PersonalityTrait instead. Migrated in Fix-07.")]
         public Disposition Disposition;
+        public Attitude Attitude = Attitude.Neutral;
+        public PersonalityTrait Personality = PersonalityTrait.None;
         public float[] ElementAffinities; // Индекс = Element enum
+        
+        // FIX NPC-C02: SkillLevels is now serializable via SkillLevelData
+        [Obsolete("Use GetSkillLevels()/SetSkillLevels() for serialization support.")]
         public Dictionary<string, float> SkillLevels;
         
         // === Status ===
@@ -80,13 +147,49 @@ namespace CultivationGame.NPC
             CultivationLevel = CultivationLevel.None;
             SubLevel = 1;
             MortalStage = MortalStage.Adult;
+#pragma warning disable CS0612 // Disposition obsolete
             Disposition = Disposition.Neutral;
+#pragma warning restore CS0612
+            Attitude = Attitude.Neutral;
+            Personality = PersonalityTrait.None;
             IsAlive = true;
             ElementAffinities = new float[(int)Element.Count];
             SkillLevels = new Dictionary<string, float>();
             CurrentAIState = NPCAIState.Idle;
             Lifespan = 80;
             MaxLifespan = 80;
+        }
+        
+        // FIX NPC-C02: Helpers for serializable skill levels
+        /// <summary>
+        /// Get skill levels as serializable SkillLevelData.
+        /// </summary>
+        public SkillLevelData GetSkillLevelData()
+        {
+            return new SkillLevelData(SkillLevels);
+        }
+        
+        /// <summary>
+        /// Set skill levels from serializable SkillLevelData.
+        /// </summary>
+        public void SetSkillLevelData(SkillLevelData data)
+        {
+            SkillLevels = data?.ToDictionary() ?? new Dictionary<string, float>();
+        }
+        
+        // FIX NPC-ATT-01: Helper to convert numeric value to Attitude enum
+        /// <summary>
+        /// Convert a numeric disposition value (-100..100) to Attitude enum.
+        /// </summary>
+        public static Attitude ValueToAttitude(int value)
+        {
+            if (value <= -51) return Attitude.Hatred;
+            if (value <= -21) return Attitude.Hostile;
+            if (value <= -10) return Attitude.Unfriendly;
+            if (value <= 9) return Attitude.Neutral;
+            if (value <= 49) return Attitude.Friendly;
+            if (value <= 79) return Attitude.Allied;
+            return Attitude.SwornAlly;
         }
     }
     
@@ -159,6 +262,8 @@ namespace CultivationGame.NPC
     
     /// <summary>
     /// Данные для сохранения NPC.
+    /// FIX NPC-C01: All max resource fields present with correct types.
+    /// FIX NPC-ATT-04: Attitude + PersonalityTrait fields added.
     /// </summary>
     [Serializable]
     public class NPCSaveData
@@ -179,11 +284,11 @@ namespace CultivationGame.NPC
         public int CurrentHealth;
         public float CurrentStamina;
         
-        // Max Resources
+        // FIX NPC-C01: Max Resources with correct types (2026-04-11)
         public long MaxQi;
-        public float MaxHealth;
+        public int MaxHealth;          // was float, fixed to int (matches NPCState.MaxHealth)
         public float MaxStamina;
-        public float MaxLifespan;
+        public int MaxLifespan;        // was float, fixed to int (matches NPCState.MaxLifespan)
         
         // Body
         public float BodyStrength;
@@ -198,9 +303,15 @@ namespace CultivationGame.NPC
         public float Wisdom;
         
         // Personality
+        // FIX NPC-ATT-04: Replaced Disposition with Attitude + PersonalityTrait (2026-04-11)
+        [Obsolete("Use AttitudeValue + PersonalityFlags instead.")]
         public int Disposition;
+        public int AttitudeValue;              // FIX NPC-ATT-04: Attitude enum as int
+        public int PersonalityFlags;           // FIX NPC-ATT-04: PersonalityTrait [Flags] as int
         public float[] ElementAffinities;
-        public Dictionary<string, float> SkillLevels;
+        
+        // FIX NPC-C02: SkillLevels as serializable array (2026-04-11)
+        public SkillLevelEntry[] SkillLevels;  // was Dictionary<string,float>
         
         // Status
         public bool IsAlive;

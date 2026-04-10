@@ -1,9 +1,9 @@
 // ============================================================================
 // QuestData.cs — ScriptableObject данных квеста
 // Cultivation World Simulator
-// Версия: 1.0
-// ============================================================================
+// Версия: 1.1
 // Создано: 2026-04-03 09:00:00 UTC
+// Редактировано: 2026-04-11 00:00:00 UTC — Fix-07
 // ============================================================================
 
 using System;
@@ -242,6 +242,47 @@ namespace CultivationGame.Quest
             data.rewards = rewards;
             
             return data;
+        }
+        
+        // FIX QST-C01: Clone objectives for each quest instance (2026-04-11)
+        /// <summary>
+        /// Create a deep copy of this QuestData with cloned objectives.
+        /// Each quest instance must have its own objectives to avoid sharing SO state.
+        /// </summary>
+        /// <returns>A new QuestData instance with cloned objectives.</returns>
+        public QuestData CloneForInstance()
+        {
+            QuestData clone = CreateInstance<QuestData>();
+            
+            // Copy all fields
+            clone.questId = this.questId;
+            clone.questName = this.questName;
+            clone.description = this.description;
+            clone.summary = this.summary;
+            clone.type = this.type;
+            clone.chapter = this.chapter;
+            clone.order = this.order;
+            clone.giverNpcId = this.giverNpcId;
+            clone.giverLocationId = this.giverLocationId;
+            clone.sequentialObjectives = this.sequentialObjectives;
+            clone.rewards = this.rewards;
+            clone.requirements = this.requirements;
+            clone.hasTimeLimit = this.hasTimeLimit;
+            clone.timeLimitTicks = this.timeLimitTicks;
+            clone.canFail = this.canFail;
+            clone.failCondition = this.failCondition;
+            clone.nextQuestId = this.nextQuestId;
+            clone.icon = this.icon;
+            clone.questColor = this.questColor;
+            
+            // Deep clone objectives — each instance gets its own copy
+            clone.objectives = new List<QuestObjective>(this.objectives.Count);
+            foreach (var obj in this.objectives)
+            {
+                clone.objectives.Add(obj.Clone());
+            }
+            
+            return clone;
         }
         
         // === Utility ===

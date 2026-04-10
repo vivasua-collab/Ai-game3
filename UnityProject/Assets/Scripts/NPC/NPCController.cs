@@ -1,9 +1,9 @@
 // ============================================================================
 // NPCController.cs — Главный контроллер NPC
 // Cultivation World Simulator
-// Версия: 1.1
+// Версия: 1.2
 // Создано: 2026-03-30 10:00:00 UTC
-// Редактировано: 2026-03-31 10:38:00 UTC
+// Редактировано: 2026-04-11 00:00:00 UTC — Fix-07
 // ============================================================================
 //
 // Источник: docs/NPC_AI_SYSTEM.md, docs/QI_SYSTEM.md
@@ -23,6 +23,7 @@ using CultivationGame.Core;
 using CultivationGame.Combat;
 using CultivationGame.Qi;
 using CultivationGame.Body;
+using CultivationGame.World;
 
 namespace CultivationGame.NPC
 {
@@ -47,6 +48,10 @@ namespace CultivationGame.NPC
         private Dictionary<string, int> relationships = new Dictionary<string, int>();
         private Dictionary<string, string> relationshipFlags = new Dictionary<string, string>();
         
+        // FIX NPC-H02: Lifespan tracking
+        private float lifespanAccumulator = 0f;
+        private TimeController timeController;
+        
         // === Events ===
         public event Action<NPCController> OnNPCDeath;
         public event Action<NPCController, CultivationLevel> OnBreakthrough;
@@ -62,6 +67,10 @@ namespace CultivationGame.NPC
         public bool IsAlive => state?.IsAlive ?? false;
         public Data.ScriptableObjects.NPCPresetData Preset => preset;
         
+        // FIX NPC-ATT-01: Expose Attitude + PersonalityTrait (2026-04-11)
+        public Attitude Attitude => state?.Attitude ?? Attitude.Neutral;
+        public PersonalityTrait Personality => state?.Personality ?? PersonalityTrait.None;
+        
         // === Unity Lifecycle ===
         
         private void Awake()
@@ -76,6 +85,9 @@ namespace CultivationGame.NPC
         {
             if (preset != null)
                 ApplyPreset();
+            
+            // FIX NPC-H02: Get TimeController for lifespan
+            ServiceLocator.Request<TimeController>(tc => timeController = tc);
         }
         
         private void Update()
@@ -110,17 +122,12 @@ namespace CultivationGame.NPC
             state.CultivationLevel = (CultivationLevel)preset.cultivationLevel;
             state.SubLevel = preset.cultivationSubLevel;
             
-            // Базовое отношение преобразуем в Disposition
-            if (preset.baseDisposition <= -50)
-                state.Disposition = Disposition.Hostile;
-            else if (preset.baseDisposition <= -10)
-                state.Disposition = Disposition.Unfriendly;
-            else if (preset.baseDisposition < 10)
-                state.Disposition = Disposition.Neutral;
-            else if (preset.baseDisposition < 50)
-                state.Disposition = Disposition.Friendly;
-            else
-                state.Disposition = Disposition.Allied;
+            // FIX NPC-ATT-01: Convert baseDisposition int → Attitude enum (2026-04-11)
+            state.Attitude = NPCState.ValueToAttitude(preset.baseDisposition);
+#pragma warning disable CS0612 // Disposition obsolete
+            // Keep legacy Disposition in sync for any remaining references
+            state.Disposition = (Disposition)preset.baseDisposition;
+#pragma warning restore CS0612
             
             // Инициализируем аффинности элементов (по умолчанию нейтральные)
             state.ElementAffinities = new float[Enum.GetValues(typeof(Element)).Length]; // FIX CORE-H05
@@ -173,7 +180,7 @@ namespace CultivationGame.NPC
         /// Формула: coreCapacity = 1000 × 1.1^totalSubLevels
         /// totalSubLevels = (level - 1) × 10 + subLevel
         /// </summary>
-        private int CalculateMaxQi()
+        private long CalculateMaxQi()
         {
             if (state.CultivationLevel == CultivationLevel.None)
             {
@@ -186,7 +193,7 @@ namespace CultivationGame.NPC
             int totalSubLevels = (level - 1) * 10 + state.SubLevel;
             double coreCapacity = 1000 * Math.Pow(1.1, totalSubLevels);
             
-            return (int)Math.Round(coreCapacity);
+            return (long)Math.Round(coreCapacity);
         }
         
         private int CalculateMaxLifespan()
@@ -198,10 +205,38 @@ namespace CultivationGame.NPC
         
         // === Lifespan ===
         
+        // FIX NPC-H02: Implement UpdateLifespan — decrease remainingLifespan per game day (2026-04-11)
+        /// <summary>
+        /// Decrease remaining lifespan based on game time.
+        /// 1 game day = 86400 game seconds. Each day reduces lifespan by 1.
+        /// </summary>
         private void UpdateLifespan()
         {
-            // Уменьшаем жизнь каждый игровой день
-            // Реальная реализация зависит от игровой системы времени
+            if (timeController == null) return;
+            
+            double currentGameSeconds = timeController.TotalGameSeconds;
+            double currentGameDay = currentGameSeconds / 86400.0;
+            
+            // Track how many game days have passed since last check
+            if (lifespanAccumulator <= 0f)
+            {
+                lifespanAccumulator = (float)currentGameDay;
+                return;
+            }
+            
+            float daysPassed = (float)currentGameDay - lifespanAccumulator;
+            if (daysPassed >= 1f)
+            {
+                int daysToDeduct = (int)daysPassed;
+                lifespanAccumulator += daysToDeduct;
+                
+                state.Lifespan = Mathf.Max(0, state.Lifespan - daysToDeduct);
+                
+                if (state.Lifespan <= 0)
+                {
+                    CheckDeathFromAge();
+                }
+            }
         }
         
         /// <summary>
@@ -235,15 +270,26 @@ namespace CultivationGame.NPC
             Debug.Log($"NPC {state.Name} died from {cause}");
         }
         
+        // FIX NPC-H03: TakeDamage notifies AI of attacker (2026-04-11)
         /// <summary>
         /// Нанести урон NPC.
         /// </summary>
+        /// <param name="damage">Amount of damage</param>
+        /// <param name="attackerId">ID of the attacker (used to notify AI)</param>
         public void TakeDamage(int damage, string attackerId = "")
         {
             if (!state.IsAlive) return;
             
             // Уменьшаем здоровье
             state.CurrentHealth -= damage;
+            
+            // FIX NPC-H03: Notify AI controller of attacker
+            if (!string.IsNullOrEmpty(attackerId) && aiController != null)
+            {
+                // Add threat proportional to damage
+                float threatLevel = damage * 0.5f;
+                aiController.AddThreat(attackerId, threatLevel);
+            }
             
             if (state.CurrentHealth <= 0)
             {
@@ -329,7 +375,12 @@ namespace CultivationGame.NPC
             // Identity
             state.NpcId = generated.id;
             state.Name = generated.nameRu;
-            state.Age = 18 + UnityEngine.Random.Range(0, 50); // Возраст по умолчанию
+            
+            // FIX NPC-M05: Use generated age if available (2026-04-11)
+            // GeneratedNPC does not currently have an 'age' field, so we derive it from role/cultivation
+            // If age were added to GeneratedNPC in the future, this would use it directly.
+            // For now, estimate age based on cultivation level:
+            state.Age = 18 + generated.cultivationLevel * 5 + UnityEngine.Random.Range(0, 10);
 
             // Cultivation
             state.CultivationLevel = (CultivationLevel)generated.cultivationLevel;
@@ -346,8 +397,13 @@ namespace CultivationGame.NPC
             state.Perception = generated.agility * 0.5f + generated.intelligence * 0.5f;
             state.Wisdom = generated.intelligence * 0.6f;
 
-            // Personality
+            // FIX NPC-ATT-01: Replace Disposition with Attitude + PersonalityTrait (2026-04-11)
+            // Convert GeneratedNPC.baseDisposition (Disposition enum) to Attitude + PersonalityTrait
+#pragma warning disable CS0612 // Disposition obsolete
             state.Disposition = generated.baseDisposition;
+#pragma warning restore CS0612
+            state.Attitude = ConvertDispositionToAttitude(generated.baseDisposition);
+            state.Personality = ConvertDispositionToPersonality(generated.baseDisposition);
 
             // Элементальные аффинности
             state.ElementAffinities = new float[Enum.GetValues(typeof(Element)).Length]; // FIX CORE-H05
@@ -368,7 +424,8 @@ namespace CultivationGame.NPC
                     0.5f,
                     0.5f
                 );
-                aiController.ApplyDispositionModifiers(generated.baseDisposition);
+                // FIX NPC-ATT-01: Apply PersonalityTrait instead of Disposition modifiers
+                aiController.ApplyPersonalityModifiers(state.Personality);
             }
 
             // Инициализируем тело
@@ -387,6 +444,57 @@ namespace CultivationGame.NPC
             // techniqueController будет использовать techniqueIds для загрузки техник
 
             Debug.Log($"NPC initialized from generator: {state.Name} (L{generated.cultivationLevel}.{generated.cultivationSubLevel})");
+        }
+
+        // FIX NPC-ATT-01: Conversion helpers from legacy Disposition to Attitude + PersonalityTrait (2026-04-11)
+        /// <summary>
+        /// Convert legacy Disposition enum to Attitude enum.
+        /// </summary>
+        private static Attitude ConvertDispositionToAttitude(Disposition disposition)
+        {
+            return disposition switch
+            {
+                Disposition.Hostile => Attitude.Hostile,
+                Disposition.Unfriendly => Attitude.Unfriendly,
+                Disposition.Neutral => Attitude.Neutral,
+                Disposition.Friendly => Attitude.Friendly,
+                Disposition.Allied => Attitude.Allied,
+                // Personality-only dispositions map to Neutral attitude
+                Disposition.Aggressive => Attitude.Neutral,
+                Disposition.Cautious => Attitude.Neutral,
+                Disposition.Treacherous => Attitude.Unfriendly,
+                Disposition.Ambitious => Attitude.Neutral,
+                _ => Attitude.Neutral
+            };
+        }
+
+        /// <summary>
+        /// Convert legacy Disposition enum to PersonalityTrait flags.
+        /// </summary>
+        private static PersonalityTrait ConvertDispositionToPersonality(Disposition disposition)
+        {
+            PersonalityTrait trait = PersonalityTrait.None;
+            switch (disposition)
+            {
+                case Disposition.Aggressive:
+                    trait |= PersonalityTrait.Aggressive;
+                    break;
+                case Disposition.Cautious:
+                    trait |= PersonalityTrait.Cautious;
+                    break;
+                case Disposition.Treacherous:
+                    trait |= PersonalityTrait.Treacherous;
+                    break;
+                case Disposition.Ambitious:
+                    trait |= PersonalityTrait.Ambitious;
+                    break;
+                case Disposition.Hostile:
+                    trait |= PersonalityTrait.Aggressive;
+                    break;
+                default:
+                    break;
+            }
+            return trait;
         }
 
         /// <summary>
@@ -431,9 +539,9 @@ namespace CultivationGame.NPC
                 CurrentHealth = state.CurrentHealth,
                 CurrentStamina = state.CurrentStamina,
                 MaxQi = state.MaxQi,
-                MaxHealth = state.MaxHealth,
+                MaxHealth = state.MaxHealth,           // FIX NPC-C01: int type
                 MaxStamina = state.MaxStamina,
-                MaxLifespan = state.MaxLifespan,
+                MaxLifespan = state.MaxLifespan,        // FIX NPC-C01: int type
                 BodyStrength = state.BodyStrength,
                 BodyDefense = state.BodyDefense,
                 Constitution = state.Constitution,
@@ -442,9 +550,15 @@ namespace CultivationGame.NPC
                 Perception = state.Perception,
                 Intelligence = state.Intelligence,
                 Wisdom = state.Wisdom,
+                // FIX NPC-ATT-04: Save Attitude + PersonalityTrait (2026-04-11)
+#pragma warning disable CS0612 // Disposition obsolete
                 Disposition = (int)state.Disposition,
+#pragma warning restore CS0612
+                AttitudeValue = (int)state.Attitude,
+                PersonalityFlags = (int)state.Personality,
                 ElementAffinities = state.ElementAffinities,
-                SkillLevels = state.SkillLevels,
+                // FIX NPC-C02: Serialize skill levels as array (2026-04-11)
+                SkillLevels = state.GetSkillLevelData().entries,
                 IsAlive = state.IsAlive,
                 SectId = state.SectId ?? "",
                 CurrentLocation = state.CurrentLocation ?? "",
@@ -467,9 +581,9 @@ namespace CultivationGame.NPC
             state.CurrentHealth = data.CurrentHealth;
             state.CurrentStamina = data.CurrentStamina;
             state.MaxQi = data.MaxQi;
-            state.MaxHealth = data.MaxHealth;
+            state.MaxHealth = data.MaxHealth;           // FIX NPC-C01: int type
             state.MaxStamina = data.MaxStamina;
-            state.MaxLifespan = data.MaxLifespan;
+            state.MaxLifespan = data.MaxLifespan;        // FIX NPC-C01: int type
             state.BodyStrength = data.BodyStrength;
             state.BodyDefense = data.BodyDefense;
             state.Constitution = data.Constitution;
@@ -478,9 +592,23 @@ namespace CultivationGame.NPC
             state.Perception = data.Perception;
             state.Intelligence = data.Intelligence;
             state.Wisdom = data.Wisdom;
+            // FIX NPC-ATT-04: Load Attitude + PersonalityTrait (2026-04-11)
+#pragma warning disable CS0612 // Disposition obsolete
             state.Disposition = (Disposition)data.Disposition;
+#pragma warning restore CS0612
+            state.Attitude = (Attitude)data.AttitudeValue;
+            state.Personality = (PersonalityTrait)data.PersonalityFlags;
             state.ElementAffinities = data.ElementAffinities;
-            state.SkillLevels = data.SkillLevels;
+            // FIX NPC-C02: Deserialize skill levels from array (2026-04-11)
+            if (data.SkillLevels != null)
+            {
+                var skillData = new SkillLevelData { entries = data.SkillLevels };
+                state.SkillLevels = skillData.ToDictionary();
+            }
+            else
+            {
+                state.SkillLevels = new Dictionary<string, float>();
+            }
             state.IsAlive = data.IsAlive;
             state.SectId = data.SectId;
             state.CurrentLocation = data.CurrentLocation;

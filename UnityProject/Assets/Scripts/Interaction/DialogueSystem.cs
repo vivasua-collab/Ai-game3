@@ -1,9 +1,9 @@
 // ============================================================================
 // DialogueSystem.cs — Система диалогов
 // Cultivation World Simulator
-// Версия: 1.0
+// Версия: 1.1
 // Создано: 2026-03-30 14:00:00 UTC
-// Редактировано: 2026-03-31 10:08:52 UTC
+// Редактировано: 2026-04-11 00:00:00 UTC — Fix-07
 // ============================================================================
 
 using System;
@@ -40,6 +40,15 @@ namespace CultivationGame.Interaction
             Choices = new List<DialogueChoice>();
             Actions = new List<DialogueAction>();
         }
+    }
+    
+    // FIX DLG-C01: Wrapper class for JsonUtility array root deserialization (2026-04-11)
+    // JsonUtility.FromJson cannot deserialize JSON arrays at root level.
+    // This wrapper allows: {"nodes": [...]} instead of [...]
+    [Serializable]
+    public class DialogueNodeArrayWrapper
+    {
+        public DialogueNode[] nodes;
     }
     
     /// <summary>
@@ -151,6 +160,7 @@ namespace CultivationGame.Interaction
     {
         [Header("Config")]
         [SerializeField] private float typingSpeed = 0.05f;
+        [SerializeField] private string dialogueResourcePath = "Dialogues"; // Path in Resources
         
         // === State ===
         private bool isInDialogue = false;
@@ -457,24 +467,125 @@ namespace CultivationGame.Interaction
         
         // === Loading ===
         
+        // FIX DLG-M04: Implement LoadDialogueNode instead of stub (2026-04-11)
+        /// <summary>
+        /// Load a dialogue node by ID from Resources or cached data.
+        /// Tries to load from: 1) already loaded nodes, 2) Resources folder, 3) NPC dialogue assets.
+        /// </summary>
         private DialogueNode LoadDialogueNode(string nodeId)
         {
-            // Загрузка из ресурсов или ScriptableObject
-            // Реализуется при интеграции с данными
+            if (string.IsNullOrEmpty(nodeId)) return null;
+            
+            // Already loaded?
+            if (dialogueNodes.TryGetValue(nodeId, out DialogueNode existing))
+            {
+                return existing;
+            }
+            
+            // Try loading from Resources/Dialogues/{nodeId}
+            // Dialogue assets can be stored as JSON files in Resources
+            TextAsset jsonAsset = Resources.Load<TextAsset>($"{dialogueResourcePath}/{nodeId}");
+            if (jsonAsset != null)
+            {
+                try
+                {
+                    // Try wrapper format first
+                    var wrapper = JsonUtility.FromJson<DialogueNodeArrayWrapper>(jsonAsset.text);
+                    if (wrapper?.nodes != null && wrapper.nodes.Length > 0)
+                    {
+                        // Register all nodes from the file
+                        foreach (var node in wrapper.nodes)
+                        {
+                            if (node != null && !string.IsNullOrEmpty(node.NodeId))
+                            {
+                                dialogueNodes[node.NodeId] = node;
+                            }
+                        }
+                        // Return the requested node
+                        if (dialogueNodes.TryGetValue(nodeId, out DialogueNode foundNode))
+                        {
+                            return foundNode;
+                        }
+                        // If not found by ID, return first node
+                        return wrapper.nodes[0];
+                    }
+                    
+                    // Try single node format
+                    DialogueNode singleNode = JsonUtility.FromJson<DialogueNode>(jsonAsset.text);
+                    if (singleNode != null)
+                    {
+                        dialogueNodes[singleNode.NodeId] = singleNode;
+                        return singleNode;
+                    }
+                }
+                catch (Exception e)
+                {
+                    Debug.LogError($"[Dialogue] Failed to parse dialogue JSON for {nodeId}: {e.Message}");
+                }
+            }
+            
             return null;
         }
         
+        // FIX DLG-C01: LoadDialogueFromJson — wrap array in wrapper object for JsonUtility (2026-04-11)
         /// <summary>
         /// Загрузить диалог из JSON.
+        /// JsonUtility.FromJson cannot deserialize arrays at root level.
+        /// Wraps the JSON array in a wrapper object: {"nodes": [...]}.
+        /// Also supports JSON that is already wrapped.
         /// </summary>
         public void LoadDialogueFromJson(string json)
         {
+            if (string.IsNullOrEmpty(json)) return;
+            
             try
             {
-                DialogueNode[] nodes = JsonUtility.FromJson<DialogueNode[]>(json);
-                foreach (var node in nodes)
+                string trimmedJson = json.Trim();
+                
+                // Check if JSON starts with '[' — it's a raw array, needs wrapping
+                if (trimmedJson.StartsWith("["))
                 {
-                    dialogueNodes[node.NodeId] = node;
+                    // Wrap in object for JsonUtility: {"nodes": [...]}
+                    string wrappedJson = "{\"nodes\":" + trimmedJson + "}";
+                    DialogueNodeArrayWrapper wrapper = JsonUtility.FromJson<DialogueNodeArrayWrapper>(wrappedJson);
+                    
+                    if (wrapper?.nodes != null)
+                    {
+                        foreach (var node in wrapper.nodes)
+                        {
+                            if (node != null && !string.IsNullOrEmpty(node.NodeId))
+                            {
+                                dialogueNodes[node.NodeId] = node;
+                            }
+                        }
+                        Debug.Log($"[Dialogue] Loaded {wrapper.nodes.Length} nodes from JSON array");
+                    }
+                }
+                else
+                {
+                    // JSON is already an object — try wrapper format first
+                    DialogueNodeArrayWrapper wrapper = JsonUtility.FromJson<DialogueNodeArrayWrapper>(trimmedJson);
+                    if (wrapper?.nodes != null && wrapper.nodes.Length > 0)
+                    {
+                        foreach (var node in wrapper.nodes)
+                        {
+                            if (node != null && !string.IsNullOrEmpty(node.NodeId))
+                            {
+                                dialogueNodes[node.NodeId] = node;
+                            }
+                        }
+                        Debug.Log($"[Dialogue] Loaded {wrapper.nodes.Length} nodes from wrapped JSON");
+                    }
+                    else
+                    {
+                        // Try single node format
+                        DialogueNode singleNode = JsonUtility.FromJson<DialogueNode>(trimmedJson);
+                        if (singleNode != null && !string.IsNullOrEmpty(singleNode.NodeId))
+                        {
+                            dialogueNodes[singleNode.NodeId] = singleNode;
+                            Debug.Log($"[Dialogue] Loaded single node: {singleNode.NodeId}");
+                        }
+                    }
                 }
             }
             catch (Exception e)

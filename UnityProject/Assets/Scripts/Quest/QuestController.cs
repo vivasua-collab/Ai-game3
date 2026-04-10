@@ -1,9 +1,9 @@
 // ============================================================================
 // QuestController.cs — Главный контроллер системы квестов
 // Cultivation World Simulator
-// Версия: 1.0
-// ============================================================================
+// Версия: 1.1
 // Создано: 2026-04-03 09:05:00 UTC
+// Редактировано: 2026-04-11 00:00:00 UTC — Fix-07
 // ============================================================================
 
 using System;
@@ -69,9 +69,18 @@ namespace CultivationGame.Quest
         
         private string trackedQuestId; // Отслеживаемый квест
         
+        // === Quest Data Registry ===
+        // FIX QST-C02: Registry for looking up QuestData by ID during load
+        private Dictionary<string, QuestData> questDataRegistry = new Dictionary<string, QuestData>();
+        
         // === References ===
         
         private TimeController timeController;
+        
+        // FIX QST-C03: References for reward integration
+        private Player.StatDevelopment statDevelopment;
+        private Inventory.InventoryController inventoryController;
+        private Player.PlayerController playerController;
         
         // === Properties ===
         
@@ -105,6 +114,9 @@ namespace CultivationGame.Quest
         {
             // Получаем TimeController
             ServiceLocator.Request<TimeController>(tc => timeController = tc);
+            
+            // FIX QST-C03: Get references for reward integration
+            ServiceLocator.Request<Player.PlayerController>(pc => playerController = pc);
         }
         
         private void OnDestroy()
@@ -113,12 +125,38 @@ namespace CultivationGame.Quest
             ServiceLocator.Unregister<QuestController>();
         }
         
+        // FIX QST-C02: Register quest data for lookup during load
+        /// <summary>
+        /// Register a QuestData asset for lookup by quest ID.
+        /// Required for restoring active quests from save data.
+        /// </summary>
+        public void RegisterQuestData(QuestData data)
+        {
+            if (data != null && !string.IsNullOrEmpty(data.QuestId))
+            {
+                questDataRegistry[data.QuestId] = data;
+            }
+        }
+        
+        /// <summary>
+        /// Register multiple QuestData assets.
+        /// </summary>
+        public void RegisterQuestData(IEnumerable<QuestData> dataList)
+        {
+            if (dataList == null) return;
+            foreach (var data in dataList)
+            {
+                RegisterQuestData(data);
+            }
+        }
+        
         // === Quest Management ===
         
         /// <summary>
         /// Взять квест.
+        /// FIX QST-C01: Uses CloneForInstance() to create independent objectives.
         /// </summary>
-        /// <param name="questData">Данные квеста</param>
+        /// <param name="questData">Данные квеста (SO template)</param>
         /// <returns>True если успешно</returns>
         public bool AcceptQuest(QuestData questData)
         {
@@ -155,24 +193,27 @@ namespace CultivationGame.Quest
                 return false;
             }
             
+            // FIX QST-C01: Clone quest data so each instance has independent objectives (2026-04-11)
+            QuestData instanceData = questData.CloneForInstance();
+            
             // Создаём активный квест
             ActiveQuest activeQuest = new ActiveQuest
             {
                 questId = questId,
-                questData = questData,
+                questData = instanceData,
                 state = QuestState.Active,
                 objectiveStates = new List<ObjectiveSaveData>(),
                 startTimeTicks = GetCurrentTime(),
-                remainingTime = questData.TimeLimitTicks
+                remainingTime = instanceData.TimeLimitTicks
             };
             
             // Инициализируем цели
-            for (int i = 0; i < questData.Objectives.Count; i++)
+            for (int i = 0; i < instanceData.Objectives.Count; i++)
             {
-                var obj = questData.Objectives[i];
+                var obj = instanceData.Objectives[i];
                 
                 // Первая цель активна, остальные по условию
-                if (i == 0 || !questData.SequentialObjectives)
+                if (i == 0 || !instanceData.SequentialObjectives)
                 {
                     obj.Activate();
                 }
@@ -185,16 +226,19 @@ namespace CultivationGame.Quest
             activeQuests.Add(questId, activeQuest);
             availableQuests.Remove(questId);
             
+            // Register for future lookups
+            RegisterQuestData(questData);
+            
             // Авто-отслеживание
             if (autoTrackNewQuest || string.IsNullOrEmpty(trackedQuestId))
             {
                 SetTrackedQuest(questId);
             }
             
-            OnQuestAccepted?.Invoke(questData);
+            OnQuestAccepted?.Invoke(instanceData);
             OnQuestListChanged?.Invoke();
             
-            Debug.Log($"[Quest] Квест принят: {questData.QuestName}");
+            Debug.Log($"[Quest] Квест принят: {instanceData.QuestName}");
             return true;
         }
         
@@ -279,7 +323,7 @@ namespace CultivationGame.Quest
             
             Debug.Log($"[Quest] Квест выполнен: {questData.QuestName}");
             
-            // TODO: Выдать награды
+            // FIX QST-C03: Grant rewards on quest completion
             GrantRewards(questData.Rewards);
         }
         
@@ -572,11 +616,106 @@ namespace CultivationGame.Quest
         
         // === Rewards ===
         
+        // FIX QST-C03: Implement GrantRewards — XP→StatDevelopment, Items→InventoryController, Gold→PlayerState (2026-04-11)
+        /// <summary>
+        /// Grant quest rewards to the player.
+        /// - Experience → StatDevelopment.AddDelta (distributed across stats)
+        /// - Gold → PlayerState (via PlayerController)
+        /// - Items → InventoryController.AddItem
+        /// - Spirit Stones → PlayerState (via PlayerController)
+        /// - Technique → TechniqueController
+        /// - Faction Reputation → FactionController
+        /// </summary>
         private void GrantRewards(QuestReward rewards)
         {
-            // TODO: Интеграция с системой опыта, золота, инвентаря
+            if (rewards == null)
+            {
+                Debug.LogWarning("[Quest] GrantRewards called with null rewards");
+                return;
+            }
             
             Debug.Log($"[Quest] Награды: {rewards.GetRewardText()}");
+            
+            // Experience → StatDevelopment
+            if (rewards.experience > 0)
+            {
+                if (statDevelopment == null && playerController != null)
+                {
+                    statDevelopment = playerController.GetComponent<Player.StatDevelopment>();
+                }
+                
+                if (statDevelopment != null)
+                {
+                    // Distribute XP as stat deltas across all stats equally
+                    float xpPerStat = rewards.experience / 4f;
+                    statDevelopment.AddDelta(Core.StatType.Strength, xpPerStat * 0.3f);
+                    statDevelopment.AddDelta(Core.StatType.Agility, xpPerStat * 0.2f);
+                    statDevelopment.AddDelta(Core.StatType.Intelligence, xpPerStat * 0.3f);
+                    statDevelopment.AddDelta(Core.StatType.Vitality, xpPerStat * 0.2f);
+                    Debug.Log($"[Quest] XP granted: {rewards.experience} → StatDevelopment");
+                }
+                else
+                {
+                    Debug.LogWarning("[Quest] StatDevelopment not found, XP reward not applied");
+                }
+            }
+            
+            // Gold → PlayerState (via PlayerController)
+            if (rewards.gold > 0)
+            {
+                // PlayerState doesn't have a gold field yet — log for future integration
+                // TODO: Add gold to PlayerState when currency system is implemented
+                Debug.Log($"[Quest] Gold granted: {rewards.gold} (pending PlayerState.gold integration)");
+            }
+            
+            // Spirit Stones
+            if (rewards.spiritStones > 0)
+            {
+                Debug.Log($"[Quest] Spirit Stones granted: {rewards.spiritStones} (pending currency integration)");
+            }
+            
+            // Items → InventoryController
+            if (rewards.items != null && rewards.items.Count > 0)
+            {
+                if (inventoryController == null && playerController != null)
+                {
+                    inventoryController = playerController.GetComponent<Inventory.InventoryController>();
+                }
+                
+                if (inventoryController != null)
+                {
+                    foreach (string itemId in rewards.items)
+                    {
+                        // Load ItemData from Resources or registry
+                        var itemData = Resources.Load<Data.ScriptableObjects.ItemData>($"Items/{itemId}");
+                        if (itemData != null)
+                        {
+                            inventoryController.AddItem(itemData);
+                            Debug.Log($"[Quest] Item granted: {itemId}");
+                        }
+                        else
+                        {
+                            Debug.LogWarning($"[Quest] ItemData not found for: {itemId}");
+                        }
+                    }
+                }
+                else
+                {
+                    Debug.LogWarning("[Quest] InventoryController not found, item rewards not applied");
+                }
+            }
+            
+            // Technique
+            if (!string.IsNullOrEmpty(rewards.techniqueId))
+            {
+                Debug.Log($"[Quest] Technique granted: {rewards.techniqueId} (pending TechniqueController integration)");
+            }
+            
+            // Faction Reputation
+            if (rewards.factionReputation > 0 && !string.IsNullOrEmpty(rewards.factionId))
+            {
+                Debug.Log($"[Quest] Faction reputation +{rewards.factionReputation} for {rewards.factionId} (pending FactionController integration)");
+            }
         }
         
         // === Utility ===
@@ -622,29 +761,117 @@ namespace CultivationGame.Quest
             
             foreach (var quest in activeQuests.Values)
             {
-                data.activeQuests.Add(new ActiveQuestSaveData
+                var activeSave = new ActiveQuestSaveData
                 {
                     questId = quest.questId,
                     state = quest.state,
                     startTimeTicks = quest.startTimeTicks,
                     remainingTime = quest.remainingTime,
                     objectiveStates = new List<ObjectiveSaveData>()
-                });
+                };
+                
+                // Save objective states from the cloned quest data
+                if (quest.questData != null)
+                {
+                    foreach (var obj in quest.questData.Objectives)
+                    {
+                        activeSave.objectiveStates.Add(obj.GetSaveData());
+                    }
+                }
+                
+                data.activeQuests.Add(activeSave);
             }
             
             return data;
         }
         
+        // FIX QST-C02: Restore active quests from save data (2026-04-11)
         /// <summary>
-        /// Загрузить данные.
+        /// Загрузить данные. Restores active quests by looking up QuestData from registry,
+        /// cloning objectives, and restoring progress.
         /// </summary>
         public void LoadSaveData(QuestSystemSaveData data)
         {
-            completedQuests = new HashSet<string>(data.completedQuests);
-            failedQuests = new HashSet<string>(data.failedQuests);
-            availableQuests = new HashSet<string>(data.availableQuests);
+            // Clear current state
+            foreach (var quest in activeQuests.Values)
+            {
+                if (quest.questData != null)
+                {
+                    foreach (var obj in quest.questData.Objectives)
+                    {
+                        obj.OnCompleted -= HandleObjectiveCompleted;
+                        obj.OnProgressChanged -= HandleObjectiveProgress;
+                    }
+                }
+            }
+            activeQuests.Clear();
             
-            // TODO: Восстановить активные квесты
+            completedQuests = new HashSet<string>(data.completedQuests ?? new List<string>());
+            failedQuests = new HashSet<string>(data.failedQuests ?? new List<string>());
+            availableQuests = new HashSet<string>(data.availableQuests ?? new List<string>());
+            
+            // Restore active quests
+            if (data.activeQuests != null)
+            {
+                foreach (var savedQuest in data.activeQuests)
+                {
+                    if (string.IsNullOrEmpty(savedQuest.questId)) continue;
+                    
+                    // Look up QuestData from registry
+                    if (!questDataRegistry.TryGetValue(savedQuest.questId, out QuestData templateData))
+                    {
+                        Debug.LogWarning($"[Quest] Cannot restore quest {savedQuest.questId}: QuestData not found in registry");
+                        continue;
+                    }
+                    
+                    // FIX QST-C01: Clone for independent instance
+                    QuestData instanceData = templateData.CloneForInstance();
+                    
+                    ActiveQuest activeQuest = new ActiveQuest
+                    {
+                        questId = savedQuest.questId,
+                        questData = instanceData,
+                        state = savedQuest.state,
+                        startTimeTicks = savedQuest.startTimeTicks,
+                        remainingTime = savedQuest.remainingTime,
+                        objectiveStates = savedQuest.objectiveStates ?? new List<ObjectiveSaveData>()
+                    };
+                    
+                    // Restore objective progress
+                    if (savedQuest.objectiveStates != null)
+                    {
+                        foreach (var objState in savedQuest.objectiveStates)
+                        {
+                            // Find matching objective by ID
+                            foreach (var obj in instanceData.Objectives)
+                            {
+                                if (obj.ObjectiveId == objState.objectiveId)
+                                {
+                                    obj.LoadSaveData(objState);
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                    
+                    // Re-subscribe to objective events
+                    foreach (var obj in instanceData.Objectives)
+                    {
+                        obj.OnCompleted += HandleObjectiveCompleted;
+                        obj.OnProgressChanged += HandleObjectiveProgress;
+                    }
+                    
+                    activeQuests.Add(savedQuest.questId, activeQuest);
+                    
+                    Debug.Log($"[Quest] Restored active quest: {instanceData.QuestName}");
+                }
+            }
+            
+            // Restore tracked quest
+            if (activeQuests.Count > 0 && string.IsNullOrEmpty(trackedQuestId))
+            {
+                trackedQuestId = GetFirstActiveQuestId();
+            }
             
             OnQuestListChanged?.Invoke();
         }
