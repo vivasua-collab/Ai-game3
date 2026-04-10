@@ -1,10 +1,11 @@
 # КОНСОЛИДИРОВАННЫЙ АУДИТ — Cultivation World Simulator
 
 **Дата консолидации:** 2026-04-10  
+**Обновлено:** 2026-04-10 (интеграция GPT-аудита)  
 **Проект:** Cultivation World Simulator v0.1.0-alpha  
 **Unity:** 6000.3 (2D URP)  
 **Файлов просканировано:** 115 C# файлов, 21+ система  
-**Аудиторов:** 7 параллельных агентов + ручная верификация  
+**Аудиторов:** 7 параллельных агентов + ручная верификация + внешний GPT-аудит  
 
 ---
 
@@ -13,10 +14,10 @@
 | Категория | Уникальных проблем |
 |-----------|-------------------|
 | 🔴 CRITICAL | 32 |
-| 🟠 HIGH | 49 |
-| 🟡 MEDIUM | 63 |
+| 🟠 HIGH | 54 |
+| 🟡 MEDIUM | 65 |
 | 🟢 LOW | 47 |
-| **Итого** | **191** |
+| **Итого** | **198** |
 
 > **Примечание:** Дедупликация выполнена путём объединения пересекающихся проблем из разных файлов. Маппинг оригинальных ID → консолидированных ID приведён в Приложении A.
 
@@ -34,6 +35,8 @@
 | [S6](./audit_batch3_supplement.md) | Batch 3: Data/SO + Gen/Editor + UI/Char/Tile/Tests | 52 файла | 57 |
 | [S7](./AUDIT_VERIFICATION.md) | Верификация (Unity docs + Qwen) | — | — |
 | [S8](./CODE_AUDIT_Unity_6.3.md) | Unity 6.3 совместимость (ранний аудит) | — | 5+8 |
+| S9 | GPT ChatGPT Audit #1 (GameInitializer, SceneLoader, Qi, Save, Time) | 7 файлов | 10 |
+| S10 | GPT ChatGPT Audit #2 (SaveManager cache/encryption, DefenseProcessor, chances) | 5 файлов | 12 |
 
 **Связанные аналитические файлы:**
 - [ANALYSIS_REPORT.md](./ANALYSIS_REPORT.md) — Анализ документации
@@ -161,6 +164,9 @@
 | CMB-M03 | LevelSuppression attackIndex cast предполагает совпадение enum→array | LevelSuppression.cs:84 | S2(L-NEW-10) |
 | CMB-M04 | DirectionalEffect/OrbitalWeapon — Instantiate/Destroy вместо пулинга | DirectionalEffect.cs:193-194 | S2(M-NEW-03) |
 | CMB-M05 | FormationArrayEffect/ExpandingEffect — разная квалификация ICombatTarget | FormationArrayEffect.cs:112 vs ExpandingEffect.cs:126 | S2(H-NEW-05) |
+| CMB-M06 | CalculateDodgeChance/ParryChance/BlockChance — нет верхнего капа [0,1], шанс может превысить 100% | DefenseProcessor.cs | S10(#8) |
+
+> **Примечание GPT-аудита:** CMB-M06 — формулы ограничены снизу `0`, но не сверху `1`. При больших статах/бонусах шанс >100%, что нарушает вероятностную модель. Является расширением проблемы CMB-C03 (двойной расчёт), но даже после исправления CMB-C03 верхний кламп необходим.
 
 ### 🟢 LOW
 
@@ -190,6 +196,9 @@
 |----|----------|-------------|----------|
 | QI-H01 | Медитация не продвигает игровое время | QiController.cs:248-260 | S1(H-08), S3 |
 | QI-H02 | coreCapacity = maxQiCapacity после прорыва использует СТАРОЕ значение | QiController.cs:308 | S3 |
+| QI-H03 | SpendQi(int amount) допускает отрицательное значение — эксплойт увеличения Qi | QiController.cs:162 | S9(#6) |
+
+> **Примечание GPT-аудита:** QI-H03 — при `amount < 0` условие `currentQi >= amount` истинно, затем `currentQi -= amount` **увеличивает** Qi. Наш QI-L01 покрывает случай `amount=0`, но GPT обнаружил более опасный вариант с отрицательными значениями.
 
 ### 🟡 MEDIUM
 
@@ -383,6 +392,7 @@
 | WLD-H03 | WorldController: WorldEvent.EventData — Dictionary\<string,object\> не сериализуем | WorldController.cs | S4 |
 | WLD-H04 | FactionController.LoadSaveData не восстанавливает playerMemberships | FactionController.cs:467-477 | S4 |
 | WLD-H05 | FactionData.FactionRelations — Dictionary\<string,int\> не сериализуем Unity | FactionData.cs | S4 |
+| WLD-H06 | TimeController.LoadSaveData не валидирует входные значения (hours/minutes/days/months применяются без clamp) | TimeController.cs | S9(#8), S10(#9) |
 
 ### 🟡 MEDIUM
 
@@ -393,6 +403,7 @@
 | WLD-M03 | LocationController: BuildingType? nullable enum не сериализуем Unity | LocationController.cs:70 | S4 |
 | WLD-M04 | EventController: eventCheckInterval в real seconds, не game time | EventController.cs:134-146 | S4 |
 | WLD-M05 | FindFirstObjectByType вместо ServiceLocator (Location, Event, Save, Formation) | Множество файлов | S1(H-02), S4 |
+| WLD-M06 | TimeController.GetTotalDays() — семантический off-by-one (включает currentDay без -1) | TimeController.cs | S9(#10) |
 
 ### 🟢 LOW
 
@@ -441,6 +452,12 @@
 > **Файлы:** SaveManager.cs, SaveFileHandler.cs, SaveDataTypes.cs  
 > **Источник:** S1, S4
 
+### 🔴 CRITICAL
+
+| ID | Проблема | Файл:строка | Источник |
+|----|----------|-------------|----------|
+| SAV-C01 | SaveManager.GetSlotFilePath: path traversal через slotId (нет валидации `../`) | SaveManager.cs | S9(#7), S10(#3) |
+
 ### 🟠 HIGH
 
 | ID | Проблема | Файл:строка | Источник |
@@ -448,14 +465,18 @@
 | SAV-H01 | SaveDataTypes: Dictionary fields не JsonUtility-совместимы (KeyBindings, Objectives, customBonuses, skills) | SaveDataTypes.cs:130,209 | S4 |
 | SAV-H02 | SaveManager.TotalPlayTimeHours использует game-time вместо real play time | SaveManager.cs:143 | S4 |
 | SAV-H03 | SaveManager.CollectSaveData не сохраняет Player/NPC/Formation/Quest/Inventory/Equipment | SaveManager.cs:232-234 | S4 |
+| SAV-H04 | SaveManager: RefreshSlotCache не читает файлы при cache miss — UI видит пустые слоты | SaveManager.cs | S10(#2) |
+| SAV-H05 | SaveManager: после FromJson нет проверки null/битых полей перед ApplySaveData — NRE или повреждённый state | SaveManager.cs | S10(#5) |
 
 ### 🟡 MEDIUM
 
 | ID | Проблема | Файл:строка | Источник |
 |----|----------|-------------|----------|
-| SAV-M01 | SaveFileHandler не используется (мёртвый код) | SaveFileHandler.cs | S1(M-06) |
+| SAV-M01 | SaveFileHandler не используется (мёртвый код) | SaveFileHandler.cs | S1(M-06), S10(#11) |
 | SAV-M02 | SaveDataTypes.cs — раздутый файл | SaveDataTypes.cs | S1(M-15) |
-| SAV-M03 | SaveManager: XOR encryption тривиально ломается, SaveFileHandler AES не используется | SaveManager.cs:434-442 | S4 |
+| SAV-M03 | SaveManager: XOR encryption тривиально ломается, SaveFileHandler AES не используется — два несовместимых формата | SaveManager.cs:434-442 | S4, S10(#4) |
+| SAV-M04 | SaveFileHandler: FILE_EXTENSION, MAX_BACKUPS — неиспользуемые константы | SaveFileHandler.cs | S10(#11) |
+| SAV-M05 | GameManager + GameInitializer: перекрывающаяся ответственность инициализации — гонки порядка | GameManager.cs, GameInitializer.cs | S10(#12) |
 
 ### 🟢 LOW
 
@@ -752,15 +773,23 @@
 > **Файлы:** GameManager.cs, GameInitializer.cs, SceneLoader.cs  
 > **Источник:** S1, S3
 
+### 🔴 CRITICAL
+
+| ID | Проблема | Файл:строка | Источник |
+|----|----------|-------------|----------|
+| MGR-C01 | GameInitializer: параллельный запуск нескольких InitializeGameAsync() — нет флага isInitializing | GameInitializer.cs:Start(), Initialize(), Reinitialize() | S9(#2) |
+| MGR-C02 | SceneLoader: GetSceneByName.IsValid() проверяет только загруженные сцены, не Build Settings — логика инвертирована | SceneLoader.cs:LoadSceneAsync() | S9(#3) |
+| MGR-C03 | SceneLoader: Time.timeScale не восстанавливается при ошибке загрузки сцены (yield break без finally) | SceneLoader.cs:LoadSceneAsync() | S9(#4) |
+
 ### 🟠 HIGH
 
 | ID | Проблема | Файл:строка | Источник |
 |----|----------|-------------|----------|
 | MGR-H01 | GameManager.FindReferences использует FindFirstObjectByType | GameManager.cs:155-165 | S1(H-10), S3 |
-| MGR-H02 | GameInitializer.SubscribeToEvents() никогда не вызывается | GameInitializer.cs:356-364 | S1(H-04), S3 |
+| MGR-H02 | GameInitializer.SubscribeToEvents() никогда не вызывается | GameInitializer.cs:356-364 | S1(H-04), S3, S9(#1), S10(#1) |
 | MGR-H03 | SceneLoader: loading scene unloaded after Single-mode load destroys it | SceneLoader.cs:226-277 | S3 |
 | MGR-H04 | SceneLoader: unconditional timeScale=1f после loading (unpauses previously paused) | SceneLoader.cs:286-289 | S3 |
-| MGR-H05 | GameInitializer: individual subscribe methods don't check isSubscribed | GameInitializer.cs:394-413 | S3 |
+| MGR-H05 | GameInitializer: individual subscribe methods don't check isSubscribed — UnsubscribeFromEvents early return | GameInitializer.cs:394-413 | S3, S9(#1), S10(#1) |
 
 ### 🟡 MEDIUM
 
@@ -1027,5 +1056,47 @@
 ---
 
 *Консолидация выполнена: 2026-04-10*  
-*Источники: 7 параллельных агентов + ручная верификация*  
-*Всего уникальных проблем: 191 (32 CRITICAL, 49 HIGH, 63 MEDIUM, 47 LOW)*
+*Обновлено: 2026-04-10 (интеграция GPT-аудита)*  
+*Источники: 7 параллельных агентов + ручная верификация + внешний GPT-аудит*  
+*Всего уникальных проблем: 198 (32+3 CRITICAL, 49+5 HIGH, 63+2 MEDIUM, 47 LOW)*  
+
+---
+
+## Приложение B: Интеграция GPT-аудита
+
+### Анализ покрытия GPT vs наш аудит
+
+**Охват GPT:** ~7 файлов (GameInitializer, SceneLoader, QiController, SaveManager, TimeController, DamageCalculator, DefenseProcessor).  
+**Наш охват:** 115 файлов, 21+ система.
+
+**GPT нашёл 22 уникальных утверждения.** Из них:
+- 12 — дубликаты наших находок (подтверждены)
+- 10 — новые проблемы, которые мы пропустили
+
+### Маппинг GPT → Консолидированный ID
+
+| GPT Audit 1 # | GPT Audit 2 # | Описание | Наш ID | Статус |
+|---------------|---------------|----------|--------|--------|
+| #1 | #1 | GameInitializer isSubscribed leak | MGR-H02, MGR-H05 | ✅ Дубликат — у нас глубже |
+| #2 | — | Parallel InitializeGameAsync | **MGR-C01** | 🆕 Новое |
+| #3 | — | SceneLoader GetSceneByName unloaded | **MGR-C02** | 🆕 Новое |
+| #4 | — | Time.timeScale not restored on error | **MGR-C03** | 🆕 Новое |
+| #5 | — | Qi long→int truncation | CMB-C04, CMB-C05, QI-C01 | ✅ Дубликат — у нас 13 файлов |
+| #6 | — | SpendQi negative values | **QI-H03** | 🆕 Новое (расширение QI-L01) |
+| #7 | #3 | Path traversal slotId | **SAV-C01** | 🆕 Новое |
+| #8 | #9 | TimeController LoadSaveData validation | **WLD-H06** | 🆕 Новое |
+| #9 | — | Legacy Input API | MGR-M01, UI-M01, UI-H06 | ✅ Дубликат |
+| #10 | — | GetTotalDays off-by-one | **WLD-M06** | 🆕 Новое |
+| — | #2 | SaveManager cache miss | **SAV-H04** | 🆕 Новое |
+| — | #4 | Encryption inconsistency (XOR vs AES) | SAV-M03 | ✅ Дубликат — мы уже нашли |
+| — | #5 | No data integrity after FromJson | **SAV-H05** | 🆕 Новое |
+| — | #6 | GameEvents static surviving | CORE-H02 | ✅ Дубликат |
+| — | #7 | DamageCalculator duplicates DefenseProcessor | CMB-C03 | ✅ Частичный дубликат — у нас глубже |
+| — | #8 | Chance formulas no upper cap | **CMB-M06** | 🆕 Новое |
+| — | #10 | SaveFileHandler constant IV | SAV-L01 | ✅ Дубликат — у нас уже LOW |
+| — | #11 | SaveFileHandler unused constants | SAV-M01, **SAV-M04** | ⚠️ Частично новое |
+| — | #12 | GameManager+GameInitializer overlap | **SAV-M05** | 🆕 Новое (архитектурное) |
+
+### Вывод по GPT-аудиту
+
+GPT покрыл только 6% кодовой базы (7 из 115 файлов), но нашёл **10 подлинно новых проблем**, которые мы пропустили — в основном в SaveManager (3), SceneLoader (2), GameInitializer (1), DefenseProcessor (1), QiController (1), TimeController (2). Это свидетельствует о том, что наш аудит не углубился в специфические сценарии ошибок (path traversal, negative input, error-path cleanup, cache miss). Полезно, но слабое покрытие.

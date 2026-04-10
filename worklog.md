@@ -93,3 +93,36 @@ Stage Summary:
 - Обновлён: docs_temp/AUDIT_2026-04-10.md — добавлена навигация
 - 191 проблема консолидирована из 7 источников с дедупликацией
 - Готово к следующему аудиту (ChatGPT) и написанию плана исправлений
+
+---
+Task ID: gpt-integration
+Agent: Main Agent
+Task: Интеграция двух GPT-аудитов в консолидированный файл
+
+Work Log:
+- Прочитан CONSOLIDATED_AUDIT.md (1031 строка, 191 проблема)
+- Проанализированы оба GPT-аудита (22 уникальных утверждения)
+- Определены пересечения: 12 дубликатов наших находок, 10 новых проблем
+- Добавлены новые проблемы в соответствующие секции:
+  - MGR-C01: Parallel InitializeGameAsync (CRITICAL)
+  - MGR-C02: SceneLoader GetSceneByName unloaded (CRITICAL)
+  - MGR-C03: SceneLoader timeScale not restored on error (CRITICAL)
+  - QI-H03: SpendQi negative values exploit (HIGH)
+  - SAV-C01: Path traversal via slotId (CRITICAL)
+  - SAV-H04: SaveManager cache miss (HIGH)
+  - SAV-H05: No data integrity after FromJson (HIGH)
+  - WLD-H06: TimeController LoadSaveData no validation (HIGH)
+  - WLD-M06: GetTotalDays off-by-one (MEDIUM)
+  - CMB-M06: Chance formulas no upper cap (MEDIUM)
+  - SAV-M04: SaveFileHandler unused constants (MEDIUM)
+  - SAV-M05: GameManager+GameInitializer overlap (MEDIUM)
+- Добавлены источники S9, S10 в индекс
+- Добавлено Приложение B: полная маппинг-таблица GPT→наши ID
+- Обновлён AUDIT_2026-04-10.md: навигация + секция GPT-аудита
+- Общее количество проблем: 191 → 198
+
+Stage Summary:
+- CONSOLIDATED_AUDIT.md обновлён: 198 проблем (35 CRITICAL, 54 HIGH, 65 MEDIUM, 47 LOW)
+- GPT-аудит интегрирован с полной кросс-референцией
+- GPT покрыл только 6% базы (7/115 файлов), нашёл 10 новых проблем
+- Основная ценность GPT: path traversal, error-path cleanup, cache miss, negative input
