@@ -1362,3 +1362,103 @@ Stage Summary:
 - Добавлены 11 новых проблем (C-08, C-09, C-11, H-12..H-15, M-16, L-11..L-15)
 - DamageCalculator elements повышен с HIGH до CRITICAL (C-11)
 - totalDamageDealt/Taken повышен с MEDIUM до HIGH (H-15)
+
+---
+Task ID: audit-1
+Agent: Core+Combat Audit Agent
+Task: Deep audit of Core and Combat system files
+
+Work Log:
+- Read and analyzed all 25 .cs files across Core (8) and Combat (17) directories
+- Core files: StatDevelopment.cs, Constants.cs, VFXPool.cs, Camera2DSetup.cs, GameEvents.cs, ServiceLocator.cs, Enums.cs, GameSettings.cs
+- Combat root: DamageCalculator.cs, DefenseProcessor.cs, CombatManager.cs, Combatant.cs, CombatEvents.cs, LevelSuppression.cs, TechniqueCapacity.cs, QiBuffer.cs, HitDetector.cs, TechniqueController.cs
+- Combat/Effects: ExpandingEffect.cs, TechniqueEffect.cs, DirectionalEffect.cs, TechniqueEffectFactory.cs, FormationArrayEffect.cs
+- Combat/OrbitalSystem: OrbitalWeaponController.cs, OrbitalWeapon.cs
+- Verified 14 previously known issues (C-01 through M-09)
+- Identified 38 NEW issues across 4 severity levels
+
+Stage Summary:
+- 6 Critical NEW issues found: BodyMaterialReduction missing Construct key, StatDevelopment consolidation broken for all stats ≥10, elemental interactions completely ignored in damage pipeline, AttackType always Technique (never Normal), CurrentQi long→int truncation in DefenderParams, lambda leak on qiController.OnQiChanged
+- 8 High NEW issues found: OppositeElements missing 4 elements, MAX_STAT_VALUE conflict (100 vs 1000), ParryBonus/BlockBonus double calculation path, Poison effect pool contamination, VFXPool global max across all types, inconsistent RNG sources, AttackResult name collision struct vs enum, namespace inconsistency in Effects
+- 14 Medium NEW issues found: VFXPool no DontDestroyOnLoad, prewarmOnStart unimplemented, Instantiate/Destroy instead of pooling for hit effects, Element.Count enum member, Disposition mixed concerns, CombatLog O(n) removal, totalDamageDealt==totalDamageTaken, mastery formula not implemented, cooldown unit unclear, DefenderParams missing element, GetComponent<ICombatant> expensive, AwakeningChance units ambiguous, TechniqueEffectFactory double-dequeue, OrbitalWeaponController race condition
+- 10 Low NEW issues found
+- File written: docs_temp/audit_core_combat.md
+
+---
+Task ID: audit-3
+Agent: World+NPC+Formation+Save+Inventory Audit Agent
+Task: Deep audit of World, NPC, Formation, Save, Inventory, Quest, Interaction files
+
+Work Log:
+- Read and analyzed 28 C# files across 7 subsystems
+- World: TimeController.cs, WorldController.cs, LocationController.cs, FactionController.cs, EventController.cs, TestLocationGameController.cs
+- NPC: NPCAI.cs, NPCController.cs, NPCData.cs, RelationshipController.cs
+- Formation: FormationController.cs, FormationData.cs, FormationEffects.cs, FormationQiPool.cs, FormationCore.cs, FormationUI.cs
+- Save: SaveManager.cs, SaveDataTypes.cs, SaveFileHandler.cs
+- Inventory: InventoryController.cs, EquipmentController.cs, CraftingController.cs, MaterialSystem.cs
+- Quest: QuestController.cs, QuestData.cs, QuestObjective.cs
+- Interaction: DialogueSystem.cs, InteractionController.cs
+- Wrote audit report to docs_temp/audit_world_npc_formation.md
+
+Stage Summary:
+- 60 issues found across all systems (8 Critical, 16 High, 23 Medium, 13 Low)
+- Critical: NPCSaveData missing max resource fields; LocationController travel bug; RelationshipController time mixing; QuestData shared ScriptableObject state corruption; QuestController save/load incomplete; InventorySlot/EquipmentInstance GetCondition bug for durability=0; FormationEffects permanent control effects; DialogueSystem JsonUtility array deserialization failure
+- High: Time controller event ordering; NPCAI decision logic; empty lifespan update; damage-to-AI notification gap; EventController cooldown timing; WorldData unserializable dictionaries; FactionController save data loss; multiple Dictionary serialization failures across save data types
+- Medium: SetTime no events; event storms; FindFirstObjectByType usage; threat decay; cultivation Qi regen; ownerId validation; stale relationship types; random NPC age; real-time event checking; nullable enum serialization; Dictionary serialization; long-to-int casting; Qi overflow; non-persistent IDs; frame-rate physics scanning; dialogue state persistence; save system incomplete; encryption weakness
+- File written: docs_temp/audit_world_npc_formation.md
+
+---
+Task ID: audit-2
+Agent: Body+Qi+Player+Managers Audit Agent
+Task: Deep audit of Body, Qi, Player, Managers, Buff system files
+
+Work Log:
+- Read and analyzed BodyPart.cs (304 lines)
+- Read and analyzed BodyController.cs (380 lines)
+- Read and analyzed BodyDamage.cs (247 lines)
+- Read and analyzed QiController.cs (494 lines)
+- Read and analyzed PlayerController.cs (525 lines)
+- Read and analyzed PlayerVisual.cs (263 lines)
+- Read and analyzed SleepSystem.cs (377 lines)
+- Read and analyzed GameManager.cs (469 lines)
+- Read and analyzed GameInitializer.cs (479 lines)
+- Read and analyzed SceneLoader.cs (335 lines)
+- Read and analyzed BuffManager.cs (1278 lines)
+
+Stage Summary:
+- 56 total issues found (8 Critical, 19 High, 18 Medium, 11 Low)
+- 53 NEW issues discovered, 6 known issues verified
+- Critical NEW findings:
+  - BuffManager: float.Parse crashes on invalid special.parameters (7 call sites)
+  - BuffManager: HandleExistingBuff returns Applied for Independent stack but never adds buff
+  - BuffManager: ConductivityModifier tracked but never applied to QiController (dead code)
+  - QiController: long→int cast in combat integration breaks at high cultivation levels
+  - SceneLoader: loading scene destroyed by Single-mode load before UnloadSceneAsync
+  - SleepSystem: HP recovery formula wrong + unconditional FullRestore makes per-hour healing redundant
+  - BodyDamage: CreateHumanoidBody HP values severely mismatch BODY_SYSTEM.md
+  - PlayerController: Revive() ignores healthPercent parameter
+- Known issues verified: C-03, C-04, H-04, H-08, H-09, H-10
+- File written: docs_temp/audit_body_qi_player.md
+
+---
+Task ID: full-audit-2026-04-10
+Agent: Main Agent (coordinator)
+Task: Полный повторный аудит UnityProject с параллельными агентами
+
+Work Log:
+- Запущены 4 параллельных агента для аудита разных систем
+- Агент 1 (Core+Combat): успешно, 25 файлов, 38 новых проблем
+- Агент 2 (Body+Qi+Player+Managers): успешно после повторного запуска, 11 файлов, 53 новых проблем
+- Агент 3 (World+NPC+Formation+Save+Inv): успешно, 28 файлов, 60 новых проблем
+- Агент 4 (Data+Tile+UI+Gen): упал дважды (rate limit + empty response)
+- Агент 4 заменён прямым чтением Charger (5 файлов) + UI (2 файла) — 7 проблем найдено
+- Главный файл аудита обновлён с агрегированными результатами
+- 4 детальных отчёта сохранены в docs_temp/
+
+Stage Summary:
+- Проанализировано 73 из 115 C# файлов (63%)
+- Найдено 160 проблем всего (25 CRITICAL, 40 HIGH, 55 MEDIUM, 40 LOW)
+- Было 58 проблем → стало 160 (+102 новых)
+- Ключевые новые находки: StatDevelopment sleep broken, BuffManager float.Parse crash, NPC save data missing, QuestData shared ScriptableObject corruption, JsonUtility incompatible save types, SceneLoader destroy bug
+- Непрочитанные файлы: ~42 (ScriptableObjects, Generators, Editor, Tests, Tile, Character)
+- Файлы: AUDIT_2026-04-10.md (обновлён), audit_core_combat.md, audit_body_qi_player.md, audit_world_npc_formation.md, audit_data_tile_ui_gen.md
