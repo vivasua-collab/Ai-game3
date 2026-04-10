@@ -1,6 +1,6 @@
 # Чекпоинт: Fix-12 — UI System + Tile System + Charger + Tests
 
-**Дата:** 2026-04-10 12:55:00 UTC
+**Дата:** 2026-04-10 13:37:00 UTC
 **Фаза:** Phase 7 — Integration
 **Статус:** pending
 **Приоритет:** MEDIUM-HIGH
@@ -35,32 +35,37 @@ UI: Qi long→float потеря точности, FindFirstObjectByType, ста
 ## Задачи
 
 ### CRITICAL
-- [ ] TIL-C01: TileData temperature — `=` вместо `+=` (строка 81)
+- [ ] TIL-C01: TileData temperature — `=` вместо `+=` (строка 81 — перезапись вместо накопления)
 - [ ] CHR-C01: ChargerHeat/ChargerBuffer/ChargerSlot — [SerializeField] fix (если не в Fix-01)
 
 ### HIGH
 - [ ] UI-H03: 9 UI файлов FindFirstObjectByType → ServiceLocator (batch замена)
-- [ ] UI-H04: Qi long→double→float для слайдеров (использовать форматирование вместо прямого cast)
-- [ ] UI-H06: 4 UI файла старый Input System → новый
+- [ ] UI-H04: Qi long→double→float для слайдеров — использовать форматирование вместо прямого cast:
+  ```csharp
+  // Вместо: slider.value = (float)currentQi / maxQi;
+  // Использовать: slider.value = (double)currentQi / maxQi > 1.0 ? 1f : (float)((double)currentQi / maxQi);
+  // Или: string display = FormatQi(currentQi); // "1.2M", "524.4M", etc.
+  ```
+- [ ] UI-H06: 4 UI файла старый Input System → новый Input System
 - [ ] TIL-H01: ResourcePickup + DestructibleObjectController — интеграция с InventoryController
 
 ### MEDIUM
-- [ ] UI-M06: InventoryUI — реализовать UseItem, сортировку, детали предметов
-- [ ] UI-M03: HUDController divide by zero в cooldown
-- [ ] UI-M04: CultivationProgressBar — оба бара одинаковое значение
-- [ ] CHR-H01: IndependentScale + CharacterSpriteController namespace
-- [ ] TIL-C02: TileMapData DateTime → string (Unix timestamp) для JsonUtility
+- [ ] UI-M06: InventoryUI — реализовать UseItem, сортировку, детали предметов (заглушки :435-523)
+- [ ] UI-M03: HUDController divide by zero в cooldown (maxCooldown == 0)
+- [ ] UI-M04: CultivationProgressBar — оба бара одинаковое значение (Qi bar vs Capacity bar)
+- [ ] CHR-H01: IndependentScale + CharacterSpriteController — namespace CultivationWorld→CultivationGame
+- [ ] TIL-C02: TileMapData DateTime → string (Unix timestamp) для JsonUtility совместимости
 
 ### LOW
-- [ ] UI-L02: Camera.main null checks
-- [ ] UI-L03: Duplicate helpers в UI файлах
+- [ ] UI-L02: Camera.main null checks (6 файлов)
+- [ ] UI-L03: Duplicate helpers в UI файлах (вынести в UIUtility)
 - [ ] TIL-L02: TestLocationGameController Texture2D leak
 
 ---
 
 ## Порядок выполнения
 
-1. TileData.cs — temperature fix
+1. TileData.cs — temperature fix (1 строка, быстрый фикс)
 2. ResourcePickup.cs + DestructibleObjectController.cs — Inventory интеграция
 3. IntegrationTestScenarios.cs + IntegrationTests.cs — Qi long + фиксы
 4. InventoryUI.cs — заглушки
@@ -78,4 +83,4 @@ UI: Qi long→float потеря точности, FindFirstObjectByType, ста
 
 ---
 
-*Чекпоинт создан: 2026-04-10 12:55:00 UTC*
+*Чекпоинт обновлён: 2026-04-10 13:37:00 UTC*

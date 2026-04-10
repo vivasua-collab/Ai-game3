@@ -1,6 +1,6 @@
 # Чекпоинт: Fix-09 — World System (Time + Location + Faction + Event)
 
-**Дата:** 2026-04-10 12:55:00 UTC
+**Дата:** 2026-04-10 13:37:00 UTC
 **Фаза:** Phase 7 — Integration
 **Статус:** pending
 **Приоритет:** P0-HIGH
@@ -33,15 +33,15 @@ TimeController: пост-инкремент в событиях, нет вали
 ### HIGH
 - [ ] WLD-H01: TimeController.AdvanceHour — fire OnHourPassed с ПРЕ-инкремент значением (сохранить old, инкрементировать, fire с new)
 - [ ] WLD-H02: EventController.Cooldown — использовать game time (TimeController) вместо Time.time
-- [ ] WLD-H03: WorldController.WorldEvent.EventData — заменить Dictionary на [Serializable] структуру
+- [ ] WLD-H03: WorldController.WorldEvent.EventData — заменить Dictionary<string,object> на [Serializable] структуру
 - [ ] WLD-H04: FactionController.LoadSaveData — восстановить playerMemberships
-- [ ] WLD-H06: TimeController.LoadSaveData — добавить Clamp для hours/minutes/days/months
+- [ ] WLD-H06: TimeController.LoadSaveData — добавить Clamp для hours (0-23), minutes (0-59), days (1+), months (1-12)
 
 ### MEDIUM
-- [ ] WLD-M01: TimeController.SetTime — вызвать transition events
+- [ ] WLD-M01: TimeController.SetTime — вызвать transition events (hour/day change if crossed)
 - [ ] WLD-M02: TimeController.AdvanceHours/Days — ограничить cascade (batch events, не вызывать по одному)
-- [ ] WLD-M04: EventController.eventCheckInterval — перевести в game time
-- [ ] WLD-M06: TimeController.GetTotalDays — уточнить семантику (включить ли текущий день)
+- [ ] WLD-M04: EventController.eventCheckInterval — перевести в game time (tick-based)
+- [ ] WLD-M06: TimeController.GetTotalDays — уточнить семантику (включить ли текущий день, off-by-one)
 
 ---
 
@@ -62,4 +62,4 @@ TimeController: пост-инкремент в событиях, нет вали
 
 ---
 
-*Чекпоинт создан: 2026-04-10 12:55:00 UTC*
+*Чекпоинт обновлён: 2026-04-10 13:37:00 UTC*

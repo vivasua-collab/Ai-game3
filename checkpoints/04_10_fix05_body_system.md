@@ -1,6 +1,6 @@
 # Чекпоинт: Fix-05 — Body System + Heart blackHP
 
-**Дата:** 2026-04-10 12:55:00 UTC
+**Дата:** 2026-04-10 13:37:00 UTC
 **Фаза:** Phase 7 — Integration
 **Статус:** pending
 **Приоритет:** P0
@@ -30,9 +30,9 @@
 - [ ] BOD-C01: BodyDamage.CreateHumanoidBody — HP значения по BODY_SYSTEM.md
 
 ### MEDIUM
-- [ ] BOD-M01: BodyDamage.ApplyDamage — убрать двойной 70/30 split (один в BodyDamage, другой в BodyPart)
+- [ ] BOD-M01: BodyDamage.ApplyDamage — убрать двойной 70/30 split (один в BodyDamage, другой в BodyPart). Оставить split в BodyPart.ApplyDamage, убрать из BodyDamage
 - [ ] BOD-M02: BodyController.FullRestore — после Fix CORE-C01, Heart blackHP будет 0 корректно
-- [ ] BOD-M03: BodyController.BodyParts — вернуть IReadOnlyList или копию
+- [ ] BOD-M03: BodyController.BodyParts — вернуть IReadOnlyList или копию вместо мутабельного внутреннего списка
 
 ### LOW
 - [ ] BOD-L01: BodyController.InitializeBody — добавить guard `if (_isInitialized) return;`
@@ -55,4 +55,4 @@
 
 ---
 
-*Чекпоинт создан: 2026-04-10 12:55:00 UTC*
+*Чекпоинт обновлён: 2026-04-10 13:37:00 UTC*

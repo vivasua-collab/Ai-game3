@@ -1,6 +1,6 @@
 # Чекпоинт: Fix-11 — Data/ScriptableObjects + Generators/Editor
 
-**Дата:** 2026-04-10 12:55:00 UTC
+**Дата:** 2026-04-10 13:37:00 UTC
 **Фаза:** Phase 7 — Integration
 **Статус:** pending
 **Приоритет:** HIGH
@@ -33,26 +33,29 @@
 ## Задачи
 
 ### CRITICAL
-- [ ] DAT-C01: FactionRelationType — удалить дубликат из FactionData.cs, использовать Enums.cs
+- [ ] DAT-C01: FactionRelationType — удалить дубликат из FactionData.cs, использовать Enums.cs. Если FactionData имеет больше значений (Vassal, etc.) — расширить Enums.cs
 - [ ] DAT-C02: LocationType — удалить дубликат из LocationData.cs, расширить Enums.cs если нужно
 - [ ] DAT-C03: MortalStageData.GetCoreFormationForAge — guard: `if (minAge >= maxAge) return 0;`
-- [ ] DAT-C04: TerrainConfig — расширить Range для Lava или передавать temperatureModifier напрямую
-- [ ] GEN-C01: SceneSetupTools — обернуть в `#if UNITY_EDITOR`
+- [ ] DAT-C04: TerrainConfig — расширить Range для Lava (-200,200) или передавать temperatureModifier напрямую без Range clamp
+- [ ] GEN-C01: SceneSetupTools — обернуть в `#if UNITY_EDITOR` / `#endif`
 
 ### HIGH
 - [ ] DAT-H01: TechniqueData.baseQiCost int→long (если не в Fix-01)
-- [ ] DAT-H02: SpeciesData.coreCapacityBase float→long
-- [ ] DAT-H03: LocationData class name collision — переименовать SO версию
+- [ ] DAT-H02: SpeciesData.coreCapacityBase float→long (для Модели В)
+- [ ] DAT-H03: LocationData class name collision — переименовать SO версию в LocationDataSO или LocationAsset
 - [ ] GEN-H01: GeneratorRegistry seed — использовать long, не truncating to int
 - [ ] GEN-H02: ArmorGenerator — убрать cross-dependency на WeaponGenerator
 - [ ] GEN-H04: ConsumableGenerator — Qi float→long
 
 ### MEDIUM
 - [ ] DAT-M01: FactionData.GetRankByReputation — отсортировать ranks перед поиском
-- [ ] DAT-M03: TerrainConfig singleton — сброс в [RuntimeInitializeOnLoadMethod]
-- [ ] DAT-M04: SpeciesData — проверить пересечение weaknesses/resistances
+- [ ] DAT-M03: TerrainConfig singleton — сброс в [RuntimeInitializeOnLoadMethod(SubsystemReload)]
+- [ ] DAT-M04: SpeciesData — проверить пересечение weaknesses/resistances (элемент не может быть одновременно)
 - [ ] DAT-M05: MortalStageData Qi int→long
-- [ ] GEN-M01-M09: Различные фиксы генераторов (дубли имён, мёртвый код, кэш)
+- [ ] GEN-M01: AdjectiveForms — автодеривация неверна для русских прилагательных
+- [ ] GEN-M02: TechniqueGenerator Combat names — дубли "Удар" ×3
+- [ ] GEN-M06: GeneratorRegistry — bounded cache (LRU или maxSize)
+- [ ] GEN-M08: SeededRandom NextGaussian — guard log(0) → -Infinity
 
 ---
 
@@ -72,9 +75,9 @@
 
 ## Зависимости
 
-- **Предшествующие:** Fix-01 (Qi types), Fix-04 (Enums cleanup)
+- **Предшествующие:** Fix-01 (Qi types), Fix-04 (Enums cleanup — удалить дубликаты)
 - **Последующие:** нет прямых
 
 ---
 
-*Чекпоинт создан: 2026-04-10 12:55:00 UTC*
+*Чекпоинт обновлён: 2026-04-10 13:37:00 UTC*

@@ -1,6 +1,6 @@
 # Чекпоинт: Fix-02 — Combat Damage Pipeline
 
-**Дата:** 2026-04-10 12:55:00 UTC
+**Дата:** 2026-04-10 13:37:00 UTC
 **Фаза:** Phase 7 — Integration
 **Статус:** pending
 **Приоритет:** P0 (блокирует gameplay)
@@ -27,16 +27,22 @@
 ## Задачи
 
 ### CRITICAL
-- [ ] CMB-C01: DamageCalculator — вызвать CalculateElementalInteraction вместо CalculateElementMultiplier. Добавить defenderElement в расчёт
+- [ ] CMB-C01: DamageCalculator — вызвать CalculateElementalInteraction вместо CalculateElementMultiplier. Добавить defenderElement в расчёт. Реализовать схему противоположностей:
+  - Fire ↔ Water: ×1.5 opposite, ×0.8 affinity
+  - Earth ↔ Air: ×1.5 opposite, ×0.8 affinity
+  - Lightning ↔ Void: ×1.5 opposite, ×0.8 affinity
+  - Fire → Poison: ×1.2 (выжигание токсинов, одностороннее)
+  - Void → All: ×1.2 (поглощение)
+  - Neutral → All: ×1.0
 - [ ] CMB-C02: DamageCalculator:128 — добавить AttackType.Normal для обычных атак (IsQiTechnique ? Technique : Normal)
 - [ ] CMB-C03: Combatant.cs:282-284 — ParryBonus/BlockBonus передавать сырые бонусы экипировки, не финальные шансы. DamageCalculator:192-194 — не пересчитывать
 - [ ] CMB-C06: DefenseProcessor — заменить `System.Random` на `UnityEngine.Random` (:77,232,271)
 - [ ] CMB-C07: CombatEvents.cs:274-277 — CombatLog: убрать подписку из статического конструктора, добавить явную инициализацию и очистку
-- [ ] CMB-C10: HitDetector.IsValidTarget() — интегрировать FactionController для Ally/Neutral целей (:177-186)
+- [ ] CMB-C10: HitDetector.IsValidTarget() — интегрировать FactionController для Ally/Neutral целей (:177-186). Использовать новый enum Attitude вместо Disposition
 
 ### HIGH
 - [ ] CMB-H05: DamageCalculator — добавить defenderElement в DefenderParams (:68-85)
-- [ ] CMB-H09: Combatant.cs:147-165 — weapon/armor/shield бонусы из EquipmentController вместо 0f (требует EquipmentController — может быть частичная интеграция: добавить поля, заполнить из EquipmentController если доступен)
+- [ ] CMB-H09: Combatant.cs:147-165 — weapon/armor/shield бонусы из EquipmentController вместо 0f (частичная интеграция: добавить поля, заполнить из EquipmentController если доступен)
 
 ### MEDIUM
 - [ ] CMB-M06: DefenseProcessor — добавить Mathf.Clamp01 для DodgeChance, ParryChance, BlockChance
@@ -47,26 +53,27 @@
 ## Порядок выполнения
 
 1. DefenseProcessor.cs — System.Random→UnityEngine.Random + Clamp01
-2. DamageCalculator.cs — elemental interaction + AttackType.Normal + defenderElement в DefenderParams
+2. DamageCalculator.cs — elemental interaction (Variant A схема) + AttackType.Normal + defenderElement в DefenderParams
 3. Combatant.cs — ParryBonus/BlockBonus сырые бонусы + equipment бонусы
 4. CombatEvents.cs — CombatLog явная инициализация
-5. HitDetector.cs — IsValidTarget фракции + SizeClass
+5. HitDetector.cs — IsValidTarget фракции (через Attitude enum) + SizeClass
 
 ---
 
 ## Зависимости
 
 - **Предшествующие:** Fix-01 (SpendQi long + DefenderParams.CurrentQi long)
-- **Последующие:** Fix-03 (Qi System), Fix-04 (Core)
+- **Последующие:** Fix-03 (Qi System), Fix-04 (Core — Constants.OppositeElements)
 
 ---
 
 ## Примечания
 
+- CMB-C01 требует обновления Constants.OppositeElements — делается здесь или в Fix-04 (дублирование допустимо для избежания зависимости)
 - CMB-C03 требует понимания архитектуры ParryChance/BlockChance: где считаются базовые шансы и где добавляются бонусы экипировки
-- CMB-C10 требует интеграции с FactionController — проверить доступность через ServiceLocator
-- CMB-H09 может потребовать изменений в EquipmentController.cs — если слишком сложно, вынести в отдельный чекпоинт
+- CMB-C10 использует FactionController через ServiceLocator для определения отношения. После Fix-04 использовать новый enum Attitude
+- CMB-H09 может потребовать изменений в EquipmentController.cs — если слишком сложно, вынести в Fix-08
 
 ---
 
-*Чекпоинт создан: 2026-04-10 12:55:00 UTC*
+*Чекпоинт обновлён: 2026-04-10 13:37:00 UTC*

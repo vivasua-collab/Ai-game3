@@ -1,6 +1,6 @@
 # Чекпоинт: Fix-10 — Managers + Player System
 
-**Дата:** 2026-04-10 12:55:00 UTC
+**Дата:** 2026-04-10 13:37:00 UTC
 **Фаза:** Phase 7 — Integration
 **Статус:** pending
 **Приоритет:** HIGH
@@ -42,8 +42,8 @@ Managers: параллельная инициализация, SceneLoader ба�
 
 ### HIGH (Player)
 - [ ] PLR-H01: PlayerController — реализовать ICombatant (или наследовать CombatantBase)
-- [ ] PLR-H02: Duplicate PlayerSaveData — объединить в SaveDataTypes.cs
-- [ ] PLR-H03: PlayerController.Revive — использовать healthPercent параметр
+- [ ] PLR-H02: Duplicate PlayerSaveData — объединить в SaveDataTypes.cs (один canonical класс)
+- [ ] PLR-H03: PlayerController.Revive — использовать healthPercent параметр для восстановления
 
 ### MEDIUM (Player)
 - [ ] PLR-M01: SleepSystem — корректная HP recovery формула (пропорционально duration)
@@ -51,13 +51,13 @@ Managers: параллельная инициализация, SceneLoader ба�
 - [ ] PLR-M03: SleepSystem — активировать FallingAsleep/WakingUp states
 - [ ] PLR-M04: SleepSystem.QuickSleep — пройти через state management
 - [ ] PLR-M05: SleepSystem — auto-sleep cap = maxSleepHours (12h)
-- [ ] PLR-M06: SleepSystem — long для Qi recovery
+- [ ] PLR-M06: SleepSystem — long для Qi recovery (вместо int)
 - [ ] PLR-M07: PlayerVisual — правильный URP shader name
 
 ### LOW (Player)
 - [ ] PLR-L01: PlayerVisual — Material/Texture2D Dispose/Destroy
-- [ ] PLR-L02: PlayerVisual — Flash coroutine guard
-- [ ] PLR-L03: PlayerVisual — Cache Camera reference
+- [ ] PLR-L02: PlayerVisual — Flash coroutine guard (cancel previous before starting new)
+- [ ] PLR-L03: PlayerVisual — Cache Camera reference (не Camera.main каждый кадр)
 
 ---
 
@@ -79,4 +79,4 @@ Managers: параллельная инициализация, SceneLoader ба�
 
 ---
 
-*Чекпоинт создан: 2026-04-10 12:55:00 UTC*
+*Чекпоинт обновлён: 2026-04-10 13:37:00 UTC*

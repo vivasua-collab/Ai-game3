@@ -1,6 +1,6 @@
 # Чекпоинт: Fix-01 — Qi int→long миграция + Core типы
 
-**Дата:** 2026-04-10 12:55:00 UTC
+**Дата:** 2026-04-10 13:37:00 UTC
 **Фаза:** Phase 7 — Integration
 **Статус:** pending
 **Приоритет:** P0 (блокирует gameplay)
@@ -19,7 +19,7 @@
 
 | # | Файл | Строк | Изменение |
 |---|------|-------|-----------|
-| 1 | `Qi/QiController.cs` | 494 | Fix long→int casts (:357,364,365,371), SpendQi(long), negative check |
+| 1 | `Qi/QiController.cs` | 494 | Fix long→int casts (:357,364,365,371), SpendQi(long), negative check, EffectiveQi property |
 | 2 | `Combat/Combatant.cs` | 289 | ICombatant.SpendQi(int)→(long), DefenderParams.CurrentQi int→long |
 | 3 | `Player/PlayerController.cs` | 525 | PlayerState Qi int→long, rb.velocity→linearVelocity |
 | 4 | `Charger/ChargerController.cs` | 594 | UseQiForTechnique int→long, [SerializeField] fix |
@@ -30,17 +30,17 @@
 
 ## Связанные файлы (не в этом чекпоинте, но требуют миграции позже)
 
-- `SpeciesData.cs` (coreCapacityBase float→long) → Fix-06
-- `ConsumableGenerator.cs` (Qi float→long) → Fix-06
-- `IntegrationTestScenarios.cs`, `IntegrationTests.cs` → Fix-10
-- `MortalStageData.cs` (Qi int→long) → Fix-06
+- `SpeciesData.cs` (coreCapacityBase float→long) → Fix-11
+- `ConsumableGenerator.cs` (Qi float→long) → Fix-11
+- `IntegrationTestScenarios.cs`, `IntegrationTests.cs` → Fix-12
+- `MortalStageData.cs` (Qi int→long) → Fix-11
 
 ---
 
 ## Задачи
 
 ### Qi типы (CRITICAL)
-- [ ] QI-C01: QiController — убрать все long→int casts, использовать long
+- [ ] QI-C01: QiController — убрать все long→int casts (:357,364,365,371), QiBufferResult.QiRemaining long
 - [ ] CMB-C04: ICombatant.SpendQi(int) → SpendQi(long) в интерфейсе и CombatantBase
 - [ ] CMB-C05: DefenderParams.CurrentQi int → long
 - [ ] PLR-H04: PlayerState Qi int → long
@@ -54,6 +54,10 @@
 - [ ] QI-H03: SpendQi — добавить `if (amount <= 0) return false;`
 - [ ] QI-L01: SpendQi(0) — проверить `amount > 0` вместо `>=`
 
+### Qi Model В — подготовка (HIGH)
+- [ ] QI-MDL-B: Добавить property `EffectiveQi => (long)(currentQi * qiDensity)` в QiController
+- [ ] QI-MDL-B: Добавить `EstimateCapacityAtLevel(int level)` helper для CanBreakthrough
+
 ### Unity 6 (CRITICAL)
 - [ ] PLR-C01: PlayerController `rb.velocity` → `rb.linearVelocity`
 
@@ -61,16 +65,16 @@
 - [ ] FRM-C01: FormationController.OnDestroy — `_instance = null;`
 
 ### NPC SaveData (CRITICAL)
-- [ ] NPC-C01: NPCSaveData — добавить MaxQi, MaxHealth, MaxStamina, MaxLifespan
+- [ ] NPC-C01: NPCSaveData — добавить MaxQi (long), MaxHealth, MaxStamina, MaxLifespan
 
 ### Charger SerializeField (CRITICAL)
-- [ ] CHR-C01: ChargerHeat, ChargerBuffer, ChargerSlot — убрать [SerializeField] или сделать MonoBehaviour/Serializable
+- [ ] CHR-C01: ChargerHeat, ChargerBuffer, ChargerSlot — убрать [SerializeField] или сделать [Serializable]
 
 ---
 
 ## Порядок выполнения
 
-1. QiController.cs — SpendQi(long) + negative check + убрать casts
+1. QiController.cs — SpendQi(long) + negative check + убрать casts + EffectiveQi + EstimateCapacityAtLevel
 2. Combatant.cs — ICombatant.SpendQi(long) + DefenderParams.CurrentQi long
 3. PlayerController.cs — PlayerState long + linearVelocity
 4. ChargerController.cs — UseQiForTechnique(long) + [SerializeField] fix
@@ -91,9 +95,9 @@
 ## Риски
 
 - ICombatant.SpendQi(int→long) — все реализации должны быть обновлены одновременно
-- Если есть другие файлы с SpendQi(int), которые не в этом чекпоинте — компиляция упадёт до Fix-06/10
-- Рекомендация: после этого чекпоинта сразу выполнить Fix-06 и Fix-10
+- Если есть другие файлы с SpendQi(int), которые не в этом чекпоинте — компиляция упадёт до Fix-11/12
+- Рекомендация: после этого чекпоинта выполнить Fix-02, Fix-03, Fix-04 перед остальными
 
 ---
 
-*Чекпоинт создан: 2026-04-10 12:55:00 UTC*
+*Чекпоинт обновлён: 2026-04-10 13:37:00 UTC*
