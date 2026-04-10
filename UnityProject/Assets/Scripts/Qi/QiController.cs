@@ -1,9 +1,9 @@
 // ============================================================================
 // QiController.cs — Контроллер Ци
 // Cultivation World Simulator
-// Версия: 1.3 — Добавлен conductivityBonus для системы перков
+// Версия: 1.4 — Fix-03: CanBreakthrough Модель В, Meditate + время, overflow check
 // Создано: 2026-03-30 14:00:00 UTC
-// Редактировано: 2026-04-10 13:49:00 UTC — Fix-01: SpendQi(long), negative check, EffectiveQi, EstimateCapacityAtLevel, long casts removed
+// Редактировано: 2026-04-10 16:20:00 UTC — Fix-03: QI-MDL-B01/02, QI-H01/02, QI-M01
 // ============================================================================
 
 using System;
@@ -252,19 +252,36 @@ namespace CultivationGame.Qi
         
         /// <summary>
         /// Медитация — ускоренное накопление Ци.
+        /// FIX QI-H01: Добавлено продвижение игрового времени.
+        /// FIX QI-M01: Проверка overflow для durationTicks * conductivity.
         /// </summary>
-        /// <param name="durationTicks">Длительность в тиках</param>
+        /// <param name="durationTicks">Длительность в тиках (1 тик = 1 минута)</param>
         /// <returns>Накопленное Ци</returns>
         public long Meditate(int durationTicks)
         {
-            // Базовая скорость: проводимость × плотность × тики
-            float baseGain = conductivity * qiDensity * durationTicks;
+            if (durationTicks <= 0) return 0;
+            
+            // FIX QI-M01: Overflow check
+            double baseGain = (double)conductivity * qiDensity * durationTicks;
             
             // Множитель медитации (зависит от уровня)
             float meditationMult = 1f + cultivationLevel * 0.1f;
             
-            long gained = (long)(baseGain * meditationMult);
+            // FIX QI-M01: Clamp to avoid overflow
+            double totalGain = baseGain * meditationMult;
+            const long MAX_SAFE_GAIN = long.MaxValue / 2;
+            long gained = totalGain > MAX_SAFE_GAIN ? MAX_SAFE_GAIN : (long)totalGain;
+            
             AddQi(gained);
+            
+            // FIX QI-H01: Продвижение игрового времени
+            // 1 тик = 1 минута, преобразуем в часы
+            float hoursAdvanced = durationTicks / 60f;
+            var timeController = FindFirstObjectByType<CultivationGame.World.TimeController>();
+            if (timeController != null && hoursAdvanced > 0f)
+            {
+                timeController.AdvanceHours(Mathf.RoundToInt(hoursAdvanced));
+            }
             
             return gained;
         }
@@ -284,38 +301,56 @@ namespace CultivationGame.Qi
         
         /// <summary>
         /// Проверить возможность прорыва.
+        /// FIX QI-MDL-B01: Модель В — требование = capacity(next) × density(next)
+        /// 
+        /// Большой прорыв (majorLevel): capacity(nextLevel) × density(nextLevel)
+        /// Малый прорыв (!majorLevel): capacity(nextSubLevel) × currentDensity
         /// </summary>
         public bool CanBreakthrough(bool isMajorLevel)
         {
-            long required = isMajorLevel 
-                ? (long)(coreCapacity * GameConstants.BIG_BREAKTHROUGH_MULTIPLIER)
-                : (long)(coreCapacity * GameConstants.SMALL_BREAKTHROUGH_MULTIPLIER);
-            
+            long required = CalculateBreakthroughRequirement(isMajorLevel);
             return currentQi >= required;
         }
         
         /// <summary>
+        /// Рассчитать требование прорыва (Модель В).
+        /// FIX QI-MDL-B01
+        /// </summary>
+        public long CalculateBreakthroughRequirement(bool isMajorLevel)
+        {
+            if (isMajorLevel)
+            {
+                int nextLevel = cultivationLevel + 1;
+                float nextDensity = Mathf.Pow(2, nextLevel - 1);
+                long nextCapacity = EstimateCapacityAtLevel(nextLevel);
+                return (long)((double)nextCapacity * nextDensity);
+            }
+            else
+            {
+                // Малый прорыв: текущая плотность, следующая подёмкость
+                float currentDensity = qiDensity;
+                long nextSubCapacity = EstimateCapacityAtSubLevel(cultivationLevel, cultivationSubLevel + 1);
+                return (long)((double)nextSubCapacity * currentDensity);
+            }
+        }
+        
+        /// <summary>
         /// Выполнить прорыв.
-        /// После прорыва Ци = 0 (ядро пустое).
+        /// ПОСЛЕ ПРОРЫВА Ци = 0 (ядро пустое).
+        /// FIX QI-MDL-B02: RecalculateStats() пересчитает coreCapacity правильно.
+        /// Порядок: level++ → RecalculateStats() → coreCapacity обновляется через maxQiCapacity
         /// </summary>
         public bool PerformBreakthrough(bool isMajorLevel)
         {
             if (!CanBreakthrough(isMajorLevel)) return false;
             
-            // Проверка требований
-            long required = isMajorLevel 
-                ? (long)(coreCapacity * GameConstants.BIG_BREAKTHROUGH_MULTIPLIER)
-                : (long)(coreCapacity * GameConstants.SMALL_BREAKTHROUGH_MULTIPLIER);
-            
             // ПОСЛЕ ПРОРЫВА ЦИ = 0
-            // Всё накопленное Ци тратится на прорыв
             currentQi = 0;
             
             if (isMajorLevel)
             {
                 cultivationLevel++;
                 cultivationSubLevel = 0;
-                coreCapacity = maxQiCapacity;
             }
             else
             {
@@ -327,7 +362,11 @@ namespace CultivationGame.Qi
                 }
             }
             
+            // FIX QI-MDL-B02: RecalculateStats пересчитает maxQiCapacity,
+            // затем обновляем coreCapacity
             RecalculateStats();
+            coreCapacity = maxQiCapacity;
+            
             OnCultivationLevelChanged?.Invoke(cultivationLevel);
             
             return true;

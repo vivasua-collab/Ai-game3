@@ -258,8 +258,10 @@ namespace CultivationGame.Combat
                 return result;
             }
             
-            // Устанавливаем кулдаун (тики → секунды)
-            technique.CooldownRemaining = technique.Data.cooldown * 60f;
+            // Устанавливаем кулдаун
+            // FIX CMB-H02: technique.Data.cooldown уже в СЕКУНДАХ (из TechniqueData)
+            // CooldownRemaining тоже в секундах — множитель ×60 убран
+            technique.CooldownRemaining = technique.Data.cooldown;
             
             // Повышаем мастерство (+0.01 за использование)
             IncreaseMastery(technique, 0.01f);
@@ -339,14 +341,17 @@ namespace CultivationGame.Combat
         /// Формула:
         /// masteryGained = max(0.1, baseGain × (1 - currentMastery / 100))
         /// 
-        /// Прирост замедляется с ростом мастерства.
+        /// FIX CMB-H01: Реализована формула с убывающим приростом.
         /// </summary>
-        private void IncreaseMastery(LearnedTechnique technique, float amount)
+        private void IncreaseMastery(LearnedTechnique technique, float baseGain)
         {
             if (technique.Mastery >= 100f) return;
             
             float oldMastery = technique.Mastery;
-            technique.Mastery = Mathf.Min(100f, technique.Mastery + amount);
+            
+            // FIX CMB-H01: Формула из документации — прирост замедляется с ростом мастерства
+            float masteryGained = Mathf.Max(0.1f, baseGain * (1f - technique.Mastery / 100f));
+            technique.Mastery = Mathf.Min(100f, technique.Mastery + masteryGained);
             
             if (oldMastery < 100f && technique.Mastery >= 100f)
             {
