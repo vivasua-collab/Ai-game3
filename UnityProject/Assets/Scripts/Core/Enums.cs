@@ -98,8 +98,8 @@ namespace CultivationGame.Core
         Air,        // Воздух
         Lightning,  // Молния
         Void,       // Пустота
-        Poison,     // Яд (особая стихия)
-        Count       // Количество элементов
+        Poison      // Яд (особая стихия)
+        // FIX CORE-H05: Count убран. Используйте Enum.GetValues(typeof(Element)).Length
     }
     
     /// <summary>
@@ -316,20 +316,19 @@ namespace CultivationGame.Core
     
     /// <summary>
     /// Слот экипировки
+    /// FIX CORE-M02: Обновлено по INVENTORY_SYSTEM.md
     /// </summary>
     public enum EquipmentSlot
     {
-        None,           // Нет слота (редактировано: 2026-04-03)
-        Head,           // Голова (шлем)
-        Torso,          // Торс (броня)
-        LeftHand,       // Левая рука
-        RightHand,      // Правая рука
-        Legs,           // Ноги (поножи)
-        Feet,           // Ступни (обувь)
-        Accessory1,     // Аксессуар 1
-        Accessory2,     // Аксессуар 2
-        Accessory3,     // Аксессуар 3
-        Back,           // Спина (плащ)
+        None,
+        WeaponMain,     // Основное оружие
+        WeaponOff,      // Вторичное оружие
+        Armor,          // Броня
+        Clothing,       // Одежда
+        Charger,        // Зарядник
+        RingLeft,       // Кольцо (левое)
+        RingRight,      // Кольцо (правое)
+        Accessory,      // Аксессуар
         Backpack        // Рюкзак
     }
     
@@ -446,7 +445,10 @@ namespace CultivationGame.Core
     
     /// <summary>
     /// Отношение NPC к игроку / Характер NPC
+    /// [Obsolete] — Заменён на Attitude + PersonalityTrait (Fix-04, CORE-M01)
+    /// Каскадная замена в Fix-06/07/08
     /// </summary>
+    [Obsolete("Используйте Attitude + PersonalityTrait. Каскадная замена в Fix-06/07/08.")]
     public enum Disposition
     {
         Hostile,        // Враждебный (-100 до -50)
@@ -458,6 +460,41 @@ namespace CultivationGame.Core
         Cautious,       // Осторожный характер
         Treacherous,    // Коварный характер
         Ambitious       // Честолюбивый характер
+    }
+    
+    /// <summary>
+    /// Отношение NPC к игроку (числовое -100..+100).
+    /// FIX CORE-M01: Замена Disposition — отношение к игроку.
+    /// Источник: Решение пользователя 2026-04-10
+    /// </summary>
+    public enum Attitude
+    {
+        Hatred,         // -100..-51 — атака без предупреждения
+        Hostile,        // -50..-21  — атака если спровоцирован
+        Unfriendly,     // -20..-10  — избегание
+        Neutral,        // -9..9     — безразличие
+        Friendly,       // 10..49    — помощь, торговля
+        Allied,         // 50..79    — лояльность
+        SwornAlly       // 80..100   — самопожертвование
+    }
+    
+    /// <summary>
+    /// Характер NPC (комбинируемые черты, [Flags]).
+    /// FIX CORE-M01: Замена Disposition — характер NPC.
+    /// Источник: Решение пользователя 2026-04-10
+    /// </summary>
+    [Flags]
+    public enum PersonalityTrait
+    {
+        None        = 0,
+        Aggressive  = 1 << 0,   // Склонен к атаке, первый удар
+        Cautious    = 1 << 1,   // Избегает рисков, защита
+        Treacherous = 1 << 2,   // Может предать при возможности
+        Ambitious   = 1 << 3,   // Ищет власть, лидерство
+        Loyal       = 1 << 4,   // Не предаёт никогда
+        Pacifist    = 1 << 5,   // Избегает боя
+        Curious     = 1 << 6,   // Исследует, задаёт вопросы
+        Vengeful    = 1 << 7    // Помнит обиды, мстит
     }
     
     /// <summary>
@@ -571,9 +608,11 @@ namespace CultivationGame.Core
     }
     
     /// <summary>
-    /// Результат атаки
+    /// Результат атаки (enum для UI/лога).
+    /// FIX CORE-M03: Переименован из AttackResult для устранения коллизии
+    /// с CombatManager.AttackResult (struct).
     /// </summary>
-    public enum AttackResult
+    public enum CombatAttackResult
     {
         Miss,           // Промах
         Dodge,          // Уклонение

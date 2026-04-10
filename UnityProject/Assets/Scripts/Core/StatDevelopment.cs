@@ -34,6 +34,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 using CultivationGame.Core;
+// FIX CORE-C07: MAX_STAT_VALUE теперь в GameConstants
 
 namespace CultivationGame.Core
 {
@@ -116,27 +117,30 @@ namespace CultivationGame.Core
         // === БАЗОВЫЕ ХАРАКТЕРИСТИКИ ===
         public const float BASE_STAT_VALUE = 10.0f;
         public const float MIN_STAT_VALUE = 1.0f;
-        public const float MAX_STAT_VALUE = 1000.0f;        // Теоретический максимум
+        // FIX CORE-C07: MAX_STAT_VALUE → GameConstants.MAX_STAT_VALUE (1000)
+        // Локальная константа убрана, используем единую из GameConstants
 
         #endregion
 
         #region Fields
 
         // === РЕАЛЬНЫЕ ХАРАКТЕРИСТИКИ ===
-        [SerializeField] private float strength = BASE_STAT_VALUE;
-        [SerializeField] private float agility = BASE_STAT_VALUE;
-        [SerializeField] private float intelligence = BASE_STAT_VALUE;
-        [SerializeField] private float vitality = BASE_STAT_VALUE;
+        // FIX CORE-C04: [SerializeField] убран — не работает в non-MonoBehaviour.
+        // [Serializable] обеспечивает сериализацию private полей.
+        private float strength = BASE_STAT_VALUE;
+        private float agility = BASE_STAT_VALUE;
+        private float intelligence = BASE_STAT_VALUE;
+        private float vitality = BASE_STAT_VALUE;
 
         // === ВИРТУАЛЬНЫЕ ДЕЛЬТЫ ===
-        [SerializeField] private float virtualStrengthDelta = 0f;
-        [SerializeField] private float virtualAgilityDelta = 0f;
-        [SerializeField] private float virtualIntelligenceDelta = 0f;
-        [SerializeField] private float virtualVitalityDelta = 0f;
+        private float virtualStrengthDelta = 0f;
+        private float virtualAgilityDelta = 0f;
+        private float virtualIntelligenceDelta = 0f;
+        private float virtualVitalityDelta = 0f;
 
         // === МОДИФИКАТОРЫ ===
-        [SerializeField] private float trainingModifier = 1.0f;     // От техник/артефактов
-        [SerializeField] private float ageModifier = 1.0f;          // От возраста
+        private float trainingModifier = 1.0f;     // От техник/артефактов
+        private float ageModifier = 1.0f;          // От возраста
 
         #endregion
 
@@ -218,10 +222,11 @@ namespace CultivationGame.Core
 
         public StatDevelopment(float str, float agi, float intel, float vit)
         {
-            strength = Mathf.Clamp(str, MIN_STAT_VALUE, MAX_STAT_VALUE);
-            agility = Mathf.Clamp(agi, MIN_STAT_VALUE, MAX_STAT_VALUE);
-            intelligence = Mathf.Clamp(intel, MIN_STAT_VALUE, MAX_STAT_VALUE);
-            vitality = Mathf.Clamp(vit, MIN_STAT_VALUE, MAX_STAT_VALUE);
+            // FIX CORE-C07: используем GameConstants.MAX_STAT_VALUE (1000)
+            strength = Mathf.Clamp(str, MIN_STAT_VALUE, GameConstants.MAX_STAT_VALUE);
+            agility = Mathf.Clamp(agi, MIN_STAT_VALUE, GameConstants.MAX_STAT_VALUE);
+            intelligence = Mathf.Clamp(intel, MIN_STAT_VALUE, GameConstants.MAX_STAT_VALUE);
+            vitality = Mathf.Clamp(vit, MIN_STAT_VALUE, GameConstants.MAX_STAT_VALUE);
         }
 
         #endregion
@@ -314,17 +319,19 @@ namespace CultivationGame.Core
 
         /// <summary>
         /// Получить порог для повышения характеристики.
-        /// Формула: threshold = floor(currentStat / 10)
+        /// FIX CORE-C02: Math.Max(1f, ...) — гарантия порога ≥1 даже при stat < 10.
+        /// Формула: threshold = max(1, floor(currentStat / 10))
         /// Источник: STAT_THRESHOLD_SYSTEM.md "Формула порога"
         /// </summary>
         public float GetThreshold(StatType type)
         {
             float currentStat = GetStat(type);
-            return Mathf.Floor(currentStat / 10f);
+            return Math.Max(1f, Mathf.Floor(currentStat / 10f));
         }
 
         /// <summary>
         /// Проверить, можно ли повысить характеристику.
+        /// FIX CORE-C02: threshold всегда ≥1, проверка threshold > 0 избыточна, но оставлена.
         /// </summary>
         public bool CanAdvance(StatType type)
         {
@@ -412,14 +419,15 @@ namespace CultivationGame.Core
 
             float delta = GetDelta(type);
             float threshold = GetThreshold(type);
+            // FIX CORE-C03: availableConsolidation используется для ограничения уровней
             float availableConsolidation = Mathf.Min(delta, maxConsolidation);
 
             // Если порог достигнут — повышаем характеристику
             if (delta >= threshold && threshold > 0f)
             {
+                // FIX CORE-C03: уровни ограничиваются availableConsolidation, не maxConsolidation
                 // Сколько уровней можно повысить (обычно 1)
-                int levelsPossible = Mathf.FloorToInt(delta / threshold);
-                levelsPossible = Mathf.Min(levelsPossible, Mathf.FloorToInt(maxConsolidation / threshold));
+                int levelsPossible = Mathf.FloorToInt(availableConsolidation / threshold);
 
                 if (levelsPossible > 0)
                 {
@@ -452,7 +460,8 @@ namespace CultivationGame.Core
         /// </summary>
         public void SetStat(StatType type, float value)
         {
-            float clampedValue = Mathf.Clamp(value, MIN_STAT_VALUE, MAX_STAT_VALUE);
+            // FIX CORE-C07: используем GameConstants.MAX_STAT_VALUE (1000)
+            float clampedValue = Mathf.Clamp(value, MIN_STAT_VALUE, GameConstants.MAX_STAT_VALUE);
 
             switch (type)
             {

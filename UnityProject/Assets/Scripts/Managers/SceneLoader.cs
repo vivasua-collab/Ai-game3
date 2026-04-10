@@ -214,6 +214,10 @@ namespace CultivationGame.Managers
             
             // Уведомляем о начале загрузки
             GameEvents.TriggerSceneUnloading(currentScene);
+            
+            // FIX CORE-H02: Очистка событий при смене сцены для предотвращения утечек
+            GameEvents.ClearAllEvents();
+            
             OnLoadStart?.Invoke(sceneName);
             
             // Пауза игры при загрузке

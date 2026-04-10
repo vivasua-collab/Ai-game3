@@ -123,7 +123,7 @@ namespace CultivationGame.NPC
                 state.Disposition = Disposition.Allied;
             
             // Инициализируем аффинности элементов (по умолчанию нейтральные)
-            state.ElementAffinities = new float[(int)Element.Count];
+            state.ElementAffinities = new float[Enum.GetValues(typeof(Element)).Length]; // FIX CORE-H05
             
             // Копируем характеристики
             state.BodyStrength = preset.strength;
@@ -350,7 +350,7 @@ namespace CultivationGame.NPC
             state.Disposition = generated.baseDisposition;
 
             // Элементальные аффинности
-            state.ElementAffinities = new float[(int)Element.Count];
+            state.ElementAffinities = new float[Enum.GetValues(typeof(Element)).Length]; // FIX CORE-H05
 
             // Ресурсы
             CalculateResourcesFromLevel();

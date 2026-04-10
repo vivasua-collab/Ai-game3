@@ -615,28 +615,38 @@ namespace CultivationGame.Editor
 
         private static EquipmentSlot ParseEquipmentSlot(object value)
         {
-            if (value == null) return EquipmentSlot.RightHand;
+            // FIX CORE-M02: EquipmentSlot обновлён по INVENTORY_SYSTEM.md
+            if (value == null) return EquipmentSlot.WeaponMain;
 
             string slotStr = value.ToString().ToLower();
 
             switch (slotStr)
             {
                 // Weapons
-                case "weapon_main": return EquipmentSlot.RightHand;
-                case "weapon_off": return EquipmentSlot.LeftHand;
-                case "weapon_twohanded": return EquipmentSlot.RightHand;
+                case "weapon_main": return EquipmentSlot.WeaponMain;
+                case "weapon_off": return EquipmentSlot.WeaponOff;
+                case "weapon_twohanded": return EquipmentSlot.WeaponMain;
                 // Armor
                 case "head_armor":
-                case "head_clothing": return EquipmentSlot.Head;
+                case "head_clothing": return EquipmentSlot.Armor;
                 case "torso_armor":
-                case "torso_clothing": return EquipmentSlot.Torso;
+                case "torso_clothing": return EquipmentSlot.Clothing;
                 case "hands":
-                case "hands_armor": return EquipmentSlot.LeftHand;  // Перчатки
+                case "hands_armor": return EquipmentSlot.WeaponOff;  // Перчатки → WeaponOff
                 case "legs_armor":
-                case "legs_clothing": return EquipmentSlot.Legs;
+                case "legs_clothing": return EquipmentSlot.Armor;
                 case "feet_armor":
-                case "feet_clothing": return EquipmentSlot.Feet;
-                default: return EquipmentSlot.RightHand;
+                case "feet_clothing": return EquipmentSlot.Armor;
+                // Charger
+                case "charger": return EquipmentSlot.Charger;
+                // Rings
+                case "ring_left": return EquipmentSlot.RingLeft;
+                case "ring_right": return EquipmentSlot.RingRight;
+                // Accessory
+                case "accessory": return EquipmentSlot.Accessory;
+                // Backpack
+                case "backpack": return EquipmentSlot.Backpack;
+                default: return EquipmentSlot.WeaponMain;
             }
         }
 

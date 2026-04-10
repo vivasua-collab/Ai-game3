@@ -44,8 +44,8 @@ namespace CultivationGame.Core
         /// <summary>Минимальное значение характеристики</summary>
         public const int MIN_STAT_VALUE = 1;
         
-        /// <summary>Максимальное значение характеристики</summary>
-        public const int MAX_STAT_VALUE = 100;
+        /// <summary>Максимальное значение характеристики. FIX CORE-C07: 100→1000 по решению пользователя.</summary>
+        public const int MAX_STAT_VALUE = 1000;
         
         /// <summary>
         /// Базовая ёмкость ядра (L1.0)
@@ -214,7 +214,7 @@ namespace CultivationGame.Core
             30.0f,  // L7
             100.0f, // L8
             1000.0f,// L9
-            float.PositiveInfinity // L10
+            float.MaxValue    // L10 — FIX CORE-C06: PositiveInfinity→MaxValue. Обработка: мгновенное восстановление = MaxValue
         };
         
         #endregion
@@ -385,6 +385,7 @@ namespace CultivationGame.Core
             { BodyMaterial.Chitin, 0.2f },
             { BodyMaterial.Mineral, 0.5f },
             { BodyMaterial.Ethereal, 0.7f },
+            { BodyMaterial.Construct, 0.4f },    // FIX CORE-C05: Construct добавлен (30-50% → 0.4 среднее)
             { BodyMaterial.Chaos, 0.4f }
         };
         
@@ -399,6 +400,7 @@ namespace CultivationGame.Core
             { BodyMaterial.Chitin, 5 },
             { BodyMaterial.Mineral, 8 },
             { BodyMaterial.Ethereal, 1 },
+            { BodyMaterial.Construct, 7 },    // FIX CORE-C05: Construct добавлен (5-8 → 7 среднее)
             { BodyMaterial.Chaos, 5 }
         };
         

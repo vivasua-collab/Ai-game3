@@ -501,21 +501,22 @@ namespace CultivationGame.UI
         /// <summary>
         /// Добавляет сообщение об атаке
         /// </summary>
-        public void LogAttack(string attacker, string target, int damage, AttackResult result)
+        // FIX CORE-M03: AttackResult→CombatAttackResult (коллизия с CombatManager.AttackResult struct)
+        public void LogAttack(string attacker, string target, int damage, CombatAttackResult result)
         {
             string resultText = result switch
             {
-                AttackResult.Miss => $"{attacker} промахивается по {target}!",
-                AttackResult.Dodge => $"{target} уклоняется от атаки {attacker}!",
-                AttackResult.Parry => $"{target} парирует атаку {attacker}!",
-                AttackResult.Block => $"{attacker} бьёт {target} (блок) — {damage} урона",
-                AttackResult.Hit => $"{attacker} попадает по {target} — {damage} урона",
-                AttackResult.CriticalHit => $"{attacker} критически попадает по {target} — {damage} урона!",
-                AttackResult.Kill => $"{attacker} побеждает {target}!",
+                CombatAttackResult.Miss => $"{attacker} промахивается по {target}!",
+                CombatAttackResult.Dodge => $"{target} уклоняется от атаки {attacker}!",
+                CombatAttackResult.Parry => $"{target} парирует атаку {attacker}!",
+                CombatAttackResult.Block => $"{attacker} бьёт {target} (блок) — {damage} урона",
+                CombatAttackResult.Hit => $"{attacker} попадает по {target} — {damage} урона",
+                CombatAttackResult.CriticalHit => $"{attacker} критически попадает по {target} — {damage} урона!",
+                CombatAttackResult.Kill => $"{attacker} побеждает {target}!",
                 _ => $"{attacker} атакует {target}"
             };
 
-            LogType type = result == AttackResult.CriticalHit || result == AttackResult.Kill
+            LogType type = result == CombatAttackResult.CriticalHit || result == CombatAttackResult.Kill
                 ? LogType.Important
                 : LogType.Normal;
 
