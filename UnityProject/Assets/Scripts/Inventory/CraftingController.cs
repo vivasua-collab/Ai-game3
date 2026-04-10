@@ -10,6 +10,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 using CultivationGame.Core;
+using CultivationGame.Save;
 
 namespace CultivationGame.Inventory
 {
@@ -50,6 +51,9 @@ namespace CultivationGame.Inventory
 
         // Текущий навык крафта
         private Dictionary<CraftingType, int> craftingSkills = new Dictionary<CraftingType, int>();
+
+        // FIX INV-H02: Real XP system for crafting (2026-04-11)
+        private Dictionary<CraftingType, int> craftingExperience = new Dictionary<CraftingType, int>();
 
         #endregion
 
@@ -194,7 +198,11 @@ namespace CultivationGame.Inventory
                 for (int i = 0; i < itemsToCreate; i++)
                 {
                     var slot = playerInventory.AddItem(recipe.resultItem, 1);
-                    // TODO: Применить грейд к созданному предмету
+                    // FIX INV-H01: Применить грейд к созданному предмету (2026-04-11)
+                    if (slot != null)
+                    {
+                        slot.grade = grade;
+                    }
                 }
 
                 // Увеличиваем навык
@@ -263,6 +271,11 @@ namespace CultivationGame.Inventory
             result.grade = DetermineGrade(finalQuality);
 
             var slot = playerInventory.AddItem(baseItem, 1);
+            // FIX INV-H01: Применить грейд к созданному предмету (2026-04-11)
+            if (slot != null)
+            {
+                slot.grade = result.grade;
+            }
 
             OnCraftSuccess?.Invoke(result);
             return result;
@@ -421,20 +434,36 @@ namespace CultivationGame.Inventory
         }
 
         /// <summary>
-        /// Добавляет опыт к навыку
+        /// Добавляет опыт к навыку.
+        /// FIX INV-H02: Реальная XP система вместо random 20% level-up (2026-04-11)
+        /// XP threshold per level = level * 100
         /// </summary>
         public void AddSkillExperience(CraftingType type, int experience)
         {
-            // Упрощённая система — каждый уровень = 100 * level опыта
+            if (!craftingExperience.ContainsKey(type))
+                craftingExperience[type] = 0;
+
+            craftingExperience[type] += experience;
+
             int currentLevel = GetCraftingSkill(type);
             int expNeeded = currentLevel * 100;
 
-            // TODO: Хранить опыт отдельно
-            // Временно просто увеличиваем уровень каждые 5 крафтов
-            if (UnityEngine.Random.value < 0.2f && currentLevel < 10)
+            while (craftingExperience[type] >= expNeeded && currentLevel < 10)
             {
-                craftingSkills[type] = currentLevel + 1;
+                craftingExperience[type] -= expNeeded;
+                currentLevel++;
+                craftingSkills[type] = currentLevel;
+                expNeeded = currentLevel * 100;
             }
+        }
+
+        /// <summary>
+        /// Получает текущий опыт навыка крафта.
+        /// FIX INV-H02: Добавлено для доступа к XP (2026-04-11)
+        /// </summary>
+        public int GetCraftingExperience(CraftingType type)
+        {
+            return craftingExperience.TryGetValue(type, out int exp) ? exp : 0;
         }
 
         /// <summary>
@@ -506,18 +535,30 @@ namespace CultivationGame.Inventory
 
         public CraftingSaveData GetSaveData()
         {
+            // FIX SAV-H01: Use serializable CraftingSkillEntry array instead of Dictionary (2026-04-11)
+            var skillEntries = new List<CraftingSkillEntry>();
+            foreach (var kvp in craftingSkills)
+            {
+                skillEntries.Add(new CraftingSkillEntry((int)kvp.Key, kvp.Value));
+            }
+            
             return new CraftingSaveData
             {
-                skills = new Dictionary<CraftingType, int>(craftingSkills),
+                skills = skillEntries.ToArray(),
                 knownRecipeIds = recipes.ConvertAll(r => r.recipeId)
             };
         }
 
         public void LoadSaveData(CraftingSaveData data)
         {
+            // FIX SAV-H01: Deserialize from CraftingSkillEntry array (2026-04-11)
             if (data?.skills != null)
             {
-                craftingSkills = new Dictionary<CraftingType, int>(data.skills);
+                foreach (var entry in data.skills)
+                {
+                    CraftingType type = (CraftingType)entry.craftingType;
+                    craftingSkills[type] = entry.level;
+                }
             }
         }
 
@@ -643,7 +684,8 @@ namespace CultivationGame.Inventory
     [Serializable]
     public class CraftingSaveData
     {
-        public Dictionary<CraftingType, int> skills;
+        // FIX SAV-H01: Use serializable array instead of Dictionary (2026-04-11)
+        public CraftingSkillEntry[] skills;
         public List<string> knownRecipeIds;
     }
 }

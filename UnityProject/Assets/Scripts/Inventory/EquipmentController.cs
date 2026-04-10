@@ -9,6 +9,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using CultivationGame.Core;
 using CultivationGame.Data.ScriptableObjects;
+using CultivationGame.Save;
 
 namespace CultivationGame.Inventory
 {
@@ -235,14 +236,35 @@ namespace CultivationGame.Inventory
 
         /// <summary>
         /// Проверяет, можно ли экипировать предмет
+        /// FIX INV-H03: Реализована проверка требований (2026-04-11)
         /// </summary>
-        public bool CanEquip(EquipmentData equipmentData)
+        public bool CanEquip(EquipmentData equipmentData, int playerCultivationLevel = 0, Dictionary<string, float> playerStats = null)
         {
             if (equipmentData == null)
                 return false;
 
-            // TODO: Проверка требований к уровню культивации
-            // TODO: Проверка требований к характеристикам
+            // FIX INV-H03: Check cultivation level requirement (2026-04-11)
+            if (equipmentData.requiredCultivationLevel > 0 && playerCultivationLevel < equipmentData.requiredCultivationLevel)
+            {
+                return false;
+            }
+
+            // FIX INV-H03: Check stat requirements (2026-04-11)
+            if (equipmentData.statRequirements != null && equipmentData.statRequirements.Count > 0 && playerStats != null)
+            {
+                foreach (var req in equipmentData.statRequirements)
+                {
+                    if (playerStats.TryGetValue(req.statName, out float value))
+                    {
+                        if (value < req.minValue) return false;
+                    }
+                    else
+                    {
+                        // Stat not found — requirement not met
+                        return false;
+                    }
+                }
+            }
 
             return true;
         }
@@ -533,7 +555,9 @@ namespace CultivationGame.Inventory
 
         private DurabilityCondition GetCondition()
         {
+            // FIX INV-C01: durability=0 → Broken, durability<0 → Pristine (no durability system) (2026-04-11)
             if (durability < 0) return DurabilityCondition.Pristine;
+            if (durability == 0) return DurabilityCondition.Broken;
 
             float percent = DurabilityPercent * 100f;
             if (percent >= 100f) return DurabilityCondition.Pristine;
@@ -622,12 +646,41 @@ namespace CultivationGame.Inventory
         public float maxQi;
         public float qiRegen;
 
-        // Custom bonuses
+        // Custom bonuses — runtime Dictionary, use ToSerializable/FromSerializable for save
         public Dictionary<string, float> customBonuses = new Dictionary<string, float>();
 
         public float GetCustomBonus(string statName)
         {
             return customBonuses.TryGetValue(statName, out var value) ? value : 0f;
+        }
+
+        /// <summary>
+        /// FIX SAV-H01: Convert customBonuses to serializable array for JsonUtility (2026-04-11)
+        /// </summary>
+        public CustomBonusEntry[] CustomBonusesToSerializable()
+        {
+            var entries = new CustomBonusEntry[customBonuses.Count];
+            int i = 0;
+            foreach (var kvp in customBonuses)
+            {
+                entries[i++] = new CustomBonusEntry(kvp.Key, kvp.Value);
+            }
+            return entries;
+        }
+
+        /// <summary>
+        /// FIX SAV-H01: Restore customBonuses from serializable array (2026-04-11)
+        /// </summary>
+        public void CustomBonusesFromSerializable(CustomBonusEntry[] entries)
+        {
+            customBonuses.Clear();
+            if (entries != null)
+            {
+                foreach (var entry in entries)
+                {
+                    customBonuses[entry.statName] = entry.bonus;
+                }
+            }
         }
 
         /// <summary>

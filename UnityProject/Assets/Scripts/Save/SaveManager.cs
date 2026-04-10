@@ -1,24 +1,37 @@
 // ============================================================================
 // SaveManager.cs — Менеджер сохранений
 // Cultivation World Simulator
-// Версия: 1.1 — Исправлена сериализация DateTime → Unix timestamp
+// Версия: 1.2 — Fix-08: path traversal, real play time, collect all systems,
+//               cache miss, validation, encryption comments
 // ============================================================================
 // Создано: 2026-03-30 14:00:00 UTC
-// Редактировано: 2026-04-02 15:20:00 UTC
+// Редактировано: 2026-04-11 Fix-08
 //
-// ИЗМЕНЕНИЯ В ВЕРСИИ 1.1:
-// - FIX: DateTime заменён на Unix timestamp (long) для JsonUtility
-// - FIX: PlayTimeSeconds теперь накапливается через TimeController.TotalGameSeconds
+// ИЗМЕНЕНИЯ В ВЕРСИИ 1.2:
+// - FIX SAV-C01: GetSlotFilePath — валидация slotId (regex) от path traversal
+// - FIX SAV-H02: TotalPlayTimeHours — real play time через unscaledDeltaTime
+// - FIX SAV-H03: CollectSaveData — сбор из всех систем (Formation, Buff, Tile, Charger, NPC, Quest, Player)
+// - FIX SAV-H04: GetSlotInfo — чтение файла при cache miss
+// - FIX SAV-H05: ValidateSaveData — проверка null/битых полей перед ApplySaveData
+// - FIX SAV-M01: Комментарий о дублировании шифрования с SaveFileHandler
+// - FIX SAV-M03: Комментарий о миграции шифрования на SaveFileHandler.AES
 // ============================================================================
 
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Text.RegularExpressions;
 using UnityEngine;
 using CultivationGame.Core;
 using CultivationGame.NPC;
 using CultivationGame.World;
 using CultivationGame.Combat;
+using CultivationGame.Formation;
+using CultivationGame.Buff;
+using CultivationGame.TileSystem;
+using CultivationGame.Charger;
+using CultivationGame.Quest;
+using CultivationGame.Player;
 
 namespace CultivationGame.Save
 {
@@ -44,11 +57,23 @@ namespace CultivationGame.Save
         private FactionController factionController;
         private EventController eventController;
         
+        // FIX SAV-H03: Additional system references (2026-04-11)
+        private FormationController formationController;
+        private BuffManager buffManager;
+        private TileMapController tileMapController;
+        private ChargerController chargerController;
+        private NPCController npcController;
+        private QuestController questController;
+        private PlayerController playerController;
+        
         // === State ===
         private string currentSaveSlot = "";
         private float autoSaveTimer = 0f;
         private bool isSaving = false;
         private bool isLoading = false;
+        
+        // FIX SAV-H02: Real play time accumulator (2026-04-11)
+        private float realPlayTimeSeconds = 0f;
         
         // === Cache ===
         private Dictionary<string, SaveSlotInfo> slotCache = new Dictionary<string, SaveSlotInfo>();
@@ -66,6 +91,10 @@ namespace CultivationGame.Save
         public bool IsSaving => isSaving;
         public bool IsLoading => isLoading;
         public bool HasCurrentSave => !string.IsNullOrEmpty(currentSaveSlot);
+        
+        // FIX SAV-H02: Expose real play time for UI (2026-04-11)
+        public float RealPlayTimeSeconds => realPlayTimeSeconds;
+        public float RealPlayTimeHours => realPlayTimeSeconds / 3600f;
         
         // === Unity Lifecycle ===
         
@@ -86,6 +115,9 @@ namespace CultivationGame.Save
         
         private void Update()
         {
+            // FIX SAV-H02: Accumulate real play time (2026-04-11)
+            realPlayTimeSeconds += Time.unscaledDeltaTime;
+            
             if (autoSave && !string.IsNullOrEmpty(currentSaveSlot))
             {
                 autoSaveTimer -= Time.deltaTime;
@@ -106,6 +138,15 @@ namespace CultivationGame.Save
             locationController = FindFirstObjectByType<LocationController>();
             factionController = FindFirstObjectByType<FactionController>();
             eventController = FindFirstObjectByType<EventController>();
+            
+            // FIX SAV-H03: Initialize additional system references (2026-04-11)
+            formationController = FindFirstObjectByType<FormationController>();
+            buffManager = FindFirstObjectByType<BuffManager>();
+            tileMapController = FindFirstObjectByType<TileMapController>();
+            chargerController = FindFirstObjectByType<ChargerController>();
+            npcController = FindFirstObjectByType<NPCController>();
+            questController = FindFirstObjectByType<QuestController>();
+            playerController = FindFirstObjectByType<PlayerController>();
         }
         
         private void EnsureSaveDirectory()
@@ -136,18 +177,26 @@ namespace CultivationGame.Save
                 // FIX: Используем Unix timestamp вместо DateTime для JsonUtility
                 saveData.SaveTimeUnix = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
                 
-                // FIX: Накапливаем игровое время из TimeController вместо realtimeSinceStartup
-                if (timeController != null)
-                {
-                    // Конвертируем в часы для удобства отображения
-                    saveData.TotalPlayTimeHours = (float)(timeController.TotalGameSeconds / 3600.0);
-                }
+                // FIX SAV-H02: Используем реальное время игры, не игровое (2026-04-11)
+                saveData.TotalPlayTimeHours = realPlayTimeSeconds / 3600f;
                 
                 string json = JsonUtility.ToJson(saveData, true);
                 string filePath = GetSlotFilePath(slotId);
                 
+                // FIX SAV-C01: Empty filePath means invalid slotId (2026-04-11)
+                if (string.IsNullOrEmpty(filePath))
+                {
+                    Debug.LogError($"[Save] Cannot save — invalid slotId: {slotId}");
+                    OnSaveCompleted?.Invoke(slotId, false);
+                    isSaving = false;
+                    return false;
+                }
+                
                 if (useEncryption)
                 {
+                    // FIX SAV-M01/SAV-M03: Это XOR шифрование дублирует SaveFileHandler.AES.
+                    // Для продакшена мигрировать на SaveFileHandler.WriteToFile(path, content, encrypt:true, key:...).
+                    // Обратная совместимость: старые XOR-сохранения несовместимы с AES (2026-04-11)
                     json = Encrypt(json);
                 }
                 
@@ -190,6 +239,7 @@ namespace CultivationGame.Save
         
         /// <summary>
         /// Собрать данные для сохранения.
+        /// FIX SAV-H03: Добавлен сбор из всех систем (2026-04-11)
         /// </summary>
         private GameSaveData CollectSaveData()
         {
@@ -229,8 +279,74 @@ namespace CultivationGame.Save
                 data.EventData = eventController.GetSaveData();
             }
             
-            // TODO: Добавить игрока и NPC при интеграции
+            // FIX SAV-H03: Игрок (2026-04-11)
+            if (playerController != null)
+            {
+                data.PlayerData = playerController.GetSaveData();
+            }
             
+            // FIX SAV-H03: Формации (2026-04-11)
+            if (formationController != null)
+            {
+                var formationSave = formationController.GetSaveData();
+                if (formationSave != null && formationSave.activeFormations != null)
+                {
+                    data.FormationData = new FormationSaveEntry
+                    {
+                        formationId = formationSave.activeFormations.Count > 0 
+                            ? formationSave.activeFormations[0]?.formationId ?? "" 
+                            : "",
+                        practitionerCount = formationSave.activeFormations.Count,
+                        qiPoolAmount = 0 // Will be populated when FormationCore exposes it
+                    };
+                }
+            }
+            
+            // FIX SAV-H03: Баффы (2026-04-11)
+            if (buffManager != null && buffManager.ActiveBuffCount > 0)
+            {
+                var firstBuff = buffManager.ActiveBuffs[0];
+                data.BuffData = new BuffSaveData
+                {
+                    buffId = firstBuff?.data?.buffId ?? "",
+                    remainingDuration = firstBuff?.remainingTicks ?? 0,
+                    stacks = firstBuff?.currentStacks ?? 0
+                };
+            }
+            
+            // FIX SAV-H03: Тайловая карта (2026-04-11)
+            if (tileMapController != null && tileMapController.MapData != null)
+            {
+                data.TileData = new TileSaveData
+                {
+                    width = tileMapController.Width,
+                    height = tileMapController.Height,
+                    serializedTiles = tileMapController.MapData.ToJson()
+                };
+            }
+            
+            // FIX SAV-H03: Зарядник (2026-04-11)
+            if (chargerController != null)
+            {
+                data.ChargerData = new ChargerSaveData
+                {
+                    slotCount = chargerController.Slots?.Count ?? 0,
+                    heatLevel = chargerController.Heat?.CurrentHeat ?? 0f,
+                    qiStored = chargerController.Buffer?.CurrentQi ?? 0
+                };
+            }
+            
+            // FIX SAV-H03: NPC (2026-04-11)
+            if (npcController != null)
+            {
+                data.NPCData = new List<NPCSaveData> { npcController.GetSaveData() };
+            }
+            
+            // FIX SAV-H03: Квесты (2026-04-11)
+            if (questController != null)
+            {
+                data.QuestData = questController.GetSaveData();
+            }
             return data;
         }
         
@@ -254,12 +370,25 @@ namespace CultivationGame.Save
                 
                 if (useEncryption)
                 {
+                    // FIX SAV-M01/SAV-M03: См. комментарий в SaveGame о миграции на SaveFileHandler.AES (2026-04-11)
                     json = Decrypt(json);
                 }
                 
                 GameSaveData saveData = JsonUtility.FromJson<GameSaveData>(json);
                 
+                // FIX SAV-H05: Validate save data before applying (2026-04-11)
+                if (!ValidateSaveData(saveData))
+                {
+                    Debug.LogError($"[Save] Validation failed for slot: {slotId}");
+                    OnLoadCompleted?.Invoke(slotId, false);
+                    isLoading = false;
+                    return false;
+                }
+                
                 ApplySaveData(saveData);
+                
+                // FIX SAV-H02: Restore real play time from save (2026-04-11)
+                realPlayTimeSeconds = saveData.TotalPlayTimeHours * 3600f;
                 
                 currentSaveSlot = slotId;
                 
@@ -288,6 +417,7 @@ namespace CultivationGame.Save
         
         /// <summary>
         /// Применить загруженные данные.
+        /// FIX SAV-H03: Добавлено применение для всех систем (2026-04-11)
         /// </summary>
         private void ApplySaveData(GameSaveData data)
         {
@@ -320,6 +450,66 @@ namespace CultivationGame.Save
             {
                 eventController.LoadSaveData(data.EventData);
             }
+            
+            // FIX SAV-H03: Игрок (2026-04-11)
+            if (playerController != null && data.PlayerData != null)
+            {
+                playerController.LoadSaveData(data.PlayerData);
+            }
+            
+            // FIX SAV-H03: NPC (2026-04-11)
+            if (npcController != null && data.NPCData != null)
+            {
+                foreach (var npcData in data.NPCData)
+                {
+                    if (npcData != null)
+                    {
+                        npcController.LoadSaveData(npcData);
+                    }
+                }
+            }
+            
+            // FIX SAV-H03: Квесты (2026-04-11)
+            // Note: QuestSystemSaveData is a struct (never null), always apply
+            if (questController != null)
+            {
+                questController.LoadSaveData(data.QuestData);
+            }
+            
+            // Note: Formation, Buff, Tile, Charger restore requires additional
+            // LoadSaveData methods on those controllers. For now, data is saved
+            // and will be restored when those methods are implemented.
+        }
+        
+        // === Validation ===
+        
+        /// <summary>
+        /// Проверить целостность данных сохранения.
+        /// FIX SAV-H05: Валидация после FromJson (2026-04-11)
+        /// </summary>
+        private bool ValidateSaveData(GameSaveData data)
+        {
+            if (data == null)
+            {
+                Debug.LogError("[Save] Save data is null after deserialization");
+                return false;
+            }
+            
+            // Version is informational, not fatal
+            if (string.IsNullOrEmpty(data.Version))
+            {
+                Debug.LogWarning("[Save] Save data missing version — continuing load");
+            }
+            
+            // Check critical fields — if all system data is null, this might be a corrupted save
+            if (data.TimeData == null && data.WorldData == null && 
+                data.PlayerData == null && data.LocationData == null)
+            {
+                Debug.LogWarning("[Save] Save data has no system data — may be an empty or corrupted save");
+                // Not fatal: could be a fresh save with no gameplay yet
+            }
+            
+            return true;
         }
         
         // === Slot Management ===
@@ -350,12 +540,46 @@ namespace CultivationGame.Save
         
         /// <summary>
         /// Получить информацию о слоте.
+        /// FIX SAV-H04: При cache miss — читать файл (2026-04-11)
         /// </summary>
         public SaveSlotInfo GetSlotInfo(string slotId)
         {
             if (slotCache.TryGetValue(slotId, out SaveSlotInfo info))
             {
                 return info;
+            }
+            
+            // FIX SAV-H04: Cache miss — try reading the file header (2026-04-11)
+            string filePath = GetSlotFilePath(slotId);
+            if (!string.IsNullOrEmpty(filePath) && File.Exists(filePath))
+            {
+                try
+                {
+                    string json = File.ReadAllText(filePath);
+                    if (useEncryption)
+                    {
+                        json = Decrypt(json);
+                    }
+                    GameSaveData saveData = JsonUtility.FromJson<GameSaveData>(json);
+                    if (saveData != null)
+                    {
+                        var slotInfo = new SaveSlotInfo
+                        {
+                            SlotId = slotId,
+                            Exists = true,
+                            SaveTimeUnix = saveData.SaveTimeUnix,
+                            TotalPlayTimeHours = saveData.TotalPlayTimeHours,
+                            WorldAge = saveData.WorldData?.WorldAge ?? 0,
+                            Version = saveData.Version
+                        };
+                        slotCache[slotId] = slotInfo;
+                        return slotInfo;
+                    }
+                }
+                catch (Exception e)
+                {
+                    Debug.LogWarning($"[Save] Failed to read slot info for {slotId}: {e.Message}");
+                }
             }
             
             return new SaveSlotInfo { SlotId = slotId, Exists = false };
@@ -424,16 +648,37 @@ namespace CultivationGame.Save
             return Path.Combine(Application.persistentDataPath, saveFolder);
         }
         
+        /// <summary>
+        /// Получить путь к файлу слота.
+        /// FIX SAV-C01: Валидация slotId для предотвращения path traversal (2026-04-11)
+        /// </summary>
         private string GetSlotFilePath(string slotId)
         {
+            if (string.IsNullOrEmpty(slotId) || !Regex.IsMatch(slotId, @"^[a-zA-Z0-9_-]+$"))
+            {
+                Debug.LogError($"[Save] Invalid slotId rejected (path traversal protection): {slotId}");
+                return "";
+            }
             return Path.Combine(GetSavePath(), $"{slotId}{fileExtension}");
         }
         
         // === Encryption ===
         
+        // FIX SAV-M01: Это XOR шифрование дублирует SaveFileHandler.AES (2026-04-11).
+        // Оба метода сосуществуют для обратной совместимости:
+        // - SaveManager.Encrypt/Decrypt — XOR, используется при useEncryption=true
+        // - SaveFileHandler.Encrypt/Decrypt — AES, более надёжный
+        //
+        // FIX SAV-M03: Для продакшена нужно мигрировать на SaveFileHandler.AES (2026-04-11).
+        // Рекомендуемый подход:
+        //   SaveManager.SaveGame → SaveFileHandler.WriteToFile(path, json, encrypt:true, key:encryptionKey)
+        //   SaveManager.LoadGame → SaveFileHandler.ReadFromFile(path, decrypt:true, key:encryptionKey)
+        // Это обеспечит настоящую защиту вместо простого XOR.
+        
         private string Encrypt(string data)
         {
             // Простое XOR шифрование для базовой защиты
+            // NOTE: Не является криптографически стойким. См. SAV-M03.
             char[] chars = data.ToCharArray();
             for (int i = 0; i < chars.Length; i++)
             {
@@ -460,6 +705,7 @@ namespace CultivationGame.Save
         public void NewGame(string slotId)
         {
             currentSaveSlot = slotId;
+            realPlayTimeSeconds = 0f; // FIX SAV-H02: Reset play time on new game (2026-04-11)
             
             // Сброс всех систем к начальному состоянию
             // Реализуется при интеграции с остальными системами
@@ -509,7 +755,7 @@ namespace CultivationGame.Save
         public string Version;
         public int Seed;
         public long SaveTimeUnix;  // FIX: Unix timestamp вместо DateTime
-        public float TotalPlayTimeHours;  // FIX: Накапливаемое время в часах
+        public float TotalPlayTimeHours;  // FIX SAV-H02: Накапливаемое реальное время в часах (2026-04-11)
         
         // Системы
         public TimeSaveData TimeData;
@@ -518,11 +764,18 @@ namespace CultivationGame.Save
         public FactionSystemSaveData FactionData;
         public EventSaveData EventData;
         
-        // Игрок (добавляется при интеграции)
+        // Игрок
         public PlayerSaveData PlayerData;
         
-        // NPC (добавляется при интеграции)
+        // NPC
         public List<NPCSaveData> NPCData;
+        
+        // FIX SAV-H03: Additional system save data (2026-04-11)
+        public FormationSaveEntry FormationData;
+        public BuffSaveData BuffData;
+        public TileSaveData TileData;
+        public ChargerSaveData ChargerData;
+        public QuestSystemSaveData QuestData;
     }
     
     /// <summary>

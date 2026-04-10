@@ -1,10 +1,15 @@
 // ============================================================================
 // SaveDataTypes.cs — Типы данных для сохранения
 // Cultivation World Simulator
-// Версия: 1.1 — Исправлена сериализация DateTime → Unix timestamp
+// Версия: 1.2 — FIX SAV-H01: Dictionary wrappers для JsonUtility, новые SaveData классы
 // ============================================================================
 // Создано: 2026-03-30 14:00:00 UTC
-// Редактировано: 2026-04-02 15:22:00 UTC
+// Редактировано: 2026-04-11 Fix-08
+//
+// ИЗМЕНЕНИЯ В ВЕРСИИ 1.2:
+// - FIX SAV-H01: Dictionary fields заменены на сериализуемые массивы пар
+// - Добавлены FormationSaveData, BuffSaveData, TileSaveData, ChargerSaveData
+// - Добавлены CraftingSkillEntry, CustomBonusEntry, KeyBindingEntry, ObjectiveEntry
 // ============================================================================
 
 using System;
@@ -13,6 +18,66 @@ using UnityEngine;
 
 namespace CultivationGame.Save
 {
+    // ============================================================================
+    // Сериализуемые обёртки для Dictionary (JsonUtility не поддерживает Dictionary)
+    // FIX SAV-H01 (2026-04-11)
+    // ============================================================================
+
+    /// <summary>
+    /// Запись пары ключ-значение для KeyBindings (string→string).
+    /// FIX SAV-H01: Замена Dictionary<string,string> для JsonUtility (2026-04-11)
+    /// </summary>
+    [Serializable]
+    public class KeyBindingEntry
+    {
+        public string key;
+        public string value;
+
+        public KeyBindingEntry() { }
+        public KeyBindingEntry(string k, string v) { key = k; value = v; }
+    }
+
+    /// <summary>
+    /// Запись пары для Objectives квеста (string→int).
+    /// FIX SAV-H01: Замена Dictionary<string,int> для JsonUtility (2026-04-11)
+    /// </summary>
+    [Serializable]
+    public class ObjectiveEntry
+    {
+        public string objectiveId;
+        public int progress;
+
+        public ObjectiveEntry() { }
+        public ObjectiveEntry(string id, int prog) { objectiveId = id; progress = prog; }
+    }
+
+    /// <summary>
+    /// Запись пары для customBonuses (string→float).
+    /// FIX SAV-H01: Замена Dictionary<string,float> для JsonUtility (2026-04-11)
+    /// </summary>
+    [Serializable]
+    public class CustomBonusEntry
+    {
+        public string statName;
+        public float bonus;
+
+        public CustomBonusEntry() { }
+        public CustomBonusEntry(string name, float val) { statName = name; bonus = val; }
+    }
+
+    /// <summary>
+    /// Запись пары для craftingSkills (CraftingType→int).
+    /// FIX SAV-H01: Замена Dictionary<CraftingType,int> для JsonUtility (2026-04-11)
+    /// </summary>
+    [Serializable]
+    public class CraftingSkillEntry
+    {
+        public int craftingType; // CraftType as int for serialization
+        public int level;
+
+        public CraftingSkillEntry() { }
+        public CraftingSkillEntry(int type, int lvl) { craftingType = type; level = lvl; }
+    }
     /// <summary>
     /// Заголовок сохранения для быстрого доступа.
     /// </summary>
@@ -126,8 +191,43 @@ namespace CultivationGame.Save
         public bool ShowTutorials = true;
         public string Language = "en";
         
-        // Controls
-        public Dictionary<string, string> KeyBindings = new Dictionary<string, string>();
+        // Controls — FIX SAV-H01: сериализуемый массив вместо Dictionary (2026-04-11)
+        public KeyBindingEntry[] KeyBindings = new KeyBindingEntry[0];
+        
+        /// <summary>
+        /// FIX SAV-H01: Convert KeyBindings to Dictionary for runtime use (2026-04-11)
+        /// </summary>
+        public Dictionary<string, string> KeyBindingsToDictionary()
+        {
+            var dict = new Dictionary<string, string>();
+            if (KeyBindings != null)
+            {
+                foreach (var entry in KeyBindings)
+                {
+                    if (entry != null && !string.IsNullOrEmpty(entry.key))
+                        dict[entry.key] = entry.value;
+                }
+            }
+            return dict;
+        }
+        
+        /// <summary>
+        /// FIX SAV-H01: Set KeyBindings from Dictionary for serialization (2026-04-11)
+        /// </summary>
+        public void KeyBindingsFromDictionary(Dictionary<string, string> dict)
+        {
+            if (dict == null)
+            {
+                KeyBindings = new KeyBindingEntry[0];
+                return;
+            }
+            KeyBindings = new KeyBindingEntry[dict.Count];
+            int i = 0;
+            foreach (var kvp in dict)
+            {
+                KeyBindings[i++] = new KeyBindingEntry(kvp.Key, kvp.Value);
+            }
+        }
     }
     
     /// <summary>
@@ -206,10 +306,46 @@ namespace CultivationGame.Save
         public bool IsStarted;
         public bool IsCompleted;
         public bool IsFailed;
-        public Dictionary<string, int> Objectives = new Dictionary<string, int>();
+        // FIX SAV-H01: сериализуемый массив вместо Dictionary (2026-04-11)
+        public ObjectiveEntry[] Objectives = new ObjectiveEntry[0];
         public List<string> Flags = new List<string>();
         public long StartTimeUnix;  // FIX: Unix timestamp
         public long? CompletionTimeUnix;  // FIX: Unix timestamp (nullable)
+        
+        /// <summary>
+        /// FIX SAV-H01: Convert Objectives to Dictionary for runtime use (2026-04-11)
+        /// </summary>
+        public Dictionary<string, int> ObjectivesToDictionary()
+        {
+            var dict = new Dictionary<string, int>();
+            if (Objectives != null)
+            {
+                foreach (var entry in Objectives)
+                {
+                    if (entry != null && !string.IsNullOrEmpty(entry.objectiveId))
+                        dict[entry.objectiveId] = entry.progress;
+                }
+            }
+            return dict;
+        }
+        
+        /// <summary>
+        /// FIX SAV-H01: Set Objectives from Dictionary for serialization (2026-04-11)
+        /// </summary>
+        public void ObjectivesFromDictionary(Dictionary<string, int> dict)
+        {
+            if (dict == null)
+            {
+                Objectives = new ObjectiveEntry[0];
+                return;
+            }
+            Objectives = new ObjectiveEntry[dict.Count];
+            int i = 0;
+            foreach (var kvp in dict)
+            {
+                Objectives[i++] = new ObjectiveEntry(kvp.Key, kvp.Value);
+            }
+        }
         
         public System.DateTime GetStartTime()
         {
@@ -319,5 +455,58 @@ namespace CultivationGame.Save
             var backupTime = GetBackupTime();
             return (System.DateTime.Now - backupTime).TotalDays > MaxAgeDays;
         }
+    }
+
+    // ============================================================================
+    // Новые SaveData классы — FIX SAV-H03 (2026-04-11)
+    // ============================================================================
+
+    /// <summary>
+    /// Данные формации для сохранения.
+    /// FIX SAV-H03: Добавлено для полного сохранения (2026-04-11)
+    /// Note: Named FormationSaveEntry to avoid conflict with Formation.FormationSaveData
+    /// </summary>
+    [Serializable]
+    public class FormationSaveEntry
+    {
+        public string formationId;
+        public int practitionerCount;
+        public long qiPoolAmount;
+    }
+
+    /// <summary>
+    /// Данные баффа для сохранения.
+    /// FIX SAV-H03: Добавлено для полного сохранения (2026-04-11)
+    /// </summary>
+    [Serializable]
+    public class BuffSaveData
+    {
+        public string buffId;
+        public float remainingDuration;
+        public int stacks;
+    }
+
+    /// <summary>
+    /// Данные тайловой карты для сохранения.
+    /// FIX SAV-H03: Добавлено для полного сохранения (2026-04-11)
+    /// </summary>
+    [Serializable]
+    public class TileSaveData
+    {
+        public int width;
+        public int height;
+        public string serializedTiles; // JSON string of TileMapData
+    }
+
+    /// <summary>
+    /// Данные зарядника для сохранения.
+    /// FIX SAV-H03: Добавлено для полного сохранения (2026-04-11)
+    /// </summary>
+    [Serializable]
+    public class ChargerSaveData
+    {
+        public int slotCount;
+        public float heatLevel;
+        public long qiStored;
     }
 }

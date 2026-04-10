@@ -640,6 +640,9 @@ namespace CultivationGame.Inventory
         [SerializeField]
         internal int durability;
 
+        // FIX INV-H01: Grade for crafted items — applied by CraftingController (2026-04-11)
+        public EquipmentGrade grade = EquipmentGrade.Common;
+
         // Properties
         public int ItemWidth => ItemData?.sizeWidth ?? 1;
         public int ItemHeight => ItemData?.sizeHeight ?? 1;
@@ -671,7 +674,11 @@ namespace CultivationGame.Inventory
 
         private DurabilityCondition GetCondition()
         {
-            if (durability <= 0) return DurabilityCondition.Pristine;
+            // FIX INV-C01: durability=0 → Broken, durability<0 → Pristine (no durability system) (2026-04-11)
+            // -1 means item doesn't use durability system → Pristine
+            // 0 means item is fully damaged → Broken
+            if (durability < 0) return DurabilityCondition.Pristine;
+            if (durability == 0) return DurabilityCondition.Broken;
 
             float percent = DurabilityPercent * 100f;
             if (percent >= 100f) return DurabilityCondition.Pristine;
