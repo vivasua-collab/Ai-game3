@@ -91,8 +91,7 @@ git push
 
 | Документ | Описание |
 |----------|----------|
-| [UnityProject/README.md](UnityProject/README.md) | Описание Unity проекта |
-| [UnityProject/SETUP_GUIDE.md](UnityProject/SETUP_GUIDE.md) | Настройка проекта |
+| [docs/SETUP_GUIDE.md](docs/SETUP_GUIDE.md) | Настройка Unity проекта |
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Архитектура систем |
 | [docs/BODY_SYSTEM.md](docs/BODY_SYSTEM.md) | Система тела (Kenshi-style) |
 | [docs/COMBAT_SYSTEM.md](docs/COMBAT_SYSTEM.md) | Боевая система |

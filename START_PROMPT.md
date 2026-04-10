@@ -107,7 +107,7 @@ git add -A && git commit -m "описание" && git push
 
 - Писать в `UnityProject/Local/` — только для ручного переноса
 - Создавать Assets/ в корне проекта
-- .md файлы в UnityProject (кроме README.md)
+- .md файлы в UnityProject (без исключений)
 - Создавать чекпоинты вне `checkpoints/`
 - Создавать временную документацию вне `docs_temp/`
 
