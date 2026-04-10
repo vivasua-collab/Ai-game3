@@ -1,9 +1,12 @@
 // ============================================================================
 // TestLocationSetup.cs — Настройка тестовой локации
 // Cultivation World Simulator
-// Версия: 1.1 — UI строки вынесены в константы
+// Версия: 1.2 — исправлены ошибки компиляции Unity 6.3
 // Создано: 2026-04-07 14:24:05 UTC
-// Редактировано: 2026-04-09 11:00:00 UTC
+// Редактировано: 2026-04-10 05:50:00 UTC
+//
+// ИЗМЕНЕНИЯ В ВЕРСИИ 1.2:
+// - FIX: NEXT_STEPS изменён с const на static readonly (CS0133)
 //
 // ИЗМЕНЕНИЯ В ВЕРСИИ 1.1:
 // - FIX: UI строки вынесены в константы (аудит Unity 6.3)
@@ -48,7 +51,7 @@ namespace CultivationGame.TileSystem.Editor
         private const string MSG_CONTROLLER_CREATED = "[TestLocationSetup] GameController created with DestructibleObjectController";
 
         // Инструкции для разработчика
-        private const string[] NEXT_STEPS = new string[]
+        private static readonly string[] NEXT_STEPS = new string[]
         {
             "1. Tools > Generate Tile Sprites",
             "2. Assign sprites to TileMapController in Inspector",
