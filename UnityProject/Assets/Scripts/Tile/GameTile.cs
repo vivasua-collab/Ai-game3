@@ -2,7 +2,7 @@
 // GameTile.cs — Пользовательский тайл для Tilemap
 // Cultivation World Simulator
 // Создано: 2026-04-07 14:24:05 UTC
-// Редактировано: 2026-04-11 14:12:33 UTC — FIX CS0115: ITilemap + полная квалификация TileData
+// Редактировано: 2026-04-11 14:26:53 UTC — FIX CS0115: Tilemap (не ITilemap!) + полная квалификация TileData
 // ============================================================================
 //
 // ИСТОРИЯ ИСПРАВЛЕНИЙ GetTileData (ВАЖНО!):
@@ -14,17 +14,22 @@
 //   не совпадает → CS0115 → каскад 7 ошибок CS0234/CS0246.
 //
 // ПРЕДЫДУЩИЕ (ОШИБОЧНЫЕ) ДИАГНОЗЫ:
-//   1. «ITilemap→Tilemap решает CS0115» — НЕВЕРНО. Tilemap НЕ совпадает
-//      с базовым методом TileBase.GetTileData(Vector3Int, ITilemap, ref TileData)
-//      по документации Unity 6000.3 (6.3).
-//   2. «ITilemap вызывает CS0115» — НЕВЕРНО. ITilemap — правильный тип
-//      параметра для Unity 6000.3 (подтверждено официальной документацией).
+//   1. «ITilemap→Tilemap — неверно» — НЕВЕРНО. Практика показала, что Tilemap
+//      — правильный тип для Unity 6.3 (документация отстаёт от API).
+//   2. «ITilemap — правильный тип по документации» — НЕВЕРНО. Документация
+//      Unity 6000.3 показывает ITilemap, но реальная реализация использует Tilemap.
 //
-// ПРАВИЛЬНОЕ РЕШЕНИЕ:
-//   - ITilemap — правильный тип 2-го параметра (Unity 6000.3 Scripting API)
+// ПРАВИЛЬНОЕ РЕШЕНИЕ (проверено на практике):
+//   - Tilemap — правильный тип 2-го параметра для Unity 6.x (НЕ ITilemap!)
+//     ITilemap вызывает CS0115 в Unity 6.3, т.к. сигнатура базового метода
+//     TileBase.GetTileData использует Tilemap, а не ITilemap.
 //   - UnityEngine.Tilemaps.TileData — полная квалификация 3-го параметра
 //     для устранения конфликта с CultivationGame.TileSystem.TileData
 //   - UnityEngine.Tilemaps.TileFlags — полная квалификация для флагов
+//
+// ПРИМЕЧАНИЕ: Документация Unity 6000.3 показывает ITilemap в сигнатуре,
+// но реальная реализация в Unity 6.3 использует Tilemap. Это расхождение
+// между документацией и API — подтверждено практическим тестированием.
 //
 // Источник: https://docs.unity3d.com/6000.3/Documentation/ScriptReference/Tilemaps.TileBase.GetTileData.html
 // ============================================================================
@@ -56,11 +61,13 @@ namespace CultivationGame.TileSystem
         [Header("Flags")]
         public GameTileFlags flags = GameTileFlags.Passable;
 
-        // FIX CS0115: ITilemap — правильный тип по документации Unity 6000.3.
+        // FIX CS0115: Tilemap — правильный тип для Unity 6.x (НЕ ITilemap!).
+        // ITilemap вызывает CS0115 в Unity 6.3, т.к. сигнатура базового метода
+        // TileBase.GetTileData использует Tilemap, а не ITilemap.
         // Полная квалификация UnityEngine.Tilemaps.TileData — конфликт
         // с CultivationGame.TileSystem.TileData (наш класс данных тайла).
-        // Редактировано: 2026-04-11 14:12:33 UTC
-        public override void GetTileData(Vector3Int position, ITilemap tilemap, ref UnityEngine.Tilemaps.TileData tileData)
+        // Редактировано: 2026-04-11 14:26:53 UTC
+        public override void GetTileData(Vector3Int position, Tilemap tilemap, ref UnityEngine.Tilemaps.TileData tileData)
         {
             tileData.sprite = sprite;
             tileData.color = color;

@@ -591,3 +591,35 @@ Stage Summary:
 - 1 файл изменён: GameTile.cs
 - Все 7 каскадных ошибок должны быть устранены
 - Дублирующиеся типы (FactionType, FactionRank, FactionData, BuffType) — латентные, не вызывают активных ошибок
+
+---
+Task ID: docs-verification
+Agent: Main Agent
+Task: Проверка исправления GameTile.cs по официальной документации Unity 6000.3
+
+Work Log:
+- 2026-04-11 14:12 UTC: Прочитан docs/UNITY_DOCS_LINKS.md
+- Проверена официальная документация Unity 6000.3 Scripting API:
+  - https://docs.unity3d.com/6000.3/Documentation/ScriptReference/Tilemaps.TileBase.GetTileData.html
+  - Сигнатура: GetTileData(Vector3Int position, ITilemap tilemap, ref TileData tileData)
+  - ITilemap — ПРАВИЛЬНЫЙ тип 2-го параметра (НЕ Tilemap)
+  - ITilemap имеет оператор неявного преобразования из Tilemap
+- ОБНАРУЖЕНА ОШИБКА: предыдущее исправление ITilemap→Tilemap было НЕВЕРНЫМ
+  - Не соответствует официальному API Unity 6000.3
+  - Реальная причина CS0115 — конфликт имён TileData:
+    CultivationGame.TileSystem.TileData (наш класс) перекрывает
+    UnityEngine.Tilemaps.TileData (Unity struct) внутри namespace
+  - Без квалификации TileData резолвится в наш класс → override сигнатура не совпадает → CS0115
+- 2026-04-11 14:12 UTC: Исправлен GameTile.cs:
+  - Возвращён ITilemap (по документации Unity 6000.3)
+  - Полная квалификация UnityEngine.Tilemaps.TileData (устранение конфликта имён)
+  - Полная квалификация UnityEngine.Tilemaps.TileFlags
+  - Добавлена подробная история исправлений с объяснением корневой причины
+- Коммит 9eb0999, push success
+
+Stage Summary:
+- Предыдущее исправление (ITilemap→Tilemap) было ОШИБОЧНЫМ — не соответствует API Unity 6000.3
+- Правильное исправление: ITilemap + полная квалификация UnityEngine.Tilemaps.TileData
+- КОРНЕВАЯ ПРИЧИНА CS0115: конфликт имён TileData, а НЕ ITilemap vs Tilemap
+- Аналогичный конфликт с TileFlags уже решён переименованием в GameTileFlags
+- Чекпоинт: checkpoints/04_11_gametile_fix_verified_docs.md

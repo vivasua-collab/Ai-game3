@@ -3,7 +3,7 @@
 // Cultivation World Simulator
 // Версия: 1.1
 // Создано: 2026-04-03 09:05:00 UTC
-// Редактировано: 2026-04-11 00:00:00 UTC — Fix-07
+// Редактировано: 2026-04-11 14:32:33 UTC — Fix QST-C04: Player.StatDevelopment→Core.StatDevelopment
 // ============================================================================
 
 using System;
@@ -78,7 +78,7 @@ namespace CultivationGame.Quest
         private TimeController timeController;
         
         // FIX QST-C03: References for reward integration
-        private Player.StatDevelopment statDevelopment;
+        private Core.StatDevelopment statDevelopment;
         private Inventory.InventoryController inventoryController;
         private Player.PlayerController playerController;
         
@@ -641,7 +641,7 @@ namespace CultivationGame.Quest
             {
                 if (statDevelopment == null && playerController != null)
                 {
-                    statDevelopment = playerController.GetComponent<Player.StatDevelopment>();
+                    statDevelopment = playerController.GetComponent<Core.StatDevelopment>();
                 }
                 
                 if (statDevelopment != null)

@@ -44,7 +44,7 @@ using CultivationGame.Interaction;
 /// Совместимость: Unity 6.3+
 /// 
 /// Создано: 2026-03-31
-/// Редактировано: 2026-04-11 UTC — GEN-C01: #if UNITY_EDITOR guard
+/// Редактировано: 2026-04-11 14:33:20 UTC — Fix: Player.StatDevelopment→Core.StatDevelopment (not a Component)
 /// </summary>
 public class SceneSetupTools : EditorWindow
 {
@@ -336,12 +336,9 @@ public class SceneSetupTools : EditorWindow
         player.AddComponent<EquipmentController>();
         player.AddComponent<TechniqueController>();
         
-        // StatDevelopment - проверяем через рефлексию
-        var statDevType = System.Type.GetType("CultivationGame.Player.StatDevelopment, Assembly-CSharp");
-        if (statDevType != null && typeof(Component).IsAssignableFrom(statDevType))
-        {
-            player.AddComponent(statDevType);
-        }
+        // StatDevelopment - NOT a Component (plain C# class in CultivationGame.Core)
+        // It's managed by PlayerController as a field, not as a separate MonoBehaviour
+        // Редактировано: 2026-04-11 14:33:20 UTC
         
         player.AddComponent<SleepSystem>();
         player.AddComponent<InteractionController>();
