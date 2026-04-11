@@ -2,7 +2,7 @@
 // DestructibleObjectController.cs — Контроллер разрушаемых объектов
 // Cultivation World Simulator
 // Создано: 2026-04-08
-// Версия: 1.2 — Fix-compile: Remove unused Inventory using, GameTile ITilemap→Tilemap (2026-04-12)
+// Редактировано: 2026-04-11 06:38:02 UTC — Удалён неиспользуемый Inventory using, GameTile ITilemap→Tilemap
 // ============================================================================
 
 using System;

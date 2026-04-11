@@ -1,8 +1,8 @@
 // ============================================================================
 // CombatUI.cs — Боевой интерфейс
 // Cultivation World Simulator
-// Версия: 1.1 — Fix-12: Camera.main null guards, Input note
-// ============================================================================
+// Создано: 2026-04-03
+// Редактировано: 2026-04-11 06:38:02 UTC — UI-L02: Camera.main null guards, CORE-M03: AttackResult→CombatAttackResult
 
 using System;
 using System.Collections.Generic;

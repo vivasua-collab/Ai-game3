@@ -1,5 +1,5 @@
 // Создано: 2026-04-03
-// Редактировано: 2026-04-03
+// Редактировано: 2026-04-11 06:38:02 UTC — Исправление namespace (CultivationWorld→CultivationGame), ICombatTarget/DamageInfo references
 // Источник: docs/examples/TechniqueEffectsSystem.md
 
 using UnityEngine;
