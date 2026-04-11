@@ -3,7 +3,7 @@
 // Cultivation World Simulator
 // Версия: 1.2 — исправлены ошибки компиляции Unity 6.3
 // Создано: 2026-04-07 14:24:05 UTC
-// Редактировано: 2026-04-10 05:50:00 UTC
+// Редактировано: 2026-04-11 14:55:00 UTC — FIX CS0266: sortOrder cast, FIX CS0246: using World
 //
 // ИЗМЕНЕНИЯ В ВЕРСИИ 1.2:
 // - FIX: NEXT_STEPS изменён с const на static readonly (CS0133)
@@ -19,6 +19,7 @@ using UnityEditor.SceneManagement;
 using UnityEngine.Tilemaps;
 using UnityEngine.UI;
 using TMPro;
+using CultivationGame.World;
 
 namespace CultivationGame.TileSystem.Editor
 {
@@ -76,7 +77,7 @@ namespace CultivationGame.TileSystem.Editor
             terrainObj.transform.SetParent(gridObj.transform);
             var terrainTilemap = terrainObj.AddComponent<Tilemap>();
             var terrainRenderer = terrainObj.AddComponent<TilemapRenderer>();
-            terrainRenderer.sortOrder = 0;
+            terrainRenderer.sortOrder = (TilemapRenderer.SortOrder)0; // FIX CS0266 (2026-04-11)
             terrainObj.AddComponent<TilemapCollider2D>();
 
             // Создать Tilemap для объектов
@@ -84,7 +85,7 @@ namespace CultivationGame.TileSystem.Editor
             objectsObj.transform.SetParent(gridObj.transform);
             var objectTilemap = objectsObj.AddComponent<Tilemap>();
             var objectRenderer = objectsObj.AddComponent<TilemapRenderer>();
-            objectRenderer.sortOrder = 1;
+            objectRenderer.sortOrder = (TilemapRenderer.SortOrder)1; // FIX CS0266 (2026-04-11)
 
             // Создать контроллер карты
             var controllerObj = new GameObject("TileMapController");
