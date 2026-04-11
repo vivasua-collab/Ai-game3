@@ -1,7 +1,7 @@
 // ============================================================================
 // CharacterPanelUI.cs — Панель персонажа
 // Cultivation World Simulator
-// Версия: 1.0
+// Версия: 1.1 — Fix-12: ServiceLocator, Qi safe cast, Input note, FormatQi note
 // ============================================================================
 // Создан: 2026-03-31
 // Этап: 5 - UI Enhancement
@@ -112,7 +112,7 @@ namespace CultivationGame.UI
         {
             // Находим контроллеры если не назначены
             if (playerController == null)
-                playerController = FindFirstObjectByType<PlayerController>();
+                playerController = ServiceLocator.GetOrFind<PlayerController>(); // FIX UI-H03 (2026-04-12)
 
             if (bodyController == null && playerController != null)
                 bodyController = playerController.GetComponent<BodyController>();
@@ -253,8 +253,11 @@ namespace CultivationGame.UI
             {
                 if (qiSlider != null)
                 {
-                    qiSlider.maxValue = qiController.MaxQi;
-                    qiSlider.value = qiController.CurrentQi;
+                    // FIX UI-H04: Qi long→float safe cast — prevents overflow for large Qi values (2026-04-12)
+                    long maxQi = qiController.MaxQi;
+                    long currentQi = qiController.CurrentQi;
+                    qiSlider.maxValue = 1f; // Normalized: slider works in 0..1 range
+                    qiSlider.value = maxQi > 0 ? (double)currentQi / maxQi > 1.0 ? 1f : (float)((double)currentQi / maxQi) : 0f;
                 }
 
                 if (qiText != null)
@@ -589,6 +592,7 @@ namespace CultivationGame.UI
             };
         }
 
+        // NOTE UI-L03: Duplicate FormatQi helper — also in CultivationProgressBar, HUDController (2026-04-12)
         private string FormatQi(long qi)
         {
             if (qi >= 1000000000)

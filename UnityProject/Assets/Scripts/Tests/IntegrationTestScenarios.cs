@@ -1,7 +1,7 @@
 // ============================================================================
 // IntegrationTestScenarios.cs — Интеграционные тесты
 // Cultivation World Simulator
-// Версия: 1.0
+// Версия: 1.1 — Fix-12: PlayerSaveData CurrentQi/MaxQi float→long
 // ============================================================================
 // Создан: 2026-03-31
 // Этап: 6 - Testing & Balance
@@ -652,8 +652,8 @@ namespace CultivationGame.Tests
         public string Name;
         public int CultivationLevel;
         public int CultivationSubLevel;
-        public float CurrentQi;
-        public float MaxQi;
+        public long CurrentQi; // FIX: float→long (Fix-01 cascade, Fix-12 test fix) (2026-04-12)
+        public long MaxQi;    // FIX: float→long (Fix-01 cascade, Fix-12 test fix) (2026-04-12)
         public string CurrentLocationId;
         public float PlayTime;
     }

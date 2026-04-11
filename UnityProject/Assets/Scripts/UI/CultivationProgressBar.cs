@@ -1,7 +1,7 @@
 // ============================================================================
 // CultivationProgressBar.cs — Улучшенная полоска прогресса культивации
 // Cultivation World Simulator
-// Версия: 1.0
+// Версия: 1.1 — Fix-12: ServiceLocator, Qi safe cast, progress bar fix, Input note
 // ============================================================================
 // Создан: 2026-03-31
 // Этап: 5 - UI Enhancement
@@ -107,7 +107,7 @@ namespace CultivationGame.UI
         private void InitializeUI()
         {
             if (qiController == null)
-                qiController = FindFirstObjectByType<QiController>();
+                qiController = ServiceLocator.GetOrFind<QiController>(); // FIX UI-H03 (2026-04-12)
 
             if (breakthroughButton != null)
             {
@@ -194,7 +194,7 @@ namespace CultivationGame.UI
 
         private void UpdateProgressBars()
         {
-            // Прогресс до следующего под-уровня = QiPercent
+            // Прогресс до следующего под-уровня = QiPercent (fill of current capacity)
             float subProgress = qiController.QiPercent;
 
             if (subLevelProgressBar != null)
@@ -202,8 +202,12 @@ namespace CultivationGame.UI
                 subLevelProgressBar.value = subProgress;
             }
 
-            // Общий прогресс до большого прорыва
-            float totalProgress = qiController.QiPercent;
+            // FIX UI-M04: mainProgressBar показывал тот же QiPercent, что и subLevelProgressBar.
+            // Теперь показывает общий прогресс культивации: доля пройденных под-уровней + текущий Qi fill (2026-04-12)
+            // totalSubLevels для полного прорыва = 10, для малого = 1
+            float qiFillContribution = subProgress / 10f; // Qi fill contributes 1/10 of a major level
+            float levelProgress = (currentLevel - 1) / 10f; // Completed major levels (0..1 range for L1..L10)
+            float totalProgress = Mathf.Clamp01(levelProgress + qiFillContribution);
 
             if (mainProgressBar != null)
             {
@@ -225,8 +229,11 @@ namespace CultivationGame.UI
 
             if (qiSlider != null)
             {
-                qiSlider.maxValue = qiController.MaxQi;
-                qiSlider.value = qiController.CurrentQi;
+                // FIX UI-H04: Qi long→float safe cast — prevents overflow for large Qi values (2026-04-12)
+                long maxQi = qiController.MaxQi;
+                long currentQi = qiController.CurrentQi;
+                qiSlider.maxValue = 1f; // Normalized: slider works in 0..1 range
+                qiSlider.value = maxQi > 0 ? (double)currentQi / maxQi > 1.0 ? 1f : (float)((double)currentQi / maxQi) : 0f;
             }
 
             if (qiDensityText != null)
@@ -336,6 +343,7 @@ namespace CultivationGame.UI
             };
         }
 
+        // NOTE UI-L03: Duplicate FormatQi helper — also in CharacterPanelUI, HUDController (2026-04-12)
         private string FormatQi(long qi)
         {
             if (qi >= 1000000000)
@@ -368,7 +376,7 @@ namespace CultivationGame.UI
         private void Awake()
         {
             if (techniqueController == null)
-                techniqueController = FindFirstObjectByType<Combat.TechniqueController>();
+                techniqueController = ServiceLocator.GetOrFind<Combat.TechniqueController>(); // FIX UI-H03 (2026-04-12)
 
             for (int i = 0; i < quickSlots.Length; i++)
             {
@@ -388,6 +396,7 @@ namespace CultivationGame.UI
 
         private void HandleInput()
         {
+            // NOTE UI-H06: Старый Input System — будущий переход на новый Input System (2026-04-12)
             // Цифровые клавиши 1-9, 0 для слотов
             for (int i = 0; i < 10; i++)
             {
@@ -571,7 +580,7 @@ namespace CultivationGame.UI
 
         private void Start()
         {
-            var player = FindFirstObjectByType<Player.PlayerController>();
+            var player = ServiceLocator.GetOrFind<Player.PlayerController>(); // FIX UI-H03 (2026-04-12)
             if (player != null)
                 playerTransform = player.transform;
         }

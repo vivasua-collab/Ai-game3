@@ -1,7 +1,7 @@
 // ============================================================================
 // DialogUI.cs — Интерфейс диалогов
 // Cultivation World Simulator
-// Версия: 1.0
+// Версия: 1.1 — Fix-12: ServiceLocator, Input note
 // ============================================================================
 
 using System;
@@ -64,9 +64,9 @@ namespace CultivationGame.UI
         private void Awake()
         {
             if (dialogueSystem == null)
-                dialogueSystem = FindFirstObjectByType<DialogueSystem>();
+                dialogueSystem = ServiceLocator.GetOrFind<DialogueSystem>(); // FIX UI-H03 (2026-04-12)
             if (uiManager == null)
-                uiManager = FindFirstObjectByType<UIManager>();
+                uiManager = ServiceLocator.GetOrFind<UIManager>(); // FIX UI-H03 (2026-04-12)
         }
         
         private void Start()
@@ -310,6 +310,7 @@ namespace CultivationGame.UI
         
         private void HandleInput()
         {
+            // NOTE UI-H06: Старый Input System — будущий переход на новый Input System (2026-04-12)
             if (dialogueSystem == null || !dialogueSystem.IsInDialogue) return;
             
             // Навигация по выборам

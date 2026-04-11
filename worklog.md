@@ -286,3 +286,155 @@ Stage Summary:
 - 7 files modified, 21 tasks completed (3 CRITICAL, 5 HIGH Managers, 3 HIGH Player, 7 MEDIUM Player, 3 LOW Player)
 - Key fixes: parallel initialization guard, scene validation, timeScale preservation, ICombatant implementation, proportional sleep recovery, memory leak cleanup
 - Commit: 5669350, no push
+
+---
+Task ID: 5
+Agent: Sub Agent
+Task: Fix-11 — Data/ScriptableObjects + Generators/Editor (20 задач)
+
+Work Log:
+- 2026-04-11 UTC: Read all 11 target files + dependencies
+- Checked FactionRelationType: duplicate in FactionData.cs (had Overlord/Rival) vs Enums.cs — merged into Enums.cs
+- Checked LocationType: duplicate in LocationData.cs (had Dungeon/Secret) vs Enums.cs — merged into Enums.cs
+- Verified TechniqueData.baseQiCost already long (Fix-01)
+- Found LocationData name collision: CultivationGame.Data.ScriptableObjects.LocationData (SO) vs CultivationGame.World.LocationData (runtime)
+
+Implemented 20 tasks across 13 files:
+
+**Enums.cs (DAT-C01, DAT-C02):**
+- Added Overlord/Rival to FactionRelationType in canonical Enums.cs
+- Added Dungeon/Secret to LocationType in canonical Enums.cs
+
+**FactionData.cs (DAT-C01, DAT-H03, DAT-M01):**
+- Removed duplicate FactionRelationType enum (now using Core version)
+- Updated LocationData reference → LocationAsset
+- GetRankByReputation: sort ranks descending by minReputation before search
+
+**LocationData.cs (DAT-C02, DAT-H03):**
+- Removed duplicate LocationType enum (now using Core version)
+- Renamed class LocationData → LocationAsset (avoids World.LocationData collision)
+- Updated all internal references (parentLocation, childLocations, GetDistanceTo, LocationConnection.targetLocation)
+
+**MortalStageData.cs (DAT-C03, DAT-M05):**
+- GetCoreFormationForAge: added guard `if (maxAge <= minAge) return minCoreFormation;`
+- minQiCapacity/maxQiCapacity: int→long; GetRandomQiCapacity returns long
+
+**TerrainConfig.cs (DAT-C04, DAT-M03):**
+- temperatureModifier Range: -50..50 → -200..200 (for Lava at 1000°C)
+- Added RuntimeInitializeOnLoadMethod(SubsystemRegistration) to reset _instance
+
+**SpeciesData.cs (DAT-H02, DAT-M04):**
+- coreCapacityBase: MinMaxRange → LongMinMaxRange (new class with long min/max)
+- Added OnValidate checking weaknesses/resistances overlap
+
+**SceneSetupTools.cs (GEN-C01):**
+- Wrapped entire class in #if UNITY_EDITOR / #endif
+- UnityEditor using guarded with #if UNITY_EDITOR
+
+**SeededRandom.cs (GEN-H01, GEN-M08):**
+- seed field: int→long; Seed property: int→long
+- Constructor accepts long seed; uses XOR hash for System.Random
+- Reset method: int?→long? seed parameter
+- NextGaussian: `Math.Max(double.Epsilon, u1)` guard against log(0)
+
+**GeneratorRegistry.cs (GEN-H01, GEN-M06):**
+- Initialize: removed seed truncation, passes long directly to SeededRandom
+- Added MaxCacheSize=100 constant, LinkedList<string> for LRU order tracking
+- AddToNPCCache/AddToTechniqueCache: evict oldest when full, refresh on re-access
+
+**ArmorGenerator.cs (GEN-H02):**
+- Replaced WeaponGenerator.GenerateGrade() call with local private GenerateGrade() copy
+- Identical distribution logic, no cross-dependency
+
+**ConsumableGenerator.cs (GEN-H04):**
+- ConsumableEffect: added valueLong (long), isLongValue (bool), valueFloat (replaces value)
+- QiRestoration: valueLong = (long)(baseValue * 100), isLongValue = true
+- Permanent maxQi: valueLong used; other permanent effects use valueFloat
+- GenerateDescription/GenerateExamples: display valueLong when isLongValue
+
+**TechniqueGenerator.cs (GEN-M02):**
+- Combat names: "Удар"×3 → "Удар кулаком", "Удар ладонью", "Рубящий удар", "Толчковый удар"
+
+**AdjectiveForms.cs (GEN-M01):**
+- Added extensive warning comment about incorrect Russian auto-derivation
+- Documents: stem mutations, mixed declension, possessive adjectives, -ой oversimplification
+
+Stage Summary:
+- 13 files modified, 20 tasks completed (5 CRITICAL, 5 HIGH+1 verified-done, 8 MEDIUM)
+- Key fixes: duplicate enums consolidated, class rename (LocationAsset), division guard, #if UNITY_EDITOR, Qi long migration, seed long, bounded cache, cross-dependency removed, NextGaussian guard, combat name disambiguation
+- Commit: 2c7fd13, no push
+
+---
+Task ID: Fix-12
+Agent: Sub Agent
+Task: Fix-12 — UI System + Tile System + Charger + Tests (14 задач)
+
+Work Log:
+- 2026-04-12 UTC: Read all 12 target files + dependencies
+- Read checkpoint, worklog, ServiceLocator, InventoryController, QiController API
+- Verified CHR-C01: ChargerHeat/Buffer/Slot [SerializeField] already done in Fix-01 — marked complete
+
+Implemented 14 tasks across 13 files:
+
+**TileData.cs (TIL-C01):**
+- Changed `temperature += config.temperatureModifier` to `temperature = 20f + config.temperatureModifier`
+- Was accumulating on every call; now correctly resets to base 20°C + terrain modifier
+
+**ResourcePickup.cs (TIL-H01):**
+- Replaced TODO TryAddToInventory with actual InventoryController integration
+- Uses GetComponent<InventoryController>() + ServiceLocator.Get<InventoryController>() fallback
+
+**DestructibleObjectController.cs (TIL-H01, TIL-L02, UI-H03):**
+- ProcessResourceDrop: calls pickup.Initialize(drop.ResourceId, drop.Amount) after Instantiate
+- Replaced FindFirstObjectByType<TileMapController> with ServiceLocator.GetOrFind<TileMapController>
+- Added NOTE comment about Texture2D leak in CreateDropSprite
+
+**InventoryUI.cs (UI-H03, UI-M06, UI-H06):**
+- FindFirstObjectByType<InventoryController> → ServiceLocator.GetOrFind<InventoryController>
+- UseItem: implemented via InventoryController.RemoveItem (1 count for consumables)
+- SortInventory: implemented sort by category → name → rarity, then MoveItem to reorder
+- Added NOTE comment for old Input System in HandleInput
+
+**CultivationProgressBar.cs (UI-H03, UI-H04, UI-M04, UI-H06, UI-L03):**
+- FindFirstObjectByType<QiController> → ServiceLocator.GetOrFind<QiController>
+- QuickSlotPanel: FindFirstObjectByType<TechniqueController> → ServiceLocator.GetOrFind
+- MinimapUI: FindFirstObjectByType<PlayerController> → ServiceLocator.GetOrFind
+- Qi slider: normalized to 0..1 range with safe cast `(double)currentQi / maxQi`
+- UI-M04: mainProgressBar now shows overall cultivation progress (level + Qi fill), not same as subLevelProgressBar
+- Added NOTE comments for old Input System and duplicate FormatQi
+
+**CharacterPanelUI.cs (UI-H03, UI-H04, UI-L03):**
+- FindFirstObjectByType<PlayerController> → ServiceLocator.GetOrFind<PlayerController>
+- Qi slider: normalized 0..1 range with safe cast
+- Added NOTE comment for duplicate FormatQi
+
+**HUDController.cs (UI-H03, UI-H04, UI-M03, UI-L03):**
+- FindFirstObjectByType<TimeController> → ServiceLocator.GetOrFind<TimeController>
+- Qi bar: normalized 0..1 range with safe cast
+- UI-M03: SetQuickSlotCooldown divide-by-zero guard: `total > 0 ? remaining / total : 0f`
+- Added NOTE comment for duplicate FormatNumber
+
+**CombatUI.cs (UI-L02):**
+- ShowDamageNumber: Camera.main null guard before WorldToScreenPoint
+- ShowHealNumber: Camera.main null guard before WorldToScreenPoint
+
+**DialogUI.cs (UI-H03, UI-H06):**
+- FindFirstObjectByType<DialogueSystem/UIManager> → ServiceLocator.GetOrFind
+- Added NOTE comment for old Input System in HandleInput
+
+**IndependentScale.cs + CharacterSpriteController.cs (CHR-H01):**
+- Changed `namespace CultivationWorld.Character` → `CultivationGame.Character`
+
+**TileMapData.cs (TIL-C02):**
+- Changed `DateTime generatedAt` field to `long generatedAtTicks`
+- Added `GeneratedAt` helper property that converts to/from DateTime via Ticks
+- Constructor updated to use generatedAtTicks
+
+**IntegrationTestScenarios.cs:**
+- PlayerSaveData.CurrentQi: float → long
+- PlayerSaveData.MaxQi: float → long
+
+Stage Summary:
+- 13 files modified, 14 tasks completed (2 CRITICAL, 4 HIGH, 5 MEDIUM, 3 LOW)
+- Key fixes: temperature accumulation bug, Qi safe cast for sliders, ServiceLocator migration, Inventory integration, namespace fix, DateTime serialization, divide-by-zero guard, Camera null guards
+- Checkpoint updated: status=✅ complete

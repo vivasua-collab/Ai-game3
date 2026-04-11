@@ -2,6 +2,7 @@
 // TileMapData.cs — Данные карты тайлов
 // Cultivation World Simulator
 // Создано: 2026-04-07 14:24:05 UTC
+// Редактировано: 2026-04-12 00:00:00 UTC — Fix-12: DateTime→long generatedAtTicks for JsonUtility
 // ============================================================================
 
 using System;
@@ -32,7 +33,19 @@ namespace CultivationGame.TileSystem
         // === Метаданные ===
         public int seed;
         public string biome;
-        public DateTime generatedAt;
+        
+        // FIX TIL-C02: DateTime→long ticks for JsonUtility compatibility (2026-04-12)
+        public long generatedAtTicks;
+        
+        /// <summary>
+        /// Helper property to convert ticks to/from DateTime.
+        /// JsonUtility cannot serialize DateTime directly.
+        /// </summary>
+        public DateTime GeneratedAt
+        {
+            get => new DateTime(generatedAtTicks, DateTimeKind.Utc);
+            set => generatedAtTicks = value.Ticks;
+        }
 
         // === Конструкторы ===
         public TileMapData() { }
@@ -44,7 +57,7 @@ namespace CultivationGame.TileSystem
             this.width = width;
             this.height = height;
             this.seed = UnityEngine.Random.Range(0, int.MaxValue);
-            this.generatedAt = DateTime.UtcNow;
+            this.generatedAtTicks = DateTime.UtcNow.Ticks; // FIX TIL-C02 (2026-04-12)
             
             // Создать массив тайлов
             tiles = new TileData[width * height];

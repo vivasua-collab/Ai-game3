@@ -1,7 +1,7 @@
 // ============================================================================
 // CombatUI.cs — Боевой интерфейс
 // Cultivation World Simulator
-// Версия: 1.0
+// Версия: 1.1 — Fix-12: Camera.main null guards, Input note
 // ============================================================================
 
 using System;
@@ -627,7 +627,11 @@ namespace CultivationGame.UI
             if (damageNumbersContainer == null || damageNumberPrefab == null)
                 return;
 
-            var screenPos = Camera.main.WorldToScreenPoint(worldPosition);
+            // FIX UI-L02: Camera.main null guard (2026-04-12)
+            var cam = Camera.main;
+            if (cam == null) return;
+
+            var screenPos = cam.WorldToScreenPoint(worldPosition);
             var damageGO = Instantiate(damageNumberPrefab, damageNumbersContainer);
             damageGO.transform.position = screenPos;
 
@@ -650,7 +654,11 @@ namespace CultivationGame.UI
             if (damageNumbersContainer == null || damageNumberPrefab == null)
                 return;
 
-            var screenPos = Camera.main.WorldToScreenPoint(worldPosition);
+            // FIX UI-L02: Camera.main null guard (2026-04-12)
+            var cam = Camera.main;
+            if (cam == null) return;
+
+            var screenPos = cam.WorldToScreenPoint(worldPosition);
             var healGO = Instantiate(damageNumberPrefab, damageNumbersContainer);
             healGO.transform.position = screenPos;
 

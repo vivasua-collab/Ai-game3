@@ -1,9 +1,9 @@
 // ============================================================================
 // TileData.cs — Данные тайла
 // Cultivation World Simulator
-// Версия: 1.1 — Magic numbers вынесены в TerrainConfig ScriptableObject
+// Версия: 1.2 — Fix-12: temperature accumulation bug (+= → =)
 // Создано: 2026-04-07 14:24:05 UTC
-// Редактировано: 2026-04-09 10:55:00 UTC
+// Редактировано: 2026-04-12 00:00:00 UTC
 //
 // ИЗМЕНЕНИЯ В ВЕРСИИ 1.1:
 // - FIX: Magic numbers вынесены в TerrainConfig (аудит Unity 6.3)
@@ -78,7 +78,9 @@ namespace CultivationGame.TileSystem
             waterDepth = config.waterDepth;
             baseQiDensity = config.baseQiDensity;
             currentQiDensity = baseQiDensity;
-            temperature += config.temperatureModifier;
+            // FIX TIL-C01: Was `+=` which accumulated temperature on every call.
+            // Base temperature is 20°C, modified by terrain config. (2026-04-12)
+            temperature = 20f + config.temperatureModifier;
         }
 
         /// <summary>

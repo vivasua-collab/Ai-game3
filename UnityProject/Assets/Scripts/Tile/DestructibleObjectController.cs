@@ -2,13 +2,15 @@
 // DestructibleObjectController.cs — Контроллер разрушаемых объектов
 // Cultivation World Simulator
 // Создано: 2026-04-08
-// Версия: 1.0 — Unity 6.3 совместимость
+// Версия: 1.1 — Fix-12: Inventory integration, Texture2D leak note, ServiceLocator
 // ============================================================================
 
 using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Tilemaps;
+using CultivationGame.Core; // FIX TIL-H01: ServiceLocator (2026-04-12)
+using CultivationGame.Inventory; // FIX TIL-H01: Inventory integration (2026-04-12)
 
 namespace CultivationGame.TileSystem
 {
@@ -51,7 +53,7 @@ namespace CultivationGame.TileSystem
         private void Awake()
         {
             if (tileMapController == null)
-                tileMapController = FindFirstObjectByType<TileMapController>();
+                tileMapController = ServiceLocator.GetOrFind<TileMapController>(); // FIX UI-H03 (2026-04-12)
         }
         
         private void Start()
@@ -276,7 +278,12 @@ namespace CultivationGame.TileSystem
             if (resourcePickupPrefab != null)
             {
                 var pickup = Instantiate(resourcePickupPrefab, drop.DropPosition, Quaternion.identity);
-                // TODO: Настроить pickup (установить resourceId, amount)
+                // FIX TIL-H01: Настроить pickup через Initialize() (2026-04-12)
+                var pickupComponent = pickup.GetComponent<ResourcePickup>();
+                if (pickupComponent != null)
+                {
+                    pickupComponent.Initialize(drop.ResourceId, drop.Amount);
+                }
             }
             else
             {
@@ -311,6 +318,9 @@ namespace CultivationGame.TileSystem
             Debug.Log($"[DestructibleObjectController] Created drop visual: {drop.ResourceId} x{drop.Amount} at {drop.DropPosition}");
         }
         
+        // NOTE TIL-L02: Texture2D created here is not explicitly tracked/destroyed.
+        // It's used in Sprite.Create attached to a GameObject that gets destroyed when picked up.
+        // This is acceptable for short-lived drop visuals, but could leak if objects accumulate. (2026-04-12)
         private Sprite CreateDropSprite(string resourceId)
         {
             Texture2D texture = new Texture2D(32, 32);

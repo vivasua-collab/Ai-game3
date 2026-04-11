@@ -1,7 +1,7 @@
 // ============================================================================
 // InventoryUI.cs — UI инвентаря (Diablo-style)
 // Cultivation World Simulator
-// Версия: 1.0
+// Версия: 1.1 — Fix-12: ServiceLocator, UseItem, SortInventory, Input note
 // ============================================================================
 // Создан: 2026-03-31
 // Этап: 5 - UI Enhancement
@@ -102,7 +102,7 @@ namespace CultivationGame.UI
         private void InitializeUI()
         {
             if (inventoryController == null)
-                inventoryController = FindFirstObjectByType<InventoryController>();
+                inventoryController = ServiceLocator.GetOrFind<InventoryController>(); // FIX UI-H03 (2026-04-12)
 
             if (sortButton != null)
                 sortButton.onClick.AddListener(SortInventory);
@@ -432,10 +432,26 @@ namespace CultivationGame.UI
         {
             if (slot == null || slot.ItemData == null) return;
 
-            // TODO: Реализовать использование предмета
-            Debug.Log($"Using item: {slot.ItemData.nameRu}");
+            // FIX UI-M06: UseItem через InventoryController (2026-04-12)
+            if (inventoryController != null)
+            {
+                bool used = inventoryController.RemoveItem(slot.SlotId, 1);
+                if (used)
+                {
+                    Debug.Log($"[InventoryUI] Used item: {slot.ItemData.nameRu}");
+                    OnItemUsed?.Invoke(slot);
+                }
+                else
+                {
+                    Debug.LogWarning($"[InventoryUI] Cannot use item: {slot.ItemData.nameRu}");
+                }
+            }
+            else
+            {
+                Debug.Log($"Using item: {slot.ItemData.nameRu} (no InventoryController)");
+                OnItemUsed?.Invoke(slot);
+            }
 
-            OnItemUsed?.Invoke(slot);
             HideContextMenu();
         }
 
@@ -495,6 +511,7 @@ namespace CultivationGame.UI
 
         private void HandleInput()
         {
+            // NOTE UI-H06: Старый Input System — будущий переход на новый Input System (2026-04-12)
             // Закрыть контекстное меню по клику вне
             if (Input.GetMouseButtonDown(0) && contextMenu != null)
             {
@@ -520,8 +537,29 @@ namespace CultivationGame.UI
 
         private void SortInventory()
         {
-            // TODO: Реализовать сортировку инвентаря
-            // по типу, имени, редкости и т.д.
+            // FIX UI-M06: Сортировка по типу, затем по имени (2026-04-12)
+            if (inventoryController == null) return;
+
+            var sortedSlots = new List<InventorySlot>(inventoryController.Slots);
+            sortedSlots.Sort((a, b) =>
+            {
+                // Сначала по категории
+                int catCompare = a.ItemData.category.CompareTo(b.ItemData.category);
+                if (catCompare != 0) return catCompare;
+                // Затем по имени
+                int nameCompare = string.Compare(a.ItemData.nameRu, b.ItemData.nameRu, StringComparison.Ordinal);
+                if (nameCompare != 0) return nameCompare;
+                // Затем по редкости (выше редкость — раньше)
+                return b.ItemData.rarity.CompareTo(a.ItemData.rarity);
+            });
+
+            // Перемещаем слоты в отсортированном порядке
+            for (int i = 0; i < sortedSlots.Count; i++)
+            {
+                inventoryController.MoveItem(sortedSlots[i].SlotId, i % inventoryController.TotalSlots, i / inventoryController.TotalSlots);
+            }
+
+            RefreshInventory();
         }
 
         private void CloseInventory()

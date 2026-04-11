@@ -3,7 +3,7 @@
 
 using UnityEngine;
 
-namespace CultivationWorld.Character
+namespace CultivationGame.Character // FIX CHR-H01: CultivationWorld→CultivationGame (2026-04-12)
 {
     /// <summary>
     /// Контроллер для объектов, которые НЕ должны зеркалиться вместе с персонажем.

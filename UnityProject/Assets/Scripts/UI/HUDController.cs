@@ -1,7 +1,7 @@
 // ============================================================================
 // HUDController.cs — Игровой HUD
 // Cultivation World Simulator
-// Версия: 1.0
+// Версия: 1.1 — Fix-12: ServiceLocator, Qi safe cast, divide-by-zero guard, FormatQi note
 // ============================================================================
 
 using System;
@@ -70,7 +70,7 @@ namespace CultivationGame.UI
         private void Awake()
         {
             if (timeController == null)
-                timeController = FindFirstObjectByType<TimeController>();
+                timeController = ServiceLocator.GetOrFind<TimeController>(); // FIX UI-H03 (2026-04-12)
         }
         
         private void Start()
@@ -154,8 +154,9 @@ namespace CultivationGame.UI
         {
             if (qiBar != null)
             {
-                qiBar.maxValue = max;
-                qiBar.value = current;
+                // FIX UI-H04: Qi long→float safe cast — prevents overflow for large Qi values (2026-04-12)
+                qiBar.maxValue = 1f; // Normalized: slider works in 0..1 range
+                qiBar.value = max > 0 ? (double)current / max > 1.0 ? 1f : (float)((double)current / max) : 0f;
             }
             
             if (qiText != null)
@@ -315,7 +316,8 @@ namespace CultivationGame.UI
                 
                 if (cooldownOverlay != null)
                 {
-                    cooldownOverlay.fillAmount = remaining / total;
+                    // FIX UI-M03: Divide by zero guard when total == 0 (2026-04-12)
+                    cooldownOverlay.fillAmount = total > 0 ? remaining / total : 0f;
                 }
                 
                 if (cooldownText != null)
@@ -398,6 +400,7 @@ namespace CultivationGame.UI
         
         // === Utility ===
         
+        // NOTE UI-L03: Duplicate FormatNumber/FormatQi helper — also in CultivationProgressBar, CharacterPanelUI (2026-04-12)
         private string FormatNumber(long number)
         {
             if (number >= 1000000)
