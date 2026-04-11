@@ -2,7 +2,7 @@
 // ResourcePickup.cs — Подбираемый ресурс
 // Cultivation World Simulator
 // Создано: 2026-04-08
-// Версия: 1.1 — Fix-12: InventoryController integration
+// Версия: 1.2 — Fix-compile: Verified Core/Inventory usings needed (ServiceLocator + InventoryController)
 // ============================================================================
 
 using System;

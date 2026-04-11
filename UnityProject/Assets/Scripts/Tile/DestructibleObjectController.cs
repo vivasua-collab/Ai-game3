@@ -2,7 +2,7 @@
 // DestructibleObjectController.cs — Контроллер разрушаемых объектов
 // Cultivation World Simulator
 // Создано: 2026-04-08
-// Версия: 1.1 — Fix-12: Inventory integration, Texture2D leak note, ServiceLocator
+// Версия: 1.2 — Fix-compile: Remove unused Inventory using, GameTile ITilemap→Tilemap (2026-04-12)
 // ============================================================================
 
 using System;
@@ -10,7 +10,6 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Tilemaps;
 using CultivationGame.Core; // FIX TIL-H01: ServiceLocator (2026-04-12)
-using CultivationGame.Inventory; // FIX TIL-H01: Inventory integration (2026-04-12)
 
 namespace CultivationGame.TileSystem
 {
