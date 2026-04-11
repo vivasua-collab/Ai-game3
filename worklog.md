@@ -565,3 +565,29 @@ Stage Summary:
 - Полная проверка подтвердила: проект должен компилироваться без ошибок
 - Остаточные CS0612 предупреждения (Disposition [Obsolete]) подавлены через #pragma warning disable
 - Чекпоинт: checkpoints/04_11_gametile_cascade_fix_final.md
+
+---
+Task ID: cascade-fix-resume
+Agent: Main Agent
+Task: Возобновление после потери контекста — диагностика и исправление 7 каскадных ошибок CS0234/CS0246
+
+Work Log:
+- 2026-04-11 14:06 UTC: Восстановление контекста после сбоя сессии
+- Прочитаны все ключевые файлы: ResourcePickup.cs, DestructibleObjectController.cs, GameTile.cs, Enums.cs, InventoryController.cs, ItemData.cs, ServiceLocator.cs, Constants.cs, GameEvents.cs, StatDevelopment.cs, TileEnums.cs, DestructibleSystem.cs, TileData.cs, TerrainConfig.cs
+- Прочитан CODE_REFERENCE.md — полная карта namespace и типов проекта
+- Прочитаны чекпоинты: 04_11_gametile_cascade_fix.md, 04_11_namespace_inventory_fix.md, 04_11_gametile_cascade_fix_final.md
+- Запущен Explore-агент для поиска дублирующихся типов и скрытых ошибок
+- ОБНАРУЖЕНА КОРНЕВАЯ ПРИЧИНА: GameTile.cs снова использует ITilemap (откачен после коммита 2055b7a)
+  - Файл был откачен в 10:06:19 UTC с комментарием "REVERT: ITilemap обратно (Tilemap вызывает CS0115 в Unity 6000.3)"
+  - Но чекпоинт 04_11_gametile_cascade_fix_final.md подтверждает: Tilemap — ПРАВИЛЬНЫЙ параметр для com.unity.2d.tilemap 1.0.0
+  - ITilemap вызывает CS0115 → весь Assembly-CSharp не компилируется → каскад 7 ошибок CS0234/CS0246
+- 2026-04-11 14:06 UTC: Исправлен GameTile.cs — ITilemap → Tilemap
+  - Добавлена подробная история исправлений в заголовок файла
+  - Добавлена актуальная дата/время редактирования
+
+Stage Summary:
+- КОРНЕВАЯ ПРИЧИНА: ITilemap в GameTile.GetTileData → CS0115 → каскад 7 ошибок
+- Исправление: ITilemap → Tilemap (подтверждено рабочим коммитом 2055b7a)
+- 1 файл изменён: GameTile.cs
+- Все 7 каскадных ошибок должны быть устранены
+- Дублирующиеся типы (FactionType, FactionRank, FactionData, BuffType) — латентные, не вызывают активных ошибок
