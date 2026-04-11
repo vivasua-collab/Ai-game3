@@ -459,3 +459,25 @@ Stage Summary:
 - 7 doc files modified, 8 tasks completed + 5 design decisions documented
 - All code↔doc mismatches resolved
 - Design decisions preserved: MAX_STAT=1000, Variant A, Attitude+PersonalityTrait, Модель В, Weather отложен
+
+---
+Task ID: 6
+Agent: int-long-qi-fix
+Task: Fix remaining int→long Qi in ChargerBuffer, ChargerData, InteractionController, TechniqueCapacity, BuffManager
+
+Work Log:
+- Read all 5 target files + ChargerController.cs (cascade caller)
+- ChargerBuffer.cs: Changed all Qi fields/methods int→long — capacity, currentQi, ChargerBufferResult (QiFromBuffer, QiRemaining, QiLost), properties (Capacity, CurrentQi), event Action<long,long>, constructor, Configure, AddQi, ExtractQi, ExtractQiWithLoss, AccumulateFromStones, TransferToPractitioner; replaced Mathf.CeilToInt/FloorToInt with (long)Math.Ceiling/Floor
+- ChargerData.cs: Changed ChargerBufferData.capacity and currentQi from int→long
+- InteractionController.cs: Changed InteractionResult.QiChange from int→long
+- TechniqueCapacity.cs: Changed CalculateDestabilization signature — params (int qiInput, int capacity) → (long qiInput, long capacity), return tuple (int,int,int) → (long,long,long), all local vars int→long
+- BuffManager.cs: Replaced 4 occurrences of Mathf.RoundToInt(value) with (long)Math.Round(value) in SpendQi/AddQi calls (lines 678, 691, 699, 707)
+- ChargerController.cs (cascade): Changed OnBufferChanged event Action<int,int> → Action<long,long>, local vars int→long for AccumulateFromStones/TransferToPractitioner results
+- Verified no Mathf.RoundToInt remains on Qi values across entire Scripts/ directory
+- Verified no remaining call sites need updating (QiController.AddQi/SpendQi already accept long)
+
+Stage Summary:
+- 6 files modified with int→long Qi migration
+- All Qi fields, method signatures, return types, and local variables updated
+- Mathf.RoundToInt eliminated from all Qi paths — replaced with (long)Math.Round
+- No remaining int Qi truncation points in the affected files

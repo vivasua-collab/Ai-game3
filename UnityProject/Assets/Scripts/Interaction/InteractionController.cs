@@ -52,7 +52,7 @@ namespace CultivationGame.Interaction
         public InteractionType Type;
         public string Message;
         public int RelationshipChange;
-        public int QiChange;
+        public long QiChange; // FIX: int→long Qi migration (2026-04-12)
         public int HealthChange;
         public List<string> UnlockedInteractions;
         public Dictionary<string, object> CustomData;

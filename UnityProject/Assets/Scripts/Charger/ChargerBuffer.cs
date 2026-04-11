@@ -19,9 +19,9 @@ namespace CultivationGame.Charger
     public struct ChargerBufferResult
     {
         public long QiFromCore;          // Ци из ядра практика (FIX: long)
-        public int QiFromBuffer;         // Ци из буфера зарядника (буфер малый)
-        public int QiRemaining;          // Остаток в буфере
-        public int QiLost;               // Потери (10%)
+        public long QiFromBuffer;        // Ци из буфера зарядника // FIX: int→long Qi migration (2026-04-12)
+        public long QiRemaining;         // Остаток в буфере // FIX: int→long Qi migration (2026-04-12)
+        public long QiLost;              // Потери (10%) // FIX: int→long Qi migration (2026-04-12)
         public bool WasBufferUsed;       // Использован ли буфер
         public bool WasBufferDepleted;   // Опустошён ли буфер
     }
@@ -38,8 +38,8 @@ namespace CultivationGame.Charger
     public class ChargerBuffer
     {
         // Capacity — [Header] убран, [SerializeField] оставлен для сериализации
-        [SerializeField] private int capacity = 500;
-        [SerializeField] private int currentQi;
+        [SerializeField] private long capacity = 500; // FIX: int→long Qi migration (2026-04-12)
+        [SerializeField] private long currentQi; // FIX: int→long Qi migration (2026-04-12)
         
         // Rates
         [SerializeField] private float conductivity = 10f;      // Проводимость (5-100 Ци/сек)
@@ -54,8 +54,8 @@ namespace CultivationGame.Charger
         
         // === Properties ===
         
-        public int Capacity => capacity;
-        public int CurrentQi => currentQi;
+        public long Capacity => capacity; // FIX: int→long Qi migration (2026-04-12)
+        public long CurrentQi => currentQi; // FIX: int→long Qi migration (2026-04-12)
         public float Conductivity => conductivity;
         public float InputRate => inputRate;
         public float OutputRate => outputRate;
@@ -67,7 +67,7 @@ namespace CultivationGame.Charger
         
         // === Events ===
         
-        public event Action<int, int> OnBufferChanged;  // (current, capacity)
+        public event Action<long, long> OnBufferChanged;  // (current, capacity) // FIX: int→long Qi migration (2026-04-12)
         public event Action OnBufferFull;
         public event Action OnBufferDepleted;
         
@@ -75,7 +75,7 @@ namespace CultivationGame.Charger
         
         public ChargerBuffer() { }
         
-        public ChargerBuffer(int capacity, float conductivity)
+        public ChargerBuffer(long capacity, float conductivity) // FIX: int→long Qi migration (2026-04-12)
         {
             this.capacity = capacity;
             this.conductivity = conductivity;
@@ -89,7 +89,7 @@ namespace CultivationGame.Charger
         /// <summary>
         /// Настроить буфер.
         /// </summary>
-        public void Configure(int bufferCapacity, float bufferConductivity, float lossPercent = 0.1f)
+        public void Configure(long bufferCapacity, float bufferConductivity, float lossPercent = 0.1f) // FIX: int→long Qi migration (2026-04-12)
         {
             capacity = bufferCapacity;
             conductivity = bufferConductivity;
@@ -106,12 +106,12 @@ namespace CultivationGame.Charger
         /// </summary>
         /// <param name="amount">Количество Ци</param>
         /// <returns>Фактически добавленное количество</returns>
-        public int AddQi(int amount)
+        public long AddQi(long amount) // FIX: int→long Qi migration (2026-04-12)
         {
             if (amount <= 0) return 0;
             
-            int spaceAvailable = capacity - currentQi;
-            int added = Math.Min(amount, spaceAvailable);
+            long spaceAvailable = capacity - currentQi; // FIX: int→long Qi migration (2026-04-12)
+            long added = Math.Min(amount, spaceAvailable); // FIX: int→long Qi migration (2026-04-12)
             
             currentQi += added;
             OnBufferChanged?.Invoke(currentQi, capacity);
@@ -129,11 +129,11 @@ namespace CultivationGame.Charger
         /// </summary>
         /// <param name="amount">Запрашиваемое количество</param>
         /// <returns>Фактически извлечённое (с учётом потерь)</returns>
-        public int ExtractQi(int amount)
+        public long ExtractQi(long amount) // FIX: int→long Qi migration (2026-04-12)
         {
             if (amount <= 0 || currentQi <= 0) return 0;
             
-            int extracted = Math.Min(amount, currentQi);
+            long extracted = Math.Min(amount, currentQi); // FIX: int→long Qi migration (2026-04-12)
             currentQi -= extracted;
             
             OnBufferChanged?.Invoke(currentQi, capacity);
@@ -151,10 +151,10 @@ namespace CultivationGame.Charger
         /// </summary>
         /// <param name="amount">Запрашиваемое количество (чистое)</param>
         /// <returns>Извлечённое Ци с учётом потерь</returns>
-        public int ExtractQiWithLoss(int amount)
+        public long ExtractQiWithLoss(long amount) // FIX: int→long Qi migration (2026-04-12)
         {
             // Нужно извлечь больше, чтобы получить требуемое
-            int required = Mathf.CeilToInt(amount / (1f - efficiencyLoss));
+            long required = (long)Math.Ceiling(amount / (1f - efficiencyLoss)); // FIX: int→long Qi migration (2026-04-12)
             return ExtractQi(required);
         }
         
@@ -198,14 +198,14 @@ namespace CultivationGame.Charger
             if (currentQi > 0 && remaining > 0)
             {
                 // С учётом 10% потерь нужно больше Ци
-                int requiredFromBuffer = Mathf.CeilToInt(remaining / (1f - efficiencyLoss));
-                int availableFromBuffer = Math.Min(requiredFromBuffer, currentQi);
+                long requiredFromBuffer = (long)Math.Ceiling(remaining / (1f - efficiencyLoss)); // FIX: int→long Qi migration (2026-04-12)
+                long availableFromBuffer = Math.Min(requiredFromBuffer, currentQi); // FIX: int→long Qi migration (2026-04-12)
                 
                 // Извлекаем
                 currentQi -= availableFromBuffer;
                 result.QiFromBuffer = availableFromBuffer;
                 result.QiRemaining = currentQi;
-                result.QiLost = Mathf.FloorToInt(availableFromBuffer * efficiencyLoss);
+                result.QiLost = (long)(availableFromBuffer * efficiencyLoss); // FIX: int→long Qi migration (2026-04-12)
                 result.WasBufferUsed = true;
                 result.WasBufferDepleted = currentQi <= 0;
                 
@@ -249,7 +249,7 @@ namespace CultivationGame.Charger
         /// <param name="totalStoneRate">Суммарная скорость камней</param>
         /// <param name="deltaTime">Время кадра</param>
         /// <returns>Фактически накопленное Ци</returns>
-        public int AccumulateFromStones(float totalStoneRate, float deltaTime)
+        public long AccumulateFromStones(float totalStoneRate, float deltaTime) // FIX: int→long Qi migration (2026-04-12)
         {
             if (IsFull) return 0;
             
@@ -262,7 +262,7 @@ namespace CultivationGame.Charger
             
             if (accumulationAccumulator >= 1f)
             {
-                int toAdd = Mathf.FloorToInt(accumulationAccumulator);
+                long toAdd = (long)Math.Floor(accumulationAccumulator); // FIX: int→long Qi migration (2026-04-12)
                 accumulationAccumulator -= toAdd;
                 return AddQi(toAdd);
             }
@@ -276,7 +276,7 @@ namespace CultivationGame.Charger
         /// <param name="practitionerConductivity">Проводимость практика</param>
         /// <param name="deltaTime">Время кадра</param>
         /// <returns>Переданное Ци</returns>
-        public int TransferToPractitioner(float practitionerConductivity, float deltaTime)
+        public long TransferToPractitioner(float practitionerConductivity, float deltaTime) // FIX: int→long Qi migration (2026-04-12)
         {
             if (IsEmpty) return 0;
             
@@ -289,7 +289,7 @@ namespace CultivationGame.Charger
             
             if (qiThisFrame >= 1f)
             {
-                return ExtractQi(Mathf.FloorToInt(qiThisFrame));
+                return ExtractQi((long)Math.Floor(qiThisFrame)); // FIX: int→long Qi migration (2026-04-12)
             }
             
             return 0;

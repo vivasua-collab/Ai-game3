@@ -176,27 +176,27 @@ namespace CultivationGame.Combat
         /// "Переполнение ВОЗМОЖНО, но с последствиями.
         ///  Для ranged атак: Ци разлетается во все стороны, урона по цели НЕТ."
         /// </summary>
-        public static (int backlashDamage, int targetDamage, int dissipatedQi) CalculateDestabilization(
-            int qiInput,
-            int capacity,
+        public static (long backlashDamage, long targetDamage, long dissipatedQi) CalculateDestabilization( // FIX: int→long Qi migration (2026-04-12)
+            long qiInput, // FIX: int→long Qi migration (2026-04-12)
+            long capacity, // FIX: int→long Qi migration (2026-04-12)
             bool isMelee)
         {
             if (qiInput <= capacity)
             {
-                return (0, 0, 0);
+                return (0L, 0L, 0L); // FIX: int→long Qi migration (2026-04-12)
             }
             
-            int excessQi = qiInput - capacity;
+            long excessQi = qiInput - capacity; // FIX: int→long Qi migration (2026-04-12)
             
             // Урон практику
-            int backlashDamage = (int)(excessQi * 0.5f);
+            long backlashDamage = (long)(excessQi * 0.5f); // FIX: int→long Qi migration (2026-04-12)
             
             // Урон цели (только для melee!)
             // Для ranged: Ци разлетается, урона нет
-            int targetDamage = isMelee ? (int)(qiInput * 0.5f) : 0;
+            long targetDamage = isMelee ? (long)(qiInput * 0.5f) : 0; // FIX: int→long Qi migration (2026-04-12)
             
             // Рассеянное Ци
-            int dissipatedQi = excessQi;
+            long dissipatedQi = excessQi; // FIX: int→long Qi migration (2026-04-12)
             
             return (backlashDamage, targetDamage, dissipatedQi);
         }

@@ -675,7 +675,7 @@ namespace CultivationGame.Buff
             // Fallback — урон по Ци
             else if (qiController != null)
             {
-                qiController.SpendQi(Mathf.RoundToInt(value));
+                qiController.SpendQi((long)Math.Round(value)); // FIX: int→long Qi migration (2026-04-12)
             }
         }
 
@@ -688,7 +688,7 @@ namespace CultivationGame.Buff
             
             if (qiController != null)
             {
-                qiController.AddQi(Mathf.RoundToInt(value));
+                qiController.AddQi((long)Math.Round(value)); // FIX: int→long Qi migration (2026-04-12)
             }
         }
 
@@ -696,7 +696,7 @@ namespace CultivationGame.Buff
         {
             if (qiController != null)
             {
-                qiController.AddQi(Mathf.RoundToInt(value));
+                qiController.AddQi((long)Math.Round(value)); // FIX: int→long Qi migration (2026-04-12)
             }
         }
 
@@ -704,7 +704,7 @@ namespace CultivationGame.Buff
         {
             if (qiController != null)
             {
-                qiController.SpendQi(Mathf.RoundToInt(value));
+                qiController.SpendQi((long)Math.Round(value)); // FIX: int→long Qi migration (2026-04-12)
             }
         }
 

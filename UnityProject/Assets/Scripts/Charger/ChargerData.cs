@@ -86,10 +86,10 @@ namespace CultivationGame.Charger
     public struct ChargerBufferData
     {
         [Tooltip("Ёмкость буфера (50-2000)")]
-        public int capacity;
+        public long capacity; // FIX: int→long Qi migration (2026-04-12)
         
         [Tooltip("Текущее Ци в буфере")]
-        public int currentQi;
+        public long currentQi; // FIX: int→long Qi migration (2026-04-12)
         
         [Tooltip("Проводимость зарядника (5-100 ед/сек)")]
         public float conductivity;

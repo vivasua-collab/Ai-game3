@@ -73,7 +73,7 @@ namespace CultivationGame.Charger
         public event Action OnChargerActivated;
         public event Action OnChargerDeactivated;
         public event Action OnChargerOverheated;
-        public event Action<int, int> OnBufferChanged; // (current, capacity)
+        public event Action<long, long> OnBufferChanged; // (current, capacity) // FIX: int→long Qi migration (2026-04-12)
         public event Action OnStoneInserted;
         public event Action OnStoneRemoved;
         public event Action OnStonesDepleted;
@@ -393,7 +393,7 @@ namespace CultivationGame.Charger
             if (totalStoneRate > 0 && !buffer.IsFull)
             {
                 // Ограничено проводимостью зарядника
-                int added = buffer.AccumulateFromStones(totalStoneRate, deltaTime);
+                long added = buffer.AccumulateFromStones(totalStoneRate, deltaTime); // FIX: int→long Qi migration (2026-04-12)
                 
                 if (added > 0)
                 {
@@ -405,7 +405,7 @@ namespace CultivationGame.Charger
             // 2. Передаём Ци практику (если не в бою)
             if (!isInCombat && practitionerQi != null && !buffer.IsEmpty)
             {
-                int transferred = buffer.TransferToPractitioner(practitionerQi.Conductivity, deltaTime);
+                long transferred = buffer.TransferToPractitioner(practitionerQi.Conductivity, deltaTime); // FIX: int→long Qi migration (2026-04-12)
                 
                 if (transferred > 0)
                 {
