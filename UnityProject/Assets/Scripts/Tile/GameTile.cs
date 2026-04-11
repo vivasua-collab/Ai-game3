@@ -2,7 +2,8 @@
 // GameTile.cs — Пользовательский тайл для Tilemap
 // Cultivation World Simulator
 // Создано: 2026-04-07 14:24:05 UTC
-// Редактировано: 2026-04-11 08:33:56 UTC — FIX CS0115: Возвращён ITilemap (TileBase.GetTileData в Unity 6000.3 использует ITilemap, не Tilemap)
+// Редактировано: 2026-04-11 09:09:48 UTC — FIX CS0115: Tilemap вместо ITilemap (Unity 6000.3 TileBase.GetTileData
+//   использует Tilemap, не ITilemap — предыдущий откат был ошибочным)
 // ============================================================================
 
 using UnityEngine;
@@ -32,11 +33,12 @@ namespace CultivationGame.TileSystem
         [Header("Flags")]
         public GameTileFlags flags = GameTileFlags.Passable;
 
-        // FIX CS0115: Unity 6000.3 TileBase.GetTileData использует ITilemap (не Tilemap).
-        // Предыдущий диагноз «ITilemap→Tilemap для Unity 6» был ошибочным.
+        // FIX CS0115: Unity 6000.3 TileBase.GetTileData использует Tilemap (не ITilemap).
+        // Предыдущий откат на ITilemap был ошибочным — именно он вызывал CS0115
+        // и каскадные CS0234 в ResourcePickup.cs / DestructibleObjectController.cs.
         // Полная квалификация UnityEngine.Tilemaps.TileData — конфликт с CultivationGame.TileSystem.TileData
-        // Редактировано: 2026-04-11 08:33:56 UTC
-        public override void GetTileData(Vector3Int position, ITilemap tilemap, ref UnityEngine.Tilemaps.TileData tileData)
+        // Редактировано: 2026-04-11 09:09:48 UTC
+        public override void GetTileData(Vector3Int position, Tilemap tilemap, ref UnityEngine.Tilemaps.TileData tileData)
         {
             tileData.sprite = sprite;
             tileData.color = color;
