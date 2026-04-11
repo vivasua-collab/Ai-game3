@@ -503,3 +503,36 @@ Stage Summary:
 - Все коммиты запушены в origin/main
 - Working tree чистый
 - START_PROMPT.md уже содержит ОБЯЗАТЕЛЬНЫЕ правила меток времени и русских комментариев
+
+---
+Task ID: compile-fix-audit
+Agent: Main Agent
+Task: Исправление 4 ошибок компиляции + полный аудит зависимостей переменных
+
+Work Log:
+- 2026-04-11 07:18 UTC: Получены 4 ошибки компиляции (CS0234 x3 + CS0115 x1)
+- Проверена официальная документация Unity 6000.3: GetTileData использует ITilemap, НЕ Tilemap
+- 2026-04-11 07:20 UTC: Исправлен GameTile.cs — ITilemap вместо Tilemap
+- ОБНАРУЖЕНА КОРНЕВАЯ ПРИЧИНА: Конфликт имён TileData — CultivationGame.TileSystem.TileData vs UnityEngine.Tilemaps.TileData
+  - C# резолвит TileData в наш класс, а не в Unity struct → CS0115
+  - Исправлено: полная квалификация UnityEngine.Tilemaps.TileData в GetTileData
+- 2026-04-11 07:25-07:32 UTC: Аудит зависимостей переменных через Explore-агент:
+  - ChargerUIState.bufferQi/bufferCapacity: int→long
+  - InteractionController: Disposition→Attitude+PersonalityTrait (GetAttitudeModifier + GetPersonalityModifier)
+  - NPCGenerator: Добавлены baseAttitude + basePersonality в GeneratedNPC, новые методы генерации
+  - NPCController: Использует generated.baseAttitude/basePersonality с fallback
+  - TechniqueGenerator.requiredQiCapacity: int→long
+  - AssetGenerator JSON DTOs: minQiCapacity/maxQiCapacity int→long
+  - FormationData: contourQiOverride и ContourQi int→long
+  - ChargerData.Initialize(): Mathf.RoundToInt→(long)Mathf.Round
+  - GameSettings.basePlayerQi: int→long
+  - NPCAI: pragma disable/restore для устаревшего ApplyDispositionModifiers
+  - FactionData: латентный конфликт (нет пересечения usings) — не критично
+- 2026-04-11 07:32 UTC: Коммит 1c8b9d4, push success
+
+Stage Summary:
+- 4 ошибки компиляции: КОРНЕВАЯ ПРИЧИНА — конфликт имён TileData + ITilemap→Tilemap
+- 11 файлов изменено, 154 добавления, 42 удаления
+- Qi int→long: найдены и исправлены 6 остаточных мест
+- Disposition→Attitude+PersonalityTrait: полная миграция InteractionController + NPCGenerator
+- Все изменения запушены
