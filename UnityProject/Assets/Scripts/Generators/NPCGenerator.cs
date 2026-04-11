@@ -1,9 +1,8 @@
 // ============================================================================
 // NPCGenerator.cs — Генератор NPC
 // Cultivation World Simulator
-// Версия: 1.1
 // Создано: 2026-03-30 10:00:00 UTC
-// Редактировано: 2026-03-31 10:38:00 UTC
+// Редактировано: 2026-04-11 06:46:00 UTC — NPC-M05: добавлено поле age в GeneratedNPC
 // ============================================================================
 //
 // Источник: docs/GENERATORS_SYSTEM.md, docs/ENTITY_TYPES.md, docs/QI_SYSTEM.md
@@ -70,6 +69,7 @@ namespace CultivationGame.Generators
         public string nameEn;
         public NPCRole role;
         public NPCCategory category;
+        public int age; // Возраст NPC — NPC-M05 (2026-04-11)
         
         // Species
         public SpeciesData species;
@@ -161,6 +161,10 @@ namespace CultivationGame.Generators
             
             // Категория на основе роли
             npc.category = GetCategoryForRole(npc.role);
+            
+            // Возраст — NPC-M05 (2026-04-11)
+            // Базовый возраст зависит от уровня культивации + случайная вариация
+            npc.age = 18 + parameters.cultivationLevel * 5 + rng.Next(0, 10);
             
             // Species
             npc.species = parameters.species;

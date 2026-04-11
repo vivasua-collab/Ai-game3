@@ -1,9 +1,8 @@
 // ============================================================================
 // NPCController.cs — Главный контроллер NPC
 // Cultivation World Simulator
-// Версия: 1.2
 // Создано: 2026-03-30 10:00:00 UTC
-// Редактировано: 2026-04-11 00:00:00 UTC — Fix-07
+// Редактировано: 2026-04-11 06:46:00 UTC — Fix-07, NPC-M05: generated.age вместо деривации
 // ============================================================================
 //
 // Источник: docs/NPC_AI_SYSTEM.md, docs/QI_SYSTEM.md
@@ -376,11 +375,8 @@ namespace CultivationGame.NPC
             state.NpcId = generated.id;
             state.Name = generated.nameRu;
             
-            // FIX NPC-M05: Use generated age if available (2026-04-11)
-            // GeneratedNPC does not currently have an 'age' field, so we derive it from role/cultivation
-            // If age were added to GeneratedNPC in the future, this would use it directly.
-            // For now, estimate age based on cultivation level:
-            state.Age = 18 + generated.cultivationLevel * 5 + UnityEngine.Random.Range(0, 10);
+            // FIX NPC-M05: Используем generated.age (2026-04-11)
+            state.Age = generated.age > 0 ? generated.age : 18 + generated.cultivationLevel * 5 + UnityEngine.Random.Range(0, 10);
 
             // Cultivation
             state.CultivationLevel = (CultivationLevel)generated.cultivationLevel;
