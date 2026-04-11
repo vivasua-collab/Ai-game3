@@ -2,7 +2,7 @@
 // DestructibleObjectController.cs — Контроллер разрушаемых объектов
 // Cultivation World Simulator
 // Создано: 2026-04-08
-// Редактировано: 2026-04-11 06:38:02 UTC — Удалён неиспользуемый Inventory using, GameTile ITilemap→Tilemap
+// Редактировано: 2026-04-13 08:45:00 UTC — Проверены using (Core для ServiceLocator — OK). CS0234 были каскадными от GameTile.cs CS0115
 // ============================================================================
 
 using System;

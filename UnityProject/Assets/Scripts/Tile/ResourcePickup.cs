@@ -2,7 +2,7 @@
 // ResourcePickup.cs — Подбираемый ресурс
 // Cultivation World Simulator
 // Создано: 2026-04-08
-// Редактировано: 2026-04-11 06:38:02 UTC — Проверены using для Core/Inventory (ServiceLocator + InventoryController)
+// Редактировано: 2026-04-13 08:45:00 UTC — Проверены using (Core для ServiceLocator, Inventory для InventoryController — OK). CS0234 были каскадными от GameTile.cs CS0115
 // ============================================================================
 
 using System;
