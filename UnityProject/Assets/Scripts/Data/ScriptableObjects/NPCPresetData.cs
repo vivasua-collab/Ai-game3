@@ -81,7 +81,7 @@ namespace CultivationGame.Data.ScriptableObjects
         
         [Header("Personality")]
         [Tooltip("Черты характера")]
-        public List<PersonalityTrait> personalityTraits = new List<PersonalityTrait>();
+        public List<PersonalityTraitEntry> personalityTraits = new List<PersonalityTraitEntry>(); // FIX: PersonalityTrait→PersonalityTraitEntry (2026-04-12)
         
         [Tooltip("Мотивация")]
         [TextArea(1, 2)]
@@ -126,10 +126,12 @@ namespace CultivationGame.Data.ScriptableObjects
     }
     
     /// <summary>
-    /// Черта характера
+    /// Черта характера (запись пресета)
+    /// FIX: Renamed from PersonalityTrait to PersonalityTraitEntry to avoid CS0104 collision
+    /// with CultivationGame.Core.PersonalityTrait enum (2026-04-12)
     /// </summary>
     [System.Serializable]
-    public class PersonalityTrait
+    public class PersonalityTraitEntry
     {
         public string traitName;
         public int intensity; // -10 до 10
