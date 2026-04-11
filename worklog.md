@@ -438,3 +438,24 @@ Stage Summary:
 - 13 files modified, 14 tasks completed (2 CRITICAL, 4 HIGH, 5 MEDIUM, 3 LOW)
 - Key fixes: temperature accumulation bug, Qi safe cast for sliders, ServiceLocator migration, Inventory integration, namespace fix, DateTime serialization, divide-by-zero guard, Camera null guards
 - Checkpoint updated: status=✅ complete
+
+---
+Task ID: Fix-13
+Agent: Main Agent
+Task: Fix-13 — Documentation Updates (8 задач + 5 решений)
+
+Work Log:
+- 2026-04-11 UTC: Read all 7 documentation files (ARCHITECTURE, SAVE_SYSTEM, COMBAT_SYSTEM, ENTITY_TYPES, NPC_AI_SYSTEM, QI_SYSTEM, ALGORITHMS)
+- Updated ARCHITECTURE.md: Weather System ⏳, Loot Generation ⏳, Модель В, Variant A стихии, Qi long, MAX_STAT_VALUE=1000, проводимость формула
+- Updated SAVE_SYSTEM.md: FormationSaveData, BuffSaveData, TileSaveData, ChargerSaveData, Qi long, NPC Attitude+PersonalityTrait+SkillLevelData
+- Updated COMBAT_SYSTEM.md: Loot Generation ⏳ запланирован (СЛОЙ 10b)
+- Updated ENTITY_TYPES.md: Mind → Attitude + PersonalityTrait [Flags]
+- Updated NPC_AI_SYSTEM.md: Disposition → Attitude пороги + PersonalityTrait таблица
+- Updated QI_SYSTEM.md: Модель В прорыва, Qi long (currentQi, maxQi)
+- Updated ALGORITHMS.md §10: Variant A — Lightning↔Void двусторонняя противоположность
+- Updated checkpoint: status=✅ complete
+
+Stage Summary:
+- 7 doc files modified, 8 tasks completed + 5 design decisions documented
+- All code↔doc mismatches resolved
+- Design decisions preserved: MAX_STAT=1000, Variant A, Attitude+PersonalityTrait, Модель В, Weather отложен
