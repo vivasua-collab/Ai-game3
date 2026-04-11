@@ -5,7 +5,7 @@ using UnityEngine;
 using System.Collections;
 using CultivationGame.Core;
 
-namespace CultivationWorld.Combat.Effects
+namespace CultivationGame.Combat.Effects // FIX: CultivationWorld→CultivationGame (2026-04-12)
 {
     /// <summary>
     /// Базовый класс для эффектов техник.

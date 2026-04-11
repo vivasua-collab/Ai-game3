@@ -5,9 +5,9 @@
 using UnityEngine;
 using CultivationGame.Core;
 // FIX: Add explicit using for OrbitalSystem types (ICombatTarget, DamageInfo) (2026-04-11)
-using CultivationWorld.Combat.OrbitalSystem;
+using CultivationGame.Combat.OrbitalSystem; // FIX: CultivationWorld→CultivationGame (2026-04-12)
 
-namespace CultivationWorld.Combat.Effects
+namespace CultivationGame.Combat.Effects // FIX: CultivationWorld→CultivationGame (2026-04-12)
 {
     /// <summary>
     /// Расширяющийся эффект техники.

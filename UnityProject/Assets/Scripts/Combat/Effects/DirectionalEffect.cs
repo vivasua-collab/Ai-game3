@@ -4,8 +4,9 @@
 
 using UnityEngine;
 using CultivationGame.Core;
+using CultivationGame.Combat.OrbitalSystem; // FIX: needed for ICombatTarget, DamageInfo (2026-04-12)
 
-namespace CultivationWorld.Combat.Effects
+namespace CultivationGame.Combat.Effects // FIX: CultivationWorld→CultivationGame (2026-04-12)
 {
     /// <summary>
     /// Направленный эффект техники.
@@ -139,7 +140,7 @@ namespace CultivationWorld.Combat.Effects
         /// </summary>
         private void ProcessHit(Collider2D hitCollider)
         {
-            var combatTarget = hitCollider.GetComponent<OrbitalSystem.ICombatTarget>();
+            var combatTarget = hitCollider.GetComponent<ICombatTarget>();
             if (combatTarget != null && combatTarget.IsHostile)
             {
                 ApplyDamage(combatTarget, hitCollider.transform.position);
@@ -162,9 +163,9 @@ namespace CultivationWorld.Combat.Effects
         /// <summary>
         /// Наносит урон.
         /// </summary>
-        private void ApplyDamage(OrbitalSystem.ICombatTarget target, Vector2 hitPoint)
+        private void ApplyDamage(ICombatTarget target, Vector2 hitPoint)
         {
-            var damage = new OrbitalSystem.DamageInfo
+            var damage = new DamageInfo
             {
                 Amount = CalculateDamage(),
                 Element = element,

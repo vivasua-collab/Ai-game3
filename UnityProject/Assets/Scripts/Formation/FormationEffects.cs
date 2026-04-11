@@ -17,7 +17,7 @@ using UnityEngine;
 using CultivationGame.Core;
 using CultivationGame.Combat;
 using CultivationGame.Buff;
-using CultivationWorld.Combat.OrbitalSystem;
+using CultivationGame.Combat.OrbitalSystem; // FIX: CultivationWorld→CultivationGame (2026-04-12)
 // FIX FRM-H02: Import Attitude enum for IsAlly fix (2026-04-11)
 // Attitude is in CultivationGame.Core (already imported above)
 

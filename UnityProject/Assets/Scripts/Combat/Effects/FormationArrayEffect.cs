@@ -4,12 +4,12 @@
 using UnityEngine;
 using CultivationGame.Core;
 using CultivationGame.Buff;
-using CultivationWorld.Combat.OrbitalSystem;
+using CultivationGame.Combat.OrbitalSystem; // FIX: CultivationWorld→CultivationGame (2026-04-12)
 // FIX FRM-H03: Alias for Formation BuffType to avoid conflict with Data.ScriptableObjects.BuffType (2026-04-11)
 using FormationBuffType = CultivationGame.Formation.BuffType;
 using CultivationGame.Formation;
 
-namespace CultivationWorld.Combat.Effects
+namespace CultivationGame.Combat.Effects // FIX: CultivationWorld→CultivationGame (2026-04-12)
 {
     /// <summary>
     /// Формационный массив — статический эффект на земле.

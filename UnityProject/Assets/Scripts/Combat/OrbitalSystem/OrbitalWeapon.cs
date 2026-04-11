@@ -4,7 +4,7 @@
 using UnityEngine;
 using CultivationGame.Core;
 
-namespace CultivationWorld.Combat.OrbitalSystem
+namespace CultivationGame.Combat.OrbitalSystem // FIX: CultivationWorld→CultivationGame (2026-04-12)
 {
     /// <summary>
     /// Оружие на орбите.

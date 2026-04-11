@@ -4,8 +4,9 @@
 using UnityEngine;
 using UnityEngine.UI;
 using CultivationGame.Core;
+using CultivationGame.Combat.OrbitalSystem; // FIX: needed for OrbitalWeaponController (2026-04-12)
 
-namespace CultivationWorld.UI
+namespace CultivationGame.UI // FIX: CultivationWorld→CultivationGame (2026-04-12)
 {
     /// <summary>
     /// UI индикатор, показывающий направление ближайшего орбитального оружия.
@@ -20,7 +21,7 @@ namespace CultivationWorld.UI
         #region Configuration
 
         [Header("References")]
-        [SerializeField] private Combat.OrbitalSystem.OrbitalWeaponController weaponController;
+        [SerializeField] private OrbitalWeaponController weaponController;
         [SerializeField] private Image indicatorArrow;
         [SerializeField] private Image indicatorRing;
 
@@ -141,7 +142,7 @@ namespace CultivationWorld.UI
             var player = GameObject.FindGameObjectWithTag("Player");
             if (player != null)
             {
-                weaponController = player.GetComponent<Combat.OrbitalSystem.OrbitalWeaponController>();
+                weaponController = player.GetComponent<OrbitalWeaponController>();
             }
         }
 
@@ -167,7 +168,7 @@ namespace CultivationWorld.UI
         /// <summary>
         /// Устанавливает контроллер оружия.
         /// </summary>
-        public void SetWeaponController(Combat.OrbitalSystem.OrbitalWeaponController controller)
+        public void SetWeaponController(OrbitalWeaponController controller)
         {
             weaponController = controller;
         }
