@@ -1,11 +1,11 @@
 # Чекпоинт: Устранение дублирования namespace + ResourcePickup + GameTile API
 
-**Дата:** 2026-04-11 08:30:41 UTC
+**Дата:** 2026-04-11 08:34:53 UTC (обновлено)
 **Фаза:** 7 — Интеграция
 **Статус:** complete
 
 ## Выполненные задачи
-- [x] FIX: GameTile.cs — добавлена #if директива для совместимости Unity 5/6 API (CS0115)
+- [x] FIX: GameTile.cs — **ИСПРАВЛЕНО**: Возвращён ITilemap (предыдущий диагноз «ITilemap→Tilemap для Unity 6» был ОШИБОЧНЫМ)
 - [x] FIX TIL-H02: TileSystem.DamageType → TileDamageType (устранение CS0104 конфликта с Core.DamageType)
 - [x] FIX CORE-H01: Core.TerrainType → BiomeType (устранение CS0104 конфликта с TileSystem.TerrainType)
 - [x] FIX TIL-H01: ResourcePickup.TryAddToInventory() — реальный вызов InventoryController.AddItem()
@@ -26,9 +26,11 @@
 ## Технические детали
 
 ### GameTile.cs (CS0115)
-- Unity 6 (2023.2+) использует `Tilemap` вместо `ITilemap` в `GetTileData()`
-- Добавлена #if директива для совместимости с обеими версиями Unity API
-- Полная квалификация `UnityEngine.Tilemaps.TileData` для избежания конфликта с `CultivationGame.TileSystem.TileData`
+- **ВАЖНО:** Предыдущий диагноз «ITilemap→Tilemap для Unity 6 API» был **ОШИБОЧНЫМ**
+- Unity 6000.3 `TileBase.GetTileData()` использует `ITilemap`, НЕ `Tilemap`
+- Замена ITilemap→Tilemap САМА являлась причиной CS0115, а не решением
+- Исправлено: возвращён `ITilemap` + полная квалификация `UnityEngine.Tilemaps.TileData`
+- Все CS0234/CS0246 в DestructibleObjectController и ResourcePickup — каскадные от CS0115
 
 ### DamageType → TileDamageType
 - `CultivationGame.Core.DamageType` (5 значений: Physical, Qi, Elemental, Pure, Void) — оставлен для боевой системы
