@@ -49,8 +49,8 @@ namespace CultivationGame.Data.ScriptableObjects
         [Tooltip("Тип локации")]
         public LocationType locationType;
         
-        [Tooltip("Тип местности")]
-        public TerrainType terrainType;
+        [Tooltip("Тип местности (биом)")]
+        public BiomeType terrainType;
         
         [Tooltip("Родительская локация (для Area/Building/Room)")]
         public LocationAsset parentLocation;

@@ -2,7 +2,7 @@
 // DestructibleObjectController.cs — Контроллер разрушаемых объектов
 // Cultivation World Simulator
 // Создано: 2026-04-08
-// Редактировано: 2026-04-11 07:59:15 UTC — Проверены using (Core для ServiceLocator — OK). CS0234 были каскадными от GameTile.cs CS0115
+// Редактировано: 2026-04-11 08:24:40 UTC — FIX TIL-H02: DamageType→TileDamageType (конфликт с Core.DamageType)
 // ============================================================================
 
 using System;
@@ -35,7 +35,7 @@ namespace CultivationGame.TileSystem
         
         // === Events ===
         /// <summary>Событие при нанесении урона объекту.</summary>
-        public event Action<Vector2Int, TileObjectData, int, DamageType> OnObjectDamaged;
+        public event Action<Vector2Int, TileObjectData, int, TileDamageType> OnObjectDamaged;
         
         /// <summary>Событие при разрушении объекта.</summary>
         public event Action<DestructionInfo> OnObjectDestroyed;
@@ -97,7 +97,7 @@ namespace CultivationGame.TileSystem
         /// <param name="damage">Количество урона.</param>
         /// <param name="damageType">Тип урона.</param>
         /// <returns>Фактически нанесённый урон. -1 если объект не найден.</returns>
-        public int DamageObjectAtTile(int tileX, int tileY, int damage, DamageType damageType = DamageType.Physical)
+        public int DamageObjectAtTile(int tileX, int tileY, int damage, TileDamageType damageType = TileDamageType.Physical)
         {
             var tile = tileMapController?.GetTile(tileX, tileY);
             if (tile == null || tile.objects.Count == 0)
@@ -128,7 +128,7 @@ namespace CultivationGame.TileSystem
         /// <summary>
         /// Нанести урон объекту по мировым координатам.
         /// </summary>
-        public int DamageObjectAtWorld(Vector2 worldPos, int damage, DamageType damageType = DamageType.Physical)
+        public int DamageObjectAtWorld(Vector2 worldPos, int damage, TileDamageType damageType = TileDamageType.Physical)
         {
             if (tileMapController?.MapData == null)
                 return -1;
@@ -196,7 +196,7 @@ namespace CultivationGame.TileSystem
             Debug.Log($"[DestructibleObjectController] Cached {objectsByPosition.Count} destructible objects");
         }
         
-        private void ScheduleDestruction(TileData tile, int tileX, int tileY, TileObjectData obj, DamageType damageType, int finalDamage)
+        private void ScheduleDestruction(TileData tile, int tileX, int tileY, TileObjectData obj, TileDamageType damageType, int finalDamage)
         {
             Vector2 worldPos = tile.GetWorldPosition();
             

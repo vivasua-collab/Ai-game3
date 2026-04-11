@@ -3,7 +3,7 @@
 // Cultivation World Simulator
 // Версия: 1.0
 // Создано: 2026-03-31 10:51:29 UTC
-// Редактировано: 2026-03-31 10:51:29 UTC
+// Редактировано: 2026-04-11 08:28:36 UTC — FIX NPC-M02: #pragma warning для устаревшего Disposition
 // ============================================================================
 //
 // Демонстрация полной сборки NPC 6-го уровня:
@@ -62,7 +62,9 @@ namespace CultivationGame.Examples
             // === Combat ===
             public int baseDamage;
             public int baseDefense;
+#pragma warning disable CS0612 // Disposition устарел, используется для обратной совместимости
             public Disposition disposition;
+#pragma warning restore CS0612
             public float aggressionLevel;
 
             // === Equipment ===
@@ -133,7 +135,9 @@ namespace CultivationGame.Examples
             npc.conductivity = generatedNPC.conductivity;
             npc.baseDamage = generatedNPC.baseDamage;
             npc.baseDefense = generatedNPC.baseDefense;
+#pragma warning disable CS0612 // Disposition устарел
             npc.disposition = generatedNPC.baseDisposition;
+#pragma warning restore CS0612
             npc.aggressionLevel = generatedNPC.aggressionLevel;
 
             // Qi Density = 2^(level-1) = 2^5 = 32
@@ -293,7 +297,9 @@ namespace CultivationGame.Examples
             sb.AppendLine($"║ ID: {npc.id}");
             sb.AppendLine($"║ Качество ядра: {npc.coreQuality}");
             sb.AppendLine($"║ Категория: {npc.category}");
+#pragma warning disable CS0612 // Disposition устарел
             sb.AppendLine($"║ Характер: {npc.disposition}");
+#pragma warning restore CS0612
             sb.AppendLine($"║ Агрессивность: {npc.aggressionLevel:P0}");
 
             // Stats

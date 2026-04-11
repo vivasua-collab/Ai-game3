@@ -2,24 +2,27 @@
 // ResourcePickup.cs — Подбираемый ресурс
 // Cultivation World Simulator
 // Создано: 2026-04-08
-// Редактировано: 2026-04-11 07:59:15 UTC — Проверены using (Core для ServiceLocator, Inventory для InventoryController — OK). CS0234 были каскадными от GameTile.cs CS0115
+// Редактировано: 2026-04-11 08:27:05 UTC — FIX TIL-H01: Реальная интеграция с InventoryController.AddItem()
 // ============================================================================
 
 using System;
 using UnityEngine;
-using CultivationGame.Core; // FIX TIL-H01: ServiceLocator для инвентаря (2026-04-11)
-using CultivationGame.Inventory; // FIX TIL-H01: Интеграция с инвентарём (2026-04-11)
+using CultivationGame.Core; // ServiceLocator
+using CultivationGame.Inventory; // InventoryController
+using CultivationGame.Data.ScriptableObjects; // ItemData
 
 namespace CultivationGame.TileSystem
 {
     /// <summary>
     /// Подбираемый ресурс на карте.
+    /// FIX TIL-H01: Теперь реально добавляет предметы в InventoryController.
     /// </summary>
     public class ResourcePickup : MonoBehaviour
     {
         [Header("Data")]
         [SerializeField] private string resourceId;
         [SerializeField] private int amount = 1;
+        [SerializeField] private ItemData itemData; // FIX TIL-H01: Ссылка на ItemData для AddItem (2026-04-11)
         
         [Header("Settings")]
         [SerializeField] private float pickupRadius = 0.5f;
@@ -73,7 +76,7 @@ namespace CultivationGame.TileSystem
         // === Public API ===
         
         /// <summary>
-        /// Инициализироватьpickup.
+        /// Инициализировать pickup.
         /// </summary>
         public void Initialize(string resourceId, int amount)
         {
@@ -82,6 +85,16 @@ namespace CultivationGame.TileSystem
             
             // Обновить имя объекта
             gameObject.name = $"Drop_{resourceId}_x{amount}";
+        }
+        
+        /// <summary>
+        /// Инициализировать pickup с ItemData.
+        /// FIX TIL-H01: Перегрузка с ItemData для реального добавления в инвентарь. (2026-04-11)
+        /// </summary>
+        public void Initialize(string resourceId, int amount, ItemData data)
+        {
+            Initialize(resourceId, amount);
+            this.itemData = data;
         }
         
         /// <summary>
@@ -119,29 +132,77 @@ namespace CultivationGame.TileSystem
             }
         }
         
+        /// <summary>
+        /// FIX TIL-H01: Реальное добавление предмета в InventoryController. (2026-04-11)
+        /// Приоритет: ItemData из поля → поиск через ServiceLocator → fallback (лог + подбор).
+        /// </summary>
         private bool TryAddToInventory(GameObject picker)
         {
-            // FIX TIL-H01: Интеграция с InventoryController вместо TODO (2026-04-11)
             var inventory = picker.GetComponent<InventoryController>();
-            if (inventory != null)
+            if (inventory == null)
             {
-                // Используем AddItem через ItemData — нужен поиск в базе данных
-                // Для ресурсов без ItemData: используем RemoveItemById как маркер
-                Debug.Log($"[ResourcePickup] Adding to inventory: {resourceId} x{amount}");
-                return true; // Успешно — инвентарь доступен
+                // Fallback: ServiceLocator
+                inventory = ServiceLocator.Get<InventoryController>();
             }
             
-            // Fallback: ServiceLocator
-            var invService = ServiceLocator.Get<InventoryController>();
-            if (invService != null)
+            if (inventory != null && itemData != null)
             {
-                Debug.Log($"[ResourcePickup] Adding to inventory (ServiceLocator): {resourceId} x{amount}");
-                return true;
+                // Основной путь: есть ItemData — вызываем AddItem
+                var slot = inventory.AddItem(itemData, amount);
+                if (slot != null)
+                {
+                    Debug.Log($"[ResourcePickup] Добавлено в инвентарь: {resourceId} x{amount} (слот {slot.SlotId})");
+                    return true;
+                }
+                else
+                {
+                    Debug.LogWarning($"[ResourcePickup] Инвентарь полон, нельзя добавить: {resourceId} x{amount}");
+                    return false;
+                }
             }
-
-            // Нет инвентаря — всё равно подбираем (временно)
-            Debug.Log($"[ResourcePickup] No InventoryController found for {picker.name}. Item dropped: {resourceId} x{amount}");
+            
+            if (inventory != null && itemData == null)
+            {
+                // ItemData не назначен — попробовать найти по resourceId через все ItemData в ресурсах
+                var foundItem = FindItemDataById(resourceId);
+                if (foundItem != null)
+                {
+                    itemData = foundItem;
+                    var slot = inventory.AddItem(itemData, amount);
+                    if (slot != null)
+                    {
+                        Debug.Log($"[ResourcePickup] Добавлено в инвентарь (найден ItemData): {resourceId} x{amount}");
+                        return true;
+                    }
+                }
+                
+                // ItemData не найден — ресурсы типа "wood"/"stone" без ScriptableObject
+                Debug.LogWarning($"[ResourcePickup] ItemData не найден для '{resourceId}'. Предмет подобран, но не добавлен в слоты инвентаря. Назначьте ItemData в Inspector или создайте ItemData для этого ресурса.");
+                return true; // Предмет всё равно подбирается (для игрового процесса)
+            }
+            
+            // Нет инвентаря вообще — всё равно подбираем
+            Debug.Log($"[ResourcePickup] Нет InventoryController у {picker.name}. Предмет подобран: {resourceId} x{amount}");
             return true;
+        }
+        
+        /// <summary>
+        /// FIX TIL-H01: Поиск ItemData по resourceId через Resources. (2026-04-11)
+        /// Загружает все ItemData из папки Resources/Items.
+        /// </summary>
+        private ItemData FindItemDataById(string id)
+        {
+            if (string.IsNullOrEmpty(id)) return null;
+            
+            // Попробовать загрузить из Resources по имени
+            var items = Resources.LoadAll<ItemData>("Items");
+            foreach (var item in items)
+            {
+                if (item != null && item.itemId == id)
+                    return item;
+            }
+            
+            return null;
         }
         
         // === Gizmos ===

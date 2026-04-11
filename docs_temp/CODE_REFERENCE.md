@@ -1,5 +1,5 @@
 # CODE_REFERENCE — Cultivation World Simulator
-> Генерировано: 2026-04-11 08:00:00 UTC  
+> Генерировано: 2026-04-11 08:29:17 UTC  
 > Проект: CultivationGame (namespace `CultivationGame.*`)  
 > Путь: `Assets/Scripts/`
 
@@ -276,14 +276,14 @@
 
 #### `DestructibleObjectController` (MonoBehaviour)
 - **Файл:** Tile/DestructibleObjectController.cs
-- **Методы:** DamageObjectAtTile(int, int, int, DamageType), DamageObjectAtWorld(Vector2, int, DamageType), GetObjectAtTile(int, int), GetObjectDurability(int, int), IsDestructible(int, int)
+- **Методы:** DamageObjectAtTile(int, int, int, TileDamageType), DamageObjectAtWorld(Vector2, int, TileDamageType), GetObjectAtTile(int, int), GetObjectDurability(int, int), IsDestructible(int, int)
 - **События:** OnObjectDamaged, OnObjectDestroyed, OnResourceDropped
 - **Cross-refs:** TileMapController, ServiceLocator, ResourcePickup, TileObjectDestructibleExtensions
 
 #### `IDestructible` (interface)
 - **Файл:** Tile/DestructibleSystem.cs
 - **Свойства:** CurrentDurability, MaxDurability, IsDestroyed
-- **Методы:** TakeDamage(int, DamageType), Repair(int)
+- **Методы:** TakeDamage(int, TileDamageType), Repair(int)
 - **События:** OnDamageTaken, OnDestroyed
 
 #### `ResourcePickup` (MonoBehaviour)
@@ -637,7 +637,7 @@
 | `AwakeningType` | None, Natural, Guided, Artifact, Forced | — | GameConstants (AwakeningTypeMultipliers) |
 | `CoreQuality` | Fragmented=1, Cracked=2, Flawed=3, Normal=4, Refined=5, Perfect=6, Transcendent=7 | — | QiController |
 | `Element` | Neutral, Fire, Water, Earth, Air, Lightning, Void, Poison | — | DamageCalculator, GameConstants (OppositeElements), TechniqueData |
-| `DamageType` ⚠️ | Physical, Qi, Elemental, Pure, Void | — | DestructibleObjectController, DestructibleSystem (ДУБЛИРОВАН в TileSystem!) |
+| `DamageType` | Physical, Qi, Elemental, Pure, Void | — | CombatUI (единственный потребитель в Core) |
 | `TechniqueType` | Combat, Cultivation, Defense, Support, Healing, Movement, Sensory, Curse, Poison, Formation | — | TechniqueCapacity, TechniqueData, GameConstants |
 | `CombatSubtype` | None, MeleeStrike, MeleeWeapon, RangedProjectile, RangedBeam, RangedAoe, DefenseBlock, DefenseShield, DefenseDodge | — | DamageCalculator, TechniqueCapacity, HitDetector |
 | `TechniqueGrade` | Common, Refined, Perfect, Transcendent | — | TechniqueCapacity, GameConstants |
@@ -659,7 +659,7 @@
 | `PersonalityTrait` | None=0, Aggressive=1, Cautious=2, Treacherous=4, Ambitious=8, Loyal=16, Pacifist=32, Curious=64, Vengeful=128 | **[Flags]** | NPCData, NPCAI, InteractionController |
 | `FactionRelationType` | Ally, Enemy, Neutral, Vassal, Overlord, Rival | — | FactionData |
 | `LocationType` | Region, Area, Building, Room, Dungeon, Secret | — | LocationData |
-| `TerrainType` ⚠️ | Mountains, Plains, Forest, Sea, Desert, Swamp, Tundra, Jungle, Volcanic, Spiritual | — | GameConstants, TileData (ДУБЛИРОВАН в TileSystem!) |
+| `BiomeType` | Mountains, Plains, Forest, Sea, Desert, Swamp, Tundra, Jungle, Volcanic, Spiritual | — | LocationAsset, LocationController (переименован из TerrainType, FIX CORE-H01 2026-04-11) |
 | `BuildingType` | House, Shop, Temple, Cave, Tower, SectHQ, Dojo, Forge, AlchemyLab, Library | — | LocationData |
 | `TimeSpeed` | Paused, Normal, Fast, VeryFast | — | TimeController, GameConstants, GameEvents |
 | `TimeOfDay` | Dawn, Morning, Noon, Afternoon, Evening, Night, Midnight | — | TimeController |
@@ -692,11 +692,11 @@
 
 | Enum | Значения | Атрибуты | Используется в |
 |------|----------|----------|----------------|
-| `TerrainType` ⚠️ | None=0, Grass=1, Dirt=2, Stone=3, Water_Shallow=4, Water_Deep=5, Sand=6, Snow=7, Ice=8, Lava=9, Void=10 | — | TileData, TileMapData, TileMapController, GameTile (ДУБЛИРОВАН в Core!) |
+| `TerrainType` | None=0, Grass=1, Dirt=2, Stone=3, Water_Shallow=4, Water_Deep=5, Sand=6, Snow=7, Ice=8, Lava=9, Void=10 | — | TileData, TileMapData, TileMapController, GameTile, TerrainConfig |
 | `TileObjectCategory` | None=0, Vegetation=1, Rock=2, Water=3, Building=4, Furniture=5, Interactive=6, Decoration=7 | — | TileObjectData, GameTile |
 | `TileObjectType` | None=0, Tree_Oak=100, Tree_Pine=101, Tree_Birch=102, Bush=110, Bush_Berry=111, Grass_Tall=120, Flower=121, Rock_Small=200, Rock_Medium=201, Rock_Large=202, Boulder=210, Pond=300, Well=310, Wall_Wood=400, Wall_Stone=401, Door=410, Window=411, Chest=500, Shrine=510, Altar=511, OreVein=520, Herb=530 | — | TileObjectData, DestructibleSystem |
 | `GameTileFlags` | None=0, Passable=1, Swimable=2, Flyable=4, BlocksVision=8, ProvidesCover=16, Interactable=32, Harvestable=64, Dangerous=128 | [System.Flags] | TileData, GameTile |
-| `DamageType` ⚠️ | Physical, Slashing, Piercing, Blunt, Energy, Fire, Explosive | — | IDestructible, DestructibleObjectController, DamageTypeMultipliers (ДУБЛИРОВАН в Core!) |
+| `TileDamageType` | Physical, Slashing, Piercing, Blunt, Energy, Fire, Explosive | — | IDestructible, DestructibleObjectController, DamageTypeMultipliers (переименован из DamageType, FIX TIL-H02 2026-04-11) |
 
 ### CultivationGame.Formation
 
@@ -820,8 +820,8 @@
 
 | Имя типа | Namespace 1 | Namespace 2 | Описание |
 |----------|-------------|-------------|----------|
-| **`DamageType`** | `CultivationGame.Core` | `CultivationGame.TileSystem` | Core: Physical, Qi, Elemental, Pure, Void. TileSystem: Physical, Slashing, Piercing, Blunt, Energy, Fire, Explosive. **Разные наборы значений!** |
-| **`TerrainType`** | `CultivationGame.Core` | `CultivationGame.TileSystem` | Core: Mountains, Plains, Forest, Sea, Desert, Swamp, Tundra, Jungle, Volcanic, Spiritual. TileSystem: None=0, Grass=1, Dirt=2, Stone=3, Water_Shallow=4, Water_Deep=5, Sand=6, Snow=7, Ice=8, Lava=9, Void=10. **Разные наборы значений!** |
+| **`DamageType`** → РАЗРЕШЕНО | `CultivationGame.Core` (DamageType) | `CultivationGame.TileSystem` (TileDamageType) | Core: Physical, Qi, Elemental, Pure, Void. TileSystem→TileDamageType: Physical, Slashing, Piercing, Blunt, Energy, Fire, Explosive. **FIX TIL-H02 2026-04-11: TileSystem.DamageType→TileDamageType** |
+| **`TerrainType`** → РАЗРЕШЕНО | `CultivationGame.Core` (BiomeType) | `CultivationGame.TileSystem` (TerrainType) | Core→BiomeType: Mountains, Plains, Forest, Sea, Desert, Swamp, Tundra, Jungle, Volcanic, Spiritual. TileSystem: None=0, Grass=1, Dirt=2, Stone=3, Water_Shallow=4, Water_Deep=5, Sand=6, Snow=7, Ice=8, Lava=9, Void=10. **FIX CORE-H01 2026-04-11: Core.TerrainType→BiomeType** |
 | **`FactionType`** | `CultivationGame.Data.ScriptableObjects` | `CultivationGame.World` | Одинаковые значения: Sect, Clan, Guild, Organization, Empire. FactionData.cs — SO-данные, FactionController.cs — runtime-логика |
 | **`FactionRank`** | `CultivationGame.Data.ScriptableObjects` | `CultivationGame.World` | FactionData.FactionRank (inner class) vs FactionController.FactionRank (enum). **Разные типы!** |
 | **`FormationType`** | `CultivationGame.Data.ScriptableObjects.FormationCoreData` | `CultivationGame.Formation.FormationData` | FormationCoreData: Attack, Defense, Support, Control. FormationData: (те же). |
@@ -834,8 +834,8 @@
 
 ### Рекомендации по разрешению
 
-1. **`DamageType`**: Core.DamageType → переименовать в `CombatDamageType`; TileSystem.DamageType → `TileDamageType` или `DestructionDamageType`
-2. **`TerrainType`**: Core.TerrainType → переименовать в `BiomeType` (региональный тип); TileSystem.TerrainType → оставить как есть (тип поверхности)
+1. ~~**`DamageType`**~~: ✅ РАЗРЕШЕНО 2026-04-11 — TileSystem.DamageType → `TileDamageType` (FIX TIL-H02)
+2. ~~**`TerrainType`**~~: ✅ РАЗРЕШЕНО 2026-04-11 — Core.TerrainType → `BiomeType` (FIX CORE-H01)
 3. **`FactionType`/`FactionRank`**: Удалить из World.FactionController, использовать Data.ScriptableObjects
 4. **`FormationType`/`BuffType`**: Удалить из FormationData, использовать FormationCoreData
 5. **`EffectType`**: TechniqueData.EffectType → `TechniqueEffectType`; TechniqueEffectFactory.EffectType → `VisualEffectType`

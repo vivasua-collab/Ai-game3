@@ -530,9 +530,11 @@ namespace CultivationGame.Core
     }
     
     /// <summary>
-    /// Тип местности
+    /// Тип биома (мировая местность).
+    /// FIX CORE-H01: Переименован из TerrainType в BiomeType для устранения
+    /// конфликта с TileSystem.TerrainType (CS0104). (2026-04-11)
     /// </summary>
-    public enum TerrainType
+    public enum BiomeType
     {
         Mountains,      // Горы
         Plains,         // Равнины

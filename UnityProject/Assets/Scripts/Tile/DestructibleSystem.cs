@@ -2,7 +2,7 @@
 // DestructibleSystem.cs — Система разрушаемости объектов
 // Cultivation World Simulator
 // Создано: 2026-04-08
-// Версия: 1.0 — Unity 6.3 совместимость
+// Редактировано: 2026-04-11 08:23:43 UTC — FIX TIL-H02: DamageType→TileDamageType (устранение CS0104 конфликта с Core.DamageType)
 // ============================================================================
 
 using System;
@@ -29,22 +29,24 @@ namespace CultivationGame.TileSystem
         /// <param name="damage">Количество урона.</param>
         /// <param name="damageType">Тип урона.</param>
         /// <returns>Фактически нанесённый урон.</returns>
-        int TakeDamage(int damage, DamageType damageType = DamageType.Physical);
+        int TakeDamage(int damage, TileDamageType damageType = TileDamageType.Physical);
         
         /// <summary>Восстановить прочность.</summary>
         void Repair(int amount);
         
         /// <summary>Событие при получении урона.</summary>
-        event Action<int, DamageType> OnDamageTaken;
+        event Action<int, TileDamageType> OnDamageTaken;
         
         /// <summary>Событие при разрушении.</summary>
         event Action<DestructionInfo> OnDestroyed;
     }
 
     /// <summary>
-    /// Тип урона для расчёта эффективности разрушения.
+    /// Тип урона для расчёта эффективности разрушения тайлов.
+    /// FIX TIL-H02: Переименован из DamageType в TileDamageType для устранения
+    /// конфликта с Core.DamageType (CS0104). (2026-04-11)
     /// </summary>
-    public enum DamageType
+    public enum TileDamageType
     {
         Physical,       // Физический урон (кулаки, blunt weapons)
         Slashing,       // Рубящий урон (мечи, топоры) — эффективен против деревьев
@@ -65,11 +67,11 @@ namespace CultivationGame.TileSystem
         public TileObjectType ObjectType;
         public Vector2Int TilePosition;
         public Vector2 WorldPosition;
-        public DamageType FinalDamageType;
+        public TileDamageType FinalDamageType;
         public int FinalDamage;
         public List<ResourceDrop> ResourceDrops;
 
-        public DestructionInfo(TileObjectData obj, Vector2Int tilePos, Vector2 worldPos, DamageType damageType, int damage)
+        public DestructionInfo(TileObjectData obj, Vector2Int tilePos, Vector2 worldPos, TileDamageType damageType, int damage)
         {
             ObjectId = obj.objectId;
             ObjectType = obj.objectType;
@@ -105,37 +107,37 @@ namespace CultivationGame.TileSystem
     public static class DamageTypeMultipliers
     {
         // Эффективность типов урона по категориям объектов
-        private static readonly Dictionary<(TileObjectCategory category, DamageType damageType), float> multipliers = new()
+        private static readonly Dictionary<(TileObjectCategory category, TileDamageType damageType), float> multipliers = new()
         {
             // Vegetation (деревья, кусты) — слабы к рубящему и огню
-            { (TileObjectCategory.Vegetation, DamageType.Slashing), 2.0f },
-            { (TileObjectCategory.Vegetation, DamageType.Fire), 3.0f },
-            { (TileObjectCategory.Vegetation, DamageType.Blunt), 0.5f },
-            { (TileObjectCategory.Vegetation, DamageType.Piercing), 0.3f },
+            { (TileObjectCategory.Vegetation, TileDamageType.Slashing), 2.0f },
+            { (TileObjectCategory.Vegetation, TileDamageType.Fire), 3.0f },
+            { (TileObjectCategory.Vegetation, TileDamageType.Blunt), 0.5f },
+            { (TileObjectCategory.Vegetation, TileDamageType.Piercing), 0.3f },
             
             // Rock (камни, руда) — слабы к дробящему
-            { (TileObjectCategory.Rock, DamageType.Blunt), 2.0f },
-            { (TileObjectCategory.Rock, DamageType.Explosive), 2.5f },
-            { (TileObjectCategory.Rock, DamageType.Slashing), 0.3f },
-            { (TileObjectCategory.Rock, DamageType.Piercing), 0.2f },
+            { (TileObjectCategory.Rock, TileDamageType.Blunt), 2.0f },
+            { (TileObjectCategory.Rock, TileDamageType.Explosive), 2.5f },
+            { (TileObjectCategory.Rock, TileDamageType.Slashing), 0.3f },
+            { (TileObjectCategory.Rock, TileDamageType.Piercing), 0.2f },
             
             // Building (стены, постройки) — слабы к дробящему и взрывному
-            { (TileObjectCategory.Building, DamageType.Blunt), 1.5f },
-            { (TileObjectCategory.Building, DamageType.Explosive), 2.0f },
+            { (TileObjectCategory.Building, TileDamageType.Blunt), 1.5f },
+            { (TileObjectCategory.Building, TileDamageType.Explosive), 2.0f },
             
             // Interactive (сундуки, алтари)
-            { (TileObjectCategory.Interactive, DamageType.Physical), 1.0f },
-            { (TileObjectCategory.Interactive, DamageType.Energy), 1.5f },
+            { (TileObjectCategory.Interactive, TileDamageType.Physical), 1.0f },
+            { (TileObjectCategory.Interactive, TileDamageType.Energy), 1.5f },
             
             // Furniture (мебель)
-            { (TileObjectCategory.Furniture, DamageType.Slashing), 1.5f },
-            { (TileObjectCategory.Furniture, DamageType.Fire), 2.0f },
+            { (TileObjectCategory.Furniture, TileDamageType.Slashing), 1.5f },
+            { (TileObjectCategory.Furniture, TileDamageType.Fire), 2.0f },
         };
 
         /// <summary>
         /// Получить множитель урона для типа объекта.
         /// </summary>
-        public static float GetMultiplier(TileObjectCategory category, DamageType damageType)
+        public static float GetMultiplier(TileObjectCategory category, TileDamageType damageType)
         {
             var key = (category, damageType);
             return multipliers.TryGetValue(key, out float multiplier) ? multiplier : 1.0f;
@@ -150,7 +152,7 @@ namespace CultivationGame.TileSystem
         /// <summary>
         /// Нанести урон объекту.
         /// </summary>
-        public static int ApplyDamage(this TileObjectData obj, int baseDamage, DamageType damageType)
+        public static int ApplyDamage(this TileObjectData obj, int baseDamage, TileDamageType damageType)
         {
             // Получить множитель для типа урона
             float multiplier = DamageTypeMultipliers.GetMultiplier(obj.category, damageType);

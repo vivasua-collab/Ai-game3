@@ -23,7 +23,7 @@ namespace CultivationGame.World
         public string LocationName;
         public string ParentLocationId;    // Для вложенных локаций
         public LocationType Type;
-        public TerrainType Terrain;
+        public BiomeType Terrain;  // FIX CORE-H01: TerrainType→BiomeType (2026-04-11)
         public BuildingType? BuildingType;
         
         [TextArea(2, 4)]
@@ -278,20 +278,21 @@ namespace CultivationGame.World
             return Mathf.Max(30f, baseTime);
         }
         
-        private float GetTerrainModifier(TerrainType terrain)
+        // FIX CORE-H01: TerrainType→BiomeType (2026-04-11)
+        private float GetTerrainModifier(BiomeType terrain)
         {
             return terrain switch
             {
-                TerrainType.Plains => 0f,
-                TerrainType.Forest => 0.2f,
-                TerrainType.Mountains => 0.5f,
-                TerrainType.Swamp => 0.4f,
-                TerrainType.Desert => 0.3f,
-                TerrainType.Jungle => 0.3f,
-                TerrainType.Tundra => 0.3f,
-                TerrainType.Volcanic => 0.6f,
-                TerrainType.Sea => 0.8f,
-                TerrainType.Spiritual => 0.1f,
+                BiomeType.Plains => 0f,
+                BiomeType.Forest => 0.2f,
+                BiomeType.Mountains => 0.5f,
+                BiomeType.Swamp => 0.4f,
+                BiomeType.Desert => 0.3f,
+                BiomeType.Jungle => 0.3f,
+                BiomeType.Tundra => 0.3f,
+                BiomeType.Volcanic => 0.6f,
+                BiomeType.Sea => 0.8f,
+                BiomeType.Spiritual => 0.1f,
                 _ => 0f
             };
         }
