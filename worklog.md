@@ -623,3 +623,41 @@ Stage Summary:
 - КОРНЕВАЯ ПРИЧИНА CS0115: конфликт имён TileData, а НЕ ITilemap vs Tilemap
 - Аналогичный конфликт с TileFlags уже решён переименованием в GameTileFlags
 - Чекпоинт: checkpoints/04_11_gametile_fix_verified_docs.md
+
+---
+Task ID: docs-asset-setup-update
+Agent: Main Agent
+Task: Чтение и обновление docs_asset_setup/ актуальными данными после Fix-01..Fix-13
+
+Work Log:
+- 2026-04-11 16:07 UTC: Начало — прочитан START_PROMPT.md, worklog, README.md
+- Прочитаны все 17 файлов docs_asset_setup/ + соответствующие ScriptableObject файлы кода
+- Сравнение типов полей в документации с текущим кодом
+- Найдены 4 файла с расхождениями:
+
+**01_CultivationLevelData.md:**
+- Поле regenerationMultiplier указано в доке, но УДАЛЕНО из CultivationLevelData.cs
+- Убрано из всех 10 блоков Body Effects + из сводной таблицы
+- Добавлено предупреждение о причине удаления
+
+**02_MortalStageData.md:**
+- minQiCapacity/maxQiCapacity: int → long (DAT-M05)
+- GetRandomQiCapacity(): int → long
+- GetCoreFormationForAge(): добавлен guard maxAge <= minAge (DAT-C03)
+
+**06_TechniqueData.md:**
+- baseQiCost: int → long (DAT-H01)
+
+**14_FormationData.md:**
+- contourQiOverride: int → long
+- tickInterval: int → float
+- Добавлено contourQiOverride: 0 (авто) в примеры формаций
+- Версия обновлена до 1.1
+
+- 2026-04-11 16:11 UTC: Коммит e86e2d4, push success
+- Чекпоинт: checkpoints/04_11_docs_asset_setup_update.md
+
+Stage Summary:
+- 5 файлов обновлено (01, 02, 06, 14, README)
+- 12 файлов без изменений (03, 07-13, 15-16, все SemiAuto) — уже актуальны
+- Документация синхронизирована с кодом после миграции Qi int→long
