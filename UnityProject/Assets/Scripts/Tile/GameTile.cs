@@ -2,7 +2,7 @@
 // GameTile.cs — Пользовательский тайл для Tilemap
 // Cultivation World Simulator
 // Создано: 2026-04-07 14:24:05 UTC
-// Редактировано: 2026-04-10 05:50:00 UTC — FIX: ITilemap → Tilemap (Unity 6.3 API)
+// Редактировано: 2026-04-11 05:37:40 UTC — FIX: Tilemap→ITilemap (Unity 6 TileBase.GetTileData signature)
 // ============================================================================
 
 using UnityEngine;
@@ -32,7 +32,7 @@ namespace CultivationGame.TileSystem
         [Header("Flags")]
         public GameTileFlags flags = GameTileFlags.Passable;
 
-        public override void GetTileData(Vector3Int position, Tilemap tilemap, ref TileData tileData)
+        public override void GetTileData(Vector3Int position, ITilemap tilemap, ref TileData tileData)
         {
             tileData.sprite = sprite;
             tileData.color = color;
