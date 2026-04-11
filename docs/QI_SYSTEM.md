@@ -1,7 +1,7 @@
 # ⚡ Система Ци: Unity Migration
 
-**Версия:** 1.1  
-**Дата:** 2026-04-07  
+**Версия:** 1.2  
+**Дата:** 2026-04-11 (обновлено)  
 **Статус:** 📋 Черновик для доработки  
 **Источники:** start_lore.md, technique-system-v2.md, body_review.md, PERK_SYSTEM.md
 
@@ -56,8 +56,8 @@
 │   │                    ЯДРО ПРАКТИКА                                    │   │
 │   │                                                                      │   │
 │   │   Core                                                               │   │
-│   │   ├── currentQi: int          // Текущее количество Ци              │   │
-│   │   ├── maxQi: int              // Максимальная ёмкость                │   │
+│   │   ├── currentQi: long         // Текущее количество Ци (long с Fix-01)     │   │
+│   │   ├── maxQi: long              // Максимальная ёмкость (long с Fix-01)     │   │
 │   │   ├── density: int            // Плотность (по уровню)              │   │
 │   │   ├── quality: float          // Качество ядра                      │   │
 │   │   └── conductivity: float     // Проводимость меридиан               │   │
@@ -294,15 +294,32 @@ absorbedQi = meditationTime × conductivity × environmentMultiplier
 
 ---
 
-## 🔄 Прорыв уровня
+## 🔄 Прорыв уровня (Модель В — Растущий резервуар + Сжатие Ци)
+
+> **Решение принято:** 2026-04-10 — Модель В выбрана как основная.
+>
+> Ключевое отличие от первоначальной модели: прорыв требует накопить Ци,
+> равное capacity(nextLevel) × density(nextLevel), а после прорыва currentQi = 0.
 
 ### Условия
 
-**Малый уровень:**
-- Накопить: coreCapacity × 10 единиц Ци
+**Малый прорыв (под-уровень):**
+- Накопить: `capacity(nextSubLevel) × qiDensity(nextSubLevel)` единиц Ци
 
-**Большой уровень:**
-- Накопить: coreCapacity × 100 единиц Ци
+**Большой прорыв (уровень):**
+- Накопить: `capacity(nextLevel) × qiDensity(nextLevel)` единиц Ци
+
+### Формулы Модели В
+
+```
+coreCapacity = 1000 × 1.1^totalSubLevels × qualityMultiplier
+qiDensity = 2^(level-1)
+effectiveQi = coreCapacity × qiDensity
+conductivity = coreCapacity / 360
+
+Требование прорыва = capacity(nextLevel) × density(nextLevel)
+После прорыва: currentQi = 0 (ядро перестраивается)
+```
 
 ### Процесс
 

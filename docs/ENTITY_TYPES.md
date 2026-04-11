@@ -1,7 +1,7 @@
 # 👻 Иерархия типов сущностей
 
-**Версия:** 1.0
-**Дата:** 2026-04-01
+**Версия:** 1.1
+**Дата:** 2026-04-11 (обновлено)
 **Статус:** 📋 Теоретический документ
 **Источник:** soul-system.md (адаптация для Unity)
 
@@ -250,7 +250,12 @@
 **Mind (опционально):**
 - Тип сознания (full, instinct, simple)
 - Личность (для character)
+  - **Attitude** (числовое -100..+100) — замена устаревшего Disposition
+  - **PersonalityTrait [Flags]** — черты характера (Aggressive, Cautious, Treacherous, Ambitious, Loyal, Pacifist, Curious, Vengeful)
 - Память и знания
+
+> **Изменено в Fix-07:** Disposition заменён на Attitude + PersonalityTrait [Flags].
+> См. [NPC_AI_SYSTEM.md](./NPC_AI_SYSTEM.md) — пороги Attitude и описание PersonalityTrait.
 
 ---
 
