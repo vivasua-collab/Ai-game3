@@ -3,10 +3,11 @@
 // Cultivation World Simulator
 // Версия: 1.1 — Fix-02: System.Random→UnityEngine.Random, Clamp01 для шансов
 // Создан: 2026-03-30 10:00:00 UTC
-// Редактировано: 2026-04-10 14:43:00 UTC
+// Редактировано: 2026-04-11 14:50:00 UTC — FIX CS0103: добавлен using UnityEngine; (Mathf)
 // ============================================================================
 
 using System;
+using UnityEngine;
 using CultivationGame.Core;
 
 namespace CultivationGame.Combat

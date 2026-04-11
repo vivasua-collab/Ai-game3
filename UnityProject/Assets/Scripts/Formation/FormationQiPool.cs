@@ -2,7 +2,7 @@
 // FormationQiPool.cs — Ёмкость и утечка Ци формации
 // Cultivation World Simulator
 // Создано: 2026-04-03 13:20:00 UTC
-// Редактировано: 2026-04-11 06:38:02 UTC — FRM-M03: Qi int→long миграция, AcceptQi
+// Редактировано: 2026-04-11 14:50:00 UTC — FIX CS0266: ProcessDrain return cast long→int
 // ============================================================================
 //
 // Источник: docs/FORMATION_SYSTEM.md
@@ -390,7 +390,7 @@ namespace CultivationGame.Formation
                 OnDepleted?.Invoke();
             }
 
-            return actualDrain;
+            return (int)actualDrain; // FIX CS0266: явное преобразование long→int (2026-04-11)
         }
 
         /// <summary>

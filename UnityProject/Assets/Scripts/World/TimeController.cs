@@ -4,7 +4,7 @@
 // Версия: 1.3 — Fix-09: LoadSaveData validation, cascading guard, GetTotalDays accuracy
 // ============================================================================
 // Создано: 2026-03-30 14:00:00 UTC
-// Редактировано: 2026-04-11 UTC
+// Редактировано: 2026-04-11 14:50:00 UTC — FIX CS1503: double→float для totalGameSeconds
 //
 // ИЗМЕНЕНИЯ В ВЕРСИИ 1.2:
 // - FIX: totalGameSeconds теперь увеличивается на 60 за минуту (не на 1)
@@ -530,7 +530,7 @@ namespace CultivationGame.World
             currentDay = Mathf.Clamp(data.Day, 1, daysPerMonth);
             currentHour = Mathf.Clamp(data.Hour, 0, hoursPerDay - 1);
             currentMinute = Mathf.Clamp(data.Minute, 0, minutesPerHour - 1);
-            totalGameSeconds = Mathf.Max(0, data.TotalGameSeconds);
+            totalGameSeconds = Math.Max(0, data.TotalGameSeconds); // FIX CS1503: Math.Max для double (2026-04-11)
             currentTimeSpeed = (TimeSpeed)Mathf.Clamp(data.TimeSpeed, 0, 3);
         }
     }

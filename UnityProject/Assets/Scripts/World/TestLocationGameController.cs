@@ -2,6 +2,7 @@
 // TestLocationGameController.cs — Контроллер тестовой локации
 // Cultivation World Simulator
 // Создано: 2026-04-08 06:17:46 UTC
+// Редактировано: 2026-04-11 14:50:00 UTC — FIX CS1503: FindObjectsByType — добавлен FindObjectsSortMode
 // ============================================================================
 
 using System;
@@ -66,8 +67,8 @@ namespace CultivationGame.World
         private void AutoFindUIElements()
         {
             // Найти UI элементы по именам
-            var allSliders = FindObjectsByType<UnityEngine.UI.Slider>(FindObjectsInactive.Include);
-            var allTexts = FindObjectsByType<TMPro.TMP_Text>(FindObjectsInactive.Include);
+            var allSliders = FindObjectsByType<UnityEngine.UI.Slider>(FindObjectsInactive.Include, FindObjectsSortMode.None); // FIX CS1503 (2026-04-11)
+            var allTexts = FindObjectsByType<TMPro.TMP_Text>(FindObjectsInactive.Include, FindObjectsSortMode.None); // FIX CS1503 (2026-04-11)
             
             foreach (var slider in allSliders)
             {

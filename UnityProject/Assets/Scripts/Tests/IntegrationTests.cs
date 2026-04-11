@@ -2,7 +2,7 @@
 // IntegrationTests.cs — Интеграционные тесты систем
 // Cultivation World Simulator
 // Создано: 2026-04-04
-// Редактировано: 2026-04-11 06:38:02 UTC — Qi int→long миграция в MockCombatant и тестах
+// Редактировано: 2026-04-11 14:50:00 UTC — FIX CS0266: AcceptQi long→int cast
 // Задача: Task ID 2-a — Создание интеграционных тестов
 // ============================================================================
 //
@@ -504,7 +504,7 @@ namespace CultivationGame.Tests
 
                 // === Act ===
                 int transferAmount = 500;
-                int accepted = pool.AcceptQi(transferAmount, transferRate);
+                int accepted = (int)pool.AcceptQi(transferAmount, transferRate); // FIX CS0266 (2026-04-11)
 
                 // Тратим Ци у практика
                 if (accepted > 0)
@@ -748,7 +748,7 @@ namespace CultivationGame.Tests
             FormationQiPool pool = new FormationQiPool(1000, 60, 10, 0f); // 0 conductivity
 
             // === Act ===
-            int accepted = pool.AcceptQi(100, 50f);
+            int accepted = (int)pool.AcceptQi(100, 50f); // FIX CS0266 (2026-04-11)
 
             // === Assert ===
             // Даже с нулевой проводимостью пул должен принять некоторое количество
