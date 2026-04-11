@@ -481,3 +481,25 @@ Stage Summary:
 - All Qi fields, method signatures, return types, and local variables updated
 - Mathf.RoundToInt eliminated from all Qi paths — replaced with (long)Math.Round
 - No remaining int Qi truncation points in the affected files
+
+---
+Task ID: session-resume
+Agent: Main Agent
+Task: Восстановление после сбоя — проверка состояния проекта, пуш, исправление NPC-M05
+
+Work Log:
+- 2026-04-11 06:42 UTC: Прочитан START_PROMPT.md — правила ОБЯЗАТЕЛЬНЫХ меток уже добавлены
+- Проверен git status: 1 незапушенный коммит (55bc83e — метки времени 15 файлов)
+- Проверен git log: все Fix-01..Fix-13 закоммичены и запушены
+- Проверены статусы 13 чекпоинтов: все ✅ complete
+- 2026-04-11 06:45 UTC: Запушен коммит 55bc83e → origin/main
+- 2026-04-11 06:46 UTC: Исправлен NPC-M05 — добавлено поле `age` в GeneratedNPC (NPCGenerator.cs)
+- Обновлён NPCController.InitializeFromGenerated: использует generated.age вместо деривации
+- 2026-04-11 06:47 UTC: Закоммичен и запушен f74bbe5
+
+Stage Summary:
+- Все 13 чекпоинтов выполнены (155/155 задач)
+- NPC-M05 полностью исправлен: GeneratedNPC.age добавлен, NPCController использует его
+- Все коммиты запушены в origin/main
+- Working tree чистый
+- START_PROMPT.md уже содержит ОБЯЗАТЕЛЬНЫЕ правила меток времени и русских комментариев
