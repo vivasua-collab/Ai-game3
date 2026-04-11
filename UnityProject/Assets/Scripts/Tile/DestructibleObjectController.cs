@@ -2,14 +2,14 @@
 // DestructibleObjectController.cs — Контроллер разрушаемых объектов
 // Cultivation World Simulator
 // Создано: 2026-04-08
-// Редактировано: 2026-04-13 08:45:00 UTC — Проверены using (Core для ServiceLocator — OK). CS0234 были каскадными от GameTile.cs CS0115
+// Редактировано: 2026-04-11 07:59:15 UTC — Проверены using (Core для ServiceLocator — OK). CS0234 были каскадными от GameTile.cs CS0115
 // ============================================================================
 
 using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Tilemaps;
-using CultivationGame.Core; // FIX TIL-H01: ServiceLocator (2026-04-12)
+using CultivationGame.Core; // FIX TIL-H01: ServiceLocator (2026-04-11)
 
 namespace CultivationGame.TileSystem
 {
@@ -52,7 +52,7 @@ namespace CultivationGame.TileSystem
         private void Awake()
         {
             if (tileMapController == null)
-                tileMapController = ServiceLocator.GetOrFind<TileMapController>(); // FIX UI-H03 (2026-04-12)
+                tileMapController = ServiceLocator.GetOrFind<TileMapController>(); // FIX UI-H03 (2026-04-11)
         }
         
         private void Start()
@@ -277,7 +277,7 @@ namespace CultivationGame.TileSystem
             if (resourcePickupPrefab != null)
             {
                 var pickup = Instantiate(resourcePickupPrefab, drop.DropPosition, Quaternion.identity);
-                // FIX TIL-H01: Настроить pickup через Initialize() (2026-04-12)
+                // FIX TIL-H01: Настроить pickup через Initialize() (2026-04-11)
                 var pickupComponent = pickup.GetComponent<ResourcePickup>();
                 if (pickupComponent != null)
                 {
@@ -319,7 +319,7 @@ namespace CultivationGame.TileSystem
         
         // NOTE TIL-L02: Texture2D created here is not explicitly tracked/destroyed.
         // It's used in Sprite.Create attached to a GameObject that gets destroyed when picked up.
-        // This is acceptable for short-lived drop visuals, but could leak if objects accumulate. (2026-04-12)
+        // Это допустимо для краткосрочных визуалов дропа, но может течь при накоплении. (2026-04-11)
         private Sprite CreateDropSprite(string resourceId)
         {
             Texture2D texture = new Texture2D(32, 32);

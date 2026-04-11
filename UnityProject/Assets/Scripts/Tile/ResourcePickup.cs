@@ -2,13 +2,13 @@
 // ResourcePickup.cs — Подбираемый ресурс
 // Cultivation World Simulator
 // Создано: 2026-04-08
-// Редактировано: 2026-04-13 08:45:00 UTC — Проверены using (Core для ServiceLocator, Inventory для InventoryController — OK). CS0234 были каскадными от GameTile.cs CS0115
+// Редактировано: 2026-04-11 07:59:15 UTC — Проверены using (Core для ServiceLocator, Inventory для InventoryController — OK). CS0234 были каскадными от GameTile.cs CS0115
 // ============================================================================
 
 using System;
 using UnityEngine;
-using CultivationGame.Core; // FIX TIL-H01: ServiceLocator for Inventory (2026-04-12)
-using CultivationGame.Inventory; // FIX TIL-H01: Inventory integration (2026-04-12)
+using CultivationGame.Core; // FIX TIL-H01: ServiceLocator для инвентаря (2026-04-11)
+using CultivationGame.Inventory; // FIX TIL-H01: Интеграция с инвентарём (2026-04-11)
 
 namespace CultivationGame.TileSystem
 {
@@ -121,7 +121,7 @@ namespace CultivationGame.TileSystem
         
         private bool TryAddToInventory(GameObject picker)
         {
-            // FIX TIL-H01: Интеграция с InventoryController вместо TODO (2026-04-12)
+            // FIX TIL-H01: Интеграция с InventoryController вместо TODO (2026-04-11)
             var inventory = picker.GetComponent<InventoryController>();
             if (inventory != null)
             {
