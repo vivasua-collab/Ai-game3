@@ -118,7 +118,7 @@ Assets/Data/Formations → Create → Folder → "Barrier"
 | value | Значение | 10-100 |
 | isPercentage | В процентах? | ✓ / ✗ |
 | tickValue | Периодическое значение | 0-100 |
-| tickInterval | Интервал тиков | 1-10 |
+| tickInterval | Интервал тиков (сек) | 0-10 (float) |
 | controlType | Тип контроля | Freeze, Slow, Root, Stun, Silence, Blind |
 | controlDuration | Длительность контроля | 1-10 |
 
@@ -136,6 +136,7 @@ size: Medium
 level: 2
 
 contourQi: 160 (авто: 80 × 2^(2-1))
+contourQiOverride: 0 (авто)
 capacity: 8000 (160 × 50)
 effectRadius: 100m
 baseDuration: 300s
@@ -156,6 +157,7 @@ size: Small
 level: 3
 
 contourQi: 320 (авто: 80 × 2^(3-1))
+contourQiOverride: 0 (авто)
 capacity: 3200 (320 × 10)
 effectRadius: 20m
 baseDuration: 600s
@@ -179,6 +181,7 @@ size: Large
 level: 4
 
 contourQi: 640 (авто)
+contourQiOverride: 0 (авто)
 capacity: 128000 (640 × 200)
 effectRadius: 200m
 baseDuration: 180s
@@ -201,6 +204,7 @@ allyEffects:
 ### Стоимость контура
 ```
 contourQi = 80 × 2^(level-1)
+contourQiOverride: long (0 = auto, >0 = override)
 ```
 
 ### Ёмкость формации
@@ -277,4 +281,5 @@ drainAmount (Ци/тик):
 ---
 
 *Инструкция создана: 2026-04-03*
-*Версия: 1.0*
+*Обновлено: 2026-04-11 16:10:00 UTC — contourQiOverride int→long, tickInterval int→float*
+*Версия: 1.1*

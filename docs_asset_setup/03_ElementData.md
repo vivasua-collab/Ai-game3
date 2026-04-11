@@ -74,7 +74,8 @@ public enum Element
     Air,        // 4 — Воздух
     Lightning,  // 5 — Молния
     Void,       // 6 — Пустота
-    Count       // 7 — количество элементов
+    Poison      // 7 — Яд (особая стихия)
+    // FIX CORE-H05: Count убран. Используйте Enum.GetValues(typeof(Element)).Length
 }
 ```
 
@@ -409,6 +410,60 @@ environmentEffects: (пустой список)
 
 ---
 
+## Элемент 7: Poison (Яд)
+
+**Имя файла:** `Element_Poison`
+
+```
+=== Basic Info ===
+elementType: Poison
+nameRu: Яд
+nameEn: Poison
+icon: None
+color: Dark Green (#006400) — R:0 G:100 B:0
+description: Особая стихия яда — отравление, дебаффы. Техники Poison доступны только с element=poison.
+
+=== Relationships ===
+oppositeElement: None
+affinityElements: (пустой список)
+weakToElements: Fire
+
+=== Damage Multipliers ===
+oppositeMultiplier: 1.5
+affinityMultiplier: 0.8
+voidMultiplier: 1.2
+
+=== Effects ===
+possibleEffects: (3 эффекта)
+
+Эффект 1:
+  effectName: poison_dot
+  description: Постоянный урон от отравления (DoT)
+  baseDuration: 15
+  damageMultiplier: 0.08
+  applyChance: 60
+
+Эффект 2:
+  effectName: weaken
+  description: Снижение характеристик врага
+  baseDuration: 10
+  damageMultiplier: 0
+  applyChance: 50
+
+Эффект 3:
+  effectName: corrosion
+  description: Разрушение экипировки (снижение прочности)
+  baseDuration: 8
+  damageMultiplier: 0
+  applyChance: 30
+
+=== Environment ===
+affectsEnvironment: true
+environmentEffects: (пустой список)
+```
+
+---
+
 ## Сводная таблица
 
 | Element | nameRu | Color | Противоположный | Сродство | Уязвим |
@@ -420,15 +475,16 @@ environmentEffects: (пустой список)
 | Air (4) | Воздух | Голубой | Earth | Fire, Lightning | Earth |
 | Lightning (5) | Молния | Золотой | — | Water, Air | Earth |
 | Void (6) | Пустота | Фиолетовый | — | — | — |
+| Poison (7) | Яд | Тёмно-зелёный | — | — | Fire |
 
 ---
 
 ## Диаграмма отношений
 
 ```
-           [Void]
-                      (особый элемент)
-          
+           [Void]              [Poison]
+         (особый элемент)     (особая стихия, только Poison-техники)
+        
 
      Fire ←——✕——→ Water
        ↑           ↑
@@ -440,6 +496,10 @@ environmentEffects: (пустой список)
     Lightning (самостоятельный)
            ↓
       уязвим к Earth
+
+    Poison (самостоятельный)
+           ↓
+      уязвим к Fire
 ```
 
 ---
@@ -455,6 +515,7 @@ environmentEffects: (пустой список)
 | Air | 135 | 206 | 235 | #87CEEB |
 | Lightning | 255 | 215 | 0 | #FFD700 |
 | Void | 75 | 0 | 130 | #4B0082 |
+| Poison | 0 | 100 | 0 | #006400 |
 
 ---
 
@@ -483,4 +544,4 @@ finalDamage = baseDamage × 1.0
 ---
 
 *Документ создан: 2026-03-30*
-*Обновлено: 2026-04-01 — данные синхронизированы с ElementData.cs и Enums.cs*
+*Обновлено: 2026-04-11 15:43:14 UTC — добавлен Poison (8-й элемент), убран Count (CORE-H05)*

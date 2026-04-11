@@ -32,8 +32,8 @@
 ### Qi Capacity
 | Поле | Тип | Описание |
 |------|-----|----------|
-| minQiCapacity | int (1-500) | Мин. ёмкость Ци |
-| maxQiCapacity | int (1-500) | Макс. ёмкость Ци |
+| minQiCapacity | long (1-500) | Мин. ёмкость Ци |
+| maxQiCapacity | long (1-500) | Макс. ёмкость Ци |
 | qiAbsorptionRate | float (0-1) | Поглощение Ци из среды |
 | canRegenerateQi | bool | Может регенерировать Ци |
 
@@ -445,9 +445,9 @@ public float GetRandomCoreFormation()
 
 ### GetRandomQiCapacity()
 ```csharp
-public int GetRandomQiCapacity()
+public long GetRandomQiCapacity() // FIX DAT-M05: int→long (2026-04-11)
 {
-    return UnityEngine.Random.Range(minQiCapacity, maxQiCapacity + 1);
+    return (long)UnityEngine.Random.Range((int)minQiCapacity, (int)maxQiCapacity + 1);
 }
 ```
 
@@ -488,6 +488,8 @@ public float GetCoreFormationForAge(int age)
 {
     if (age < minAge) return minCoreFormation;
     if (age > maxAge) return maxCoreFormation;
+    // FIX DAT-C03: Guard division by zero when maxAge <= minAge (2026-04-11)
+    if (maxAge <= minAge) return minCoreFormation;
 
     float progress = (float)(age - minAge) / (maxAge - minAge);
     return Mathf.Lerp(minCoreFormation, maxCoreFormation, progress);
@@ -497,4 +499,4 @@ public float GetCoreFormationForAge(int age)
 ---
 
 *Документ создан: 2026-03-30*
-*Обновлено: 2026-04-01 — данные синхронизированы с MortalStageData.cs и Enums.cs*
+*Обновлено: 2026-04-11 16:10:00 UTC — minQiCapacity/maxQiCapacity int→long (DAT-M05), GetCoreFormationForAge guard (DAT-C03)*

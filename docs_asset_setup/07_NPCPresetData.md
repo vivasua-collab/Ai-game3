@@ -49,9 +49,34 @@
 ### Relations
 | Поле | Тип | Описание |
 |------|-----|----------|
-| baseDisposition | int (-100..100) | Базовое отношение к игроку |
+| baseDisposition | int (-100..100) | Базовое отношение к игроку (⚠️ устарело, используйте Attitude) |
 | factionId | string | ID фракции |
 | factionRole | string | Роль во фракции |
+
+> **⚠️ Важно (CORE-M01):** Поле `baseDisposition` устарело. В NPCState используется `Attitude` (enum) + `PersonalityTrait` (Flags). При инициализации NPC `baseDisposition` (-100..100) автоматически конвертируется через `NPCState.ValueToAttitude()`.
+
+### Attitude (enum — заменяет Disposition)
+| Значение | Диапазон | Описание |
+|----------|----------|----------|
+| Hatred | -100..-51 | Атака без предупреждения |
+| Hostile | -50..-21 | Атака если спровоцирован |
+| Unfriendly | -20..-10 | Избегание |
+| Neutral | -9..9 | Безразличие |
+| Friendly | 10..49 | Помощь, торговля |
+| Allied | 50..79 | Лояльность |
+| SwornAlly | 80..100 | Самопожертвование |
+
+### PersonalityTrait (Flags — заменяет характер Disposition)
+| Флаг | Значение | Описание |
+|------|----------|----------|
+| Aggressive | 1 | Склонен к атаке |
+| Cautious | 2 | Избегает рисков |
+| Treacherous | 4 | Может предать |
+| Ambitious | 8 | Ищет власть |
+| Loyal | 16 | Не предаёт никогда |
+| Pacifist | 32 | Избегает боя |
+| Curious | 64 | Исследует |
+| Vengeful | 128 | Помнит обиды |
 
 ### Techniques
 | Поле | Тип | Описание |
@@ -335,9 +360,10 @@ courage: 85
 3. **coreCapacity** — должна соответствовать уровню культивации
 4. **beast/tiger/wolf** — не имеют экипировки (equipment: пусто)
 5. **Hostile** — автоматически враждебны к игроку
-6. **baseDisposition** — влияет на начальное отношение (-100..100)
+6. **baseDisposition** — устарело (CORE-M01). Используйте Attitude + PersonalityTrait. Значение -100..100 автоматически конвертируется через `NPCState.ValueToAttitude()`
 
 ---
 
 *Документ создан: 2026-04-01*
+*Обновлено: 2026-04-11 15:43:14 UTC — добавлены Attitude+PersonalityTrait (CORE-M01), baseDisposition отмечен как устаревший*
 *Источник данных: UnityProject/Assets/Data/JSON/npc_presets.json*

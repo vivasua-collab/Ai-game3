@@ -27,8 +27,9 @@
 | Поле | Тип | Описание |
 |------|-----|----------|
 | agingMultiplier | float (0-1) | Множитель старения (1.0 = норма, 0.0 = остановлено) |
-| regenerationMultiplier | float | Множитель регенерации |
 | conductivityMultiplier | float | Множитель проводимости |
+
+> **⚠️ Примечание:** Поле `regenerationMultiplier` было удалено из CultivationLevelData.cs. Регенерация теперь рассчитывается через проводимость и другие параметры (Fix-13, 2026-04-11).
 
 ### Abilities
 | Поле | Тип | Описание |
@@ -106,7 +107,6 @@ baseCoreCapacity: 1000
 
 === Body Effects ===
 agingMultiplier: 1.0
-regenerationMultiplier: 1.1
 conductivityMultiplier: 1.0
 
 === Abilities ===
@@ -146,7 +146,6 @@ baseCoreCapacity: 2594
 
 === Body Effects ===
 agingMultiplier: 1.0
-regenerationMultiplier: 2.0
 conductivityMultiplier: 1.2
 
 === Abilities ===
@@ -184,7 +183,6 @@ baseCoreCapacity: 6727
 
 === Body Effects ===
 agingMultiplier: 0.9
-regenerationMultiplier: 3.0
 conductivityMultiplier: 1.5
 
 === Abilities ===
@@ -222,7 +220,6 @@ baseCoreCapacity: 17450
 
 === Body Effects ===
 agingMultiplier: 0.4
-regenerationMultiplier: 5.0
 conductivityMultiplier: 2.0
 
 === Abilities ===
@@ -260,7 +257,6 @@ baseCoreCapacity: 45260
 
 === Body Effects ===
 agingMultiplier: 0.3
-regenerationMultiplier: 8.0
 conductivityMultiplier: 3.0
 
 === Abilities ===
@@ -298,7 +294,6 @@ baseCoreCapacity: 117390
 
 === Body Effects ===
 agingMultiplier: 0.1
-regenerationMultiplier: 15.0
 conductivityMultiplier: 5.0
 
 === Abilities ===
@@ -336,7 +331,6 @@ baseCoreCapacity: 304480
 
 === Body Effects ===
 agingMultiplier: 0.0
-regenerationMultiplier: 30.0
 conductivityMultiplier: 8.0
 
 === Abilities ===
@@ -374,7 +368,6 @@ baseCoreCapacity: 789750
 
 === Body Effects ===
 agingMultiplier: 0.0
-regenerationMultiplier: 100.0
 conductivityMultiplier: 15.0
 
 === Abilities ===
@@ -412,7 +405,6 @@ baseCoreCapacity: 2048400
 
 === Body Effects ===
 agingMultiplier: 0.0
-regenerationMultiplier: 1000.0
 conductivityMultiplier: 50.0
 
 === Abilities ===
@@ -450,7 +442,6 @@ baseCoreCapacity: 5313000
 
 === Body Effects ===
 agingMultiplier: 0.0
-regenerationMultiplier: 999999     (бесконечность в коде)
 conductivityMultiplier: 100.0
 
 === Abilities ===
@@ -472,18 +463,18 @@ breakthroughFailureDamage: 60
 
 ## Сводная таблица
 
-| L | nameRu | baseCore | qiDensity | aging | regen | conduct | food | water | fly | limbs |
-|---|--------|----------|-----------|-------|-------|---------|------|-------|-----|-------|
-| 1 | Пробуждённое Ядро | 1,000 | 1 | 1.0 | 1.1 | 1.0 | ✗ | ✗ | ✗ | ✗ |
-| 2 | Течение Жизни | 2,594 | 2 | 1.0 | 2.0 | 1.2 | ✗ | ✗ | ✗ | ✗ |
-| 3 | Пламя Внутреннего Огня | 6,727 | 4 | 0.9 | 3.0 | 1.5 | ✗ | ✗ | ✗ | ✗ |
-| 4 | Объединение Тела и Духа | 17,450 | 8 | 0.4 | 5.0 | 2.0 | ✓ | ✗ | ✗ | ✗ |
-| 5 | Сердце Небес | 45,260 | 16 | 0.3 | 8.0 | 3.0 | ✓ | ✓ | ✗ | ✗ |
-| 6 | Разрыв Пелены | 117,390 | 32 | 0.1 | 15.0 | 5.0 | ✓ | ✓ | ✓ | ✗ |
-| 7 | Вечное Кольцо | 304,480 | 64 | 0.0 | 30.0 | 8.0 | ✓ | ✓ | ✓ | ✓ |
-| 8 | Глас Небес | 789,750 | 128 | 0.0 | 100.0 | 15.0 | ✓ | ✓ | ✓ | ✓ |
-| 9 | Бессмертное Ядро | 2,048,400 | 256 | 0.0 | 1000.0 | 50.0 | ✓ | ✓ | ✓ | ✓ |
-| 10 | Вознесение | 5,313,000 | 512 | 0.0 | ∞ | 100.0 | ✓ | ✓ | ✓ | ✓ |
+| L | nameRu | baseCore | qiDensity | aging | conduct | food | water | fly | limbs |
+|---|--------|----------|-----------|-------|---------|------|-------|-----|-------|
+| 1 | Пробуждённое Ядро | 1,000 | 1 | 1.0 | 1.0 | ✗ | ✗ | ✗ | ✗ |
+| 2 | Течение Жизни | 2,594 | 2 | 1.0 | 1.2 | ✗ | ✗ | ✗ | ✗ |
+| 3 | Пламя Внутреннего Огня | 6,727 | 4 | 0.9 | 1.5 | ✗ | ✗ | ✗ | ✗ |
+| 4 | Объединение Тела и Духа | 17,450 | 8 | 0.4 | 2.0 | ✓ | ✗ | ✗ | ✗ |
+| 5 | Сердце Небес | 45,260 | 16 | 0.3 | 3.0 | ✓ | ✓ | ✗ | ✗ |
+| 6 | Разрыв Пелены | 117,390 | 32 | 0.1 | 5.0 | ✓ | ✓ | ✓ | ✗ |
+| 7 | Вечное Кольцо | 304,480 | 64 | 0.0 | 8.0 | ✓ | ✓ | ✓ | ✓ |
+| 8 | Глас Небес | 789,750 | 128 | 0.0 | 15.0 | ✓ | ✓ | ✓ | ✓ |
+| 9 | Бессмертное Ядро | 2,048,400 | 256 | 0.0 | 50.0 | ✓ | ✓ | ✓ | ✓ |
+| 10 | Вознесение | 5,313,000 | 512 | 0.0 | 100.0 | ✓ | ✓ | ✓ | ✓ |
 
 ---
 
@@ -530,4 +521,4 @@ qiForLevelBreakthrough = 33720 × 100 = 3372000
 ---
 
 *Документ создан: 2026-03-30*
-*Обновлено: 2026-04-01 — данные синхронизированы с CultivationLevelData.cs*
+*Обновлено: 2026-04-11 16:10:00 UTC — удалено поле regenerationMultiplier (отсутствует в коде), типы актуализированы*

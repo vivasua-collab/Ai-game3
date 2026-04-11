@@ -53,37 +53,29 @@
 
 ## Enums
 
-### EquipmentSlot
+### EquipmentSlot (из Enums.cs — актуальный)
 | Слот | Описание |
 |------|----------|
-| weapon_main | Основное оружие |
-| weapon_off | Вторичное оружие |
-| weapon_twohanded | Двуручное оружие |
-| head_armor | Шлем (броня) |
-| head_clothing | Головной убор (одежда) |
-| torso_armor | Нагрудник (броня) |
-| torso_clothing | Роба/туника (одежда) |
-| legs_armor | Поножи (броня) |
-| legs_clothing | Штаны (одежда) |
-| feet_armor | Сабатоны (броня) |
-| feet_clothing | Обувь (одежда) |
-| hands_armor | Перчатки (броня) |
-| hands_clothing | Перчатки (одежда) |
-| amulet | Амулет |
-| ring_left_1 | Кольцо левое 1 |
-| ring_left_2 | Кольцо левое 2 |
-| ring_right_1 | Кольцо правое 1 |
-| ring_right_2 | Кольцо правое 2 |
-| charger | Зарядник |
+| WeaponMain | Основное оружие |
+| WeaponOff | Вторичное оружие |
+| Armor | Броня |
+| Clothing | Одежда |
+| Charger | Зарядник |
+| RingLeft | Кольцо (левое) |
+| RingRight | Кольцо (правое) |
+| Accessory | Аксессуар |
+| Backpack | Рюкзак |
 
-### EquipmentGrade
-| Grade | Множитель | Цвет |
-|-------|-----------|------|
-| Damaged | ×0.5 | Красный |
-| Common | ×1.0 | Белый |
-| Refined | ×1.4 | Зелёный |
-| Perfect | ×2.0 | Синий |
-| Transcendent | ×3.0 | Золотой |
+> **⚠️ Примечание:** Документация ниже (сводные таблицы оружия/брони) использует детализированные слоты (head_armor, torso_clothing и т.д.) для удобства настройки. В коде они маппятся на 9 базовых слотов через EquipmentLayer.
+
+### EquipmentGrade (из Enums.cs)
+| Grade | Прочность | Эффективность | Цвет |
+|-------|-----------|---------------|------|
+| Damaged | ×0.5 | ×0.5 | Красный |
+| Common | ×1.0 | ×1.0 | Белый |
+| Refined | ×1.5 | ×1.3-1.5 | Зелёный |
+| Perfect | ×2.5 | ×1.7-2.5 | Синий |
+| Transcendent | ×4.0 | ×2.5-4.0 | Золотой |
 
 ### WeaponType
 | Тип | Описание |
@@ -97,12 +89,16 @@
 | bow | Лук / арбалет |
 | staff | Посох |
 
-### DamageType
+### DamageType (из Enums.cs — актуальный)
 | Тип | Описание |
 |-----|----------|
-| Blunt | Дробящий |
-| Slashing | Рубящий |
-| Piercing | Колющий |
+| Physical | Физический урон |
+| Qi | Урон Ци |
+| Elemental | Элементальный урон |
+| Pure | Чистый (игнорирует защиту) |
+| Void | Пустотный урон |
+
+> **⚠️ Примечание:** Документация ниже (оружие) использует Blunt/Slashing/Piercing для классификации типа атаки оружия. В боевой системе это маппится на `DamageType.Physical`.
 
 ---
 
@@ -409,4 +405,4 @@ specialEffects: (пусто)
 ---
 
 *Документ создан: 2026-04-01*
-*Источник данных: UnityProject/Assets/Data/JSON/equipment.json*
+*Обновлено: 2026-04-11 15:43:14 UTC — EquipmentSlot (9 слотов из Enums.cs), DamageType (5 типов), EquipmentGrade (множители из EQUIPMENT_SYSTEM.md)*

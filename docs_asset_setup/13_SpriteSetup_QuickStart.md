@@ -1,6 +1,6 @@
 # 🎨 Быстрая настройка спрайтов — Quick Start
 
-**Создано:** 57 спрайтов в `Assets/Sprites/`
+**Создано:** 66 спрайтов в `Assets/Sprites/`
 
 ---
 
@@ -35,12 +35,15 @@
 
 ```
 Sprites/
-├── Elements/      (8)   ← Стихии: fire, water, earth...
-├── Techniques/    (8)   ← Типы: melee, ranged, defense...
-├── Items/         (15)  ← Материалы + расходники
-├── Equipment/     (21)  ← Оружие + броня
+├── Elements/      (8)   ← Стихии: neutral, fire, water, earth, air, lightning, void, poison
+├── Techniques/    (11)  ← Типы: melee, ranged, defense, healing, movement, cultivation...
+├── Materials/     (8)   ← Тиры: T1-T5 материалы
+├── Consumables/   (7)   ← Расходники: pills, food, antidote
+├── Weapons/       (11)  ← Оружие: fists, dagger, sword, greatsword, axe, spear, bow, staff...
+├── Armor/         (10)  ← Броня: helmet, robe, plate, boots, gloves...
+├── Cultivation/   (3)   ← Культивация: core, breakthrough, meditation
 ├── UI/            (4)   ← health, qi, stamina, cultivation
-└── player_sprite.png     ← Персонаж
+└── Player/        (1)   ← player_sprite.png
 ```
 
 ---
@@ -57,6 +60,9 @@ Sprites/
 | Cultivation | technique_cultivation |
 | Support | technique_support |
 | Curse/Poison | technique_curse |
+| Sensory | technique_sensory |
+| Formation | technique_formation |
+| Poison | technique_poison |
 
 ---
 
@@ -67,3 +73,4 @@ Sprites/
 ---
 
 *Дата: 2026-04-03*
+*Обновлено: 2026-04-11 15:43:14 UTC — количество 57→66, добавлен Poison, обновлён маппинг техник*

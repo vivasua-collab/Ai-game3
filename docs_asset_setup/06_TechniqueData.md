@@ -36,7 +36,7 @@
 ### Costs
 | Поле | Тип | Описание |
 |------|-----|----------|
-| baseQiCost | int | Базовая стоимость Ци |
+| baseQiCost | long | Базовая стоимость Ци |
 | physicalFatigueCost | float (%) | Физическая усталость |
 | mentalFatigueCost | float (%) | Ментальная усталость |
 | cooldown | int | Кулдаун (тики) |
@@ -494,4 +494,5 @@ learnableFromNPC: false
 ---
 
 *Документ создан: 2026-04-01*
+*Обновлено: 2026-04-11 16:10:00 UTC — baseQiCost int→long (DAT-H01)*
 *Источник данных: UnityProject/Assets/Data/JSON/techniques.json*
