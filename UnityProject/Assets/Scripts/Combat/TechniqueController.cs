@@ -213,7 +213,7 @@ namespace CultivationGame.Combat
                 return false;
             
             // Рассчитываем стоимость Ци
-            int qiCost = CalculateQiCost(technique);
+            long qiCost = CalculateQiCost(technique);
             
             // Проверка Ци
             if (qiController.CurrentQi < qiCost)
@@ -246,7 +246,7 @@ namespace CultivationGame.Combat
             }
             
             // Рассчитываем параметры
-            int qiCost = CalculateQiCost(technique);
+            long qiCost = CalculateQiCost(technique);
             int capacity = CalculateCapacity(technique);
             int damage = CalculateDamage(technique);
             
@@ -292,10 +292,10 @@ namespace CultivationGame.Combat
         
         // === Calculations ===
         
-        private int CalculateQiCost(LearnedTechnique technique)
+        private long CalculateQiCost(LearnedTechnique technique)
         {
             return TechniqueCapacity.CalculateQiCost(
-                TechniqueCapacity.GetBaseCapacity(technique.Data.techniqueType, technique.Data.combatSubtype),
+                technique.Data.baseQiCost,
                 technique.Data.techniqueLevel
             );
         }
@@ -322,7 +322,7 @@ namespace CultivationGame.Combat
         
         private float CalculateCastTime(LearnedTechnique technique)
         {
-            int qiCost = CalculateQiCost(technique);
+            long qiCost = CalculateQiCost(technique);
             return TechniqueCapacity.CalculateCastTime(
                 qiCost,
                 qiController.Conductivity,
@@ -430,7 +430,7 @@ namespace CultivationGame.Combat
     {
         public bool Success;
         public string FailReason;
-        public int QiCost;
+        public long QiCost;
         public int Capacity;
         public int Damage;
         public float CastTime;

@@ -128,10 +128,10 @@ namespace CultivationGame.Combat
         /// ⚠️ ВАЖНО: Стоимость Ци НЕ зависит от Grade!
         /// Источник: TECHNIQUE_SYSTEM.md "Стоимость Ци всегда ×1.0 — не зависит от Grade"
         /// </summary>
-        public static int CalculateQiCost(int baseCapacity, int level)
+        public static long CalculateQiCost(long baseCapacity, int level)
         {
-            float levelMultiplier = Mathf.Pow(2, level - 1);
-            return (int)(baseCapacity * levelMultiplier);
+            double levelMultiplier = Mathf.Pow(2, level - 1);
+            return (long)(baseCapacity * levelMultiplier);
         }
         
         /// <summary>
@@ -224,7 +224,7 @@ namespace CultivationGame.Combat
         /// effectiveTime = 50 / 3.3 = 15.15 сек
         /// </summary>
         public static float CalculateCastTime(
-            int qiCost,
+            long qiCost,
             float conductivity,
             int cultivationLevel,
             float mastery)
@@ -239,15 +239,15 @@ namespace CultivationGame.Combat
             float effectiveSpeed = conductivity * (1f + cultivationBonus) * (1f + masteryBonus);
             
             // Время (минимум 0.1 сек)
-            return Math.Max(0.1f, qiCost / effectiveSpeed);
+            return Math.Max(0.1f, (float)qiCost / effectiveSpeed);
         }
         
         /// <summary>
         /// Проверить, можно ли использовать технику.
         /// </summary>
         public static bool CanUseTechnique(
-            int currentQi,
-            int qiCost,
+            long currentQi,
+            long qiCost,
             int cultivationLevel,
             int requiredLevel)
         {

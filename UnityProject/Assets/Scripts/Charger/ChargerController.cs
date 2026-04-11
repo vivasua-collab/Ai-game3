@@ -363,7 +363,7 @@ namespace CultivationGame.Charger
         /// <summary>
         /// Проверить возможность использования техники.
         /// </summary>
-        public bool CanUseTechnique(int qiCost)
+        public bool CanUseTechnique(long qiCost)
         {
             if (IsOverheated) return false;
             
@@ -374,7 +374,7 @@ namespace CultivationGame.Charger
         /// <summary>
         /// Получить доступное Ци (ядро + буфер с учётом потерь).
         /// </summary>
-        public int GetAvailableQi()
+        public long GetAvailableQi()
         {
             long practitionerCurrentQi = practitionerQi != null ? practitionerQi.CurrentQi : 0;
             return buffer.GetEffectiveQiAvailable(practitionerCurrentQi);

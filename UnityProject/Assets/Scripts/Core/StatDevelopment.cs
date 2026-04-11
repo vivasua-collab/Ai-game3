@@ -190,6 +190,21 @@ namespace CultivationGame.Core
             _ => BASE_STAT_VALUE
         };
 
+        /// <summary>
+        /// Получить все статы как Dictionary для проверок требований.
+        /// Редактировано: 2026-04-11 UTC
+        /// </summary>
+        public Dictionary<string, float> GetAllStatsAsDictionary()
+        {
+            return new Dictionary<string, float>
+            {
+                { "Strength", strength },
+                { "Agility", agility },
+                { "Intelligence", intelligence },
+                { "Vitality", vitality }
+            };
+        }
+
         public float GetDelta(StatType type) => type switch
         {
             StatType.Strength => virtualStrengthDelta,

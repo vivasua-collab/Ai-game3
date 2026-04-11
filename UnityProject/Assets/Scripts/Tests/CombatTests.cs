@@ -170,7 +170,7 @@ namespace CultivationGame.Tests
         {
             // Arrange
             float incomingDamage = 100f;
-            int currentQi = 1000;
+            long currentQi = 1000;
             QiDefenseType defenseType = QiDefenseType.RawQi;
 
             // Act
@@ -189,7 +189,7 @@ namespace CultivationGame.Tests
         {
             // Arrange
             float incomingDamage = 100f;
-            int currentQi = 1000;
+            long currentQi = 1000;
             QiDefenseType defenseType = QiDefenseType.Shield;
 
             // Act
@@ -208,7 +208,7 @@ namespace CultivationGame.Tests
         {
             // Arrange
             float incomingDamage = 100f;
-            int currentQi = 1000;
+            long currentQi = 1000;
             QiDefenseType defenseType = QiDefenseType.RawQi;
 
             // Act
@@ -228,7 +228,7 @@ namespace CultivationGame.Tests
         {
             // Arrange
             float incomingDamage = 100f;
-            int currentQi = 1000;
+            long currentQi = 1000;
             QiDefenseType defenseType = QiDefenseType.Shield;
 
             // Act
@@ -247,7 +247,7 @@ namespace CultivationGame.Tests
         {
             // Arrange
             float incomingDamage = 100f;
-            int currentQi = 100; // Not enough for full absorption
+            long currentQi = 100; // Not enough for full absorption
             QiDefenseType defenseType = QiDefenseType.RawQi;
 
             // Act
@@ -264,7 +264,7 @@ namespace CultivationGame.Tests
         {
             // Arrange
             float incomingDamage = 100f;
-            int currentQi = 1000;
+            long currentQi = 1000;
             QiDefenseType defenseType = QiDefenseType.None;
 
             // Act
@@ -446,7 +446,7 @@ namespace CultivationGame.Tests
         {
             // Arrange
             float incomingDamage = 0f;
-            int currentQi = 1000;
+            long currentQi = 1000;
             QiDefenseType defenseType = QiDefenseType.RawQi;
 
             // Act

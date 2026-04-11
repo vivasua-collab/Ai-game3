@@ -762,7 +762,7 @@ namespace CultivationGame.UI
         public string techniqueId;
         public string name;
         public string description;
-        public int qiCost;
+        public long qiCost;
         public Sprite icon;
         public bool isAvailable;
         public string unavailableReason;

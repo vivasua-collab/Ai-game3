@@ -153,7 +153,7 @@ namespace CultivationGame.NPC
             Attitude = Attitude.Neutral;
             Personality = PersonalityTrait.None;
             IsAlive = true;
-            ElementAffinities = new float[(int)Element.Count];
+            ElementAffinities = new float[Enum.GetValues(typeof(Element)).Length];
             SkillLevels = new Dictionary<string, float>();
             CurrentAIState = NPCAIState.Idle;
             Lifespan = 80;

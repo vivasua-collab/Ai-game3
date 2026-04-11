@@ -10,6 +10,8 @@ using UnityEngine;
 using CultivationGame.Core;
 using CultivationGame.Data.ScriptableObjects;
 using CultivationGame.Save;
+using CultivationGame.Qi;
+using CultivationGame.Player;
 
 namespace CultivationGame.Inventory
 {
@@ -104,8 +106,20 @@ namespace CultivationGame.Inventory
 
             EquipmentSlot slot = equipmentData.slot;
 
+            // FIX: Получаем параметры игрока для проверки требований
+            int playerCultivationLevel = 0;
+            Dictionary<string, float> playerStats = null;
+            
+            var qiCtrl = ServiceLocator.GetOrFind<QiController>();
+            if (qiCtrl != null)
+                playerCultivationLevel = qiCtrl.CultivationLevel;
+            
+            var playerCtrl = ServiceLocator.GetOrFind<PlayerController>();
+            if (playerCtrl != null && playerCtrl.StatDevelopment != null)
+                playerStats = playerCtrl.StatDevelopment.GetAllStatsAsDictionary();
+
             // Проверяем требования
-            if (!CanEquip(equipmentData))
+            if (!CanEquip(equipmentData, playerCultivationLevel, playerStats))
                 return false;
 
             // Создаём экземпляр

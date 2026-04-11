@@ -77,6 +77,7 @@ namespace CultivationGame.Player
         public string PlayerId => playerId;
         public string PlayerName => playerName;
         public PlayerState State => state;
+        public StatDevelopment StatDevelopment => statDevelopment;
         public CultivationLevel CultivationLevel => qiController != null ? (CultivationLevel)qiController.CultivationLevel : CultivationLevel.None;
         public bool IsAlive => state.IsAlive;
         public string CurrentLocation => state.CurrentLocation;

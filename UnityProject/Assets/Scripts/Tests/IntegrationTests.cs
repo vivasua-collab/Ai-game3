@@ -889,7 +889,7 @@ namespace CultivationGame.Tests
             return new DefenderParams
             {
                 CultivationLevel = level,
-                CurrentQi = (int)Math.Min(CurrentQi, int.MaxValue),
+                CurrentQi = (long)CurrentQi,
                 QiDefense = QiDefense,
                 Agility = Agility,
                 Strength = Strength,

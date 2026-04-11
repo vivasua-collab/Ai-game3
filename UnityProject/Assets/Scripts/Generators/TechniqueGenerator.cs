@@ -76,7 +76,7 @@ namespace CultivationGame.Generators
         public float masteryBonus;              // Бонус мастерства (0-50%)
 
         // Stats
-        public int qiCost;                      // Стоимость Ци (×1.0 всегда!)
+        public long qiCost;                      // Стоимость Ци (×1.0 всегда!)
         public int baseDamage;                  // = capacity × gradeMult
         public int cooldown;                    // В тиках
         public float range;
@@ -263,7 +263,7 @@ namespace CultivationGame.Generators
 
                 // qiCost всегда ×1.0 (не зависит от Grade!)
                 // Базовая стоимость примерно 10-20% от capacity
-                technique.qiCost = Mathf.RoundToInt(baseCapacity * Mathf.Pow(2f, technique.level - 1) * 0.15f);
+                technique.qiCost = (long)(baseCapacity * Mathf.Pow(2f, technique.level - 1) * 0.15f);
             }
 
             // Кулдаун (в тиках, 1 тик = 1 минута)
@@ -285,7 +285,7 @@ namespace CultivationGame.Generators
             if (technique.isUltimate)
             {
                 technique.baseDamage = Mathf.RoundToInt(technique.baseDamage * 1.3f);
-                technique.qiCost = Mathf.RoundToInt(technique.qiCost * 1.5f);
+                technique.qiCost = (long)(technique.qiCost * 1.5f);
             }
 
             // ID

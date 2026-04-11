@@ -378,7 +378,7 @@ namespace CultivationGame.Formation
             lastDrainTick = currentTick;
 
             // События
-            int actualDrain = (int)(previousQi - currentQi);
+            long actualDrain = previousQi - currentQi;
 
             if (actualDrain > 0)
             {
