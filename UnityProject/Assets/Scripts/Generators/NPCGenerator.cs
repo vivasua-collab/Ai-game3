@@ -107,8 +107,12 @@ namespace CultivationGame.Generators
         // Equipment
         public List<string> equipmentIds = new List<string>();
         
-        // AI
-        public Disposition baseDisposition;
+        // AI — FIX: Disposition→Attitude+PersonalityTrait (2026-04-11)
+#pragma warning disable CS0612 // Disposition obsolete
+        public Disposition baseDisposition; // Устарело — для обратной совместимости
+#pragma warning restore CS0612
+        public Attitude baseAttitude; // Отношение к игроку
+        public PersonalityTrait basePersonality; // Характер [Flags]
         public float aggressionLevel;
     }
 
@@ -220,8 +224,12 @@ namespace CultivationGame.Generators
             npc.baseDamage = DamageByLevel[levelIndex] + npc.strength / 2;
             npc.baseDefense = npc.constitution + parameters.cultivationLevel * 5;
             
-            // Disposition
+            // Disposition → Attitude + PersonalityTrait (2026-04-11)
+            npc.baseAttitude = GetAttitudeForRole(npc.role, rng);
+            npc.basePersonality = GetPersonalityForRole(npc.role, rng);
+#pragma warning disable CS0612 // Disposition obsolete — обратная совместимость
             npc.baseDisposition = GetDispositionForRole(npc.role);
+#pragma warning restore CS0612
             npc.aggressionLevel = GetAggressionForRole(npc.role, rng);
             
             // Генерация техник для практиков
@@ -356,6 +364,77 @@ namespace CultivationGame.Generators
             }
         }
 
+        /// <summary>
+        /// Получить Attitude для роли NPC.
+        /// FIX: Замена GetDispositionForRole (2026-04-11)
+        /// </summary>
+        private static Attitude GetAttitudeForRole(NPCRole role, SeededRandom rng)
+        {
+            return role switch
+            {
+                NPCRole.Monster => Attitude.Hostile,
+                NPCRole.Guard => Attitude.Neutral,
+                NPCRole.Merchant => Attitude.Friendly,
+                NPCRole.Cultivator => (Attitude)rng.Next(3, 6), // Neutral..Allied
+                NPCRole.Passerby => Attitude.Neutral,
+                NPCRole.Elder => Attitude.Friendly,
+                NPCRole.Disciple => Attitude.Neutral,
+                NPCRole.Enemy => Attitude.Hatred,
+                _ => Attitude.Neutral
+            };
+        }
+        
+        /// <summary>
+        /// Получить PersonalityTrait для роли NPC.
+        /// FIX: Новый метод вместо Disposition (2026-04-11)
+        /// </summary>
+        private static PersonalityTrait GetPersonalityForRole(NPCRole role, SeededRandom rng)
+        {
+            PersonalityTrait trait = PersonalityTrait.None;
+            
+            // Базовые черты по роли
+            switch (role)
+            {
+                case NPCRole.Monster:
+                    trait |= PersonalityTrait.Aggressive;
+                    break;
+                case NPCRole.Guard:
+                    trait |= PersonalityTrait.Cautious | PersonalityTrait.Loyal;
+                    break;
+                case NPCRole.Merchant:
+                    trait |= PersonalityTrait.Cautious;
+                    if (rng.NextFloat() > 0.5f) trait |= PersonalityTrait.Ambitious;
+                    break;
+                case NPCRole.Cultivator:
+                    trait |= PersonalityTrait.Curious;
+                    if (rng.NextFloat() > 0.5f) trait |= PersonalityTrait.Ambitious;
+                    break;
+                case NPCRole.Elder:
+                    trait |= PersonalityTrait.Loyal | PersonalityTrait.Cautious;
+                    break;
+                case NPCRole.Disciple:
+                    trait |= PersonalityTrait.Curious;
+                    break;
+                case NPCRole.Enemy:
+                    trait |= PersonalityTrait.Aggressive;
+                    if (rng.NextFloat() > 0.5f) trait |= PersonalityTrait.Vengeful;
+                    break;
+            }
+            
+            // Случайная дополнительная черта (30% шанс)
+            if (rng.NextFloat() > 0.7f)
+            {
+                var allTraits = new[] { PersonalityTrait.Aggressive, PersonalityTrait.Cautious, 
+                    PersonalityTrait.Treacherous, PersonalityTrait.Ambitious, 
+                    PersonalityTrait.Loyal, PersonalityTrait.Pacifist, 
+                    PersonalityTrait.Curious, PersonalityTrait.Vengeful };
+                trait |= allTraits[rng.Next(allTraits.Length)];
+            }
+            
+            return trait;
+        }
+
+#pragma warning disable CS0612 // Disposition obsolete — обратная совместимость
         private static Disposition GetDispositionForRole(NPCRole role)
         {
             return role switch
@@ -371,6 +450,7 @@ namespace CultivationGame.Generators
                 _ => Disposition.Neutral
             };
         }
+#pragma warning restore CS0612 // Disposition obsolete
 
         private static float GetAggressionForRole(NPCRole role, SeededRandom rng)
         {

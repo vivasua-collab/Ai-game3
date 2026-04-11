@@ -2,7 +2,7 @@
 // ChargerController.cs — Главный контроллер зарядника Ци
 // Cultivation World Simulator
 // Создано: 2026-04-03 08:35:00 UTC
-// Редактировано: 2026-04-11 06:38:02 UTC — Qi int→long миграция (UseQiForTechnique, GetAvailableQi, ChargeFormation)
+// Редактировано: 2026-04-11 07:25:00 UTC — Qi int→long миграция + ChargerUIState.bufferQi/bufferCapacity long
 // ============================================================================
 
 using System;
@@ -581,8 +581,8 @@ namespace CultivationGame.Charger
     public struct ChargerUIState
     {
         public ChargerMode mode;
-        public int bufferQi;
-        public int bufferCapacity;
+        public long bufferQi; // FIX: int→long для Qi (2026-04-11)
+        public long bufferCapacity; // FIX: int→long для Qi (2026-04-11)
         public float heatPercent;
         public HeatState heatState;
         public bool isOverheated;

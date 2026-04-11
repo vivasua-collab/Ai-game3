@@ -659,9 +659,9 @@ namespace CultivationGame.Editor
             public float maxCoreFormation;
             public float coreFormationRate;
 
-            // Qi Capacity
-            public int minQiCapacity;
-            public int maxQiCapacity;
+            // Qi Capacity — FIX: int→long (2026-04-11)
+            public long minQiCapacity;
+            public long maxQiCapacity;
             public float qiAbsorptionRate;
             public bool canRegenerateQi;
 

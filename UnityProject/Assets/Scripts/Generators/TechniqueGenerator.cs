@@ -84,7 +84,7 @@ namespace CultivationGame.Generators
 
         // Requirements
         public int requiredLevel;               // Минимальный уровень культивации
-        public int requiredQiCapacity;
+        public long requiredQiCapacity; // FIX: int→long для Qi (2026-04-11)
 
         // Effects
         public List<TechniqueEffect> effects = new List<TechniqueEffect>();

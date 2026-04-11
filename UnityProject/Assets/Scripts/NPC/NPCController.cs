@@ -395,11 +395,12 @@ namespace CultivationGame.NPC
 
             // FIX NPC-ATT-01: Replace Disposition with Attitude + PersonalityTrait (2026-04-11)
             // Convert GeneratedNPC.baseDisposition (Disposition enum) to Attitude + PersonalityTrait
-#pragma warning disable CS0612 // Disposition obsolete
+#pragma warning disable CS0612 // Disposition obsolete — обратная совместимость
             state.Disposition = generated.baseDisposition;
 #pragma warning restore CS0612
-            state.Attitude = ConvertDispositionToAttitude(generated.baseDisposition);
-            state.Personality = ConvertDispositionToPersonality(generated.baseDisposition);
+            // FIX: Используем новые поля Attitude+PersonalityTrait из генератора (2026-04-11)
+            state.Attitude = generated.baseAttitude != default ? generated.baseAttitude : ConvertDispositionToAttitude(generated.baseDisposition);
+            state.Personality = generated.basePersonality != PersonalityTrait.None ? generated.basePersonality : ConvertDispositionToPersonality(generated.baseDisposition);
 
             // Элементальные аффинности
             state.ElementAffinities = new float[Enum.GetValues(typeof(Element)).Length]; // FIX CORE-H05

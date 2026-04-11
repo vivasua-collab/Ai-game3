@@ -1,9 +1,8 @@
 // ============================================================================
 // InteractionController.cs — Контроллер взаимодействий игрока
 // Cultivation World Simulator
-// Версия: 1.0
 // Создано: 2026-03-30 14:00:00 UTC
-// Редактировано: 2026-03-31 10:08:52 UTC
+// Редактировано: 2026-04-11 07:26:00 UTC — Disposition→Attitude+PersonalityTrait миграция
 // ============================================================================
 
 using System;
@@ -281,10 +280,12 @@ namespace CultivationGame.Interaction
             
             int baseChange = GetBaseRelationshipChange(type);
             
-            // Модификатор на основе характера NPC
-            float dispositionMod = GetDispositionModifier(npc.State.Disposition, type);
+            // Модификатор на основе характера NPC (Attitude + PersonalityTrait)
+            // FIX: Disposition→Attitude+PersonalityTrait (2026-04-11)
+            float dispositionMod = GetPersonalityModifier(npc.State.Personality, type);
+            float attitudeMod = GetAttitudeModifier(npc.State.Attitude, type);
             
-            return Mathf.RoundToInt(baseChange * dispositionMod);
+            return Mathf.RoundToInt(baseChange * dispositionMod * attitudeMod);
         }
         
         private int GetBaseRelationshipChange(InteractionType type)
@@ -316,23 +317,50 @@ namespace CultivationGame.Interaction
             }
         }
         
-        private float GetDispositionModifier(Disposition disposition, InteractionType type)
+        /// <summary>
+        /// Модификатор на основе отношения NPC к игроку (Attitude).
+        /// FIX: Замена GetDispositionModifier для Attitude (2026-04-11)
+        /// </summary>
+        private float GetAttitudeModifier(Attitude attitude, InteractionType type)
         {
-            switch (disposition)
+            return attitude switch
             {
-                case Disposition.Friendly:
-                    return type == InteractionType.Talk || type == InteractionType.Flatter ? 1.5f : 1f;
-                case Disposition.Aggressive:
-                    return type == InteractionType.Threaten ? 0.5f : 1f;
-                case Disposition.Cautious:
-                    return type == InteractionType.Gift ? 1.3f : 1f;
-                case Disposition.Treacherous:
-                    return type == InteractionType.Flatter ? 0.5f : 1f;
-                case Disposition.Ambitious:
-                    return type == InteractionType.Teach || type == InteractionType.Learn ? 1.5f : 1f;
-                default:
-                    return 1f;
-            }
+                Attitude.Hatred => type == InteractionType.Attack ? 1.5f : 0.8f,
+                Attitude.Hostile => type == InteractionType.Threaten ? 1.3f : 0.9f,
+                Attitude.Unfriendly => 0.9f,
+                Attitude.Friendly => type == InteractionType.Talk || type == InteractionType.Flatter ? 1.5f : 1f,
+                Attitude.Allied => 1.3f,
+                Attitude.SwornAlly => 1.5f,
+                _ => 1f // Neutral
+            };
+        }
+        
+        /// <summary>
+        /// Модификатор на основе характера NPC (PersonalityTrait [Flags]).
+        /// FIX: Замена GetDispositionModifier для PersonalityTrait (2026-04-11)
+        /// </summary>
+        private float GetPersonalityModifier(PersonalityTrait personality, InteractionType type)
+        {
+            float mod = 1f;
+            
+            if ((personality & PersonalityTrait.Aggressive) != 0)
+                mod *= type == InteractionType.Threaten ? 0.5f : 1f;
+            if ((personality & PersonalityTrait.Cautious) != 0)
+                mod *= type == InteractionType.Gift ? 1.3f : 1f;
+            if ((personality & PersonalityTrait.Treacherous) != 0)
+                mod *= type == InteractionType.Flatter ? 0.5f : 1f;
+            if ((personality & PersonalityTrait.Ambitious) != 0)
+                mod *= (type == InteractionType.Teach || type == InteractionType.Learn) ? 1.5f : 1f;
+            if ((personality & PersonalityTrait.Loyal) != 0)
+                mod *= type == InteractionType.Gift ? 1.2f : 1f;
+            if ((personality & PersonalityTrait.Pacifist) != 0)
+                mod *= type == InteractionType.Attack ? 0.3f : 1f;
+            if ((personality & PersonalityTrait.Curious) != 0)
+                mod *= (type == InteractionType.Talk || type == InteractionType.Learn) ? 1.3f : 1f;
+            if ((personality & PersonalityTrait.Vengeful) != 0)
+                mod *= type == InteractionType.Insult ? 2f : 1f;
+                
+            return mod;
         }
         
         // === Gizmos ===

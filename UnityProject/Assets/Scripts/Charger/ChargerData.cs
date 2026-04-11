@@ -317,8 +317,8 @@ namespace CultivationGame.Charger
                 }
             }
             
-            // Настройка буфера
-            buffer.capacity = Mathf.RoundToInt(baseBuffer * GetPurposeBufferMultiplier(purpose));
+            // Настройка буфера — FIX: (long) для Qi (2026-04-11)
+            buffer.capacity = (long)Mathf.Round(baseBuffer * GetPurposeBufferMultiplier(purpose));
             buffer.currentQi = 0;
             buffer.conductivity = GetMaterialConductivity(material) * GetPurposeSpeedMultiplier(purpose);
             buffer.inputRate = buffer.conductivity;

@@ -588,6 +588,7 @@ namespace CultivationGame.NPC
         /// FIX NPC-ATT-02: Migrated to ApplyPersonalityModifiers. (2026-04-11)
         /// </summary>
         [Obsolete("Use ApplyPersonalityModifiers(PersonalityTrait) instead.")]
+#pragma warning disable CS0612 // Disposition obsolete
         public void ApplyDispositionModifiers(Disposition disposition)
         {
             switch (disposition)
@@ -621,5 +622,6 @@ namespace CultivationGame.NPC
             socialness = Mathf.Clamp01(socialness);
             ambition = Mathf.Clamp01(ambition);
         }
+#pragma warning restore CS0612 // Disposition obsolete
     }
 }

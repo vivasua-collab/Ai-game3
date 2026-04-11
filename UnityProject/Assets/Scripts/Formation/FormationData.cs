@@ -1,8 +1,8 @@
 // ============================================================================
 // FormationData.cs — ScriptableObject формации
 // Cultivation World Simulator
-// Версия: 1.0
 // Создано: 2026-04-03 13:16:34 UTC
+// Редактировано: 2026-04-11 07:30:00 UTC — contourQiOverride и ContourQi: int→long
 // ============================================================================
 //
 // Источник: docs/FORMATION_SYSTEM.md
@@ -171,7 +171,7 @@ namespace CultivationGame.Formation
 
         [Header("Qi Costs")]
         [Tooltip("Стоимость прорисовки контура (авто: 80 × 2^(level-1))")]
-        public int contourQiOverride = 0; // 0 = автоматический расчёт
+        public long contourQiOverride = 0; // 0 = автоматический расчёт; FIX: int→long (2026-04-11)
 
         [Tooltip("Время прорисовки (секунды)")]
         public float drawTime = 5f;
@@ -280,12 +280,12 @@ namespace CultivationGame.Formation
         /// Стоимость прорисовки контура.
         /// Формула: 80 × 2^(level-1)
         /// </summary>
-        public int ContourQi
+        public long ContourQi
         {
             get
             {
                 if (contourQiOverride > 0) return contourQiOverride;
-                return 80 * (int)Mathf.Pow(2, level - 1);
+                return 80L * (long)Mathf.Pow(2, level - 1); // FIX: long для Qi (2026-04-11)
             }
         }
 
