@@ -1,9 +1,10 @@
 // ============================================================================
 // FullSceneBuilder.cs — Инкрементальный One-Click Builder сцены
 // Cultivation World Simulator
-// Версия: 1.0
+// Версия: 1.1
 // ============================================================================
 // Создано: 2026-04-13 08:00:00 UTC
+// Редактировано: 2026-04-13 09:23:00 UTC — исправление namespace ошибок
 //
 // АРХИТЕКТУРА:
 //   13 фаз, каждая идемпотентна (повторный запуск безопасен).
@@ -59,6 +60,12 @@ using CultivationGame.Save;
 
 // Interaction
 using CultivationGame.Interaction;
+
+// Tile
+using CultivationGame.TileSystem;
+
+// Generators
+using CultivationGame.Generators;
 
 namespace CultivationGame.Editor
 {
@@ -666,13 +673,8 @@ namespace CultivationGame.Editor
             systems.AddComponent<EventController>();
             systems.AddComponent<FactionController>();
 
-            // GeneratorRegistry — через рефлексию (namespace может отличаться)
-            var generatorRegistryType = System.Type.GetType(
-                "CultivationGame.World.GeneratorRegistry, Assembly-CSharp");
-            if (generatorRegistryType != null)
-            {
-                systems.AddComponent(generatorRegistryType);
-            }
+            // GeneratorRegistry — прямая ссылка (namespace: CultivationGame.Generators)
+            systems.AddComponent<GeneratorRegistry>();
 
             systems.AddComponent<SaveManager>();
 
@@ -1042,8 +1044,8 @@ namespace CultivationGame.Editor
 
             // FormationAssetGenerator (формации)
             Debug.Log("[FullSceneBuilder] Generating formation assets...");
-            FormationAssetGenerator.GenerateFormationData();
-            FormationAssetGenerator.GenerateFormationCoreData();
+            total += FormationAssetGenerator.GenerateFormationData();
+            total += FormationAssetGenerator.GenerateFormationCoreData();
 
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
