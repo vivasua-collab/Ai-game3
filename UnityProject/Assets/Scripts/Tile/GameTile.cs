@@ -2,7 +2,7 @@
 // GameTile.cs — Пользовательский тайл для Tilemap (базовый класс)
 // Cultivation World Simulator
 // Создано: 2026-04-07 14:24:05 UTC
-// Редактировано: 2026-04-13 14:03:25 UTC — TerrainTile/ObjectTile вынесены в отдельные файлы
+// Редактировано: 2026-04-15 12:00:00 UTC — FIX: colliderType на основе isPassable
 // ============================================================================
 //
 // ИСТОРИЯ ИСПРАВЛЕНИЙ GetTileData (ВАЖНО!):
@@ -59,12 +59,22 @@ namespace CultivationGame.TileSystem
         // (наш CultivationGame.TileSystem.TileData вместо UnityEngine.Tilemaps.TileData).
         // Теперь TileData полностью квалифицирован — ITilemap работает.
         // Редактировано: 2026-04-11 14:44:18 UTC
+        // FIX: Устанавливаем colliderType на основе isPassable.
+        // Passable тайлы (трава, грязь, песок) НЕ создают физический коллайдер,
+        // непроходимые (вода, void, объекты) — создают.
+        // Без этого-fix TilemapCollider2D создаёт коллайдеры для ВСЕХ тайлов,
+        // полностью блокируя движение игрока.
+        // Редактировано: 2026-04-15 12:00:00 UTC
         public override void GetTileData(Vector3Int position, ITilemap tilemap, ref UnityEngine.Tilemaps.TileData tileData)
         {
             tileData.sprite = sprite;
             tileData.color = color;
-            // Используем UnityEngine.Tilemaps.TileFlags для tileData.flags
             tileData.flags = UnityEngine.Tilemaps.TileFlags.None;
+
+            // Ключевой FIX: проходимые тайлы не создают коллайдер
+            tileData.colliderType = isPassable
+                ? UnityEngine.Tilemaps.Tile.ColliderType.None
+                : UnityEngine.Tilemaps.Tile.ColliderType.Sprite;
         }
     }
 }

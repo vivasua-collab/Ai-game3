@@ -3,7 +3,7 @@
 // Cultivation World Simulator
 // Версия: 1.2 — Заменён FindFirstObjectByType на ServiceLocator
 // Создано: 2026-03-30 14:00:00 UTC
-// Редактировано: 2026-04-09 10:35:00 UTC
+// Редактировано: 2026-04-15 12:00:00 UTC — FIX: StatDevelopment new() вместо GetComponent
 //
 // ИЗМЕНЕНИЯ В ВЕРСИИ 1.2:
 // - FIX: FindFirstObjectByType заменён на ServiceLocator.GetOrFind (аудит Unity 6.3)
@@ -217,8 +217,12 @@ namespace CultivationGame.Player
                 techniqueController = GetComponent<TechniqueController>();
             if (interactionController == null)
                 interactionController = GetComponent<InteractionController>();
+            // FIX: StatDevelopment — [Serializable] класс, НЕ MonoBehaviour.
+            // GetComponent<StatDevelopment>() вызывает ArgumentException.
+            // Создаём экземпляр через new вместо GetComponent.
+            // Редактировано: 2026-04-15 UTC
             if (statDevelopment == null)
-                statDevelopment = GetComponent<StatDevelopment>();
+                statDevelopment = new StatDevelopment();
             if (sleepSystem == null)
                 sleepSystem = GetComponent<SleepSystem>();
             

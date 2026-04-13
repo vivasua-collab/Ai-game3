@@ -4,7 +4,7 @@
 // Версия: 1.2
 // ============================================================================
 // Создано: 2026-04-13 08:00:00 UTC
-// Редактировано: 2026-04-13 13:35:27 UTC — Phase 14: Tile Assets, Phase 15: Test Location Config
+// Редактировано: 2026-04-15 12:00:00 UTC — FIX: Terrain без TilemapCollider2D, CleanMissingScripts, камера
 //
 // АРХИТЕКТУРА:
 //   15 фаз, каждая идемпотентна (повторный запуск безопасен).
@@ -642,7 +642,10 @@ namespace CultivationGame.Editor
             camObj.transform.position = new Vector3(0, 0, -10);
             var cam = camObj.GetComponent<Camera>();
             cam.clearFlags = CameraClearFlags.SolidColor;
-            cam.backgroundColor = new Color(0.05f, 0.07f, 0.12f, 1f); // Тёмно-синий вместо чёрного
+            // FIX: Тёмно-зелёный фон вместо синего — сливается с травой,
+            // нет синих промежутков между спрайтами.
+            // Редактировано: 2026-04-15 UTC
+            cam.backgroundColor = new Color(0.12f, 0.18f, 0.08f, 1f);
             cam.orthographic = true;
             cam.orthographicSize = 5f;
 
@@ -997,7 +1000,11 @@ namespace CultivationGame.Editor
             var terrainTilemap = terrainObj.AddComponent<Tilemap>();
             var terrainRenderer = terrainObj.AddComponent<TilemapRenderer>();
             terrainRenderer.sortOrder = (TilemapRenderer.SortOrder)0;
-            terrainObj.AddComponent<TilemapCollider2D>();
+            // FIX: НЕ добавляем TilemapCollider2D на Terrain!
+            // Terrain тайлы проходимые (трава, грязь) — коллайдер блокирует движение.
+            // Коллайдеры terrain управляются через GameTile.colliderType (isPassable).
+            // TilemapCollider2D на Terrain нужен только для непроходимых тайлов.
+            // Редактировано: 2026-04-15 UTC
 
             // Objects Tilemap
             GameObject objectsObj = new GameObject("Objects");
@@ -1232,15 +1239,9 @@ namespace CultivationGame.Editor
 
                 foreach (var t in transforms)
                 {
-                    // Missing Prefab определяется через null-ссылку,
-                    // но gameObject существует и его prefab == null
                     if (t != null && t.gameObject != null)
                     {
                         var go = t.gameObject;
-                        // Unity помечает missing prefab: go.scene.name == "" или
-                        // PrefabUtility.GetPrefabAssetType возвращает NotAPrefab для битых
-                        // Проще всего: если go.hideFlags содержит HideAndDontSave — это missing
-                        // Но надёжнее: проверка через string "Missing Prefab" в имени
                         if (go.name.Contains("Missing Prefab") || go.name.Contains("(Missing)"))
                         {
                             toRemove.Add(go);
@@ -1259,6 +1260,49 @@ namespace CultivationGame.Editor
             if (removed > 0)
             {
                 Debug.Log($"[FullSceneBuilder] Cleaned {removed} missing prefabs");
+                EditorSceneManager.SaveScene(scene);
+            }
+
+            // FIX: Также очищаем Missing Scripts (The referenced script is missing)
+            // Это основная причина ошибки "The referenced script (Unknown) on this Behaviour is missing!"
+            // Редактировано: 2026-04-15 UTC
+            CleanMissingScripts();
+        }
+
+        /// <summary>
+        /// Удалить компоненты с отсутствующими скриптами (Missing Scripts).
+        /// Исправляет ошибку "The referenced script (Unknown) on this Behaviour is missing!"
+        /// Редактировано: 2026-04-15 12:00:00 UTC
+        /// </summary>
+        private static void CleanMissingScripts()
+        {
+            var scene = SceneManager.GetActiveScene();
+            if (!scene.isLoaded) return;
+
+            int totalRemoved = 0;
+            var rootObjects = scene.GetRootGameObjects();
+
+            foreach (var rootObj in rootObjects)
+            {
+                var allTransforms = rootObj.GetComponentsInChildren<Transform>(true);
+                foreach (var t in allTransforms)
+                {
+                    if (t == null || t.gameObject == null) continue;
+                    var go = t.gameObject;
+
+                    // GameObjectUtility.RemoveMonoBehavioursWithMissingScript — Unity 6 API
+                    int removed = GameObjectUtility.RemoveMonoBehavioursWithMissingScript(go);
+                    if (removed > 0)
+                    {
+                        Debug.Log($"[FullSceneBuilder] Removed {removed} missing script(s) from: {go.name}");
+                        totalRemoved += removed;
+                    }
+                }
+            }
+
+            if (totalRemoved > 0)
+            {
+                Debug.Log($"[FullSceneBuilder] Total missing scripts removed: {totalRemoved}");
                 EditorSceneManager.SaveScene(scene);
             }
         }
@@ -1801,26 +1845,25 @@ namespace CultivationGame.Editor
                 }
             }
 
-            // --- Composite Collider на Terrain (оптимизация) ---
+            // --- Terrain & Objects Colliders ---
+            // FIX: Terrain НЕ должен иметь TilemapCollider2D — он блокирует движение!
+            // Только непроходимые terrain (вода, void) создают коллайдер через GameTile.colliderType.
+            // Objects (деревья, камни) ДОЛЖНЫ иметь TilemapCollider2D.
+            // Редактировано: 2026-04-15 UTC
             var grid = UnityEngine.Object.FindFirstObjectByType<Grid>();
             if (grid != null)
             {
-                // Найти Terrain дочерний объект
+                // Найти Terrain дочерний объект — УДАЛИТЬ коллайдер если есть
                 var terrainTransform = grid.transform.Find("Terrain");
                 if (terrainTransform != null)
                 {
                     var terrainObj = terrainTransform.gameObject;
-
-                    // Проверить/добавить TilemapCollider2D
                     var terrainCollider = terrainObj.GetComponent<TilemapCollider2D>();
-                    if (terrainCollider == null)
+                    if (terrainCollider != null)
                     {
-                        terrainObj.AddComponent<TilemapCollider2D>();
+                        Object.DestroyImmediate(terrainCollider);
+                        Debug.Log("[FullSceneBuilder] Удалён TilemapCollider2D с Terrain (блокировал движение)");
                     }
-
-                    // Composite Collider для оптимизации (опционально)
-                    // Примечание: CompositeCollider2D требует Rigidbody2D
-                    // Для простоты оставляем без композита — Terrain коллайдер работает и так
                 }
 
                 // Найти Objects дочерний объект
