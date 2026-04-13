@@ -504,7 +504,8 @@ namespace CultivationGame.Tests
 
                 // === Act ===
                 int transferAmount = 500;
-                int accepted = (int)pool.AcceptQi(transferAmount, transferRate); // FIX CS0266 (2026-04-11)
+                // Редактировано: 2026-04-13 — long вместо int (AcceptQi возвращает long)
+                long accepted = pool.AcceptQi(transferAmount, transferRate);
 
                 // Тратим Ци у практика
                 if (accepted > 0)
@@ -748,7 +749,8 @@ namespace CultivationGame.Tests
             FormationQiPool pool = new FormationQiPool(1000, 60, 10, 0f); // 0 conductivity
 
             // === Act ===
-            int accepted = (int)pool.AcceptQi(100, 50f); // FIX CS0266 (2026-04-11)
+            // Редактировано: 2026-04-13 — long вместо int (AcceptQi возвращает long)
+            long accepted = pool.AcceptQi(100, 50f);
 
             // === Assert ===
             // Даже с нулевой проводимостью пул должен принять некоторое количество

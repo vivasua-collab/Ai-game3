@@ -70,11 +70,11 @@ namespace CultivationGame.Data.ScriptableObjects
 
         [Header("Qi Capacity")]
         [Tooltip("Минимальная естественная ёмкость Ци")]
-        [Range(1, 500)]
+        // Редактировано: 2026-04-13 09:25:00 UTC — убран [Range] на long (не работает в Inspector)
         public long minQiCapacity = 1; // FIX DAT-M05: int→long for Qi > 2.1B (2026-04-11)
 
         [Tooltip("Максимальная естественная ёмкость Ци")]
-        [Range(1, 500)]
+        // Редактировано: 2026-04-13 09:25:00 UTC — убран [Range] на long (не работает в Inspector)
         public long maxQiCapacity = 30; // FIX DAT-M05: int→long for Qi > 2.1B (2026-04-11)
 
         [Tooltip("Множитель поглощения Ци из среды")]
@@ -185,7 +185,14 @@ namespace CultivationGame.Data.ScriptableObjects
         /// </summary>
         public long GetRandomQiCapacity() // FIX DAT-M05: int→long (2026-04-11)
         {
-            return (long)UnityEngine.Random.Range((int)minQiCapacity, (int)maxQiCapacity + 1);
+            // Редактировано: 2026-04-13 09:25:00 UTC — убран long→int→long round-trip
+            // Для значений > int.MaxValue используем линейную интерполяцию
+            if (maxQiCapacity <= int.MaxValue && minQiCapacity >= 0)
+            {
+                return (long)UnityEngine.Random.Range((int)minQiCapacity, (int)System.Math.Min(maxQiCapacity, int.MaxValue) + 1);
+            }
+            double t = UnityEngine.Random.Range(0f, 1f);
+            return (long)System.Math.Floor(minQiCapacity + t * (maxQiCapacity - minQiCapacity));
         }
 
         /// <summary>
