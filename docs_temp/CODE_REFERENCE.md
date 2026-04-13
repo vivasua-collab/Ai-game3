@@ -1,5 +1,6 @@
 # CODE_REFERENCE — Cultivation World Simulator
 > Генерировано: 2026-04-11 08:29:17 UTC  
+> Обновлено: 2026-04-13 09:51:00 UTC — Fix-01..Fix-13 + FullSceneBuilder + Qi long миграция  
 > Проект: CultivationGame (namespace `CultivationGame.*`)  
 > Путь: `Assets/Scripts/`
 
@@ -18,7 +19,7 @@
 | `CultivationGame.Combat.Effects` | Combat/Effects/ | TechniqueEffect.cs, TechniqueEffectFactory.cs, ExpandingEffect.cs, DirectionalEffect.cs, FormationArrayEffect.cs | TechniqueEffect, TechniqueEffectFactory, ExpandingEffect, DirectionalEffect, FormationArrayEffect |
 | `CultivationGame.Combat.OrbitalSystem` | Combat/OrbitalSystem/ | OrbitalWeapon.cs, OrbitalWeaponController.cs | OrbitalWeapon, OrbitalWeaponController, ICombatTarget, IHealth, DamageInfo |
 | `CultivationGame.Data.ScriptableObjects` | Data/ScriptableObjects/ | ElementData.cs, NPCPresetData.cs, MortalStageData.cs, LocationData.cs, TechniqueData.cs, FactionData.cs, ItemData.cs, CultivationLevelData.cs, FormationCoreData.cs, SpeciesData.cs, BuffData.cs | ElementData, NPCPresetData, MortalStageData, LocationAsset, TechniqueData, FactionData, ItemData, EquipmentData, MaterialData, CultivationLevelData, FormationCoreData, SpeciesData, BuffData + enums |
-| `CultivationGame.Editor` | Editor/ | AssetGenerator.cs, AssetGeneratorExtended.cs, FormationAssetGenerator.cs, FormationUIPrefabsGenerator.cs, SceneSetupTools.cs | AssetGenerator, AssetGeneratorExtended, FormationAssetGenerator, FormationUIPrefabsGenerator, SceneSetupTools |
+| `CultivationGame.Editor` | Editor/ | AssetGenerator.cs, AssetGeneratorExtended.cs, FormationAssetGenerator.cs, FormationUIPrefabsGenerator.cs, SceneSetupTools.cs, **FullSceneBuilder.cs** | AssetGenerator, AssetGeneratorExtended, FormationAssetGenerator, FormationUIPrefabsGenerator, SceneSetupTools, **FullSceneBuilder** |
 | `CultivationGame.Examples` | Examples/ | NPCAssemblyExample.cs | NPCAssemblyExample |
 | `CultivationGame.Formation` | Formation/ | FormationCore.cs, FormationQiPool.cs, FormationController.cs, FormationUI.cs, FormationEffects.cs, FormationData.cs | FormationCore, FormationQiPool, FormationController, FormationUI, FormationEffects, FormationData, IControlReceiver, IStunnable + enums |
 | `CultivationGame.Generators` | Generators/, Generators/Naming/ | NPCGenerator.cs, ArmorGenerator.cs, TechniqueGenerator.cs, ConsumableGenerator.cs, SeededRandom.cs, GeneratorRegistry.cs, WeaponGenerator.cs, NameBuilder.cs, NamingDatabase.cs, AdjectiveForms.cs, NounWithGender.cs, GrammaticalGender.cs | NPCGenerator, ArmorGenerator, TechniqueGenerator, ConsumableGenerator, SeededRandom, GeneratorRegistry, WeaponGenerator, NameBuilder, NameGenerator, NamingDatabase + enums/structs |
@@ -204,7 +205,7 @@
 
 #### `QiController` (MonoBehaviour)
 - **Файл:** Qi/QiController.cs
-- **Поля:** cultivationLevel, cultivationSubLevel, coreQuality, coreCapacity, currentQi, conductivity, conductivityBonus, enablePassiveRegen, regenMultiplier, hasShieldTechnique
+- **Поля:** cultivationLevel (int), cultivationSubLevel (int), coreQuality (CoreQuality), coreCapacity (**long**), currentQi (**long**), conductivity (float), conductivityBonus (float), enablePassiveRegen (bool), regenMultiplier (float), hasShieldTechnique (bool)
 - **Свойства:** CurrentQi, MaxQi, CoreCapacity, Conductivity, BaseConductivity, ConductivityBonus, CultivationLevel, QiPercent, QiDensity, IsFull, IsEmpty, EffectiveQi, QiDefense
 - **Методы:** RecalculateStats(), SpendQi(long), AddQi(long), SetQi(long), RestoreFull(), Meditate(int durationTicks), SetCultivationLevel(int, int), CanBreakthrough(bool), CalculateBreakthroughRequirement(bool), PerformBreakthrough(bool), AbsorbDamage(float, bool), CanAbsorbDamage(float, bool), CalculateRequiredQiForDamage(float, bool), SetConductivityBonus(float), AddConductivityBonus(float), TransferToFormation(FormationCore, long), GetTransferRate(), EstimateCapacityAtLevel(int), EstimateCapacityAtSubLevel(int, int), GetQiInfo(), GetCultivationInfo()
 - **События:** OnQiChanged, OnQiDepleted, OnQiFull, OnCultivationLevelChanged
@@ -242,7 +243,7 @@
 #### `GameTile` (TileBase)
 - **Файл:** Tile/GameTile.cs
 - **Поля:** sprite, color, terrainType (TerrainType), objectCategory (TileObjectCategory), objectType (TileObjectType), moveCost, isPassable, flags (GameTileFlags)
-- **Метод:** GetTileData(Vector3Int, Tilemap, ref TileData)
+- **Метод:** GetTileData(Vector3Int, **ITilemap**, ref **UnityEngine.Tilemaps.TileData**) ⚠️ Важно: ITilemap (не Tilemap) + полная квалификация TileData во избежание конфликта имён с CultivationGame.TileSystem.TileData
 
 #### `TerrainTile` (GameTile)
 - **Файл:** Tile/GameTile.cs
@@ -263,8 +264,8 @@
 
 #### `TileMapData` (class, [Serializable])
 - **Файл:** Tile/TileMapData.cs
-- **Поля:** mapId, mapName, width, height, tileSize, tiles (TileData[]), seed, biome, generatedAtTicks
-- **Свойство:** GeneratedAt (DateTime helper)
+- **Поля:** mapId, mapName, width, height, tileSize, tiles (TileData[]), seed, biome, generatedAtTicks (**long** — DateTime.Ticks)
+- **Свойство:** GeneratedAt (DateTime helper, converts from/to generatedAtTicks)
 - **Методы:** InBounds(int x, int y), GetTile(int x, int y), SetTile(int x, int y, TileData), CreateTile(int x, int y, TerrainType), FindTiles(TerrainType), FindObjects(TileObjectType), FindPassableNearby(int, int, int), WorldToTile(Vector2), TileToWorld(int, int), GetWorldSize(), ToJson(), FromJson(string)
 
 #### `TileMapController` (MonoBehaviour)
@@ -410,7 +411,7 @@
 
 #### `FactionController` (MonoBehaviour)
 - **Файл:** World/FactionController.cs
-- **Enums:** FactionType, FactionRank (дублирует Data.ScriptableObjects.FactionData.FactionRank!)
+- **Enums:** FactionType, FactionRank (консолидировано из FactionData.FactionRank и World.FactionRank → canonical в Enums.cs)
 - **Классы:** FactionData, FactionMembership, FactionSystemSaveData, FactionMembershipSaveData
 
 #### `LocationController` (MonoBehaviour)
@@ -456,7 +457,7 @@
 
 #### `TechniqueData` (ScriptableObject)
 - **Файл:** Data/ScriptableObjects/TechniqueData.cs
-- **Поля:** techniqueId, techniqueName, techniqueType, combatSubtype, element, grade, baseQiCost, cooldown, minCultivationLevel, techniqueLevel, isUltimate, range, effects
+- **Поля:** techniqueId, techniqueName, techniqueType, combatSubtype, element, grade, baseQiCost (**long**), cooldown, minCultivationLevel, techniqueLevel, isUltimate, range, effects
 - **Внутренний enum:** EffectType
 - **Внутренний класс:** TechniqueEffect
 
@@ -490,7 +491,7 @@
 - **Файл:** Data/ScriptableObjects/ElementData.cs
 - **Классы:** ElementEffect, EnvironmentEffect
 
-#### `LocationAsset` (ScriptableObject)
+#### `LocationAsset` (ScriptableObject, ранее LocationData — переименован во избежание конфликта с World.LocationData)
 - **Файл:** Data/ScriptableObjects/LocationData.cs
 - **Enums:** ResourceType
 - **Классы:** LocationResource, LocationConnection
@@ -500,8 +501,40 @@
 - **Enums:** Alignment, BehaviorType
 - **Классы:** PersonalityTraitEntry, KnownTechnique, EquippedItem, InventoryItem
 
-#### `CultivationLevelData` (ScriptableObject), `MortalStageData` (ScriptableObject)
-- Данные для уровней культивации и стадий смертного
+#### `CultivationLevelData` (ScriptableObject)
+- **Файл:** Data/ScriptableObjects/CultivationLevelData.cs
+- **Поля:** level, nameRu, nameEn, description, qiDensity (**int**), baseCoreCapacity (**long**), qiForSubLevelBreakthrough (**long**), qiForLevelBreakthrough (**long**), coreCapacityMultiplier, agingMultiplier, conductivityMultiplier, abilitiesDescription, noFoodRequired, noWaterRequired, canFly, canRegenerateLimbs + breakthrough fields
+
+#### `MortalStageData` (ScriptableObject)
+- **Файл:** Data/ScriptableObjects/MortalStageData.cs
+- **Поля:** stage, nameRu, nameEn, description, minAge, maxAge, minCoreFormation, maxCoreFormation, coreFormationRate, minQiCapacity (**long**), maxQiCapacity (**long**), qiAbsorptionRate, canRegenerateQi, minStrength, maxStrength, minAgility, maxAgility, minConstitution, maxConstitution, baseAwakeningChance, highDensityAwakeningChance, criticalAwakeningChance, canAwaken, requiresFood, requiresWater, requiresSleep, canLearnMartialArts, canMeditate, abilitiesDescription, nextStage, isAwakeningPoint
+- **Методы:** GetRandomQiCapacity() → **long**, GetCoreFormationForAge(float, float) → float, GetAwakeningChance(float, bool) → float, GetStatRange(StatType) → (float, float)
+
+---
+
+### CultivationGame.Editor — FullSceneBuilder
+
+#### `FullSceneBuilder` (static class)
+- **Файл:** Editor/FullSceneBuilder.cs
+- **Версия:** 1.1 (2026-04-13)
+- **Назначение:** Инкрементальный One-Click Builder — создаёт полную сцену за один клик
+- **Меню:** `Tools → Full Scene Builder → Build All (One Click)` + индивидуальные фазы
+- **13 фаз (каждая идемпотентна):**
+  1. **Folders** — создаёт 30+ папок (Assets/Scenes, Data/*, Sprites/*, Audio/*, Art/*)
+  2. **Tags & Layers** — 5 тегов (Player, NPC, Interactable, Item, Enemy) + 7 слоёв (Player=6..Background=12)
+  3. **Scene Creation** — создаёт Assets/Scenes/Main.unity (NewSceneSetup.DefaultGameObjects)
+  4. **Camera & Light** — Orthographic Camera (size=5, Z=-10) + Directional Light (X=50, Y=-30)
+  5. **GameManager & Systems** — GameManager + GameInitializer + Systems (WorldController, TimeController, LocationController, EventController, FactionController, GeneratorRegistry, SaveManager)
+  6. **Player** — Player GameObject с Rigidbody2D (Dynamic, gravity=0) + CircleCollider2D + 8 компонентов (PlayerController, BodyController, QiController, InventoryController, EquipmentController, TechniqueController, SleepSystem, InteractionController)
+  7. **UI** — Canvas (ScreenSpaceOverlay, 1920×1080) + CanvasScaler + EventSystem + HUD (Location, Time, HP/Qi/Stamina bars)
+  8. **Tilemap** — Grid (cellSize 2×2) + Terrain/Objects Tilemaps + TileMapController + TestLocationGameController + DestructibleObjectController
+  9. **Generate Assets from JSON** — вызывает AssetGenerator (10 уровней + 7 элементов + 6 стадий) + AssetGeneratorExtended (34 техники + 15 NPC + 39 экипировка + 8 предметов + 17 материалов) + FormationAssetGenerator (24 формации + 30 ядер) + валидация
+  10. **Generate Tile Sprites** — вызывает TileSpriteGenerator.GenerateAllSprites()
+  11. **Generate Formation UI Prefabs** — вызывает FormationUIPrefabsGenerator.GenerateAllPrefabs()
+  12. **TMP Essentials** — проверяет/импортирует TMP Settings
+  13. **Save Scene** — сохраняет сцену
+- **Using namespaces:** Core, Managers, World, Player, Qi, Body, Inventory, Combat, Save, Interaction, **TileSystem**, **Generators**
+- **Cross-refs:** Все 7 Editor-скриптов генераторов, SerializedProperty настройка компонентов
 
 ---
 
@@ -535,9 +568,12 @@
 #### `GeneratorRegistry` (MonoBehaviour)
 - **Файл:** Generators/GeneratorRegistry.cs
 - **Struct:** GeneratorStatistics
+- **LRU Cache:** MaxCacheSize=100, LinkedList<string> для порядка вытеснения
 
 #### `SeededRandom` (class)
 - **Файл:** Generators/SeededRandom.cs
+- **Seed:** **long** (было int, расширено Fix-11)
+- **Метод:** NextGaussian() — guard против log(0)
 
 #### `NameBuilder` (class), `NameGenerator` (static class)
 - **Файл:** Generators/Naming/NameBuilder.cs
