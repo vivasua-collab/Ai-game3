@@ -54,3 +54,20 @@ prompt
 server.log
 # Skills directory
 /skills/
+
+# Песочница (sandbox infrastructure — НЕ часть игрового проекта)
+/src/
+/public/
+/prisma/
+/db/
+/examples/
+Caddyfile
+bun.lock
+components.json
+eslint.config.mjs
+next.config.ts
+package.json
+postcss.config.mjs
+tailwind.config.ts
+tsconfig.json
+next-env.d.ts
