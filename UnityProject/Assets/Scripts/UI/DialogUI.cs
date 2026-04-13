@@ -1,12 +1,14 @@
 // ============================================================================
 // DialogUI.cs — Интерфейс диалогов
 // Cultivation World Simulator
-// Версия: 1.1 — Fix-12: ServiceLocator, Input note
+// Версия: 1.2 — Замена UnityEngine.Input на Input System
 // ============================================================================
+// Редактировано: 2026-04-13 10:34:08 UTC
 
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.InputSystem;
 using UnityEngine.UI;
 using TMPro;
 using CultivationGame.Core;
@@ -310,23 +312,23 @@ namespace CultivationGame.UI
         
         private void HandleInput()
         {
-            // NOTE UI-H06: Старый Input System — будущий переход на новый Input System (2026-04-12)
             if (dialogueSystem == null || !dialogueSystem.IsInDialogue) return;
-            
+            if (Keyboard.current == null) return;
+
             // Навигация по выборам
             if (choiceButtons.Count > 0)
             {
-                if (Input.GetKeyDown(KeyCode.UpArrow) || Input.GetKeyDown(KeyCode.W))
+                if (Keyboard.current.upArrowKey.wasPressedThisFrame || Keyboard.current.wKey.wasPressedThisFrame)
                 {
                     currentChoiceIndex = (currentChoiceIndex - 1 + choiceButtons.Count) % choiceButtons.Count;
                     HighlightChoice(currentChoiceIndex);
                 }
-                else if (Input.GetKeyDown(KeyCode.DownArrow) || Input.GetKeyDown(KeyCode.S))
+                else if (Keyboard.current.downArrowKey.wasPressedThisFrame || Keyboard.current.sKey.wasPressedThisFrame)
                 {
                     currentChoiceIndex = (currentChoiceIndex + 1) % choiceButtons.Count;
                     HighlightChoice(currentChoiceIndex);
                 }
-                else if (Input.GetKeyDown(KeyCode.Return) || Input.GetKeyDown(KeyCode.Space))
+                else if (Keyboard.current.enterKey.wasPressedThisFrame || Keyboard.current.spaceKey.wasPressedThisFrame)
                 {
                     SelectChoice(currentChoiceIndex);
                 }
@@ -334,7 +336,7 @@ namespace CultivationGame.UI
             else
             {
                 // Продолжить диалог
-                if (Input.GetKeyDown(KeyCode.Return) || Input.GetKeyDown(KeyCode.Space))
+                if (Keyboard.current.enterKey.wasPressedThisFrame || Keyboard.current.spaceKey.wasPressedThisFrame)
                 {
                     Continue();
                 }

@@ -4,7 +4,7 @@
 // Версия: 1.1 — Исправлен start vs resume bug, добавлена отписка от событий
 // ============================================================================
 // Создано: 2026-03-31 10:00:00 UTC
-// Редактировано: 2026-04-02 15:35:00 UTC
+// Редактировано: 2026-04-13 10:34:08 UTC — замена UnityEngine.Input на Input System
 //
 // ИЗМЕНЕНИЯ В ВЕРСИИ 1.1:
 // - FIX: HandlePlaying() теперь правильно различает start vs resume
@@ -13,6 +13,7 @@
 
 using System;
 using UnityEngine;
+using UnityEngine.InputSystem;
 using CultivationGame.Core;
 using CultivationGame.World;
 using CultivationGame.Player;
@@ -404,20 +405,22 @@ namespace CultivationGame.Managers
 
         private void ProcessInput()
         {
-            // Escape - Pause
-            if (Input.GetKeyDown(KeyCode.Escape))
+            if (Keyboard.current == null) return;
+
+            // Escape — пауза
+            if (Keyboard.current.escapeKey.wasPressedThisFrame)
             {
                 TogglePause();
             }
 
-            // F5 - Quick Save
-            if (Input.GetKeyDown(KeyCode.F5))
+            // F5 — быстрое сохранение
+            if (Keyboard.current.f5Key.wasPressedThisFrame)
             {
                 QuickSave();
             }
 
-            // F9 - Quick Load
-            if (Input.GetKeyDown(KeyCode.F9))
+            // F9 — быстрая загрузка
+            if (Keyboard.current.f9Key.wasPressedThisFrame)
             {
                 QuickLoad();
             }

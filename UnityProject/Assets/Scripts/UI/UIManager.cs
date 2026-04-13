@@ -4,7 +4,7 @@
 // Версия: 1.1 — Исправлен баг начального состояния
 // ============================================================================
 // Создано: 2026-03-30 14:00:00 UTC
-// Редактировано: 2026-04-02 15:40:00 UTC
+// Редактировано: 2026-04-13 10:34:08 UTC — замена UnityEngine.Input на Input System
 //
 // ИЗМЕНЕНИЯ В ВЕРСИИ 1.1:
 // - FIX: currentState инициализируется как None (sentinel) для первого запуска
@@ -14,6 +14,7 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.InputSystem;
 using CultivationGame.Core;
 
 namespace CultivationGame.UI
@@ -255,26 +256,28 @@ namespace CultivationGame.UI
         
         private void HandleInput()
         {
-            // ESC - пауза или возврат
-            if (Input.GetKeyDown(KeyCode.Escape))
+            if (Keyboard.current == null) return;
+
+            // ESC — пауза или возврат
+            if (Keyboard.current.escapeKey.wasPressedThisFrame)
             {
                 HandleEscape();
             }
-            
-            // I - инвентарь
-            if (Input.GetKeyDown(KeyCode.I))
+
+            // I — инвентарь
+            if (Keyboard.current.iKey.wasPressedThisFrame)
             {
                 ToggleInventory();
             }
-            
-            // C - персонаж
-            if (Input.GetKeyDown(KeyCode.C))
+
+            // C — персонаж
+            if (Keyboard.current.cKey.wasPressedThisFrame)
             {
                 ToggleCharacter();
             }
-            
-            // M - карта
-            if (Input.GetKeyDown(KeyCode.M))
+
+            // M — карта
+            if (Keyboard.current.mKey.wasPressedThisFrame)
             {
                 ToggleMap();
             }

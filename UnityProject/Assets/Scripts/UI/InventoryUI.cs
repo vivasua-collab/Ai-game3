@@ -1,15 +1,16 @@
 // ============================================================================
 // InventoryUI.cs — UI инвентаря (Diablo-style)
 // Cultivation World Simulator
-// Версия: 1.1 — Fix-12: ServiceLocator, UseItem, SortInventory, Input note
+// Версия: 1.2 — Замена UnityEngine.Input на Input System
 // ============================================================================
-// Создан: 2026-03-31
+// Редактировано: 2026-04-13 10:34:08 UTC
 // Этап: 5 - UI Enhancement
 // ============================================================================
 
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.InputSystem;
 using UnityEngine.UI;
 using UnityEngine.EventSystems;
 using TMPro;
@@ -511,9 +512,8 @@ namespace CultivationGame.UI
 
         private void HandleInput()
         {
-            // NOTE UI-H06: Старый Input System — будущий переход на новый Input System (2026-04-12)
             // Закрыть контекстное меню по клику вне
-            if (Input.GetMouseButtonDown(0) && contextMenu != null)
+            if (Mouse.current != null && Mouse.current.leftButton.wasPressedThisFrame && contextMenu != null)
             {
                 if (!EventSystem.current.IsPointerOverGameObject())
                 {
@@ -522,7 +522,7 @@ namespace CultivationGame.UI
             }
 
             // ESC закрывает инвентарь
-            if (Input.GetKeyDown(KeyCode.Escape))
+            if (Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame)
             {
                 if (contextMenu != null)
                 {

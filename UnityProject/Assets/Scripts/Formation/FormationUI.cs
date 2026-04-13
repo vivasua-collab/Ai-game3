@@ -1,8 +1,10 @@
 // ============================================================================
 // FormationUI.cs — Интерфейс управления формациями
 // Cultivation World Simulator
-// Версия: 1.0
+// Версия: 1.1 — Замена UnityEngine.Input на Input System
+// ============================================================================
 // Создано: 2026-04-03 13:45:00 UTC
+// Редактировано: 2026-04-13 10:34:08 UTC
 // ============================================================================
 //
 // Источник: docs/FORMATION_SYSTEM.md
@@ -11,6 +13,7 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.InputSystem;
 using UnityEngine.UI;
 using TMPro;
 using CultivationGame.Core;
@@ -497,13 +500,14 @@ namespace CultivationGame.Formation
             }
 
             // Проверяем клик
-            if (Input.GetMouseButtonDown(0))
+            if (Mouse.current != null && Mouse.current.leftButton.wasPressedThisFrame)
             {
                 PlaceFormation(worldPos);
             }
 
             // Проверяем правый клик / Escape
-            if (Input.GetMouseButtonDown(1) || Input.GetKeyDown(KeyCode.Escape))
+            if ((Mouse.current != null && Mouse.current.rightButton.wasPressedThisFrame) ||
+                (Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame))
             {
                 ExitPlacementMode();
             }

@@ -1,14 +1,15 @@
 // ============================================================================
 // CultivationProgressBar.cs — Улучшенная полоска прогресса культивации
 // Cultivation World Simulator
-// Версия: 1.1 — Fix-12: ServiceLocator, Qi safe cast, progress bar fix, Input note
+// Версия: 1.2 — Замена UnityEngine.Input на Input System
 // ============================================================================
-// Создан: 2026-03-31
+// Редактировано: 2026-04-13 10:34:08 UTC
 // Этап: 5 - UI Enhancement
 // ============================================================================
 
 using System;
 using UnityEngine;
+using UnityEngine.InputSystem;
 using UnityEngine.UI;
 using TMPro;
 using CultivationGame.Core;
@@ -394,13 +395,27 @@ namespace CultivationGame.UI
             UpdateCooldowns();
         }
 
+        // Клавиши цифрового ряда для quick-slots
+        private static readonly Key[] digitKeys = new Key[]
+        {
+            Key.Digit1, Key.Digit2, Key.Digit3, Key.Digit4, Key.Digit5,
+            Key.Digit6, Key.Digit7, Key.Digit8, Key.Digit9, Key.Digit0
+        };
+        private static readonly Key[] numpadKeys = new Key[]
+        {
+            Key.Numpad1, Key.Numpad2, Key.Numpad3, Key.Numpad4, Key.Numpad5,
+            Key.Numpad6, Key.Numpad7, Key.Numpad8, Key.Numpad9, Key.Numpad0
+        };
+
         private void HandleInput()
         {
-            // NOTE UI-H06: Старый Input System — будущий переход на новый Input System (2026-04-12)
+            if (Keyboard.current == null) return;
+
             // Цифровые клавиши 1-9, 0 для слотов
             for (int i = 0; i < 10; i++)
             {
-                if (Input.GetKeyDown(KeyCode.Alpha1 + i) || Input.GetKeyDown(KeyCode.Keypad1 + i))
+                if (Keyboard.current[digitKeys[i]].wasPressedThisFrame ||
+                    Keyboard.current[numpadKeys[i]].wasPressedThisFrame)
                 {
                     int slot = i == 9 ? 9 : i;
                     if (slot < quickSlots.Length)
