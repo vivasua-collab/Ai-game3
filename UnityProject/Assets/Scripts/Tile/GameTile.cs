@@ -1,8 +1,8 @@
 // ============================================================================
-// GameTile.cs — Пользовательский тайл для Tilemap
+// GameTile.cs — Пользовательский тайл для Tilemap (базовый класс)
 // Cultivation World Simulator
 // Создано: 2026-04-07 14:24:05 UTC
-// Редактировано: 2026-04-11 14:44:18 UTC — FIX CS0115: ITilemap (по API Unity 6000.3) + полная квалификация TileData
+// Редактировано: 2026-04-13 14:03:25 UTC — TerrainTile/ObjectTile вынесены в отдельные файлы
 // ============================================================================
 //
 // ИСТОРИЯ ИСПРАВЛЕНИЙ GetTileData (ВАЖНО!):
@@ -18,6 +18,11 @@
 //   - UnityEngine.Tilemaps.TileData — полная квалификация 3-го параметра
 //   - UnityEngine.Tilemaps.TileFlags — полная квалификация для флагов
 //
+// РЕДАКТИРОВАНИЕ 2026-04-13: TerrainTile и ObjectTile вынесены в отдельные файлы
+//   (TerrainTile.cs и ObjectTile.cs). Unity требует совпадение имени файла и
+//   класса для ScriptableObject с [CreateAssetMenu], иначе возникает ошибка
+//   "No script asset for TerrainTile/ObjectTile".
+//
 // Источник: https://docs.unity3d.com/6000.3/Documentation/ScriptReference/Tilemaps.TileBase.GetTileData.html
 // ============================================================================
 
@@ -28,6 +33,7 @@ namespace CultivationGame.TileSystem
 {
     /// <summary>
     /// Пользовательский тайл с дополнительными данными.
+    /// Базовый класс для TerrainTile и ObjectTile.
     /// </summary>
     [CreateAssetMenu(fileName = "NewGameTile", menuName = "Cultivation/GameTile")]
     public class GameTile : TileBase
@@ -59,41 +65,6 @@ namespace CultivationGame.TileSystem
             tileData.color = color;
             // Используем UnityEngine.Tilemaps.TileFlags для tileData.flags
             tileData.flags = UnityEngine.Tilemaps.TileFlags.None;
-        }
-    }
-
-    /// <summary>
-    /// Тайл поверхности.
-    /// </summary>
-    [CreateAssetMenu(fileName = "NewTerrainTile", menuName = "Cultivation/TerrainTile")]
-    public class TerrainTile : GameTile
-    {
-        private void OnEnable()
-        {
-            objectCategory = TileObjectCategory.None;
-            objectType = TileObjectType.None;
-        }
-    }
-
-    /// <summary>
-    /// Тайл объекта.
-    /// </summary>
-    [CreateAssetMenu(fileName = "NewObjectTile", menuName = "Cultivation/ObjectTile")]
-    public class ObjectTile : GameTile
-    {
-        [Header("Object Properties")]
-        public int width = 1;
-        public int height = 1;
-        public int durability = 100;
-        public bool blocksVision = true;
-        public bool providesCover = true;
-        public bool isInteractable = false;
-        public bool isHarvestable = false;
-
-        private void OnEnable()
-        {
-            isPassable = false;
-            flags = GameTileFlags.None;
         }
     }
 }

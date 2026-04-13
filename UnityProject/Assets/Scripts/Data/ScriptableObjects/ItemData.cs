@@ -1,9 +1,15 @@
 // ============================================================================
-// ItemData.cs — Данные предмета
+// ItemData.cs — Данные предмета (базовый класс)
 // Cultivation World Simulator
-// Версия: 1.0
+// Версия: 1.1
 // Создано: 2026-03-30 14:00:00 UTC
-// Редактировано: 2026-03-31 10:05:48 UTC
+// Редактировано: 2026-04-13 14:03:25 UTC — EquipmentData/MaterialData вынесены в отдельные файлы
+// ============================================================================
+//
+// РЕДАКТИРОВАНИЕ 2026-04-13: EquipmentData и MaterialData вынесены в отдельные файлы
+//   (EquipmentData.cs и MaterialData.cs). Unity требует совпадение имени файла и
+//   класса для ScriptableObject с [CreateAssetMenu], иначе возникает ошибка
+//   "No script asset for EquipmentData/MaterialData".
 // ============================================================================
 
 using UnityEngine;
@@ -88,112 +94,6 @@ namespace CultivationGame.Data.ScriptableObjects
         
         [Tooltip("Требования к характеристикам")]
         public List<StatRequirement> statRequirements = new List<StatRequirement>();
-    }
-    
-    /// <summary>
-    /// Данные экипировки (оружие, броня, аксессуары)
-    /// </summary>
-    [CreateAssetMenu(fileName = "Equipment", menuName = "Cultivation/Equipment")]
-    public class EquipmentData : ItemData
-    {
-        [Header("Equipment")]
-        [Tooltip("Слот экипировки")]
-        public EquipmentSlot slot;
-        
-        [Tooltip("Слои (для принципа матрёшка)")]
-        public List<EquipmentLayer> layers = new List<EquipmentLayer>();
-        
-        [Header("Stats")]
-        [Tooltip("Урон (для оружия)")]
-        public int damage = 0;
-        
-        [Tooltip("Защита (для брони)")]
-        public int defense = 0;
-        
-        [Tooltip("Покрытие брони (%)")]
-        [Range(0f, 100f)]
-        public float coverage = 100f;
-        
-        [Tooltip("Снижение урона (%)")]
-        [Range(0f, 80f)]
-        public float damageReduction = 0f;
-        
-        [Tooltip("Бонус к уклонению (%)")]
-        [Range(-50f, 50f)]
-        public float dodgeBonus = 0f;
-        
-        [Header("Material")]
-        [Tooltip("ID материала")]
-        public string materialId;
-        
-        [Tooltip("Тир материала")]
-        [Range(1, 5)]
-        public int materialTier = 1;
-        
-        [Tooltip("Грейд экипировки")]
-        public EquipmentGrade grade = EquipmentGrade.Common;
-        
-        [Tooltip("Уровень предмета (1-9)")]
-        [Range(1, 9)]
-        public int itemLevel = 1;
-        
-        [Header("Bonuses")]
-        [Tooltip("Бонусы к характеристикам")]
-        public List<StatBonus> statBonuses = new List<StatBonus>();
-        
-        [Tooltip("Особые эффекты")]
-        public List<SpecialEffect> specialEffects = new List<SpecialEffect>();
-    }
-    
-    /// <summary>
-    /// Данные материала для крафта
-    /// </summary>
-    [CreateAssetMenu(fileName = "Material", menuName = "Cultivation/Material")]
-    public class MaterialData : ItemData
-    {
-        [Header("Material")]
-        [Tooltip("Тир материала")]
-        [Range(1, 5)]
-        public int tier = 1;
-        
-        [Tooltip("Категория материала")]
-        public MaterialCategory materialCategory;
-        
-        [Header("Properties")]
-        [Tooltip("Твёрдость")]
-        [Range(1, 100)]
-        public int hardness = 10;
-        
-        [Tooltip("Прочность")]
-        [Range(1, 100)]
-        public int durability = 50;
-        
-        [Tooltip("Проводимость Ци")]
-        [Range(0.1f, 10f)]
-        public float conductivity = 0.5f;
-        
-        [Header("Bonuses")]
-        [Tooltip("Бонус к урону при использовании")]
-        public float damageBonus = 0f;
-        
-        [Tooltip("Бонус к защите при использовании")]
-        public float defenseBonus = 0f;
-        
-        [Tooltip("Бонус к проведению Ци")]
-        public float qiConductivityBonus = 0f;
-        
-        [Header("Source")]
-        [Tooltip("Где добывается")]
-        [TextArea(2, 3)]
-        public string source;
-        
-        [Tooltip("Шанс выпадения (%)")]
-        [Range(0.01f, 100f)]
-        public float dropChance = 10f;
-        
-        [Tooltip("Минимальный уровень культивации для добычи")]
-        [Range(1, 10)]
-        public int requiredLevel = 1;
     }
     
     // === Helper Classes ===

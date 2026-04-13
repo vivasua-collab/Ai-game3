@@ -2,6 +2,7 @@
 // TileSpriteGenerator.cs — Генератор простых спрайтов тайлов
 // Cultivation World Simulator
 // Создано: 2026-04-07 14:24:05 UTC
+// Редактировано: 2026-04-13 14:03:25 UTC — добавлены Ice, Lava, OreVein, Herb
 // ============================================================================
 
 #if UNITY_EDITOR
@@ -36,6 +37,8 @@ namespace CultivationGame.TileSystem.Editor
             GenerateTerrainSprite("terrain_water_deep", new Color(0.2f, 0.3f, 0.7f, 0.9f));
             GenerateTerrainSprite("terrain_sand", new Color(0.9f, 0.85f, 0.6f));
             GenerateTerrainSprite("terrain_snow", new Color(0.95f, 0.95f, 1f));
+            GenerateTerrainSprite("terrain_ice", new Color(0.7f, 0.85f, 0.95f));     // ДОБАВЛЕНО 2026-04-13
+            GenerateTerrainSprite("terrain_lava", new Color(0.9f, 0.3f, 0.05f));      // ДОБАВЛЕНО 2026-04-13
             GenerateTerrainSprite("terrain_void", new Color(0.1f, 0.1f, 0.1f));
 
             // Object sprites (with simple shapes)
@@ -44,6 +47,8 @@ namespace CultivationGame.TileSystem.Editor
             GenerateObjectSprite("obj_rock_medium", new Color(0.5f, 0.45f, 0.4f), ObjectShape.MediumRock);
             GenerateObjectSprite("obj_bush", new Color(0.35f, 0.55f, 0.25f), ObjectShape.Bush);
             GenerateObjectSprite("obj_chest", new Color(0.6f, 0.4f, 0.2f), ObjectShape.Chest);
+            GenerateObjectSprite("obj_ore_vein", new Color(0.7f, 0.5f, 0.2f), ObjectShape.OreVein);   // ДОБАВЛЕНО 2026-04-13
+            GenerateObjectSprite("obj_herb", new Color(0.2f, 0.6f, 0.3f), ObjectShape.Herb);          // ДОБАВЛЕНО 2026-04-13
 
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
@@ -64,6 +69,40 @@ namespace CultivationGame.TileSystem.Editor
                     Color pixelColor = color * (1f + variation - 0.05f);
                     pixelColor.a = color.a;
                     texture.SetPixel(x, y, pixelColor);
+                }
+            }
+
+            // Lava: добавить яркие прожилки
+            if (name == "terrain_lava")
+            {
+                for (int x = 0; x < TILE_SIZE; x++)
+                {
+                    for (int y = 0; y < TILE_SIZE; y++)
+                    {
+                        float crack = Mathf.PerlinNoise(x * 0.3f + 100f, y * 0.3f + 100f);
+                        if (crack > 0.55f)
+                        {
+                            Color bright = new Color(1f, 0.7f, 0.1f);
+                            texture.SetPixel(x, y, bright);
+                        }
+                    }
+                }
+            }
+
+            // Ice: добавить блики
+            if (name == "terrain_ice")
+            {
+                for (int x = 0; x < TILE_SIZE; x++)
+                {
+                    for (int y = 0; y < TILE_SIZE; y++)
+                    {
+                        float shine = Mathf.PerlinNoise(x * 0.15f + 50f, y * 0.15f + 50f);
+                        if (shine > 0.6f)
+                        {
+                            Color bright = new Color(0.9f, 0.95f, 1f);
+                            texture.SetPixel(x, y, bright);
+                        }
+                    }
                 }
             }
 
@@ -126,6 +165,26 @@ namespace CultivationGame.TileSystem.Editor
                     // Замок
                     DrawRect(texture, cx - 4, 20, 8, 15, new Color(0.8f, 0.7f, 0.3f));
                     break;
+
+                case ObjectShape.OreVein:
+                    // Каменная основа
+                    DrawEllipse(texture, cx, cy - 5, 16, 12, new Color(0.45f, 0.4f, 0.35f));
+                    // Рудные вкрапления (золотистые/медные)
+                    DrawEllipse(texture, cx - 5, cy - 3, 6, 4, new Color(0.8f, 0.6f, 0.2f));
+                    DrawEllipse(texture, cx + 4, cy - 7, 5, 3, new Color(0.7f, 0.5f, 0.15f));
+                    DrawEllipse(texture, cx + 2, cy + 2, 4, 3, new Color(0.85f, 0.65f, 0.25f));
+                    break;
+
+                case ObjectShape.Herb:
+                    // Стебель
+                    DrawRect(texture, cx - 1, 5, 2, 25, new Color(0.2f, 0.4f, 0.15f));
+                    // Листья (маленькие эллипсы)
+                    DrawEllipse(texture, cx - 6, cy + 5, 5, 4, color);
+                    DrawEllipse(texture, cx + 6, cy + 8, 5, 4, color);
+                    DrawEllipse(texture, cx, cy + 12, 6, 5, color * 1.15f);
+                    // Цветок/бутон наверху
+                    DrawEllipse(texture, cx, cy + 20, 4, 4, new Color(0.9f, 0.9f, 0.3f));
+                    break;
             }
 
             texture.Apply();
@@ -184,7 +243,9 @@ namespace CultivationGame.TileSystem.Editor
             SmallRock,
             MediumRock,
             Bush,
-            Chest
+            Chest,
+            OreVein,    // ДОБАВЛЕНО 2026-04-13
+            Herb        // ДОБАВЛЕНО 2026-04-13
         }
     }
 }

@@ -594,15 +594,20 @@ namespace CultivationGame.Editor
         /// <summary>
         /// Убедиться что нужная сцена открыта. Если нет — открыть.
         /// </summary>
+        // Редактировано: 2026-04-13 14:03:25 UTC — FIX: очистка Missing Prefabs при открытии сцены
         private static void EnsureSceneOpen()
         {
             var activeScene = SceneManager.GetActiveScene();
             if (activeScene.path == SCENE_PATH)
+            {
+                CleanMissingPrefabs();
                 return;
+            }
 
             if (System.IO.File.Exists(SCENE_PATH))
             {
                 EditorSceneManager.OpenScene(SCENE_PATH);
+                CleanMissingPrefabs();
             }
             else
             {
@@ -1207,6 +1212,57 @@ namespace CultivationGame.Editor
         /// <summary>
         /// Рекурсивно создать папку (аналог mkdir -p).
         /// </summary>
+        /// <summary>
+        /// Удалить объекты с Missing Prefab из активной сцены.
+        /// Редактировано: 2026-04-13 14:03:25 UTC
+        /// </summary>
+        private static void CleanMissingPrefabs()
+        {
+            var scene = SceneManager.GetActiveScene();
+            if (!scene.isLoaded) return;
+
+            int removed = 0;
+            var rootObjects = scene.GetRootGameObjects();
+
+            foreach (var rootObj in rootObjects)
+            {
+                // Проверяем все дочерние объекты на Missing Prefab
+                var transforms = rootObj.GetComponentsInChildren<Transform>(true);
+                var toRemove = new List<GameObject>();
+
+                foreach (var t in transforms)
+                {
+                    // Missing Prefab определяется через null-ссылку,
+                    // но gameObject существует и его prefab == null
+                    if (t != null && t.gameObject != null)
+                    {
+                        var go = t.gameObject;
+                        // Unity помечает missing prefab: go.scene.name == "" или
+                        // PrefabUtility.GetPrefabAssetType возвращает NotAPrefab для битых
+                        // Проще всего: если go.hideFlags содержит HideAndDontSave — это missing
+                        // Но надёжнее: проверка через string "Missing Prefab" в имени
+                        if (go.name.Contains("Missing Prefab") || go.name.Contains("(Missing)"))
+                        {
+                            toRemove.Add(go);
+                        }
+                    }
+                }
+
+                foreach (var go in toRemove)
+                {
+                    Debug.Log($"[FullSceneBuilder] Removing missing prefab: {go.name}");
+                    Undo.DestroyObjectImmediate(go);
+                    removed++;
+                }
+            }
+
+            if (removed > 0)
+            {
+                Debug.Log($"[FullSceneBuilder] Cleaned {removed} missing prefabs");
+                EditorSceneManager.SaveScene(scene);
+            }
+        }
+
         private static void EnsureDirectory(string path)
         {
             if (AssetDatabase.IsValidFolder(path))
@@ -1233,12 +1289,22 @@ namespace CultivationGame.Editor
         /// <summary>
         /// Безопасная установка свойства SerializedObject.
         /// </summary>
+        // Редактировано: 2026-04-13 14:03:25 UTC — FIX: enum fields support via enumValueIndex
         private static void SetProperty(SerializedObject so, string propertyName, object value)
         {
             var prop = so.FindProperty(propertyName);
             if (prop == null)
             {
                 Debug.LogWarning($"[FullSceneBuilder] Property '{propertyName}' not found");
+                return;
+            }
+
+            // FIX: Для enum-полей используем enumValueIndex вместо intValue
+            // Unity SerializedProperty: enum хранятся как int index, но propertyType == Enum
+            // Вызов intValue на enum-поле вызывает "type is not a supported int value"
+            if (prop.propertyType == SerializedPropertyType.Enum && value is int enumIndex)
+            {
+                prop.enumValueIndex = enumIndex;
                 return;
             }
 
