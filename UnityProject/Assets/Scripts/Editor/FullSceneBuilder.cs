@@ -4,7 +4,7 @@
 // Версия: 1.1
 // ============================================================================
 // Создано: 2026-04-13 08:00:00 UTC
-// Редактировано: 2026-04-13 09:23:00 UTC — исправление namespace ошибок
+// Редактировано: 2026-04-13 10:14:18 UTC — исправление CS0103/CS0117 ошибок компиляции
 //
 // АРХИТЕКТУРА:
 //   13 фаз, каждая идемпотентна (повторный запуск безопасен).
@@ -63,6 +63,7 @@ using CultivationGame.Interaction;
 
 // Tile
 using CultivationGame.TileSystem;
+using CultivationGame.TileSystem.Editor;
 
 // Generators
 using CultivationGame.Generators;
@@ -644,14 +645,14 @@ namespace CultivationGame.Editor
         private static bool IsGameManagerNeeded()
         {
             EnsureSceneOpen();
-            return FindFirstObjectByType<GameManager>() == null;
+            return UnityEngine.Object.FindFirstObjectByType<GameManager>() == null;
         }
 
         private static void ExecuteGameManager()
         {
             EnsureSceneOpen();
 
-            if (FindFirstObjectByType<GameManager>() != null)
+            if (UnityEngine.Object.FindFirstObjectByType<GameManager>() != null)
             {
                 Debug.Log("[FullSceneBuilder] GameManager already exists");
                 return;
@@ -874,7 +875,7 @@ namespace CultivationGame.Editor
                 canvasGO.AddComponent<GraphicRaycaster>();
 
                 // --- EventSystem ---
-                var eventSystem = FindFirstObjectByType<UnityEngine.EventSystems.EventSystem>();
+                var eventSystem = UnityEngine.Object.FindFirstObjectByType<UnityEngine.EventSystems.EventSystem>();
                 if (eventSystem == null)
                 {
                     GameObject eventSystemGO = new GameObject("EventSystem");
@@ -944,14 +945,14 @@ namespace CultivationGame.Editor
         private static bool IsTilemapNeeded()
         {
             EnsureSceneOpen();
-            return FindFirstObjectByType<Grid>() == null;
+            return UnityEngine.Object.FindFirstObjectByType<Grid>() == null;
         }
 
         private static void ExecuteTilemap()
         {
             EnsureSceneOpen();
 
-            if (FindFirstObjectByType<Grid>() != null)
+            if (UnityEngine.Object.FindFirstObjectByType<Grid>() != null)
             {
                 Debug.Log("[FullSceneBuilder] Grid already exists");
                 return;
@@ -1101,7 +1102,7 @@ namespace CultivationGame.Editor
         private static bool IsTMPEssentialsNeeded()
         {
             // Проверяем: существует ли TMP Settings
-            var tmpSettings = TMPro.TMP_Settings.Instance;
+            var tmpSettings = TMPro.TMP_Settings.instance;
             return tmpSettings == null;
         }
 
@@ -1112,7 +1113,7 @@ namespace CultivationGame.Editor
             try
             {
                 // Проверяем и импортируем TMP Essentials
-                var tmpSettings = TMPro.TMP_Settings.Instance;
+                var tmpSettings = TMPro.TMP_Settings.instance;
                 if (tmpSettings == null)
                 {
                     Debug.Log("[FullSceneBuilder] TMP Essentials not found. Importing...");
