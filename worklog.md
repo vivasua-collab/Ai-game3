@@ -661,3 +661,25 @@ Stage Summary:
 - 5 файлов обновлено (01, 02, 06, 14, README)
 - 12 файлов без изменений (03, 07-13, 15-16, все SemiAuto) — уже актуальны
 - Документация синхронизирована с кодом после миграции Qi int→long
+
+---
+Task ID: checkpoint-sprite-index
+Agent: Main Agent
+Task: Обновление чекпоинтов + индексация всех спрайтов проекта
+
+Work Log:
+- 2026-04-13 14:18 UTC: Восстановление после прерывания сессии
+- Проверен git log: HEAD = ec96881, working tree чистый
+- Проверены все PNG спрайты в Assets/Sprites/ (127 файлов в 12 категориях)
+- Прочитаны: TileSpriteGenerator.cs, TileEnums.cs, TerrainTile.cs, ObjectTile.cs, FullSceneBuilder.cs (фазы 1-8)
+- Создан чекпоинт: checkpoints/04_13_after_build_fixes.md
+- Создан справочник: docs/SPRITE_INDEX.md
+  - 12 категорий спрайтов, 127 PNG файлов
+  - Покрытие Enum → Спрайты: TerrainType 10/10, TileObjectType 7/21, ElementData 8/8, CultivationLevelData 10/10, TechniqueType 11/11
+  - Выявлено: Phase 14 не создаёт .asset для Snow, Ice, Lava, OreVein, Herb
+
+Stage Summary:
+- Чекпоинт создан: checkpoints/04_13_after_build_fixes.md
+- Индексация спрайтов создана: docs/SPRITE_INDEX.md
+- 127 спрайтов каталогизировано в 12 категориях
+- Выявлен разрыв: 5 спрайтов не имеют .asset файлов
