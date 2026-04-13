@@ -1,0 +1,1353 @@
+// ============================================================================
+// FullSceneBuilder.cs — Инкрементальный One-Click Builder сцены
+// Cultivation World Simulator
+// Версия: 1.0
+// ============================================================================
+// Создано: 2026-04-13 08:00:00 UTC
+//
+// АРХИТЕКТУРА:
+//   13 фаз, каждая идемпотентна (повторный запуск безопасен).
+//   Фаза проверяет что уже сделано и пропускает при необходимости.
+//   Можно запустить все фазы разом или по отдельности.
+//
+// МЕНЮ:
+//   Tools → Full Scene Builder → Build All (One Click)
+//   Tools → Full Scene Builder → Phase 01: Folders
+//   Tools → Full Scene Builder → Phase 02: Tags & Layers
+//   ... и т.д.
+//
+// СОВМЕСТИМОСТЬ: Unity 6.3+ (6000.3)
+// ============================================================================
+
+#if UNITY_EDITOR
+using UnityEngine;
+using UnityEditor;
+using UnityEditor.SceneManagement;
+using UnityEngine.SceneManagement;
+using UnityEngine.Tilemaps;
+using UnityEngine.UI;
+using TMPro;
+using System.IO;
+using System.Collections.Generic;
+
+// Core
+using CultivationGame.Core;
+
+// Managers
+using CultivationGame.Managers;
+
+// World
+using CultivationGame.World;
+
+// Player
+using CultivationGame.Player;
+
+// Qi
+using CultivationGame.Qi;
+
+// Body
+using CultivationGame.Body;
+
+// Inventory
+using CultivationGame.Inventory;
+
+// Combat
+using CultivationGame.Combat;
+
+// Save
+using CultivationGame.Save;
+
+// Interaction
+using CultivationGame.Interaction;
+
+namespace CultivationGame.Editor
+{
+    /// <summary>
+    /// Инкрементальный One-Click Builder.
+    ///
+    /// Каждая фаза:
+    ///   1. Проверяет, нужно ли действие (IsPhaseNeeded)
+    ///   2. Выполняет (ExecutePhase)
+    ///   3. Логирует результат
+    ///
+    /// Повторный запуск безопасен — пропускает уже выполненные фазы.
+    /// </summary>
+    public static class FullSceneBuilder
+    {
+        #region Constants
+
+        private const string SCENE_PATH = "Assets/Scenes/Main.unity";
+        private const string SCENE_NAME = "Main";
+
+        // Папки, которые должны существовать
+        private static readonly string[] REQUIRED_FOLDERS = new string[]
+        {
+            "Assets/Scenes",
+            "Assets/Prefabs/Player",
+            "Assets/Prefabs/NPC",
+            "Assets/Prefabs/UI",
+            "Assets/Prefabs/Items",
+            "Assets/Data/JSON",
+            "Assets/Data/CultivationLevels",
+            "Assets/Data/Elements",
+            "Assets/Data/MortalStages",
+            "Assets/Data/Techniques",
+            "Assets/Data/NPCPresets",
+            "Assets/Data/Equipment",
+            "Assets/Data/Items",
+            "Assets/Data/Materials",
+            "Assets/Data/Formations",
+            "Assets/Data/FormationCores",
+            "Assets/Data/Species",
+            "Assets/Sprites/Tiles",
+            "Assets/Sprites/Characters/Player",
+            "Assets/Sprites/Characters/NPC",
+            "Assets/Sprites/Elements",
+            "Assets/Sprites/Equipment",
+            "Assets/Sprites/Items",
+            "Assets/Sprites/Techniques",
+            "Assets/Sprites/Combat",
+            "Assets/Sprites/UI",
+            "Assets/Sprites/Cultivation",
+            "Assets/Audio/Music",
+            "Assets/Audio/SFX",
+            "Assets/Art/Characters",
+            "Assets/Art/Effects",
+            "Assets/Art/Items",
+            "Assets/Art/Sprites",
+            "Assets/Art/UI",
+        };
+
+        // Теги
+        private static readonly string[] REQUIRED_TAGS = new string[]
+        {
+            "Player",
+            "NPC",
+            "Interactable",
+            "Item",
+            "Enemy",
+        };
+
+        // Слои (имя → номер)
+        private static readonly KeyValuePair<string, int>[] REQUIRED_LAYERS = new KeyValuePair<string, int>[]
+        {
+            new KeyValuePair<string, int>("Player", 6),
+            new KeyValuePair<string, int>("NPC", 7),
+            new KeyValuePair<string, int>("Interactable", 8),
+            new KeyValuePair<string, int>("Item", 9),
+            new KeyValuePair<string, int>("Enemy", 10),
+            new KeyValuePair<string, int>("UI", 11),
+            new KeyValuePair<string, int>("Background", 12),
+        };
+
+        #endregion
+
+        #region Phase Registry
+
+        private delegate bool CheckNeededDelegate();
+        private delegate void ExecutePhaseDelegate();
+
+        private struct PhaseInfo
+        {
+            public string name;
+            public string menuPath;
+            public CheckNeededDelegate isNeeded;
+            public ExecutePhaseDelegate execute;
+        }
+
+        private static readonly PhaseInfo[] PHASES = new PhaseInfo[]
+        {
+            new PhaseInfo
+            {
+                name = "Folders",
+                menuPath = "Phase 01: Folders",
+                isNeeded = IsFoldersNeeded,
+                execute = ExecuteFolders
+            },
+            new PhaseInfo
+            {
+                name = "Tags & Layers",
+                menuPath = "Phase 02: Tags and Layers",
+                isNeeded = IsTagsLayersNeeded,
+                execute = ExecuteTagsLayers
+            },
+            new PhaseInfo
+            {
+                name = "Scene Creation",
+                menuPath = "Phase 03: Create Scene",
+                isNeeded = IsSceneNeeded,
+                execute = ExecuteScene
+            },
+            new PhaseInfo
+            {
+                name = "Camera & Light",
+                menuPath = "Phase 04: Camera and Light",
+                isNeeded = IsCameraLightNeeded,
+                execute = ExecuteCameraLight
+            },
+            new PhaseInfo
+            {
+                name = "GameManager",
+                menuPath = "Phase 05: GameManager and Systems",
+                isNeeded = IsGameManagerNeeded,
+                execute = ExecuteGameManager
+            },
+            new PhaseInfo
+            {
+                name = "Player",
+                menuPath = "Phase 06: Player",
+                isNeeded = IsPlayerNeeded,
+                execute = ExecutePlayer
+            },
+            new PhaseInfo
+            {
+                name = "UI",
+                menuPath = "Phase 07: UI (Canvas, HUD, EventSystem)",
+                isNeeded = IsUINeeded,
+                execute = ExecuteUI
+            },
+            new PhaseInfo
+            {
+                name = "Tilemap",
+                menuPath = "Phase 08: Tilemap System",
+                isNeeded = IsTilemapNeeded,
+                execute = ExecuteTilemap
+            },
+            new PhaseInfo
+            {
+                name = "Generate Assets (SO from JSON)",
+                menuPath = "Phase 09: Generate Assets from JSON",
+                isNeeded = IsGenerateAssetsNeeded,
+                execute = ExecuteGenerateAssets
+            },
+            new PhaseInfo
+            {
+                name = "Generate Tile Sprites",
+                menuPath = "Phase 10: Generate Tile Sprites",
+                isNeeded = IsGenerateSpritesNeeded,
+                execute = ExecuteGenerateSprites
+            },
+            new PhaseInfo
+            {
+                name = "Generate Formation UI Prefabs",
+                menuPath = "Phase 11: Generate Formation UI Prefabs",
+                isNeeded = IsGenerateUIPrefabsNeeded,
+                execute = ExecuteGenerateUIPrefabs
+            },
+            new PhaseInfo
+            {
+                name = "TMP Essentials",
+                menuPath = "Phase 12: Import TMP Essentials",
+                isNeeded = IsTMPEssentialsNeeded,
+                execute = ExecuteTMPEssentials
+            },
+            new PhaseInfo
+            {
+                name = "Save Scene",
+                menuPath = "Phase 13: Save Scene",
+                isNeeded = IsSaveSceneNeeded,
+                execute = ExecuteSaveScene
+            },
+        };
+
+        #endregion
+
+        // ====================================================================
+        //  MAIN: Build All (One Click)
+        // ====================================================================
+
+        [MenuItem("Tools/Full Scene Builder/Build All (One Click)", false, 0)]
+        public static void BuildAll()
+        {
+            Debug.Log("========================================");
+            Debug.Log("[FullSceneBuilder] === BUILD ALL START ===");
+            Debug.Log("========================================");
+
+            int executed = 0;
+            int skipped = 0;
+            int failed = 0;
+            float startTime = (float)EditorApplication.timeSinceStartup;
+
+            for (int i = 0; i < PHASES.Length; i++)
+            {
+                var phase = PHASES[i];
+                string phaseLabel = $"[{i + 1}/{PHASES.Length}] {phase.name}";
+
+                try
+                {
+                    if (phase.isNeeded())
+                    {
+                        Debug.Log($"{phaseLabel}: Executing...");
+                        phase.execute();
+                        Debug.Log($"{phaseLabel}: ✅ Done");
+                        executed++;
+                    }
+                    else
+                    {
+                        Debug.Log($"{phaseLabel}: ⏭ Skipped (already done)");
+                        skipped++;
+                    }
+                }
+                catch (System.Exception ex)
+                {
+                    Debug.LogError($"{phaseLabel}: ❌ FAILED — {ex.Message}\n{ex.StackTrace}");
+                    failed++;
+
+                    // Спрашиваем продолжать ли
+                    if (!EditorUtility.DisplayDialog("Phase Failed",
+                        $"Фаза «{phase.name}» упала:\n{ex.Message}\n\nПродолжить?", "Да", "Стоп"))
+                    {
+                        break;
+                    }
+                }
+            }
+
+            float elapsed = (float)EditorApplication.timeSinceStartup - startTime;
+
+            Debug.Log("========================================");
+            Debug.Log($"[FullSceneBuilder] === BUILD ALL COMPLETE ===");
+            Debug.Log($"  Executed: {executed} | Skipped: {skipped} | Failed: {failed}");
+            Debug.Log($"  Time: {elapsed:F1}s");
+            Debug.Log("========================================");
+
+            if (failed == 0)
+            {
+                EditorUtility.DisplayDialog("Build Complete",
+                    $"Сборка завершена!\n\nВыполнено: {executed}\nПропущено: {skipped}\nВремя: {elapsed:F1}s",
+                    "OK");
+            }
+            else
+            {
+                EditorUtility.DisplayDialog("Build Finished with Errors",
+                    $"Выполнено: {executed}\nПропущено: {skipped}\nОшибки: {failed}",
+                    "OK");
+            }
+        }
+
+        // ====================================================================
+        //  INDIVIDUAL PHASE MENU ITEMS
+        // ====================================================================
+
+        [MenuItem("Tools/Full Scene Builder/Phase 01: Folders", false, 101)]
+        public static void RunPhase01() { RunSinglePhase(0); }
+
+        [MenuItem("Tools/Full Scene Builder/Phase 02: Tags and Layers", false, 102)]
+        public static void RunPhase02() { RunSinglePhase(1); }
+
+        [MenuItem("Tools/Full Scene Builder/Phase 03: Create Scene", false, 103)]
+        public static void RunPhase03() { RunSinglePhase(2); }
+
+        [MenuItem("Tools/Full Scene Builder/Phase 04: Camera and Light", false, 104)]
+        public static void RunPhase04() { RunSinglePhase(3); }
+
+        [MenuItem("Tools/Full Scene Builder/Phase 05: GameManager and Systems", false, 105)]
+        public static void RunPhase05() { RunSinglePhase(4); }
+
+        [MenuItem("Tools/Full Scene Builder/Phase 06: Player", false, 106)]
+        public static void RunPhase06() { RunSinglePhase(5); }
+
+        [MenuItem("Tools/Full Scene Builder/Phase 07: UI (Canvas, HUD, EventSystem)", false, 107)]
+        public static void RunPhase07() { RunSinglePhase(6); }
+
+        [MenuItem("Tools/Full Scene Builder/Phase 08: Tilemap System", false, 108)]
+        public static void RunPhase08() { RunSinglePhase(7); }
+
+        [MenuItem("Tools/Full Scene Builder/Phase 09: Generate Assets from JSON", false, 109)]
+        public static void RunPhase09() { RunSinglePhase(8); }
+
+        [MenuItem("Tools/Full Scene Builder/Phase 10: Generate Tile Sprites", false, 110)]
+        public static void RunPhase10() { RunSinglePhase(9); }
+
+        [MenuItem("Tools/Full Scene Builder/Phase 11: Generate Formation UI Prefabs", false, 111)]
+        public static void RunPhase11() { RunSinglePhase(10); }
+
+        [MenuItem("Tools/Full Scene Builder/Phase 12: Import TMP Essentials", false, 112)]
+        public static void RunPhase12() { RunSinglePhase(11); }
+
+        [MenuItem("Tools/Full Scene Builder/Phase 13: Save Scene", false, 113)]
+        public static void RunPhase13() { RunSinglePhase(12); }
+
+        // ====================================================================
+        //  UTILITY: Run Single Phase
+        // ====================================================================
+
+        private static void RunSinglePhase(int index)
+        {
+            if (index < 0 || index >= PHASES.Length)
+            {
+                Debug.LogError($"[FullSceneBuilder] Invalid phase index: {index}");
+                return;
+            }
+
+            var phase = PHASES[index];
+
+            if (phase.isNeeded())
+            {
+                try
+                {
+                    Debug.Log($"[FullSceneBuilder] Running phase: {phase.name}");
+                    phase.execute();
+                    Debug.Log($"[FullSceneBuilder] ✅ Phase '{phase.name}' complete");
+                }
+                catch (System.Exception ex)
+                {
+                    Debug.LogError($"[FullSceneBuilder] ❌ Phase '{phase.name}' failed: {ex.Message}");
+                }
+            }
+            else
+            {
+                Debug.Log($"[FullSceneBuilder] ⏭ Phase '{phase.name}' skipped (already done)");
+            }
+        }
+
+        // ====================================================================
+        //  PHASE 01: FOLDERS
+        // ====================================================================
+
+        private static bool IsFoldersNeeded()
+        {
+            foreach (var folder in REQUIRED_FOLDERS)
+            {
+                if (!AssetDatabase.IsValidFolder(folder))
+                    return true;
+            }
+            return false;
+        }
+
+        private static void ExecuteFolders()
+        {
+            int created = 0;
+            foreach (var folder in REQUIRED_FOLDERS)
+            {
+                if (!AssetDatabase.IsValidFolder(folder))
+                {
+                    EnsureDirectory(folder);
+                    created++;
+                }
+            }
+            AssetDatabase.Refresh();
+            Debug.Log($"[FullSceneBuilder] Created {created} folders");
+        }
+
+        // ====================================================================
+        //  PHASE 02: TAGS & LAYERS
+        // ====================================================================
+
+        private static bool IsTagsLayersNeeded()
+        {
+            // Проверяем теги
+            var tags = UnityEditorInternal.InternalEditorUtility.tags;
+            foreach (var requiredTag in REQUIRED_TAGS)
+            {
+                bool found = false;
+                foreach (var existingTag in tags)
+                {
+                    if (existingTag == requiredTag) { found = true; break; }
+                }
+                if (!found) return true;
+            }
+
+            // Проверяем слои
+            var layers = UnityEditorInternal.InternalEditorUtility.layers;
+            foreach (var kvp in REQUIRED_LAYERS)
+            {
+                bool found = false;
+                foreach (var existingLayer in layers)
+                {
+                    if (existingLayer == kvp.Key) { found = true; break; }
+                }
+                if (!found) return true;
+            }
+
+            return false;
+        }
+
+        private static void ExecuteTagsLayers()
+        {
+            // --- Теги ---
+            var tags = new List<string>(UnityEditorInternal.InternalEditorUtility.tags);
+            bool tagsChanged = false;
+
+            foreach (var requiredTag in REQUIRED_TAGS)
+            {
+                if (!tags.Contains(requiredTag))
+                {
+                    tags.Add(requiredTag);
+                    tagsChanged = true;
+                }
+            }
+
+            if (tagsChanged)
+            {
+                SerializedObject tagManager = new SerializedObject(
+                    AssetDatabase.LoadAllAssetsAtPath("ProjectSettings/TagManager.asset")[0]);
+
+                var tagsProp = tagManager.FindProperty("tags");
+                if (tagsProp != null)
+                {
+                    tagsProp.ClearArray();
+                    for (int i = 0; i < tags.Count; i++)
+                    {
+                        tagsProp.InsertArrayElementAtIndex(i);
+                        tagsProp.GetArrayElementAtIndex(i).stringValue = tags[i];
+                    }
+                    tagManager.ApplyModifiedProperties();
+                }
+
+                Debug.Log($"[FullSceneBuilder] Tags updated: {string.Join(", ", REQUIRED_TAGS)}");
+            }
+
+            // --- Слои ---
+            SerializedObject layerManager = new SerializedObject(
+                AssetDatabase.LoadAllAssetsAtPath("ProjectSettings/TagManager.asset")[0]);
+
+            var layersProp = layerManager.FindProperty("layers");
+            bool layersChanged = false;
+
+            if (layersProp != null)
+            {
+                foreach (var kvp in REQUIRED_LAYERS)
+                {
+                    var element = layersProp.GetArrayElementAtIndex(kvp.Value);
+                    if (element != null && string.IsNullOrEmpty(element.stringValue))
+                    {
+                        element.stringValue = kvp.Key;
+                        layersChanged = true;
+                    }
+                }
+
+                if (layersChanged)
+                {
+                    layerManager.ApplyModifiedProperties();
+                    Debug.Log($"[FullSceneBuilder] Layers updated");
+                }
+            }
+
+            if (!tagsChanged && !layersChanged)
+            {
+                Debug.Log("[FullSceneBuilder] Tags & Layers already configured");
+            }
+        }
+
+        // ====================================================================
+        //  PHASE 03: CREATE SCENE
+        // ====================================================================
+
+        private static bool IsSceneNeeded()
+        {
+            // Проверяем: существует ли файл сцены
+            if (System.IO.File.Exists(SCENE_PATH))
+                return false;
+
+            return true;
+        }
+
+        private static void ExecuteScene()
+        {
+            // Создаём новую сцену
+            var scene = EditorSceneManager.NewScene(NewSceneSetup.DefaultGameObjects, NewSceneMode.Single);
+
+            // Удаляем дефолтную камеру — мы создадим свою в Phase 04
+            var defaultCamera = Camera.main;
+            if (defaultCamera != null)
+            {
+                Object.DestroyImmediate(defaultCamera.gameObject);
+            }
+
+            // Сохраняем сцену
+            EnsureDirectory("Assets/Scenes");
+            EditorSceneManager.SaveScene(scene, SCENE_PATH);
+
+            Debug.Log($"[FullSceneBuilder] Scene created: {SCENE_PATH}");
+        }
+
+        /// <summary>
+        /// Убедиться что нужная сцена открыта. Если нет — открыть.
+        /// </summary>
+        private static void EnsureSceneOpen()
+        {
+            var activeScene = SceneManager.GetActiveScene();
+            if (activeScene.path == SCENE_PATH)
+                return;
+
+            if (System.IO.File.Exists(SCENE_PATH))
+            {
+                EditorSceneManager.OpenScene(SCENE_PATH);
+            }
+            else
+            {
+                ExecuteScene();
+            }
+        }
+
+        // ====================================================================
+        //  PHASE 04: CAMERA & LIGHT
+        // ====================================================================
+
+        private static bool IsCameraLightNeeded()
+        {
+            EnsureSceneOpen();
+            var cam = Camera.main;
+            return cam == null;
+        }
+
+        private static void ExecuteCameraLight()
+        {
+            EnsureSceneOpen();
+
+            // --- Camera ---
+            var camObj = Camera.main?.gameObject;
+            if (camObj == null)
+            {
+                camObj = new GameObject("Main Camera");
+                camObj.AddComponent<Camera>();
+                camObj.tag = "MainCamera";
+            }
+
+            camObj.transform.position = new Vector3(0, 0, -10);
+            var cam = camObj.GetComponent<Camera>();
+            cam.clearFlags = CameraClearFlags.SolidColor;
+            cam.backgroundColor = Color.black;
+            cam.orthographic = true;
+            cam.orthographicSize = 5f;
+
+            Undo.RegisterCreatedObjectUndo(camObj, "Create Camera");
+
+            // --- Light ---
+            var lightObj = GameObject.Find("Directional Light");
+            if (lightObj == null)
+            {
+                lightObj = new GameObject("Directional Light");
+                var light = lightObj.AddComponent<Light>();
+                light.type = LightType.Directional;
+                light.intensity = 1f;
+                light.color = Color.white;
+                lightObj.transform.rotation = Quaternion.Euler(50f, -30f, 0f);
+
+                Undo.RegisterCreatedObjectUndo(lightObj, "Create Light");
+            }
+
+            Debug.Log("[FullSceneBuilder] Camera & Light configured");
+        }
+
+        // ====================================================================
+        //  PHASE 05: GAME MANAGER & SYSTEMS
+        // ====================================================================
+
+        private static bool IsGameManagerNeeded()
+        {
+            EnsureSceneOpen();
+            return FindFirstObjectByType<GameManager>() == null;
+        }
+
+        private static void ExecuteGameManager()
+        {
+            EnsureSceneOpen();
+
+            if (FindFirstObjectByType<GameManager>() != null)
+            {
+                Debug.Log("[FullSceneBuilder] GameManager already exists");
+                return;
+            }
+
+            // Создаём GameManager
+            GameObject gameManagerObj = new GameObject("GameManager");
+            gameManagerObj.AddComponent<GameManager>();
+            gameManagerObj.AddComponent<GameInitializer>();
+
+            // Создаём Systems как дочерний объект
+            GameObject systems = new GameObject("Systems");
+            systems.transform.SetParent(gameManagerObj.transform);
+
+            // Добавляем все контроллеры
+            systems.AddComponent<WorldController>();
+            systems.AddComponent<TimeController>();
+            systems.AddComponent<LocationController>();
+            systems.AddComponent<EventController>();
+            systems.AddComponent<FactionController>();
+
+            // GeneratorRegistry — через рефлексию (namespace может отличаться)
+            var generatorRegistryType = System.Type.GetType(
+                "CultivationGame.World.GeneratorRegistry, Assembly-CSharp");
+            if (generatorRegistryType != null)
+            {
+                systems.AddComponent(generatorRegistryType);
+            }
+
+            systems.AddComponent<SaveManager>();
+
+            // Настраиваем TimeController
+            var tc = systems.GetComponent<TimeController>();
+            if (tc != null)
+            {
+                SerializedObject so = new SerializedObject(tc);
+                SetProperty(so, "currentTimeSpeed", (int)TimeSpeed.Normal);
+                SetProperty(so, "autoAdvance", true);
+                SetProperty(so, "normalSpeedRatio", 60);
+                SetProperty(so, "fastSpeedRatio", 300);
+                SetProperty(so, "veryFastSpeedRatio", 900);
+                SetProperty(so, "daysPerMonth", 30);
+                SetProperty(so, "monthsPerYear", 12);
+                so.ApplyModifiedProperties();
+            }
+
+            // Настраиваем SaveManager
+            var sm = systems.GetComponent<SaveManager>();
+            if (sm != null)
+            {
+                SerializedObject so = new SerializedObject(sm);
+                SetProperty(so, "saveFolder", "Saves");
+                SetProperty(so, "fileExtension", ".sav");
+                SetProperty(so, "useEncryption", false);
+                SetProperty(so, "autoSave", true);
+                SetProperty(so, "autoSaveInterval", 300);
+                SetProperty(so, "maxSlots", 5);
+                so.ApplyModifiedProperties();
+            }
+
+            Undo.RegisterCreatedObjectUndo(gameManagerObj, "Create GameManager");
+            Debug.Log("[FullSceneBuilder] GameManager + Systems created");
+        }
+
+        // ====================================================================
+        //  PHASE 06: PLAYER
+        // ====================================================================
+
+        private static bool IsPlayerNeeded()
+        {
+            EnsureSceneOpen();
+            return GameObject.Find("Player") == null;
+        }
+
+        private static void ExecutePlayer()
+        {
+            EnsureSceneOpen();
+
+            if (GameObject.Find("Player") != null)
+            {
+                Debug.Log("[FullSceneBuilder] Player already exists");
+                return;
+            }
+
+            GameObject player = new GameObject("Player");
+            player.transform.position = Vector3.zero;
+            player.tag = "Player";
+
+            // Установить слой Player (6)
+            player.layer = 6;
+
+            // Rigidbody2D
+            Rigidbody2D rb = player.AddComponent<Rigidbody2D>();
+            rb.bodyType = RigidbodyType2D.Dynamic;
+            rb.mass = 1f;
+            rb.linearDamping = 0f;
+            rb.angularDamping = 0.05f;
+            rb.gravityScale = 0f;
+            rb.constraints = RigidbodyConstraints2D.FreezeRotation;
+
+            // Collider
+            CircleCollider2D col = player.AddComponent<CircleCollider2D>();
+            col.isTrigger = false;
+            col.radius = 0.5f;
+
+            // Все компоненты Player
+            player.AddComponent<PlayerController>();
+            player.AddComponent<BodyController>();
+            player.AddComponent<QiController>();
+            player.AddComponent<InventoryController>();
+            player.AddComponent<EquipmentController>();
+            player.AddComponent<TechniqueController>();
+            player.AddComponent<SleepSystem>();
+            player.AddComponent<InteractionController>();
+
+            // SpriteRenderer (временно — белый квадрат)
+            var sr = player.AddComponent<SpriteRenderer>();
+            sr.sortingOrder = 10;
+
+            // Настройка PlayerController
+            SetupPlayerComponent<PlayerController>(player, pc =>
+            {
+                SerializedObject so = new SerializedObject(pc);
+                SetProperty(so, "playerId", "player");
+                SetProperty(so, "playerName", "Игрок");
+                SetProperty(so, "moveSpeed", 5f);
+                SetProperty(so, "runSpeedMultiplier", 1.5f);
+                so.ApplyModifiedProperties();
+            });
+
+            // Настройка BodyController
+            SetupPlayerComponent<BodyController>(player, bc =>
+            {
+                SerializedObject so = new SerializedObject(bc);
+                SetProperty(so, "bodyMaterial", (int)BodyMaterial.Organic);
+                SetProperty(so, "vitality", 10);
+                SetProperty(so, "cultivationLevel", 1);
+                SetProperty(so, "enableRegeneration", true);
+                SetProperty(so, "regenRate", 1f);
+                so.ApplyModifiedProperties();
+            });
+
+            // Настройка QiController
+            SetupPlayerComponent<QiController>(player, qc =>
+            {
+                SerializedObject so = new SerializedObject(qc);
+                SetProperty(so, "cultivationLevel", 1);
+                SetProperty(so, "cultivationSubLevel", 0);
+                SetProperty(so, "coreQuality", (int)CoreQuality.Normal);
+                SetProperty(so, "currentQi", 100L);
+                SetProperty(so, "enablePassiveRegen", true);
+                so.ApplyModifiedProperties();
+            });
+
+            // Настройка InventoryController
+            SetupPlayerComponent<InventoryController>(player, ic =>
+            {
+                SerializedObject so = new SerializedObject(ic);
+                SetProperty(so, "gridWidth", 8);
+                SetProperty(so, "gridHeight", 6);
+                SetProperty(so, "maxWeight", 100f);
+                SetProperty(so, "useWeightLimit", true);
+                so.ApplyModifiedProperties();
+            });
+
+            // Настройка EquipmentController
+            SetupPlayerComponent<EquipmentController>(player, ec =>
+            {
+                SerializedObject so = new SerializedObject(ec);
+                SetProperty(so, "useLayerSystem", true);
+                SetProperty(so, "maxLayersPerSlot", 2);
+                so.ApplyModifiedProperties();
+            });
+
+            // Настройка TechniqueController
+            SetupPlayerComponent<TechniqueController>(player, tc =>
+            {
+                SerializedObject so = new SerializedObject(tc);
+                SetProperty(so, "maxQuickSlots", 10);
+                SetProperty(so, "maxUltimates", 1);
+                so.ApplyModifiedProperties();
+            });
+
+            // Настройка SleepSystem
+            SetupPlayerComponent<SleepSystem>(player, ss =>
+            {
+                SerializedObject so = new SerializedObject(ss);
+                SetProperty(so, "minSleepHours", 4f);
+                SetProperty(so, "maxSleepHours", 12f);
+                SetProperty(so, "optimalSleepHours", 8f);
+                so.ApplyModifiedProperties();
+            });
+
+            Undo.RegisterCreatedObjectUndo(player, "Create Player");
+            Debug.Log("[FullSceneBuilder] Player created with all components");
+        }
+
+        // ====================================================================
+        //  PHASE 07: UI
+        // ====================================================================
+
+        private static bool IsUINeeded()
+        {
+            EnsureSceneOpen();
+            return GameObject.Find("GameUI") == null;
+        }
+
+        private static void ExecuteUI()
+        {
+            EnsureSceneOpen();
+
+            // --- Canvas ---
+            if (GameObject.Find("GameUI") == null)
+            {
+                GameObject canvasGO = new GameObject("GameUI");
+                Canvas canvas = canvasGO.AddComponent<Canvas>();
+                canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+
+                CanvasScaler scaler = canvasGO.AddComponent<CanvasScaler>();
+                scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+                scaler.referenceResolution = new Vector2(1920, 1080);
+                scaler.screenMatchMode = CanvasScaler.ScreenMatchMode.MatchWidthOrHeight;
+                scaler.matchWidthOrHeight = 0.5f;
+
+                canvasGO.AddComponent<GraphicRaycaster>();
+
+                // --- EventSystem ---
+                var eventSystem = FindFirstObjectByType<UnityEngine.EventSystems.EventSystem>();
+                if (eventSystem == null)
+                {
+                    GameObject eventSystemGO = new GameObject("EventSystem");
+                    eventSystemGO.AddComponent<UnityEngine.EventSystems.EventSystem>();
+
+                    // InputSystemUIInputModule (для Input System Package)
+                    var inputModuleType = System.Type.GetType(
+                        "UnityEngine.InputSystem.UI.InputSystemUIInputModule, Unity.InputSystem");
+                    if (inputModuleType != null)
+                    {
+                        eventSystemGO.AddComponent(inputModuleType);
+                    }
+
+                    Debug.Log("[FullSceneBuilder] EventSystem created with InputSystemUIInputModule");
+                }
+
+                // --- HUD Panel ---
+                CreateHUDPanel(canvasGO);
+
+                Undo.RegisterCreatedObjectUndo(canvasGO, "Create GameUI");
+            }
+
+            Debug.Log("[FullSceneBuilder] UI created");
+        }
+
+        private static void CreateHUDPanel(GameObject canvas)
+        {
+            GameObject hud = new GameObject("HUD");
+            hud.transform.SetParent(canvas.transform, false);
+
+            RectTransform hudRect = hud.AddComponent<RectTransform>();
+            hudRect.anchorMin = new Vector2(0, 1);
+            hudRect.anchorMax = new Vector2(0, 1);
+            hudRect.pivot = new Vector2(0, 1);
+            hudRect.anchoredPosition = new Vector2(10, -10);
+            hudRect.sizeDelta = new Vector2(320, 200);
+
+            Image hudImage = hud.AddComponent<Image>();
+            hudImage.color = new Color(0.1f, 0.1f, 0.15f, 0.85f);
+
+            // Location Name
+            CreateTMPText(hud, "LocationText", "Cultivation World", new Vector2(10, -10), 22,
+                FontStyles.Bold, Color.white);
+
+            // Time Text
+            CreateTMPText(hud, "TimeText", "День 1 — 06:00", new Vector2(10, -38), 18,
+                FontStyles.Normal, new Color(0.8f, 0.9f, 1f));
+
+            // HP Bar
+            CreateBar(hud, "HealthBar", new Vector2(10, -70), 280, 20, new Color(0.8f, 0.2f, 0.2f));
+            CreateTMPText(hud, "HealthText", "HP: 100/100", new Vector2(10, -95), 16,
+                FontStyles.Normal, Color.white);
+
+            // Qi Bar
+            CreateBar(hud, "QiBar", new Vector2(10, -120), 280, 20, new Color(0.2f, 0.5f, 0.9f));
+            CreateTMPText(hud, "QiText", "Ци: 100/100", new Vector2(10, -145), 16,
+                FontStyles.Normal, Color.white);
+
+            // Stamina Bar
+            CreateBar(hud, "StaminaBar", new Vector2(10, -170), 280, 16, new Color(0.2f, 0.8f, 0.3f));
+        }
+
+        // ====================================================================
+        //  PHASE 08: TILEMAP SYSTEM
+        // ====================================================================
+
+        private static bool IsTilemapNeeded()
+        {
+            EnsureSceneOpen();
+            return FindFirstObjectByType<Grid>() == null;
+        }
+
+        private static void ExecuteTilemap()
+        {
+            EnsureSceneOpen();
+
+            if (FindFirstObjectByType<Grid>() != null)
+            {
+                Debug.Log("[FullSceneBuilder] Grid already exists");
+                return;
+            }
+
+            // Grid
+            GameObject gridObj = new GameObject("Grid");
+            Grid grid = gridObj.AddComponent<Grid>();
+            grid.cellSize = new Vector3(2f, 2f, 1f);
+
+            // Terrain Tilemap
+            GameObject terrainObj = new GameObject("Terrain");
+            terrainObj.transform.SetParent(gridObj.transform);
+            var terrainTilemap = terrainObj.AddComponent<Tilemap>();
+            var terrainRenderer = terrainObj.AddComponent<TilemapRenderer>();
+            terrainRenderer.sortOrder = (TilemapRenderer.SortOrder)0;
+            terrainObj.AddComponent<TilemapCollider2D>();
+
+            // Objects Tilemap
+            GameObject objectsObj = new GameObject("Objects");
+            objectsObj.transform.SetParent(gridObj.transform);
+            var objectTilemap = objectsObj.AddComponent<Tilemap>();
+            var objectRenderer = objectsObj.AddComponent<TilemapRenderer>();
+            objectRenderer.sortOrder = (TilemapRenderer.SortOrder)1;
+
+            // TileMapController
+            GameObject controllerObj = new GameObject("TileMapController");
+            var controller = controllerObj.AddComponent<TileMapController>();
+
+            var so = new SerializedObject(controller);
+            so.FindProperty("terrainTilemap").objectReferenceValue = terrainTilemap;
+            so.FindProperty("objectTilemap").objectReferenceValue = objectTilemap;
+            so.FindProperty("defaultWidth").intValue = 30;
+            so.FindProperty("defaultHeight").intValue = 20;
+            so.ApplyModifiedProperties();
+
+            // TestLocationGameController
+            var gameControllerObj = new GameObject("GameController");
+            var gameController = gameControllerObj.AddComponent<TestLocationGameController>();
+
+            var gso = new SerializedObject(gameController);
+            gso.FindProperty("tileMapController").objectReferenceValue = controller;
+            gso.ApplyModifiedProperties();
+
+            // DestructibleObjectController
+            var destructibleController = gameControllerObj.AddComponent<DestructibleObjectController>();
+            var dso = new SerializedObject(destructibleController);
+            dso.FindProperty("tileMapController").objectReferenceValue = controller;
+            dso.ApplyModifiedProperties();
+
+            Undo.RegisterCreatedObjectUndo(gridObj, "Create Tilemap System");
+            Debug.Log("[FullSceneBuilder] Tilemap system created");
+        }
+
+        // ====================================================================
+        //  PHASE 09: GENERATE ASSETS FROM JSON
+        // ====================================================================
+
+        private static bool IsGenerateAssetsNeeded()
+        {
+            // Проверяем: есть ли хоть один .asset в папках данных
+            return !HasAssetsInFolder("Assets/Data/CultivationLevels") ||
+                   !HasAssetsInFolder("Assets/Data/Elements") ||
+                   !HasAssetsInFolder("Assets/Data/MortalStages");
+        }
+
+        private static void ExecuteGenerateAssets()
+        {
+            int total = 0;
+
+            // AssetGenerator (базовые данные)
+            Debug.Log("[FullSceneBuilder] Generating base assets from JSON...");
+            total += AssetGenerator.GenerateCultivationLevels();
+            total += AssetGenerator.GenerateElements();
+            total += AssetGenerator.GenerateMortalStages();
+
+            AssetDatabase.SaveAssets();
+            AssetDatabase.Refresh();
+
+            // AssetGeneratorExtended (контент)
+            Debug.Log("[FullSceneBuilder] Generating extended assets from JSON...");
+            total += AssetGeneratorExtended.GenerateTechniques();
+            total += AssetGeneratorExtended.GenerateNPCPresets();
+            total += AssetGeneratorExtended.GenerateEquipment();
+            total += AssetGeneratorExtended.GenerateItems();
+            total += AssetGeneratorExtended.GenerateMaterials();
+
+            AssetDatabase.SaveAssets();
+            AssetDatabase.Refresh();
+
+            // FormationAssetGenerator (формации)
+            Debug.Log("[FullSceneBuilder] Generating formation assets...");
+            FormationAssetGenerator.GenerateFormationData();
+            FormationAssetGenerator.GenerateFormationCoreData();
+
+            AssetDatabase.SaveAssets();
+            AssetDatabase.Refresh();
+
+            // Валидация
+            int errors = AssetGeneratorExtended.ValidateAllAssets();
+            errors += FormationAssetGenerator.ValidateFormationAssets();
+
+            if (errors > 0)
+            {
+                Debug.LogWarning($"[FullSceneBuilder] Asset generation complete with {errors} validation warnings");
+            }
+            else
+            {
+                Debug.Log($"[FullSceneBuilder] Generated {total} assets — all valid!");
+            }
+        }
+
+        // ====================================================================
+        //  PHASE 10: GENERATE TILE SPRITES
+        // ====================================================================
+
+        private static bool IsGenerateSpritesNeeded()
+        {
+            return !HasAssetsInFolder("Assets/Sprites/Tiles");
+        }
+
+        private static void ExecuteGenerateSprites()
+        {
+            Debug.Log("[FullSceneBuilder] Generating tile sprites...");
+            TileSpriteGenerator.GenerateAllSprites();
+        }
+
+        // ====================================================================
+        //  PHASE 11: GENERATE FORMATION UI PREFABS
+        // ====================================================================
+
+        private static bool IsGenerateUIPrefabsNeeded()
+        {
+            return !System.IO.File.Exists("Assets/Prefabs/UI/Formation/FormationListItem.prefab");
+        }
+
+        private static void ExecuteGenerateUIPrefabs()
+        {
+            Debug.Log("[FullSceneBuilder] Generating formation UI prefabs...");
+            FormationUIPrefabsGenerator.GenerateAllPrefabs();
+        }
+
+        // ====================================================================
+        //  PHASE 12: TMP ESSENTIALS
+        // ====================================================================
+
+        private static bool IsTMPEssentialsNeeded()
+        {
+            // Проверяем: существует ли TMP Settings
+            var tmpSettings = TMPro.TMP_Settings.Instance;
+            return tmpSettings == null;
+        }
+
+        private static void ExecuteTMPEssentials()
+        {
+            Debug.Log("[FullSceneBuilder] Checking TMP Essentials...");
+
+            try
+            {
+                // Проверяем и импортируем TMP Essentials
+                var tmpSettings = TMPro.TMP_Settings.Instance;
+                if (tmpSettings == null)
+                {
+                    Debug.Log("[FullSceneBuilder] TMP Essentials not found. Importing...");
+
+                    // PackageImporter — API для импорта TMP Essentials
+                    var importerType = System.Type.GetType(
+                        "TMPro.TMP_PackageResourceImporter, Unity.TextMeshPro");
+                    if (importerType != null)
+                    {
+                        // Показываем окно импорта
+                        var window = EditorWindow.GetWindow(importerType);
+                        if (window != null)
+                        {
+                            Debug.Log("[FullSceneBuilder] TMP Import window opened. Please click 'Import TMP Essentials'.");
+                            return;
+                        }
+                    }
+
+                    // Альтернативный путь — через меню
+                    Debug.LogWarning("[FullSceneBuilder] Cannot auto-import TMP. " +
+                        "Please: Window → TextMeshPro → Import TMP Essentials");
+                }
+                else
+                {
+                    Debug.Log("[FullSceneBuilder] TMP Essentials already imported");
+                }
+            }
+            catch (System.Exception ex)
+            {
+                Debug.LogWarning($"[FullSceneBuilder] TMP check failed: {ex.Message}. " +
+                    "Please import manually: Window → TextMeshPro → Import TMP Essentials");
+            }
+        }
+
+        // ====================================================================
+        //  PHASE 13: SAVE SCENE
+        // ====================================================================
+
+        private static bool IsSaveSceneNeeded()
+        {
+            var activeScene = SceneManager.GetActiveScene();
+            return activeScene.isDirty;
+        }
+
+        private static void ExecuteSaveScene()
+        {
+            var activeScene = SceneManager.GetActiveScene();
+
+            if (string.IsNullOrEmpty(activeScene.path))
+            {
+                EnsureDirectory("Assets/Scenes");
+                EditorSceneManager.SaveScene(activeScene, SCENE_PATH);
+                Debug.Log($"[FullSceneBuilder] Scene saved to: {SCENE_PATH}");
+            }
+            else
+            {
+                EditorSceneManager.SaveScene(activeScene);
+                Debug.Log($"[FullSceneBuilder] Scene saved: {activeScene.path}");
+            }
+        }
+
+        // ====================================================================
+        //  SHARED HELPERS
+        // ====================================================================
+
+        /// <summary>
+        /// Рекурсивно создать папку (аналог mkdir -p).
+        /// </summary>
+        private static void EnsureDirectory(string path)
+        {
+            if (AssetDatabase.IsValidFolder(path))
+                return;
+
+            string parent = Path.GetDirectoryName(path);
+            string folder = Path.GetFileName(path);
+
+            if (!string.IsNullOrEmpty(parent) && !AssetDatabase.IsValidFolder(parent))
+            {
+                EnsureDirectory(parent);
+            }
+
+            if (!AssetDatabase.IsValidFolder(parent))
+            {
+                // Fallback: используем System.IO
+                Directory.CreateDirectory(path);
+                return;
+            }
+
+            AssetDatabase.CreateFolder(parent, folder);
+        }
+
+        /// <summary>
+        /// Безопасная установка свойства SerializedObject.
+        /// </summary>
+        private static void SetProperty(SerializedObject so, string propertyName, object value)
+        {
+            var prop = so.FindProperty(propertyName);
+            if (prop == null)
+            {
+                Debug.LogWarning($"[FullSceneBuilder] Property '{propertyName}' not found");
+                return;
+            }
+
+            switch (value)
+            {
+                case int intVal:
+                    prop.intValue = intVal;
+                    break;
+                case float floatVal:
+                    prop.floatValue = floatVal;
+                    break;
+                case bool boolVal:
+                    prop.boolValue = boolVal;
+                    break;
+                case string strVal:
+                    prop.stringValue = strVal;
+                    break;
+                case long longVal:
+                    prop.longValue = longVal;
+                    break;
+                case double doubleVal:
+                    prop.doubleValue = doubleVal;
+                    break;
+            }
+        }
+
+        /// <summary>
+        /// Настроить компонент на Player через callback.
+        /// </summary>
+        private static void SetupPlayerComponent<T>(GameObject player, System.Action<T> setup) where T : Component
+        {
+            var component = player.GetComponent<T>();
+            if (component != null)
+            {
+                setup(component);
+            }
+        }
+
+        /// <summary>
+        /// Создать TMP текстовый элемент.
+        /// </summary>
+        private static TextMeshProUGUI CreateTMPText(
+            GameObject parent, string name, string text,
+            Vector2 position, int fontSize,
+            FontStyles fontStyle, Color color)
+        {
+            GameObject textGO = new GameObject(name);
+            textGO.transform.SetParent(parent.transform, false);
+
+            RectTransform rect = textGO.AddComponent<RectTransform>();
+            rect.anchorMin = new Vector2(0, 1);
+            rect.anchorMax = new Vector2(0, 1);
+            rect.pivot = new Vector2(0, 1);
+            rect.anchoredPosition = position;
+            rect.sizeDelta = new Vector2(280, fontSize + 10);
+
+            var tmp = textGO.AddComponent<TextMeshProUGUI>();
+            tmp.text = text;
+            tmp.fontSize = fontSize;
+            tmp.fontStyle = fontStyle;
+            tmp.color = color;
+            tmp.alignment = TextAlignmentOptions.TopLeft;
+
+            return tmp;
+        }
+
+        /// <summary>
+        /// Создать прогресс-бар.
+        /// </summary>
+        private static Slider CreateBar(
+            GameObject parent, string name,
+            Vector2 position, float width, float height,
+            Color fillColor)
+        {
+            GameObject sliderGO = new GameObject(name);
+            sliderGO.transform.SetParent(parent.transform, false);
+
+            RectTransform sliderRect = sliderGO.AddComponent<RectTransform>();
+            sliderRect.anchorMin = new Vector2(0, 1);
+            sliderRect.anchorMax = new Vector2(0, 1);
+            sliderRect.pivot = new Vector2(0, 1);
+            sliderRect.anchoredPosition = position;
+            sliderRect.sizeDelta = new Vector2(width, height);
+
+            Slider slider = sliderGO.AddComponent<Slider>();
+
+            // Background
+            GameObject bgGO = new GameObject("Background");
+            bgGO.transform.SetParent(sliderGO.transform, false);
+            RectTransform bgRect = bgGO.AddComponent<RectTransform>();
+            bgRect.anchorMin = Vector2.zero;
+            bgRect.anchorMax = Vector2.one;
+            bgRect.sizeDelta = Vector2.zero;
+            Image bgImage = bgGO.AddComponent<Image>();
+            bgImage.color = new Color(0.2f, 0.2f, 0.25f);
+
+            // Fill Area
+            GameObject fillAreaGO = new GameObject("Fill Area");
+            fillAreaGO.transform.SetParent(sliderGO.transform, false);
+            RectTransform fillAreaRect = fillAreaGO.AddComponent<RectTransform>();
+            fillAreaRect.anchorMin = Vector2.zero;
+            fillAreaRect.anchorMax = Vector2.one;
+            fillAreaRect.sizeDelta = Vector2.zero;
+
+            // Fill
+            GameObject fillGO = new GameObject("Fill");
+            fillGO.transform.SetParent(fillAreaGO.transform, false);
+            RectTransform fillRect = fillGO.AddComponent<RectTransform>();
+            fillRect.anchorMin = Vector2.zero;
+            fillRect.anchorMax = Vector2.one;
+            fillRect.sizeDelta = Vector2.zero;
+            Image fillImage = fillGO.AddComponent<Image>();
+            fillImage.color = fillColor;
+
+            slider.targetGraphic = bgImage;
+            slider.fillRect = fillRect;
+            slider.handleRect = null;
+            slider.direction = Slider.Direction.LeftToRight;
+            slider.minValue = 0;
+            slider.maxValue = 100;
+            slider.value = 100;
+            slider.interactable = false;
+
+            return slider;
+        }
+
+        /// <summary>
+        /// Проверить: есть ли ассеты в папке.
+        /// </summary>
+        private static bool HasAssetsInFolder(string folderPath)
+        {
+            if (!AssetDatabase.IsValidFolder(folderPath))
+                return false;
+
+            var guids = AssetDatabase.FindAssets("", new[] { folderPath });
+            return guids.Length > 0;
+        }
+    }
+}
+#endif
