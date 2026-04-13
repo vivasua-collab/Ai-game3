@@ -1,13 +1,13 @@
 // ============================================================================
 // FullSceneBuilder.cs — Инкрементальный One-Click Builder сцены
 // Cultivation World Simulator
-// Версия: 1.1
+// Версия: 1.2
 // ============================================================================
 // Создано: 2026-04-13 08:00:00 UTC
-// Редактировано: 2026-04-13 12:08:04 UTC — видимый спрайт игрока, тёмно-синий фон камеры
+// Редактировано: 2026-04-13 13:35:27 UTC — Phase 14: Tile Assets, Phase 15: Test Location Config
 //
 // АРХИТЕКТУРА:
-//   13 фаз, каждая идемпотентна (повторный запуск безопасен).
+//   15 фаз, каждая идемпотентна (повторный запуск безопасен).
 //   Фаза проверяет что уже сделано и пропускает при необходимости.
 //   Можно запустить все фазы разом или по отдельности.
 //
@@ -117,6 +117,8 @@ namespace CultivationGame.Editor
             "Assets/Sprites/Combat",
             "Assets/Sprites/UI",
             "Assets/Sprites/Cultivation",
+            "Assets/Tiles/Terrain",
+            "Assets/Tiles/Objects",
             "Assets/Audio/Music",
             "Assets/Audio/SFX",
             "Assets/Art/Characters",
@@ -256,6 +258,20 @@ namespace CultivationGame.Editor
                 isNeeded = IsSaveSceneNeeded,
                 execute = ExecuteSaveScene
             },
+            new PhaseInfo
+            {
+                name = "Create & Assign Tile Assets",
+                menuPath = "Phase 14: Create Tile Assets",
+                isNeeded = IsCreateTileAssetsNeeded,
+                execute = ExecuteCreateTileAssets
+            },
+            new PhaseInfo
+            {
+                name = "Configure Test Location",
+                menuPath = "Phase 15: Configure Test Location",
+                isNeeded = IsConfigureTestLocationNeeded,
+                execute = ExecuteConfigureTestLocation
+            },
         };
 
         #endregion
@@ -374,6 +390,12 @@ namespace CultivationGame.Editor
 
         [MenuItem("Tools/Full Scene Builder/Phase 13: Save Scene", false, 113)]
         public static void RunPhase13() { RunSinglePhase(12); }
+
+        [MenuItem("Tools/Full Scene Builder/Phase 14: Create Tile Assets", false, 114)]
+        public static void RunPhase14() { RunSinglePhase(13); }
+
+        [MenuItem("Tools/Full Scene Builder/Phase 15: Configure Test Location", false, 115)]
+        public static void RunPhase15() { RunSinglePhase(14); }
 
         // ====================================================================
         //  UTILITY: Run Single Phase
@@ -978,6 +1000,8 @@ namespace CultivationGame.Editor
             var objectTilemap = objectsObj.AddComponent<Tilemap>();
             var objectRenderer = objectsObj.AddComponent<TilemapRenderer>();
             objectRenderer.sortOrder = (TilemapRenderer.SortOrder)1;
+            // Коллайдер для объектов (деревья, камни и т.д.)
+            objectsObj.AddComponent<TilemapCollider2D>();
 
             // TileMapController
             GameObject controllerObj = new GameObject("TileMapController");
@@ -1457,6 +1481,324 @@ namespace CultivationGame.Editor
                     }
                 }
             }
+        }
+
+        // ====================================================================
+        //  PHASE 14: CREATE & ASSIGN TILE ASSETS
+        //  Редактировано: 2026-04-13 13:35:27 UTC
+        // ====================================================================
+
+        private static bool IsCreateTileAssetsNeeded()
+        {
+            // Проверяем: существуют ли .asset файлы тайлов
+            bool terrainAssetsExist = HasAssetsInFolder("Assets/Tiles/Terrain");
+            bool objectAssetsExist = HasAssetsInFolder("Assets/Tiles/Objects");
+
+            if (!terrainAssetsExist || !objectAssetsExist)
+                return true;
+
+            // Проверяем: назначены ли TileBase в TileMapController
+            EnsureSceneOpen();
+            var controller = UnityEngine.Object.FindFirstObjectByType<TileMapController>();
+            if (controller == null)
+                return true;
+
+            var so = new SerializedObject(controller);
+            var grassProp = so.FindProperty("grassTile");
+            if (grassProp == null || grassProp.objectReferenceValue == null)
+                return true;
+
+            return false;
+        }
+
+        private static void ExecuteCreateTileAssets()
+        {
+            // Шаг 1: Убедиться что спрайты существуют
+            if (!Directory.Exists("Assets/Sprites/Tiles") ||
+                !File.Exists("Assets/Sprites/Tiles/terrain_grass.png"))
+            {
+                Debug.Log("[FullSceneBuilder] Phase 14: Спрайты не найдены, генерируем...");
+                TileSpriteGenerator.GenerateAllSprites();
+            }
+
+            // Шаг 2: Создать папки для тайлов
+            EnsureDirectory("Assets/Tiles/Terrain");
+            EnsureDirectory("Assets/Tiles/Objects");
+
+            // Шаг 3: Создать TerrainTile .asset файлы
+            CreateTerrainTileAsset("Tile_Grass", "terrain_grass", TerrainType.Grass, 1.0f, true, GameTileFlags.Passable);
+            CreateTerrainTileAsset("Tile_Dirt", "terrain_dirt", TerrainType.Dirt, 1.0f, true, GameTileFlags.Passable);
+            CreateTerrainTileAsset("Tile_Stone", "terrain_stone", TerrainType.Stone, 1.0f, true, GameTileFlags.Passable);
+            CreateTerrainTileAsset("Tile_WaterShallow", "terrain_water_shallow", TerrainType.Water_Shallow, 2.0f, true, GameTileFlags.Passable | GameTileFlags.Swimable);
+            CreateTerrainTileAsset("Tile_WaterDeep", "terrain_water_deep", TerrainType.Water_Deep, 0.0f, false, GameTileFlags.Swimable | GameTileFlags.Flyable);
+            CreateTerrainTileAsset("Tile_Sand", "terrain_sand", TerrainType.Sand, 1.2f, true, GameTileFlags.Passable);
+            CreateTerrainTileAsset("Tile_Void", "terrain_void", TerrainType.Void, 0.0f, false, GameTileFlags.None);
+
+            // Шаг 4: Создать ObjectTile .asset файлы
+            CreateObjectTileAsset("Tile_Tree", "obj_tree", TileObjectType.Tree_Oak, 200, true, true, true);
+            CreateObjectTileAsset("Tile_RockSmall", "obj_rock_small", TileObjectType.Rock_Small, 100, false, false, true);
+            CreateObjectTileAsset("Tile_RockMedium", "obj_rock_medium", TileObjectType.Rock_Medium, 300, true, true, true);
+            CreateObjectTileAsset("Tile_Bush", "obj_bush", TileObjectType.Bush, 50, false, false, false);
+            CreateObjectTileAsset("Tile_Chest", "obj_chest", TileObjectType.Chest, 50, false, false, false);
+
+            AssetDatabase.SaveAssets();
+            AssetDatabase.Refresh();
+
+            // Шаг 5: Назначить TileBase в TileMapController
+            AssignTileBasesToController();
+
+            Debug.Log("[FullSceneBuilder] Phase 14: Tile assets созданы и назначены");
+        }
+
+        /// <summary>
+        /// Создать TerrainTile .asset файл.
+        /// </summary>
+        private static void CreateTerrainTileAsset(string assetName, string spriteName, TerrainType terrainType, float moveCost, bool isPassable, GameTileFlags flags)
+        {
+            string assetPath = $"Assets/Tiles/Terrain/{assetName}.asset";
+
+            // Пропустить если уже существует
+            if (AssetDatabase.LoadAssetAtPath<TerrainTile>(assetPath) != null)
+                return;
+
+            // Создать asset
+            var tile = ScriptableObject.CreateInstance<TerrainTile>();
+            tile.terrainType = terrainType;
+            tile.moveCost = moveCost;
+            tile.isPassable = isPassable;
+            tile.flags = flags;
+            tile.color = Color.white;
+
+            // Назначить спрайт
+            string spritePath = $"Assets/Sprites/Tiles/{spriteName}.png";
+            var sprite = AssetDatabase.LoadAssetAtPath<Sprite>(spritePath);
+            if (sprite != null)
+            {
+                tile.sprite = sprite;
+            }
+            else
+            {
+                Debug.LogWarning($"[FullSceneBuilder] Спрайт не найден: {spritePath}");
+            }
+
+            AssetDatabase.CreateAsset(tile, assetPath);
+            Debug.Log($"[FullSceneBuilder] Создан TerrainTile: {assetPath}");
+        }
+
+        /// <summary>
+        /// Создать ObjectTile .asset файл.
+        /// </summary>
+        private static void CreateObjectTileAsset(string assetName, string spriteName, TileObjectType objectType, int durability, bool blocksVision, bool providesCover, bool isHarvestable)
+        {
+            string assetPath = $"Assets/Tiles/Objects/{assetName}.asset";
+
+            // Пропустить если уже существует
+            if (AssetDatabase.LoadAssetAtPath<ObjectTile>(assetPath) != null)
+                return;
+
+            // Создать asset
+            var tile = ScriptableObject.CreateInstance<ObjectTile>();
+            tile.objectType = objectType;
+            tile.durability = durability;
+            tile.blocksVision = blocksVision;
+            tile.providesCover = providesCover;
+            tile.isHarvestable = isHarvestable;
+            tile.isPassable = false; // Объекты по умолчанию непроходимы
+            tile.flags = GameTileFlags.None;
+            tile.color = Color.white;
+
+            // Назначить спрайт
+            string spritePath = $"Assets/Sprites/Tiles/{spriteName}.png";
+            var sprite = AssetDatabase.LoadAssetAtPath<Sprite>(spritePath);
+            if (sprite != null)
+            {
+                tile.sprite = sprite;
+            }
+            else
+            {
+                Debug.LogWarning($"[FullSceneBuilder] Спрайт не найден: {spritePath}");
+            }
+
+            AssetDatabase.CreateAsset(tile, assetPath);
+            Debug.Log($"[FullSceneBuilder] Создан ObjectTile: {assetPath}");
+        }
+
+        /// <summary>
+        /// Назначить TileBase ссылки в TileMapController через SerializedObject.
+        /// </summary>
+        private static void AssignTileBasesToController()
+        {
+            EnsureSceneOpen();
+
+            var controller = UnityEngine.Object.FindFirstObjectByType<TileMapController>();
+            if (controller == null)
+            {
+                Debug.LogWarning("[FullSceneBuilder] TileMapController не найден в сцене. Пропускаем назначение TileBase.");
+                return;
+            }
+
+            var so = new SerializedObject(controller);
+
+            // Terrain Tiles
+            AssignTileProperty(so, "grassTile", "Assets/Tiles/Terrain/Tile_Grass.asset");
+            AssignTileProperty(so, "dirtTile", "Assets/Tiles/Terrain/Tile_Dirt.asset");
+            AssignTileProperty(so, "stoneTile", "Assets/Tiles/Terrain/Tile_Stone.asset");
+            AssignTileProperty(so, "waterShallowTile", "Assets/Tiles/Terrain/Tile_WaterShallow.asset");
+            AssignTileProperty(so, "waterDeepTile", "Assets/Tiles/Terrain/Tile_WaterDeep.asset");
+            AssignTileProperty(so, "sandTile", "Assets/Tiles/Terrain/Tile_Sand.asset");
+            AssignTileProperty(so, "voidTile", "Assets/Tiles/Terrain/Tile_Void.asset");
+
+            // Object Tiles
+            AssignTileProperty(so, "treeTile", "Assets/Tiles/Objects/Tile_Tree.asset");
+            AssignTileProperty(so, "rockSmallTile", "Assets/Tiles/Objects/Tile_RockSmall.asset");
+            AssignTileProperty(so, "rockMediumTile", "Assets/Tiles/Objects/Tile_RockMedium.asset");
+            AssignTileProperty(so, "bushTile", "Assets/Tiles/Objects/Tile_Bush.asset");
+            AssignTileProperty(so, "chestTile", "Assets/Tiles/Objects/Tile_Chest.asset");
+
+            so.ApplyModifiedProperties();
+            Debug.Log("[FullSceneBuilder] TileBase ссылки назначены в TileMapController");
+        }
+
+        /// <summary>
+        /// Назначить свойство TileBase из asset файла.
+        /// </summary>
+        private static void AssignTileProperty(SerializedObject so, string propertyName, string assetPath)
+        {
+            var prop = so.FindProperty(propertyName);
+            if (prop == null)
+            {
+                Debug.LogWarning($"[FullSceneBuilder] Свойство '{propertyName}' не найдено в TileMapController");
+                return;
+            }
+
+            var tileAsset = AssetDatabase.LoadAssetAtPath<TileBase>(assetPath);
+            if (tileAsset != null)
+            {
+                prop.objectReferenceValue = tileAsset;
+            }
+            else
+            {
+                Debug.LogWarning($"[FullSceneBuilder] Asset не найден: {assetPath}");
+            }
+        }
+
+        // ====================================================================
+        //  PHASE 15: CONFIGURE TEST LOCATION
+        //  Редактировано: 2026-04-13 13:35:27 UTC
+        // ====================================================================
+
+        private static bool IsConfigureTestLocationNeeded()
+        {
+            EnsureSceneOpen();
+
+            // Проверяем: настроена ли камера для тайловой карты
+            var cam = Camera.main;
+            if (cam == null)
+                return true;
+
+            // Если камера на позиции (0,0,-10) — значит ещё не настроена для тайловой карты
+            if (cam.transform.position.x < 1f && cam.transform.position.y < 1f && cam.orthographicSize < 8f)
+                return true;
+
+            // Проверяем: есть ли объект Grid в сцене
+            if (UnityEngine.Object.FindFirstObjectByType<Grid>() == null)
+                return true;
+
+            return false;
+        }
+
+        private static void ExecuteConfigureTestLocation()
+        {
+            EnsureSceneOpen();
+
+            // --- Камера: позиционировать для тайловой карты ---
+            var cam = Camera.main;
+            if (cam != null)
+            {
+                // Найти TileMapController для определения центра карты
+                var controller = UnityEngine.Object.FindFirstObjectByType<TileMapController>();
+                if (controller != null)
+                {
+                    var so = new SerializedObject(controller);
+                    int width = so.FindProperty("defaultWidth")?.intValue ?? 30;
+                    int height = so.FindProperty("defaultHeight")?.intValue ?? 20;
+
+                    // Центр карты в мировых координатах (тайл = 2м)
+                    float centerX = width * 2f / 2f;
+                    float centerY = height * 2f / 2f;
+
+                    cam.transform.position = new Vector3(centerX, centerY, -10f);
+                    cam.orthographicSize = 15f;
+                    cam.orthographic = true;
+
+                    Debug.Log($"[FullSceneBuilder] Камера настроена: позиция ({centerX}, {centerY}, -10), size=15");
+                }
+            }
+
+            // --- Composite Collider на Terrain (оптимизация) ---
+            var grid = UnityEngine.Object.FindFirstObjectByType<Grid>();
+            if (grid != null)
+            {
+                // Найти Terrain дочерний объект
+                var terrainTransform = grid.transform.Find("Terrain");
+                if (terrainTransform != null)
+                {
+                    var terrainObj = terrainTransform.gameObject;
+
+                    // Проверить/добавить TilemapCollider2D
+                    var terrainCollider = terrainObj.GetComponent<TilemapCollider2D>();
+                    if (terrainCollider == null)
+                    {
+                        terrainObj.AddComponent<TilemapCollider2D>();
+                    }
+
+                    // Composite Collider для оптимизации (опционально)
+                    // Примечание: CompositeCollider2D требует Rigidbody2D
+                    // Для простоты оставляем без композита — Terrain коллайдер работает и так
+                }
+
+                // Найти Objects дочерний объект
+                var objectsTransform = grid.transform.Find("Objects");
+                if (objectsTransform != null)
+                {
+                    var objectsObj = objectsTransform.gameObject;
+
+                    // Проверить/добавить TilemapCollider2D на Objects
+                    var objectCollider = objectsObj.GetComponent<TilemapCollider2D>();
+                    if (objectCollider == null)
+                    {
+                        objectsObj.AddComponent<TilemapCollider2D>();
+                        Debug.Log("[FullSceneBuilder] TilemapCollider2D добавлен на Objects");
+                    }
+                }
+            }
+
+            // --- Убедиться что TestLocationGameController назначен ---
+            var gameController = UnityEngine.Object.FindFirstObjectByType<TestLocationGameController>();
+            if (gameController == null)
+            {
+                // Создать если нет
+                var controller = UnityEngine.Object.FindFirstObjectByType<TileMapController>();
+                if (controller != null)
+                {
+                    var gcObj = new GameObject("GameController");
+                    var gc = gcObj.AddComponent<TestLocationGameController>();
+
+                    var gso = new SerializedObject(gc);
+                    gso.FindProperty("tileMapController").objectReferenceValue = controller;
+                    gso.ApplyModifiedProperties();
+
+                    // DestructibleObjectController
+                    var dc = gcObj.AddComponent<DestructibleObjectController>();
+                    var dso = new SerializedObject(dc);
+                    dso.FindProperty("tileMapController").objectReferenceValue = controller;
+                    dso.ApplyModifiedProperties();
+
+                    Debug.Log("[FullSceneBuilder] GameController + DestructibleObjectController созданы");
+                }
+            }
+
+            Debug.Log("[FullSceneBuilder] Phase 15: Test Location настроена");
         }
     }
 }

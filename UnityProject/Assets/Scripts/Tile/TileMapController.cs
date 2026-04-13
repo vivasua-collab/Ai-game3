@@ -2,7 +2,7 @@
 // TileMapController.cs — Контроллер карты тайлов
 // Cultivation World Simulator
 // Создано: 2026-04-07 14:24:05 UTC
-// Редактировано: 2026-04-08 06:17:46 UTC
+// Редактировано: 2026-04-13 13:35:27 UTC — улучшенная тестовая локация
 // ============================================================================
 
 using System;
@@ -114,6 +114,7 @@ namespace CultivationGame.TileSystem
 
         /// <summary>
         /// Добавить тестовые элементы на карту.
+        /// Редактировано: 2026-04-13 13:35:27 UTC — насыщенная тестовая локация
         /// </summary>
         private void AddTestFeatures()
         {
@@ -121,23 +122,60 @@ namespace CultivationGame.TileSystem
             int width = mapData.width;
             int height = mapData.height;
 
-            // Пруд в углу
-            for (int x = 5; x < 12; x++)
+            // === Зона 1: Песчаный берег (левый нижний угол) ===
+            for (int x = 0; x < 6; x++)
             {
-                for (int y = 5; y < 10; y++)
+                for (int y = 0; y < 4; y++)
                 {
                     var tile = mapData.GetTile(x, y);
                     if (tile != null)
                     {
-                        tile.terrain = (x == 5 || x == 11 || y == 5 || y == 9) 
-                            ? TerrainType.Water_Shallow 
-                            : TerrainType.Water_Deep;
+                        tile.terrain = TerrainType.Sand;
                         tile.UpdateTerrainProperties();
                     }
                 }
             }
 
-            // Каменная площадка в центре
+            // === Зона 2: Пруд (левый нижний угол, рядом с песком) ===
+            for (int x = 4; x < 10; x++)
+            {
+                for (int y = 4; y < 9; y++)
+                {
+                    var tile = mapData.GetTile(x, y);
+                    if (tile != null)
+                    {
+                        // Форма пруда — овал
+                        float dx = (x - 7f) / 3f;
+                        float dy = (y - 6.5f) / 2.5f;
+                        if (dx * dx + dy * dy <= 1f)
+                        {
+                            tile.terrain = (dx * dx + dy * dy > 0.6f)
+                                ? TerrainType.Water_Shallow
+                                : TerrainType.Water_Deep;
+                            tile.UpdateTerrainProperties();
+                        }
+                    }
+                }
+            }
+
+            // === Зона 3: Земляная дорога (диагональ через карту) ===
+            for (int i = 0; i < Mathf.Min(width, height); i++)
+            {
+                // Дорога шириной 2 тайла
+                for (int offset = 0; offset < 2; offset++)
+                {
+                    int rx = i + offset;
+                    int ry = i;
+                    var tile = mapData.GetTile(rx, ry);
+                    if (tile != null && tile.terrain == TerrainType.Grass)
+                    {
+                        tile.terrain = TerrainType.Dirt;
+                        tile.UpdateTerrainProperties();
+                    }
+                }
+            }
+
+            // === Зона 4: Каменная площадка в центре ===
             int centerX = width / 2;
             int centerY = height / 2;
             for (int x = centerX - 3; x <= centerX + 3; x++)
@@ -153,31 +191,60 @@ namespace CultivationGame.TileSystem
                 }
             }
 
-            // Деревья по периметру (кроме площадки)
-            for (int i = 0; i < 30; i++)
+            // === Зона 5: Каменный алтарь (центр площадки) ===
+            var altarTile = mapData.GetTile(centerX, centerY);
+            if (altarTile != null)
+            {
+                altarTile.baseQiDensity = 500;
+                altarTile.currentQiDensity = 500;
+            }
+
+            // === Растительность: Деревья ===
+            for (int i = 0; i < 40; i++)
             {
                 int x = random.Next(0, width);
                 int y = random.Next(0, height);
-                
-                // Избегать центра и воды
-                if (Mathf.Abs(x - centerX) <= 4 && Mathf.Abs(y - centerY) <= 4) continue;
-                if (x >= 5 && x < 12 && y >= 5 && y < 10) continue;
+
+                // Избегать особых зон
+                if (IsInSpecialZone(x, y, centerX, centerY)) continue;
 
                 var tile = mapData.GetTile(x, y);
                 if (tile != null && tile.IsPassable() && tile.objects.Count == 0)
                 {
-                    var treeObj = new TileObjectData(TileObjectType.Tree_Oak);
+                    var treeObj = new TileObjectData(
+                        random.Next(3) == 0 ? TileObjectType.Tree_Pine :
+                        random.Next(3) == 0 ? TileObjectType.Tree_Birch :
+                        TileObjectType.Tree_Oak
+                    );
                     tile.AddObject(treeObj);
                 }
             }
 
-            // Камни
+            // === Растительность: Кусты ===
+            for (int i = 0; i < 20; i++)
+            {
+                int x = random.Next(0, width);
+                int y = random.Next(0, height);
+
+                if (IsInSpecialZone(x, y, centerX, centerY)) continue;
+
+                var tile = mapData.GetTile(x, y);
+                if (tile != null && tile.objects.Count == 0)
+                {
+                    var bushObj = new TileObjectData(
+                        random.Next(4) == 0 ? TileObjectType.Bush_Berry : TileObjectType.Bush
+                    );
+                    tile.AddObject(bushObj);
+                }
+            }
+
+            // === Камни ===
             for (int i = 0; i < 15; i++)
             {
                 int x = random.Next(0, width);
                 int y = random.Next(0, height);
-                
-                if (x >= 5 && x < 12 && y >= 5 && y < 10) continue;
+
+                if (IsInSpecialZone(x, y, centerX, centerY)) continue;
 
                 var tile = mapData.GetTile(x, y);
                 if (tile != null && tile.IsPassable() && tile.objects.Count == 0)
@@ -189,19 +256,74 @@ namespace CultivationGame.TileSystem
                 }
             }
 
-            // Кусты
+            // === Интерактивные объекты: Сундук ===
+            for (int i = 0; i < 3; i++)
+            {
+                int x = random.Next(2, width - 2);
+                int y = random.Next(2, height - 2);
+
+                var tile = mapData.GetTile(x, y);
+                if (tile != null && tile.IsPassable() && tile.objects.Count == 0)
+                {
+                    var chestObj = new TileObjectData(TileObjectType.Chest);
+                    tile.AddObject(chestObj);
+                }
+            }
+
+            // === Рудная жила (рядом с камнями) ===
+            for (int i = 0; i < 4; i++)
+            {
+                int x = random.Next(0, width);
+                int y = random.Next(0, height);
+
+                var tile = mapData.GetTile(x, y);
+                if (tile != null && tile.terrain == TerrainType.Stone && tile.objects.Count == 0)
+                {
+                    var oreObj = new TileObjectData(TileObjectType.OreVein);
+                    tile.AddObject(oreObj);
+                }
+            }
+
+            // === Трава (проходимые объекты) ===
             for (int i = 0; i < 10; i++)
             {
                 int x = random.Next(0, width);
                 int y = random.Next(0, height);
 
                 var tile = mapData.GetTile(x, y);
-                if (tile != null && tile.objects.Count == 0)
+                if (tile != null && tile.objects.Count == 0 && tile.terrain == TerrainType.Grass)
                 {
-                    var bushObj = new TileObjectData(TileObjectType.Bush);
-                    tile.AddObject(bushObj);
+                    var herbObj = new TileObjectData(
+                        random.Next(2) == 0 ? TileObjectType.Herb : TileObjectType.Grass_Tall
+                    );
+                    tile.AddObject(herbObj);
                 }
             }
+        }
+
+        /// <summary>
+        /// Проверить, находится ли тайл в специальной зоне (пруд, центр).
+        /// </summary>
+        private bool IsInSpecialZone(int x, int y, int centerX, int centerY)
+        {
+            // Центральная каменная площадка
+            if (Mathf.Abs(x - centerX) <= 4 && Mathf.Abs(y - centerY) <= 4)
+                return true;
+
+            // Пруд
+            if (x >= 4 && x < 10 && y >= 4 && y < 9)
+            {
+                float dx = (x - 7f) / 3f;
+                float dy = (y - 6.5f) / 2.5f;
+                if (dx * dx + dy * dy <= 1.2f)
+                    return true;
+            }
+
+            // Песчаный берег
+            if (x < 6 && y < 4)
+                return true;
+
+            return false;
         }
 
         // === Rendering ===
@@ -268,6 +390,7 @@ namespace CultivationGame.TileSystem
 
         /// <summary>
         /// Получить Tile для типа объекта.
+        /// Редактировано: 2026-04-13 13:35:27 UTC — добавлены OreVein, Herb, Bush_Berry, Grass_Tall
         /// </summary>
         private TileBase GetObjectTile(TileObjectType type)
         {
@@ -278,8 +401,14 @@ namespace CultivationGame.TileSystem
                 TileObjectType.Tree_Birch => treeTile,
                 TileObjectType.Rock_Small => rockSmallTile,
                 TileObjectType.Rock_Medium => rockMediumTile,
+                TileObjectType.Rock_Large => rockMediumTile,
                 TileObjectType.Bush => bushTile,
+                TileObjectType.Bush_Berry => bushTile,
                 TileObjectType.Chest => chestTile,
+                TileObjectType.OreVein => rockMediumTile,   // Руда отображается как камень
+                TileObjectType.Herb => bushTile,            // Трава отображается как куст
+                TileObjectType.Grass_Tall => bushTile,      // Высокая трава как куст
+                TileObjectType.Flower => bushTile,          // Цветы как куст
                 _ => null
             };
         }
