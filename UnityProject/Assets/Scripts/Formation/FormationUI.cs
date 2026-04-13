@@ -4,7 +4,7 @@
 // Версия: 1.1 — Замена UnityEngine.Input на Input System
 // ============================================================================
 // Создано: 2026-04-03 13:45:00 UTC
-// Редактировано: 2026-04-13 10:34:08 UTC
+// Редактировано: 2026-04-13 12:08:04 UTC — замена Input.mousePosition на Mouse.current.position
 // ============================================================================
 //
 // Источник: docs/FORMATION_SYSTEM.md
@@ -482,8 +482,8 @@ namespace CultivationGame.Formation
         {
             if (placementPreview == null) return;
 
-            // Получаем позицию мыши
-            Vector3 mousePos = Input.mousePosition;
+            // Получаем позицию мыши (Input System)
+            Vector3 mousePos = Mouse.current != null ? (Vector3)Mouse.current.position.value : Vector3.zero;
             mousePos.z = Camera.main.nearClipPlane;
             Vector3 worldPos = Camera.main.ScreenToWorldPoint(mousePos);
             worldPos.z = 0;

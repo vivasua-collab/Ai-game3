@@ -4,7 +4,7 @@
 // Версия: 1.1 — Исправлены проблемы с event subscriptions
 // ============================================================================
 // Создан: 2026-04-01 13:03:39 UTC
-// Редактировано: 2026-04-02 15:30:00 UTC
+// Редактировано: 2026-04-13 12:05:15 UTC — FIX: WaitForSeconds→WaitForSecondsRealtime (timeScale deadlock)
 //
 // ИЗМЕНЕНИЯ В ВЕРСИИ 1.1:
 // - FIX: Lambda handlers заменены на named methods
@@ -184,7 +184,10 @@ namespace CultivationGame.Managers
             Log("[GameInitializer] Starting initialization...");
             OnInitializationStart?.Invoke();
             
-            yield return new WaitForSeconds(initializationDelay);
+            // FIX: WaitForSecondsRealtime — не зависит от timeScale.
+            // UIManager.Start() ставит timeScale=0 (MainMenu), из-за чего
+            // WaitForSeconds зависает навсегда → игра не инициализируется.
+            yield return new WaitForSecondsRealtime(initializationDelay);
             
             // 1. GameEvents
             yield return InitializeSystem("GameEvents", InitializeGameEvents);

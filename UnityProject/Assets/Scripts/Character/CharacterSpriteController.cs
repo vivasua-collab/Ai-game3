@@ -1,7 +1,9 @@
 // Создано: 2026-04-03
+// Редактировано: 2026-04-13 12:08:04 UTC — замена Input.mousePosition на Mouse.current.position
 // Источник: docs/examples/CharacterSpriteMirroring.md
 
 using UnityEngine;
+using UnityEngine.InputSystem;
 
 namespace CultivationGame.Character // FIX CHR-H01: CultivationWorld→CultivationGame (2026-04-12)
 {
@@ -201,7 +203,8 @@ namespace CultivationGame.Character // FIX CHR-H01: CultivationWorld→Cultivati
         /// <returns>1 = вправо, -1 = влево</returns>
         public static int GetDirectionFromMouse(Vector2 characterPosition)
         {
-            Vector2 mousePos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
+            Vector2 mousePos = Camera.main.ScreenToWorldPoint(
+                Mouse.current != null ? (Vector3)Mouse.current.position.value : Vector3.zero);
             return mousePos.x > characterPosition.x ? 1 : -1;
         }
 

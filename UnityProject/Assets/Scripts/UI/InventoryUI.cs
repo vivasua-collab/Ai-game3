@@ -3,7 +3,7 @@
 // Cultivation World Simulator
 // Версия: 1.2 — Замена UnityEngine.Input на Input System
 // ============================================================================
-// Редактировано: 2026-04-13 10:34:08 UTC
+// Редактировано: 2026-04-13 12:08:04 UTC — замена Input.mousePosition на Mouse.current.position
 // Этап: 5 - UI Enhancement
 // ============================================================================
 
@@ -327,7 +327,7 @@ namespace CultivationGame.UI
             if (tooltipUI != null)
             {
                 tooltipUI.SetItem(slot.ItemData, slot.Count, slot.Durability);
-                tooltip.transform.position = Input.mousePosition + new Vector3(15, -15, 0);
+                tooltip.transform.position = (Mouse.current != null ? (Vector3)Mouse.current.position.value : Vector3.zero) + new Vector3(15, -15, 0);
             }
         }
 

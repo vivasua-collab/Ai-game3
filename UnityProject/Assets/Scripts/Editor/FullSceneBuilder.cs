@@ -4,7 +4,7 @@
 // Версия: 1.1
 // ============================================================================
 // Создано: 2026-04-13 08:00:00 UTC
-// Редактировано: 2026-04-13 10:14:18 UTC — исправление CS0103/CS0117 ошибок компиляции
+// Редактировано: 2026-04-13 12:08:04 UTC — видимый спрайт игрока, тёмно-синий фон камеры
 //
 // АРХИТЕКТУРА:
 //   13 фаз, каждая идемпотентна (повторный запуск безопасен).
@@ -615,7 +615,7 @@ namespace CultivationGame.Editor
             camObj.transform.position = new Vector3(0, 0, -10);
             var cam = camObj.GetComponent<Camera>();
             cam.clearFlags = CameraClearFlags.SolidColor;
-            cam.backgroundColor = Color.black;
+            cam.backgroundColor = new Color(0.05f, 0.07f, 0.12f, 1f); // Тёмно-синий вместо чёрного
             cam.orthographic = true;
             cam.orthographicSize = 5f;
 
@@ -763,9 +763,10 @@ namespace CultivationGame.Editor
             player.AddComponent<SleepSystem>();
             player.AddComponent<InteractionController>();
 
-            // SpriteRenderer (временно — белый квадрат)
+            // SpriteRenderer — генерируем видимый спрайт персонажа
             var sr = player.AddComponent<SpriteRenderer>();
             sr.sortingOrder = 10;
+            sr.sprite = CreatePlayerSprite();
 
             // Настройка PlayerController
             SetupPlayerComponent<PlayerController>(player, pc =>
@@ -1350,6 +1351,112 @@ namespace CultivationGame.Editor
 
             var guids = AssetDatabase.FindAssets("", new[] { folderPath });
             return guids.Length > 0;
+        }
+
+        // ====================================================================
+        //  PLAYER SPRITE GENERATOR
+        // ====================================================================
+
+        /// <summary>
+        /// Генерирует процедурный спрайт персонажа (фигурка с контуром).
+        /// Временно используется, пока нет художественных ассетов.
+        /// </summary>
+        private static Sprite CreatePlayerSprite()
+        {
+            int size = 64;
+            Texture2D tex = new Texture2D(size, size, TextureFormat.RGBA32, false);
+            tex.filterMode = FilterMode.Point;
+
+            Color bodyColor = new Color(0.3f, 0.7f, 0.9f);   // Голубое тело
+            Color outlineColor = new Color(0.1f, 0.3f, 0.5f); // Тёмно-синий контур
+            Color headColor = new Color(0.95f, 0.85f, 0.7f);   // Телесный цвет головы
+            Color eyeColor = new Color(0.1f, 0.1f, 0.1f);      // Глаза
+            Color clear = Color.clear;
+
+            // Заполняем прозрачным
+            Color[] pixels = new Color[size * size];
+            for (int i = 0; i < pixels.Length; i++) pixels[i] = clear;
+
+            int cx = size / 2;
+
+            // Голова (круг r=8, центр y=50)
+            FillCircle(pixels, size, cx, 50, 8, headColor);
+            FillCircle(pixels, size, cx, 50, 8, outlineColor, true);
+            // Глаза
+            FillCircle(pixels, size, cx - 3, 51, 1, eyeColor);
+            FillCircle(pixels, size, cx + 3, 51, 1, eyeColor);
+
+            // Шея
+            FillRect(pixels, size, cx - 2, 42, 5, 3, bodyColor);
+
+            // Тело (прямоугольник)
+            FillRect(pixels, size, cx - 8, 24, 17, 18, bodyColor);
+            FillRect(pixels, size, cx - 8, 24, 17, 18, outlineColor, true);
+
+            // Руки
+            FillRect(pixels, size, cx - 12, 26, 4, 14, bodyColor);
+            FillRect(pixels, size, cx - 12, 26, 4, 14, outlineColor, true);
+            FillRect(pixels, size, cx + 9, 26, 4, 14, bodyColor);
+            FillRect(pixels, size, cx + 9, 26, 4, 14, outlineColor, true);
+
+            // Ноги
+            FillRect(pixels, size, cx - 6, 8, 5, 16, bodyColor);
+            FillRect(pixels, size, cx - 6, 8, 5, 16, outlineColor, true);
+            FillRect(pixels, size, cx + 2, 8, 5, 16, bodyColor);
+            FillRect(pixels, size, cx + 2, 8, 5, 16, outlineColor, true);
+
+            tex.SetPixels(pixels);
+            tex.Apply();
+
+            return Sprite.Create(tex, new Rect(0, 0, size, size), new Vector2(0.5f, 0.5f), 64f);
+        }
+
+        /// <summary>
+        /// Заливка круга (или только контура).
+        /// </summary>
+        private static void FillCircle(Color[] pixels, int size, int cx, int cy, int radius, Color color, bool outlineOnly = false)
+        {
+            for (int y = 0; y < size; y++)
+            {
+                for (int x = 0; x < size; x++)
+                {
+                    float dist = Mathf.Sqrt((x - cx) * (x - cx) + (y - cy) * (y - cy));
+                    if (outlineOnly)
+                    {
+                        if (dist >= radius - 1.5f && dist <= radius + 0.5f)
+                            pixels[y * size + x] = color;
+                    }
+                    else
+                    {
+                        if (dist <= radius)
+                            pixels[y * size + x] = color;
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// Заливка прямоугольника (или только контура).
+        /// </summary>
+        private static void FillRect(Color[] pixels, int size, int x0, int y0, int w, int h, Color color, bool outlineOnly = false)
+        {
+            for (int y = y0; y < y0 + h && y < size; y++)
+            {
+                for (int x = x0; x < x0 + w && x < size; x++)
+                {
+                    if (y < 0 || x < 0) continue;
+                    if (outlineOnly)
+                    {
+                        bool isBorder = (y == y0 || y == y0 + h - 1 || x == x0 || x == x0 + w - 1);
+                        if (isBorder)
+                            pixels[y * size + x] = color;
+                    }
+                    else
+                    {
+                        pixels[y * size + x] = color;
+                    }
+                }
+            }
         }
     }
 }
