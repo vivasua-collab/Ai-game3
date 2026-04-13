@@ -33,6 +33,12 @@
 | [14_FormationData.md](./14_FormationData.md) | 24+ формаций | Автоматически |
 | [15_FormationCoreData.md](./15_FormationCoreData.md) | 30+ ядер формаций | Автоматически |
 
+### Полный генератор сцены (One-Click)
+
+| Файл | Что создаёт | Способ |
+|------|-------------|--------|
+| **FullSceneBuilder** (см. ниже) | Вся сцена + ассеты за 1 клик | Автоматически |
+
 ### Сцены и игрок
 
 | Файл | Что создаёт | Способ |
@@ -60,10 +66,67 @@
 
 ## 🤖 Инструменты автоматизации
 
+### ⚡ FullSceneBuilder — One-Click Builder
+
+**Скрипт:** `Editor/FullSceneBuilder.cs`
+**Меню:** `Tools → Full Scene Builder → Build All (One Click)`
+
+Инкрементальный генератор полной сцены. Выполняет 13 фаз, каждая идемпотентна
+(повторный запуск безопасен — пропускает уже выполненные фазы).
+
+#### Фазы
+
+| # | Фаза | Что делает |
+|---|------|------------|
+| 01 | Folders | Создаёт 26 папок проекта |
+| 02 | Tags & Layers | Добавляет 5 тегов + 7 слоёв |
+| 03 | Create Scene | Создаёт Main.unity |
+| 04 | Camera & Light | Камера (ortho) + Directional Light |
+| 05 | GameManager | GameManager + GameInitializer + Systems (World, Time, Location, Event, Faction, Save, GeneratorRegistry) |
+| 06 | Player | Player с 8 компонентами (Controller, Body, Qi, Inventory, Equipment, Technique, Sleep, Interaction) + Rigidbody2D + Collider |
+| 07 | UI | Canvas (ScreenSpaceOverlay) + HUD + EventSystem + InputSystemUIInputModule |
+| 08 | Tilemap | Grid + Terrain/Objects Tilemaps + TileMapController + TestLocationGameController + DestructibleObjectController |
+| 09 | Generate Assets | ScriptableObject'ы из JSON (CultivationLevels, Elements, MortalStages, Techniques, NPCPresets, Equipment, Items, Materials, Formations, FormationCores) + валидация |
+| 10 | Tile Sprites | 8 terrain + 5 object спрайтов (64×64 px) |
+| 11 | Formation UI Prefabs | Префабы UI для формаций |
+| 12 | TMP Essentials | Проверка/импорт TMP Essentials |
+| 13 | Save Scene | Сохранение сцены |
+
+#### Как использовать
+
+1. Откройте Unity Editor с проектом
+2. Убедитесь, что все JSON-файлы на месте в `Assets/Data/JSON/` (14 файлов)
+3. Нажмите: **Tools → Full Scene Builder → Build All (One Click)**
+4. Дождитесь завершения (диалог с результатом)
+
+#### Запуск отдельных фаз
+
+Каждую фазу можно запустить отдельно через меню:
+```
+Tools → Full Scene Builder → Phase 01: Folders
+Tools → Full Scene Builder → Phase 02: Tags and Layers
+...
+Tools → Full Scene Builder → Phase 13: Save Scene
+```
+
+#### Повторный запуск
+
+Безопасен. Фаза проверяет `IsPhaseNeeded()` и пропускает, если результат уже есть.
+Например, если GameManager уже существует — Phase 05 пропустится.
+
+#### При ошибке в фазе
+
+Появится диалог: «Фаза упала. Продолжить?» — Да/Стоп.
+Остальные фазы выполнятся или прервутся по выбору.
+
+---
+
 ### Меню Unity Editor
 
 | Меню | Скрипт | Назначение |
 |------|--------|------------|
+| `Tools → Full Scene Builder → Build All` | `Editor/FullSceneBuilder.cs` | **Всё за 1 клик (13 фаз)** |
+| `Tools → Full Scene Builder → Phase NN` | `Editor/FullSceneBuilder.cs` | Отдельная фаза |
 | `Window → Asset Generator` | `Editor/AssetGenerator.cs` | Базовые данные |
 | `Window → Asset Generator Extended` | `Editor/AssetGeneratorExtended.cs` | Контент |
 | `Tools → Generate Assets → Formation Assets` | `Editor/FormationAssetGenerator.cs` | Формации |
@@ -74,6 +137,15 @@
 ---
 
 ## 🚀 Порядок настройки (быстрый старт)
+
+### ⚡ Вариант 1: One-Click (рекомендуется)
+
+1. **Всё сразу** — `Tools → Full Scene Builder → Build All (One Click)`
+
+Генератор создаст папки, теги, слои, сцену, камеры, GameManager, Player, UI, Tilemap,
+сгенерирует все ассеты из JSON, спрайты тайлов, префабы формаций и проверит TMP.
+
+### Вариант 2: Пошаговый
 
 1. **Базовые данные** — `Window → Asset Generator` → Generate All
 2. **Контент** — `Window → Asset Generator Extended` → All Extended Assets
@@ -104,4 +176,4 @@
 
 ---
 
-*Обновлено: 2026-04-11*
+*Обновлено: 2026-04-13 10:31:16 UTC*
