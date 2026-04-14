@@ -746,3 +746,25 @@ Stage Summary:
 - Из 9 критических багов исправлено 8, остался 1 (missing scripts — требует ручной чистки в Unity Editor)
 - Все файлы перемещены на правильные места по START_PROMPT.md
 - Аудит обновлён: CRITICAL 9→1, HIGH 15→13, MEDIUM 22→20, LOW 18
+
+---
+Task ID: ai-sprites
+Agent: Main Agent
+Task: AI-генерация спрайтов тайлов (17 файлов) — замена placeholder-ов на AI-спрайты
+
+Work Log:
+- Клонирован репозиторий Ai-game3 (ветка main, HEAD=ed5a62d — после merge PR #5)
+- Создана новая ветка feat/ai-sprites
+- Проверены текущие спрайты: 17 файлов 64×64 RGBA, placeholder-качество (200-5000 байт, 4-40 уникальных цветов)
+- AI-генерация через `z-ai image` CLI: 17 спрайтов в 1024×1024
+  - Terrain (10): grass, sand, water_deep, water_shallow, snow, ice, lava, stone, dirt, void
+  - Objects (7): tree, rock_medium, rock_small, bush, herb, ore_vein, chest
+- Масштабирование через PIL LANCZOS: 1024×1024 → 64×64 RGBA
+- Итоговое качество: 5-12 КБ на спрайт (vs 200-5000 байт placeholder)
+- Коммит 3232fd2, push success
+- Создан PR #7: https://github.com/vivasua-collab/Ai-game3/pull/7
+
+Stage Summary:
+- 17 AI-спрайтов сгенерированы и заменены
+- PR #7 создан и готов к merge
+- Спрайты содержат xianxia-тематику (qi-энергия, мистические элементы)
