@@ -2,7 +2,7 @@
 // TileMapController.cs — Контроллер карты тайлов
 // Cultivation World Simulator
 // Создано: 2026-04-07 14:24:05 UTC
-// Редактировано: 2026-04-14 13:45:00 UTC — snowTile, defaultWidth/Height=100×80, GetTerrainTile(Snow)
+// Редактировано: 2026-04-14 14:14:00 UTC — snowTile + Snow биом, defaultWidth/Height=100×80, GetTerrainTile(Snow)
 // ============================================================================
 
 using System;
@@ -157,8 +157,17 @@ namespace CultivationGame.TileSystem
 
             // === БИОМ 4: Горный хребет (верхний правый угол) ===
             GenerateBiomeEllipse(width - 12, height - 10, 10, 10, TerrainType.Stone, random);
-            // Снежные пики (лёд на вершинах)
-            GenerateBiomeEllipse(width - 12, height - 6, 4, 4, TerrainType.Ice, random);
+            // Снежные пики — снежный биом вокруг гор (шире чем ледяные вершины)
+            // Редактировано: 2026-04-14 14:14:00 UTC
+            GenerateBiomeEllipse(width - 12, height - 8, 7, 6, TerrainType.Snow, random);
+            // Ледяные вершины (самый центр горного хребта)
+            GenerateBiomeEllipse(width - 12, height - 6, 3, 3, TerrainType.Ice, random);
+
+            // === БИОМ 5: Снежная тундра (верхний левый угол, рядом с каменными холмами) ===
+            // Редактировано: 2026-04-14 14:14:00 UTC
+            GenerateBiomeEllipse(15, height - 12, 8, 7, TerrainType.Snow, random);
+            // Ледяное озеро в тундре
+            GenerateBiomeEllipse(15, height - 14, 3, 2, TerrainType.Ice, random);
 
             // === ОЗЕРО 1: Левый нижний (рядом с песком) ===
             GenerateLake(10, 10, 5, 4, random);
@@ -381,6 +390,21 @@ namespace CultivationGame.TileSystem
                         random.Next(2) == 0 ? TileObjectType.Flower :
                         TileObjectType.Grass_Tall
                     );
+                    tile.AddObject(herbObj);
+                }
+            }
+
+            // === ЗИМНИЕ ТРАВЫ (в снежных биомах) ===
+            // Редактировано: 2026-04-14 14:14:00 UTC
+            for (int i = 0; i < 25; i++)
+            {
+                int x = random.Next(3, width - 3);
+                int y = random.Next(height / 2, height - 3);
+
+                var tile = mapData.GetTile(x, y);
+                if (tile != null && tile.objects.Count == 0 && tile.terrain == TerrainType.Snow)
+                {
+                    var herbObj = new TileObjectData(TileObjectType.Herb);
                     tile.AddObject(herbObj);
                 }
             }
