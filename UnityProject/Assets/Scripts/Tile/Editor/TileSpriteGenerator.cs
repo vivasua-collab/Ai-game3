@@ -231,7 +231,9 @@ namespace CultivationGame.TileSystem.Editor
             if (importer != null)
             {
                 importer.textureType = TextureImporterType.Sprite;
-                importer.spritePixelsPerUnit = TILE_SIZE;
+                // FIX: pixelsPerUnit=32 (64px / 2 юнита ячейки Grid), иначе зазоры между тайлами
+                // Редактировано: 2026-04-14 06:30:00 UTC
+                importer.spritePixelsPerUnit = TILE_SIZE / 2; // 64/2=32 — один тайл = 2 юнита
                 importer.filterMode = FilterMode.Point;
                 AssetDatabase.ImportAsset(path);
             }

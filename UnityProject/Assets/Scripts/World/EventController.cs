@@ -412,9 +412,26 @@ namespace CultivationGame.World
         
         public EventSaveData GetSaveData()
         {
+            // FIX: Сохраняем полные данные активных событий, а не только ID
+            // Редактировано: 2026-04-14 06:32:00 UTC
+            var activeEventSaveList = new List<ActiveEventSaveData>();
+            foreach (var ae in activeEvents)
+            {
+                activeEventSaveList.Add(new ActiveEventSaveData
+                {
+                    InstanceId = ae.InstanceId,
+                    TemplateId = ae.TemplateId,
+                    StartTime = ae.StartTime,
+                    Duration = ae.Duration,
+                    LocationId = ae.LocationId,
+                    IsActive = ae.IsActive,
+                    EventData = ae.EventData
+                });
+            }
+            
             return new EventSaveData
             {
-                ActiveEvents = activeEvents.ConvertAll(e => e.InstanceId).ToArray(),
+                ActiveEvents = activeEventSaveList.ToArray(),
                 EventHistory = eventHistory.ToArray()
             };
         }
@@ -422,7 +439,49 @@ namespace CultivationGame.World
         public void LoadSaveData(EventSaveData data)
         {
             eventHistory = new List<WorldEvent>(data.EventHistory);
+            
+            // FIX: Восстановление активных событий из полных данных, а не из ID
+            // Редактировано: 2026-04-14 06:32:00 UTC
+            activeEvents.Clear();
+            if (data.ActiveEvents != null)
+            {
+                foreach (var saved in data.ActiveEvents)
+                {
+                    if (saved == null) continue;
+                    activeEvents.Add(new ActiveEvent
+                    {
+                        InstanceId = saved.InstanceId,
+                        TemplateId = saved.TemplateId,
+                        StartTime = saved.StartTime,
+                        Duration = saved.Duration,
+                        LocationId = saved.LocationId,
+                        IsActive = saved.IsActive,
+                        IsProcessed = false, // Будет обработано в следующем Update
+                        EventData = saved.EventData
+                    });
+                }
+                
+                if (activeEvents.Count > 0)
+                    Debug.Log($"[EventController] Восстановлено {activeEvents.Count} активных событий");
+            }
         }
+    }
+    
+    /// <summary>
+    /// Данные активного события для сериализации.
+    /// FIX: Полная сериализация вместо просто ID.
+    // Редактировано: 2026-04-14 06:32:00 UTC
+    /// </summary>
+    [Serializable]
+    public class ActiveEventSaveData
+    {
+        public string InstanceId;
+        public string TemplateId;
+        public WorldEvent EventData;
+        public float StartTime;
+        public float Duration;
+        public string LocationId;
+        public bool IsActive;
     }
     
     /// <summary>
@@ -431,7 +490,7 @@ namespace CultivationGame.World
     [Serializable]
     public class EventSaveData
     {
-        public string[] ActiveEvents;
+        public ActiveEventSaveData[] ActiveEvents;
         public WorldEvent[] EventHistory;
     }
 }

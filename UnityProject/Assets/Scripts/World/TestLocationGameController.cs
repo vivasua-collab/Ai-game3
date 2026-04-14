@@ -302,7 +302,9 @@ namespace CultivationGame.World
             texture.SetPixels(colors);
             texture.Apply();
             
-            return Sprite.Create(texture, new Rect(0, 0, 64, 64), new Vector2(0.5f, 0.5f), 64);
+            // FIX: pixelsPerUnit=32 (64px / 2 юнита ячейки Grid), иначе зазоры между тайлами
+            // Редактировано: 2026-04-14 06:29:00 UTC
+            return Sprite.Create(texture, new Rect(0, 0, 64, 64), new Vector2(0.5f, 0.5f), 32);
         }
         
         // === Event Subscriptions ===

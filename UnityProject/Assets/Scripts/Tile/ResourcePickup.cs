@@ -177,8 +177,10 @@ namespace CultivationGame.TileSystem
                 }
                 
                 // ItemData не найден — ресурсы типа "wood"/"stone" без ScriptableObject
-                Debug.LogWarning($"[ResourcePickup] ItemData не найден для '{resourceId}'. Предмет подобран, но не добавлен в слоты инвентаря. Назначьте ItemData в Inspector или создайте ItemData для этого ресурса.");
-                return true; // Предмет всё равно подбирается (для игрового процесса)
+                // FIX: Возвращаем false — предмет НЕ подобран, чтобы не терять его бесследно.
+                // Редактировано: 2026-04-14 06:28:00 UTC
+                Debug.LogWarning($"[ResourcePickup] ItemData не найден для '{resourceId}'. Предмет НЕ подобран — назначьте ItemData в Inspector или создайте ItemData для этого ресурса.");
+                return false;
             }
             
             // Нет инвентаря вообще — всё равно подбираем
