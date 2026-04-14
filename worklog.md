@@ -723,3 +723,26 @@ Stage Summary:
   4. FactionData.FactionRelations Dictionary не сериализовался JsonUtility
   5. TestLocationGameController.CreateBasicPlayer() — недостающие компоненты
 - Push pending
+
+---
+Task ID: fix-14-remaining
+Agent: Main Agent
+Task: Fix-14 — Оставшиеся критические баги + перемещение файлов + сверка аудитов
+
+Work Log:
+- 2026-04-14 06:23 UTC: Перемещены файлы из UnityProject/ в корень проекта (по START_PROMPT.md):
+  - UnityProject/checkpoints/ → checkpoints/
+  - UnityProject/docs/ → docs/
+  - UnityProject/docs_temp/ → docs_temp/
+- 2026-04-14 06:25 UTC: Сверка аудитов 13.04 vs 14.04 — расхождений нет, 5 багов исправлено между датами
+- 2026-04-14 06:28 UTC: FIX ResourcePickup.cs — return false при null ItemData (тихая потеря предметов)
+- 2026-04-14 06:29 UTC: FIX TestLocationGameController.cs — CreateTempSprite pixelsPerUnit=64→32
+- 2026-04-14 06:30 UTC: FIX TileSpriteGenerator.cs — spritePixelsPerUnit=TILE_SIZE→TILE_SIZE/2 (64→32)
+- 2026-04-14 06:32 UTC: FIX EventController.cs — полная сериализация ActiveEventSaveData + восстановление при LoadSaveData
+- 2026-04-14 06:33 UTC: Push на GitHub (коммит f80f8c7)
+- 2026-04-14 06:35 UTC: Обновлён аудит AUDIT_2026-04-14.md — 1 критический баг остался (missing scripts)
+
+Stage Summary:
+- Из 9 критических багов исправлено 8, остался 1 (missing scripts — требует ручной чистки в Unity Editor)
+- Все файлы перемещены на правильные места по START_PROMPT.md
+- Аудит обновлён: CRITICAL 9→1, HIGH 15→13, MEDIUM 22→20, LOW 18
