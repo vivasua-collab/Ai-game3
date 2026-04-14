@@ -2,6 +2,7 @@
 // ResourceSpawner.cs — Спавнер ресурсных объектов на локации
 // Cultivation World Simulator
 // Создано: 2026-04-14 07:35:00 UTC
+// Редактировано: 2026-04-14 07:55:00 UTC — увеличены лимиты для карты 100×80, новые типы ресурсов
 // ============================================================================
 
 using System.Collections.Generic;
@@ -51,8 +52,8 @@ namespace CultivationGame.TileSystem
         [Header("Spawn Settings")]
         [SerializeField] private bool spawnOnStart = true;
         [SerializeField] private float respawnInterval = 60f; // секунды между респавнами
-        [SerializeField] private int maxResourcesTotal = 100;
-        [SerializeField] private int spawnMargin = 2; // отступ от краёв карты
+        [SerializeField] private int maxResourcesTotal = 250; // Редактировано: 2026-04-14 — увеличено для карты 100×80
+        [SerializeField] private int spawnMargin = 3; // отступ от краёв карты (увеличен)
 
         [Header("Visuals")]
         [SerializeField] private int spriteSize = 24;
@@ -356,19 +357,21 @@ namespace CultivationGame.TileSystem
 
         /// <summary>
         /// Установить стандартную конфигурацию ресурсов для тестовой локации.
+        /// Редактировано: 2026-04-14 07:55:00 UTC — увеличены лимиты для карты 100×80, добавлены новые типы
         /// </summary>
         public void SetDefaultResourceTypes()
         {
             resourceTypes.Clear();
 
+            // === Растительные ресурсы (лесная зона) ===
             resourceTypes.Add(new ResourceSpawnEntry
             {
                 resourceId = "herb",
                 displayName = "Целебная трава",
                 spriteColor = new Color(0.3f, 0.8f, 0.3f),
                 amount = 1,
-                minCount = 8,
-                maxCount = 15,
+                minCount = 15,
+                maxCount = 30,
                 spawnTerrain = new[] { TerrainType.Grass },
                 autoPickup = true
             });
@@ -379,20 +382,45 @@ namespace CultivationGame.TileSystem
                 displayName = "Ягоды",
                 spriteColor = new Color(0.8f, 0.2f, 0.3f),
                 amount = 3,
-                minCount = 5,
-                maxCount = 10,
+                minCount = 10,
+                maxCount = 20,
                 spawnTerrain = new[] { TerrainType.Grass },
                 autoPickup = true
             });
 
             resourceTypes.Add(new ResourceSpawnEntry
             {
+                resourceId = "mushroom",
+                displayName = "Гриб Ци",
+                spriteColor = new Color(0.7f, 0.5f, 0.9f),
+                amount = 2,
+                minCount = 8,
+                maxCount = 15,
+                spawnTerrain = new[] { TerrainType.Grass, TerrainType.Dirt },
+                autoPickup = true
+            });
+
+            resourceTypes.Add(new ResourceSpawnEntry
+            {
+                resourceId = "rare_herb",
+                displayName = "Редкая трава",
+                spriteColor = new Color(0.2f, 0.9f, 0.6f),
+                amount = 1,
+                minCount = 3,
+                maxCount = 8,
+                spawnTerrain = new[] { TerrainType.Grass },
+                autoPickup = true
+            });
+
+            // === Минеральные ресурсы (каменные зоны) ===
+            resourceTypes.Add(new ResourceSpawnEntry
+            {
                 resourceId = "stone",
                 displayName = "Камень",
                 spriteColor = new Color(0.6f, 0.6f, 0.65f),
                 amount = 2,
-                minCount = 5,
-                maxCount = 10,
+                minCount = 10,
+                maxCount = 20,
                 spawnTerrain = new[] { TerrainType.Stone, TerrainType.Dirt },
                 autoPickup = true
             });
@@ -403,29 +431,42 @@ namespace CultivationGame.TileSystem
                 displayName = "Руда",
                 spriteColor = new Color(0.8f, 0.5f, 0.2f),
                 amount = 1,
-                minCount = 3,
-                maxCount = 6,
+                minCount = 6,
+                maxCount = 12,
                 spawnTerrain = new[] { TerrainType.Stone },
                 autoPickup = true
             });
 
             resourceTypes.Add(new ResourceSpawnEntry
             {
-                resourceId = "wood",
-                displayName = "Древесина",
-                spriteColor = new Color(0.6f, 0.4f, 0.2f),
-                amount = 3,
-                minCount = 5,
+                resourceId = "iron_ore",
+                displayName = "Железная руда",
+                spriteColor = new Color(0.5f, 0.5f, 0.55f),
+                amount = 2,
+                minCount = 4,
                 maxCount = 10,
-                spawnTerrain = new[] { TerrainType.Grass, TerrainType.Dirt },
+                spawnTerrain = new[] { TerrainType.Stone },
                 autoPickup = true
             });
 
+            // === Ци-ресурсы (редкие) ===
             resourceTypes.Add(new ResourceSpawnEntry
             {
                 resourceId = "qi_crystal",
                 displayName = "Ци-кристалл",
                 spriteColor = new Color(0.4f, 0.7f, 1f),
+                amount = 1,
+                minCount = 4,
+                maxCount = 10,
+                spawnTerrain = new[] { TerrainType.Stone },
+                autoPickup = true
+            });
+
+            resourceTypes.Add(new ResourceSpawnEntry
+            {
+                resourceId = "spirit_stone",
+                displayName = "Духовный камень",
+                spriteColor = new Color(0.9f, 0.7f, 1f),
                 amount = 1,
                 minCount = 2,
                 maxCount = 5,
@@ -433,14 +474,40 @@ namespace CultivationGame.TileSystem
                 autoPickup = true
             });
 
+            // === Древесина ===
+            resourceTypes.Add(new ResourceSpawnEntry
+            {
+                resourceId = "wood",
+                displayName = "Древесина",
+                spriteColor = new Color(0.6f, 0.4f, 0.2f),
+                amount = 3,
+                minCount = 12,
+                maxCount = 25,
+                spawnTerrain = new[] { TerrainType.Grass, TerrainType.Dirt },
+                autoPickup = true
+            });
+
+            // === Пустынные ресурсы ===
             resourceTypes.Add(new ResourceSpawnEntry
             {
                 resourceId = "sand_pearl",
                 displayName = "Песчаная жемчужина",
                 spriteColor = new Color(0.9f, 0.85f, 0.5f),
                 amount = 1,
+                minCount = 4,
+                maxCount = 8,
+                spawnTerrain = new[] { TerrainType.Sand },
+                autoPickup = true
+            });
+
+            resourceTypes.Add(new ResourceSpawnEntry
+            {
+                resourceId = "desert_crystal",
+                displayName = "Пустынный кристалл",
+                spriteColor = new Color(1f, 0.8f, 0.3f),
+                amount = 1,
                 minCount = 2,
-                maxCount = 4,
+                maxCount = 5,
                 spawnTerrain = new[] { TerrainType.Sand },
                 autoPickup = true
             });

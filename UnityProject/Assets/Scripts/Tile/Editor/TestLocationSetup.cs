@@ -3,7 +3,7 @@
 // Cultivation World Simulator
 // Версия: 1.2 — исправлены ошибки компиляции Unity 6.3
 // Создано: 2026-04-07 14:24:05 UTC
-// Редактировано: 2026-04-11 14:55:00 UTC — FIX CS0266: sortOrder cast, FIX CS0246: using World
+// Редактировано: 2026-04-14 08:05:00 UTC — размер карты 100×80, Camera2DSetup bounds
 //
 // ИЗМЕНЕНИЯ В ВЕРСИИ 1.2:
 // - FIX: NEXT_STEPS изменён с const на static readonly (CS0133)
@@ -96,8 +96,8 @@ namespace CultivationGame.TileSystem.Editor
             var so = new SerializedObject(controller);
             so.FindProperty("terrainTilemap").objectReferenceValue = terrainTilemap;
             so.FindProperty("objectTilemap").objectReferenceValue = objectTilemap;
-            so.FindProperty("defaultWidth").intValue = 80;
-            so.FindProperty("defaultHeight").intValue = 60;
+            so.FindProperty("defaultWidth").intValue = 100;
+            so.FindProperty("defaultHeight").intValue = 80;
             so.ApplyModifiedProperties();
 
             // === Создать UI ===
@@ -114,7 +114,7 @@ namespace CultivationGame.TileSystem.Editor
                 cameraObj.AddComponent<Camera>();
                 cameraObj.tag = "MainCamera";
             }
-            cameraObj.transform.position = new Vector3(80, 60, -10);
+            cameraObj.transform.position = new Vector3(100, 80, -10);
             var cam = cameraObj.GetComponent<Camera>();
             cam.orthographic = true;
             cam.orthographicSize = 10;
@@ -127,7 +127,7 @@ namespace CultivationGame.TileSystem.Editor
             camSo.FindProperty("orthographicSize").floatValue = 10f;
             camSo.FindProperty("followEnabled").boolValue = true;
             camSo.FindProperty("useBounds").boolValue = true;
-            camSo.FindProperty("boundsMax").vector2Value = new Vector2(160f, 120f);
+            camSo.FindProperty("boundsMax").vector2Value = new Vector2(200f, 160f);
             camSo.ApplyModifiedProperties();
 
             // Создать источник света

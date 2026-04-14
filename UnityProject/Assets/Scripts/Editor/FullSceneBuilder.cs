@@ -4,7 +4,7 @@
 // Версия: 1.2
 // ============================================================================
 // Создано: 2026-04-13 08:00:00 UTC
-// Редактировано: 2026-04-15 12:00:00 UTC — FIX: Terrain без TilemapCollider2D, CleanMissingScripts, камера
+// Редактировано: 2026-04-14 07:50:00 UTC — Camera2DSetup follow + bounds, размер карты 100×80, CleanMissingPrefabs улучшен
 //
 // АРХИТЕКТУРА:
 //   15 фаз, каждая идемпотентна (повторный запуск безопасен).
@@ -647,7 +647,21 @@ namespace CultivationGame.Editor
             // Редактировано: 2026-04-15 UTC
             cam.backgroundColor = new Color(0.12f, 0.18f, 0.08f, 1f);
             cam.orthographic = true;
-            cam.orthographicSize = 5f;
+            cam.orthographicSize = 8f;
+
+            // Camera2DSetup — камера следит за игроком с ограничением границами карты
+            // Редактировано: 2026-04-14 07:50:00 UTC
+            var camera2D = camObj.GetComponent<Camera2DSetup>();
+            if (camera2D == null)
+                camera2D = camObj.AddComponent<Camera2DSetup>();
+
+            var camSo = new SerializedObject(camera2D);
+            camSo.FindProperty("orthographicSize").floatValue = 8f;
+            camSo.FindProperty("followEnabled").boolValue = true;
+            camSo.FindProperty("followSmoothness").floatValue = 0.08f;
+            camSo.FindProperty("useBounds").boolValue = true;
+            camSo.FindProperty("boundsMax").vector2Value = new Vector2(200f, 160f); // 100×80 × 2м/тайл
+            camSo.ApplyModifiedProperties();
 
             Undo.RegisterCreatedObjectUndo(camObj, "Create Camera");
 
@@ -1022,8 +1036,10 @@ namespace CultivationGame.Editor
             var so = new SerializedObject(controller);
             so.FindProperty("terrainTilemap").objectReferenceValue = terrainTilemap;
             so.FindProperty("objectTilemap").objectReferenceValue = objectTilemap;
-            so.FindProperty("defaultWidth").intValue = 30;
-            so.FindProperty("defaultHeight").intValue = 20;
+            // Размер тестовой локации: 100×80 тайлов = 200×160 метров
+            // Редактировано: 2026-04-14 07:50:00 UTC — увеличено с 30×20
+            so.FindProperty("defaultWidth").intValue = 100;
+            so.FindProperty("defaultHeight").intValue = 80;
             so.ApplyModifiedProperties();
 
             // TestLocationGameController
@@ -1217,11 +1233,48 @@ namespace CultivationGame.Editor
         // ====================================================================
 
         /// <summary>
+        /// Проверить объект на broken/missing prefab.
+        /// Добавляет в список на удаление если префаб утерян.
+        /// Редактировано: 2026-04-14 07:50:00 UTC
+        /// </summary>
+        private static void CheckForMissingPrefab(GameObject go, List<GameObject> toRemove)
+        {
+            if (go == null || toRemove.Contains(go)) return;
+
+            // Проверка 1: имя содержит Missing Prefab
+            if (go.name.Contains("Missing Prefab") || go.name.Contains("(Missing)"))
+            {
+                toRemove.Add(go);
+                return;
+            }
+
+            // Проверка 2: PrefabUtility — объект является prefab instance, но префаб удалён
+            if (PrefabUtility.IsPrefabAssetMissing(go))
+            {
+                toRemove.Add(go);
+                return;
+            }
+
+            // Проверка 3: Null prefab reference (объект в сцене ссылается на несуществующий префаб)
+            try
+            {
+                var prefabStatus = PrefabUtility.GetPrefabInstanceStatus(go);
+                if (prefabStatus == PrefabInstanceStatus.MissingAsset)
+                {
+                    toRemove.Add(go);
+                    return;
+                }
+            }
+            catch { /* Не prefab — пропускаем */ }
+        }
+
+        /// <summary>
         /// Рекурсивно создать папку (аналог mkdir -p).
         /// </summary>
         /// <summary>
         /// Удалить объекты с Missing Prefab из активной сцены.
-        /// Редактировано: 2026-04-13 14:03:25 UTC
+        /// Также удаляет broken prefab instances (объекты, чей префаб был удалён).
+        /// Редактировано: 2026-04-14 07:50:00 UTC — добавлена проверка PrefabUtility
         /// </summary>
         private static void CleanMissingPrefabs()
         {
@@ -1231,35 +1284,35 @@ namespace CultivationGame.Editor
             int removed = 0;
             var rootObjects = scene.GetRootGameObjects();
 
+            // Собираем объекты для удаления
+            var toRemove = new List<GameObject>();
+
             foreach (var rootObj in rootObjects)
             {
-                // Проверяем все дочерние объекты на Missing Prefab
-                var transforms = rootObj.GetComponentsInChildren<Transform>(true);
-                var toRemove = new List<GameObject>();
+                // Проверяем корневой объект
+                CheckForMissingPrefab(rootObj, toRemove);
 
+                // Проверяем все дочерние объекты
+                var transforms = rootObj.GetComponentsInChildren<Transform>(true);
                 foreach (var t in transforms)
                 {
                     if (t != null && t.gameObject != null)
                     {
-                        var go = t.gameObject;
-                        if (go.name.Contains("Missing Prefab") || go.name.Contains("(Missing)"))
-                        {
-                            toRemove.Add(go);
-                        }
+                        CheckForMissingPrefab(t.gameObject, toRemove);
                     }
                 }
+            }
 
-                foreach (var go in toRemove)
-                {
-                    Debug.Log($"[FullSceneBuilder] Removing missing prefab: {go.name}");
-                    Undo.DestroyObjectImmediate(go);
-                    removed++;
-                }
+            foreach (var go in toRemove)
+            {
+                Debug.Log($"[FullSceneBuilder] Removing missing/broken prefab: {go.name}");
+                Undo.DestroyObjectImmediate(go);
+                removed++;
             }
 
             if (removed > 0)
             {
-                Debug.Log($"[FullSceneBuilder] Cleaned {removed} missing prefabs");
+                Debug.Log($"[FullSceneBuilder] Cleaned {removed} missing/broken prefabs");
                 EditorSceneManager.SaveScene(scene);
             }
 
@@ -1853,10 +1906,25 @@ namespace CultivationGame.Editor
                     float centerY = height * 2f / 2f;
 
                     cam.transform.position = new Vector3(centerX, centerY, -10f);
-                    cam.orthographicSize = 15f;
+                    cam.orthographicSize = 8f;
                     cam.orthographic = true;
 
-                    Debug.Log($"[FullSceneBuilder] Камера настроена: позиция ({centerX}, {centerY}, -10), size=15");
+                    // Camera2DSetup — привязка к игроку и границы карты
+                    // Редактировано: 2026-04-14 07:50:00 UTC
+                    var camera2D = cam.GetComponent<Camera2DSetup>();
+                    if (camera2D == null)
+                        camera2D = cam.gameObject.AddComponent<Camera2DSetup>();
+
+                    var camSo = new SerializedObject(camera2D);
+                    camSo.FindProperty("orthographicSize").floatValue = 8f;
+                    camSo.FindProperty("followEnabled").boolValue = true;
+                    camSo.FindProperty("followSmoothness").floatValue = 0.08f;
+                    camSo.FindProperty("useBounds").boolValue = true;
+                    camSo.FindProperty("boundsMin").vector2Value = Vector2.zero;
+                    camSo.FindProperty("boundsMax").vector2Value = new Vector2(width * 2f, height * 2f);
+                    camSo.ApplyModifiedProperties();
+
+                    Debug.Log($"[FullSceneBuilder] Камера настроена: позиция ({centerX}, {centerY}, -10), size=8, Camera2DSetup привязан");
                 }
             }
 

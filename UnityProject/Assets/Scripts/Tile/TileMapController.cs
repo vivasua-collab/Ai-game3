@@ -2,7 +2,7 @@
 // TileMapController.cs — Контроллер карты тайлов
 // Cultivation World Simulator
 // Создано: 2026-04-07 14:24:05 UTC
-// Редактировано: 2026-04-13 13:35:27 UTC — улучшенная тестовая локация
+// Редактировано: 2026-04-14 08:00:00 UTC — улучшенная генерация для карты 100×80 (биомы, реки, зоны Ци)
 // ============================================================================
 
 using System;
@@ -121,7 +121,8 @@ namespace CultivationGame.TileSystem
 
         /// <summary>
         /// Добавить тестовые элементы на карту.
-        /// Редактировано: 2026-04-14 07:40:00 UTC — расширенная генерация для 80×60 локации
+        /// Процедурная генерация с биомами, реками, зонами Ци.
+        /// Редактировано: 2026-04-14 08:00:00 UTC — полная переработка для карты 100×80
         /// </summary>
         private void AddTestFeatures()
         {
@@ -131,98 +132,52 @@ namespace CultivationGame.TileSystem
             int centerX = width / 2;
             int centerY = height / 2;
 
-            // === Зона 1: Песчаный берег (левый нижний угол) ===
-            for (int x = 0; x < 8; x++)
+            // === БИОМ 1: Песчаный берег (левый нижний угол, 15×10) ===
+            GenerateBiomeRect(0, 0, 15, 10, TerrainType.Sand, random);
+
+            // === БИОМ 2: Пустыня (правый нижний угол, 20×12) ===
+            GenerateBiomeRect(width - 20, 0, 20, 12, TerrainType.Sand, random);
+            // Песчаные дюны — вариация высот через случайные камни
+            for (int i = 0; i < 15; i++)
             {
-                for (int y = 0; y < 6; y++)
+                int x = random.Next(width - 18, width - 2);
+                int y = random.Next(2, 10);
+                var tile = mapData.GetTile(x, y);
+                if (tile != null && tile.terrain == TerrainType.Sand && tile.objects.Count == 0)
                 {
-                    var tile = mapData.GetTile(x, y);
-                    if (tile != null)
-                    {
-                        tile.terrain = TerrainType.Sand;
-                        tile.UpdateTerrainProperties();
-                    }
+                    tile.AddObject(new TileObjectData(TileObjectType.Rock_Small));
                 }
             }
 
-            // === Зона 2: Озеро (левый нижний угол, рядом с песком) ===
-            for (int x = 5; x < 14; x++)
-            {
-                for (int y = 5; y < 13; y++)
-                {
-                    var tile = mapData.GetTile(x, y);
-                    if (tile != null)
-                    {
-                        float dx = (x - 9.5f) / 4f;
-                        float dy = (y - 9f) / 3.5f;
-                        if (dx * dx + dy * dy <= 1f)
-                        {
-                            tile.terrain = (dx * dx + dy * dy > 0.6f)
-                                ? TerrainType.Water_Shallow
-                                : TerrainType.Water_Deep;
-                            tile.UpdateTerrainProperties();
-                        }
-                    }
-                }
-            }
+            // === БИОМ 3: Каменные холмы (верхний левый угол, 18×15) ===
+            GenerateBiomeEllipse(9, height - 8, 9, 8, TerrainType.Stone, random);
 
-            // === Зона 3: Второе озеро (правый верхний угол) ===
-            for (int x = width - 15; x < width - 5; x++)
-            {
-                for (int y = height - 12; y < height - 4; y++)
-                {
-                    var tile = mapData.GetTile(x, y);
-                    if (tile != null)
-                    {
-                        float dx = (x - (width - 10f)) / 4f;
-                        float dy = (y - (height - 8f)) / 3f;
-                        if (dx * dx + dy * dy <= 1f)
-                        {
-                            tile.terrain = (dx * dx + dy * dy > 0.55f)
-                                ? TerrainType.Water_Shallow
-                                : TerrainType.Water_Deep;
-                            tile.UpdateTerrainProperties();
-                        }
-                    }
-                }
-            }
+            // === БИОМ 4: Горный хребет (верхний правый угол) ===
+            GenerateBiomeEllipse(width - 12, height - 10, 10, 10, TerrainType.Stone, random);
+            // Снежные пики (лёд на вершинах)
+            GenerateBiomeEllipse(width - 12, height - 6, 4, 4, TerrainType.Ice, random);
 
-            // === Зона 4: Песчаная пустошь (правый нижний угол) ===
-            for (int x = width - 12; x < width; x++)
-            {
-                for (int y = 0; y < 8; y++)
-                {
-                    var tile = mapData.GetTile(x, y);
-                    if (tile != null)
-                    {
-                        tile.terrain = TerrainType.Sand;
-                        tile.UpdateTerrainProperties();
-                    }
-                }
-            }
+            // === ОЗЕРО 1: Левый нижний (рядом с песком) ===
+            GenerateLake(10, 10, 5, 4, random);
 
-            // === Зона 5: Каменные холмы (верхний левый угол) ===
-            for (int x = 0; x < 12; x++)
-            {
-                for (int y = height - 10; y < height; y++)
-                {
-                    var tile = mapData.GetTile(x, y);
-                    if (tile != null)
-                    {
-                        float dx = (x - 6f) / 6f;
-                        float dy = (y - (height - 5f)) / 5f;
-                        if (dx * dx + dy * dy <= 1f)
-                        {
-                            tile.terrain = TerrainType.Stone;
-                            tile.UpdateTerrainProperties();
-                        }
-                    }
-                }
-            }
+            // === ОЗЕРО 2: Правый верхний ===
+            GenerateLake(width - 15, height - 10, 5, 4, random);
 
-            // === Зона 6: Земляные дороги ===
+            // === ОЗЕРО 3: Центральное (малое) ===
+            GenerateLake(centerX + 15, centerY - 5, 3, 3, random);
+
+            // === РЕКА: Вертикальная от верхнего озера вниз ===
+            GenerateRiver(width - 15, height - 14, width - 15, height / 2, 2, random);
+
+            // === РЕКА 2: Горизонтальная от левого озера ===
+            GenerateRiver(15, 10, width / 3, 10, 2, random);
+
+            // === ЛАВОВОЕ ОЗЕРО (нижний центр) ===
+            GenerateLavaLake(centerX, 7, 6, 4, random);
+
+            // === ЗОНА 5: Земляные дороги ===
             // Главная дорога: горизонталь через центр
-            for (int x = 0; x < width; x++)
+            for (int x = 3; x < width - 3; x++)
             {
                 for (int offset = 0; offset < 2; offset++)
                 {
@@ -236,7 +191,7 @@ namespace CultivationGame.TileSystem
             }
 
             // Вертикальная дорога через центр
-            for (int y = 0; y < height; y++)
+            for (int y = 3; y < height - 3; y++)
             {
                 for (int offset = 0; offset < 2; offset++)
                 {
@@ -249,10 +204,10 @@ namespace CultivationGame.TileSystem
                 }
             }
 
-            // === Зона 7: Каменная площадка в центре (алтарь) ===
-            for (int x = centerX - 4; x <= centerX + 4; x++)
+            // === ЗОНА 6: Каменная площадка в центре (алтарь) ===
+            for (int x = centerX - 5; x <= centerX + 5; x++)
             {
-                for (int y = centerY - 4; y <= centerY + 4; y++)
+                for (int y = centerY - 5; y <= centerY + 5; y++)
                 {
                     var tile = mapData.GetTile(x, y);
                     if (tile != null)
@@ -271,36 +226,31 @@ namespace CultivationGame.TileSystem
                 altarTile.currentQiDensity = 500;
             }
 
-            // === Зона 8: Лавовое озеро (нижний центр) ===
-            for (int x = centerX - 5; x <= centerX + 5; x++)
+            // Кольцо алтаря — средняя плотность Ци
+            for (int x = centerX - 4; x <= centerX + 4; x++)
             {
-                for (int y = 4; y < 10; y++)
+                for (int y = centerY - 4; y <= centerY + 4; y++)
                 {
                     var tile = mapData.GetTile(x, y);
-                    if (tile != null)
+                    if (tile != null && !(x == centerX && y == centerY))
                     {
-                        float dx = (x - centerX) / 5f;
-                        float dy = (y - 7f) / 3f;
-                        if (dx * dx + dy * dy <= 0.4f)
-                        {
-                            tile.terrain = TerrainType.Lava;
-                            tile.UpdateTerrainProperties();
-                        }
-                        else if (dx * dx + dy * dy <= 0.7f)
-                        {
-                            tile.terrain = TerrainType.Stone;
-                            tile.UpdateTerrainProperties();
-                        }
+                        tile.baseQiDensity = 200;
+                        tile.currentQiDensity = 200;
                     }
                 }
             }
 
-            // === Растительность: Лес (левая половина) ===
-            for (int i = 0; i < 80; i++)
+            // === ЗОНА 7: Зона медитации (восток от центра) ===
+            GenerateQiZone(centerX + 20, centerY + 5, 4, 150, random);
+
+            // === ЗОНА 8: Зона медитации (запад от центра) ===
+            GenerateQiZone(centerX - 25, centerY - 3, 3, 120, random);
+
+            // === РАСТИТЕЛЬНОСТЬ: Густой лес (левая треть карты) ===
+            for (int i = 0; i < 150; i++)
             {
-                // Больше деревьев слева — лесная зона
-                int x = random.Next(2, width / 2);
-                int y = random.Next(2, height - 2);
+                int x = random.Next(3, width / 3);
+                int y = random.Next(3, height - 3);
 
                 if (IsInSpecialZone(x, y, centerX, centerY)) continue;
 
@@ -316,11 +266,11 @@ namespace CultivationGame.TileSystem
                 }
             }
 
-            // Редкий лес (правая половина)
-            for (int i = 0; i < 30; i++)
+            // Средний лес (центральная треть)
+            for (int i = 0; i < 80; i++)
             {
-                int x = random.Next(width / 2, width - 2);
-                int y = random.Next(2, height - 2);
+                int x = random.Next(width / 3, 2 * width / 3);
+                int y = random.Next(3, height - 3);
 
                 if (IsInSpecialZone(x, y, centerX, centerY)) continue;
 
@@ -334,11 +284,27 @@ namespace CultivationGame.TileSystem
                 }
             }
 
-            // === Кусты ===
-            for (int i = 0; i < 35; i++)
+            // Редкий лес (правая треть — степь)
+            for (int i = 0; i < 40; i++)
             {
-                int x = random.Next(2, width - 2);
-                int y = random.Next(2, height - 2);
+                int x = random.Next(2 * width / 3, width - 3);
+                int y = random.Next(3, height - 3);
+
+                if (IsInSpecialZone(x, y, centerX, centerY)) continue;
+
+                var tile = mapData.GetTile(x, y);
+                if (tile != null && tile.IsPassable() && tile.objects.Count == 0)
+                {
+                    var treeObj = new TileObjectData(TileObjectType.Tree_Oak);
+                    tile.AddObject(treeObj);
+                }
+            }
+
+            // === КУСТЫ (разбросаны по карте) ===
+            for (int i = 0; i < 70; i++)
+            {
+                int x = random.Next(3, width - 3);
+                int y = random.Next(3, height - 3);
 
                 if (IsInSpecialZone(x, y, centerX, centerY)) continue;
 
@@ -352,11 +318,11 @@ namespace CultivationGame.TileSystem
                 }
             }
 
-            // === Камни (разбросаны по карте) ===
-            for (int i = 0; i < 25; i++)
+            // === КАМНИ (разбросаны по карте, больше в каменных зонах) ===
+            for (int i = 0; i < 45; i++)
             {
-                int x = random.Next(2, width - 2);
-                int y = random.Next(2, height - 2);
+                int x = random.Next(3, width - 3);
+                int y = random.Next(3, height - 3);
 
                 if (IsInSpecialZone(x, y, centerX, centerY)) continue;
 
@@ -370,8 +336,8 @@ namespace CultivationGame.TileSystem
                 }
             }
 
-            // === Рудные жилы (рядом с каменными зонами) ===
-            for (int i = 0; i < 8; i++)
+            // === РУДНЫЕ ЖИЛЫ (рядом с каменными зонами) ===
+            for (int i = 0; i < 20; i++)
             {
                 int x = random.Next(0, width);
                 int y = random.Next(0, height);
@@ -384,11 +350,11 @@ namespace CultivationGame.TileSystem
                 }
             }
 
-            // === Сундуки ===
-            for (int i = 0; i < 5; i++)
+            // === СУНДУКИ (редкие, на проходимых тайлах) ===
+            for (int i = 0; i < 10; i++)
             {
-                int x = random.Next(3, width - 3);
-                int y = random.Next(3, height - 3);
+                int x = random.Next(5, width - 5);
+                int y = random.Next(5, height - 5);
 
                 var tile = mapData.GetTile(x, y);
                 if (tile != null && tile.IsPassable() && tile.objects.Count == 0)
@@ -398,11 +364,11 @@ namespace CultivationGame.TileSystem
                 }
             }
 
-            // === Травы и цветы ===
-            for (int i = 0; i < 25; i++)
+            // === ТРАВЫ И ЦВЕТЫ (по всей карте) ===
+            for (int i = 0; i < 60; i++)
             {
-                int x = random.Next(2, width - 2);
-                int y = random.Next(2, height - 2);
+                int x = random.Next(3, width - 3);
+                int y = random.Next(3, height - 3);
 
                 var tile = mapData.GetTile(x, y);
                 if (tile != null && tile.objects.Count == 0 && tile.terrain == TerrainType.Grass)
@@ -416,7 +382,7 @@ namespace CultivationGame.TileSystem
                 }
             }
 
-            // === Граница карты — Vall обрывы/стены ===
+            // === ГРАНИЦА КАРТЫ — Void обрывы ===
             for (int x = 0; x < width; x++)
             {
                 SetVoidIfGrass(x, 0);
@@ -434,6 +400,176 @@ namespace CultivationGame.TileSystem
         }
 
         /// <summary>
+        /// Сгенерировать биом прямоугольником.
+        /// Редактировано: 2026-04-14 08:00:00 UTC
+        /// </summary>
+        private void GenerateBiomeRect(int startX, int startY, int w, int h, TerrainType terrain, System.Random random)
+        {
+            for (int x = startX; x < startX + w && x < mapData.width; x++)
+            {
+                for (int y = startY; y < startY + h && y < mapData.height; y++)
+                {
+                    var tile = mapData.GetTile(x, y);
+                    if (tile != null)
+                    {
+                        tile.terrain = terrain;
+                        tile.UpdateTerrainProperties();
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// Сгенерировать биом эллипсом.
+        /// Редактировано: 2026-04-14 08:00:00 UTC
+        /// </summary>
+        private void GenerateBiomeEllipse(float cx, float cy, float rx, float ry, TerrainType terrain, System.Random random)
+        {
+            for (int x = (int)(cx - rx); x <= (int)(cx + rx); x++)
+            {
+                for (int y = (int)(cy - ry); y <= (int)(cy + ry); y++)
+                {
+                    var tile = mapData.GetTile(x, y);
+                    if (tile != null)
+                    {
+                        float dx = (x - cx) / rx;
+                        float dy = (y - cy) / ry;
+                        if (dx * dx + dy * dy <= 1f)
+                        {
+                            tile.terrain = terrain;
+                            tile.UpdateTerrainProperties();
+                        }
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// Сгенерировать озеро (мелкая + глубокая вода).
+        /// Редактировано: 2026-04-14 08:00:00 UTC
+        /// </summary>
+        private void GenerateLake(float cx, float cy, float rx, float ry, System.Random random)
+        {
+            for (int x = (int)(cx - rx - 1); x <= (int)(cx + rx + 1); x++)
+            {
+                for (int y = (int)(cy - ry - 1); y <= (int)(cy + ry + 1); y++)
+                {
+                    var tile = mapData.GetTile(x, y);
+                    if (tile == null) continue;
+
+                    float dx = (x - cx) / rx;
+                    float dy = (y - cy) / ry;
+                    float dist = dx * dx + dy * dy;
+
+                    if (dist <= 0.55f)
+                    {
+                        tile.terrain = TerrainType.Water_Deep;
+                        tile.UpdateTerrainProperties();
+                    }
+                    else if (dist <= 1f)
+                    {
+                        tile.terrain = TerrainType.Water_Shallow;
+                        tile.UpdateTerrainProperties();
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// Сгенерировать лавовое озеро.
+        /// Редактировано: 2026-04-14 08:00:00 UTC
+        /// </summary>
+        private void GenerateLavaLake(float cx, float cy, float rx, float ry, System.Random random)
+        {
+            for (int x = (int)(cx - rx - 1); x <= (int)(cx + rx + 1); x++)
+            {
+                for (int y = (int)(cy - ry - 1); y <= (int)(cy + ry + 1); y++)
+                {
+                    var tile = mapData.GetTile(x, y);
+                    if (tile == null) continue;
+
+                    float dx = (x - cx) / rx;
+                    float dy = (y - cy) / ry;
+                    float dist = dx * dx + dy * dy;
+
+                    if (dist <= 0.35f)
+                    {
+                        tile.terrain = TerrainType.Lava;
+                        tile.UpdateTerrainProperties();
+                    }
+                    else if (dist <= 0.7f)
+                    {
+                        tile.terrain = TerrainType.Stone;
+                        tile.UpdateTerrainProperties();
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// Сгенерировать реку от (x1,y1) до (x2,y2) шириной width тайлов.
+        /// Простая прямая река.
+        /// Редактировано: 2026-04-14 08:00:00 UTC
+        /// </summary>
+        private void GenerateRiver(int x1, int y1, int x2, int y2, int riverWidth, System.Random random)
+        {
+            // Bresenham-подобная линия
+            int dx = Math.Abs(x2 - x1);
+            int dy = Math.Abs(y2 - y1);
+            int steps = Math.Max(dx, dy);
+
+            if (steps == 0) return;
+
+            float stepX = (float)(x2 - x1) / steps;
+            float stepY = (float)(y2 - y1) / steps;
+
+            for (int i = 0; i <= steps; i++)
+            {
+                int cx = (int)(x1 + stepX * i);
+                int cy = (int)(y1 + stepY * i);
+
+                for (int w = 0; w < riverWidth; w++)
+                {
+                    // Перпендикуляр к направлению реки
+                    int px = -((int)stepY) * w / Math.Max(1, (int)(Math.Abs(stepX) + Math.Abs(stepY)));
+                    int py = ((int)stepX) * w / Math.Max(1, (int)(Math.Abs(stepX) + Math.Abs(stepY)));
+
+                    var tile = mapData.GetTile(cx + px, cy + py);
+                    if (tile != null && tile.terrain != TerrainType.Stone && tile.terrain != TerrainType.Lava)
+                    {
+                        tile.terrain = w == 0 ? TerrainType.Water_Shallow : TerrainType.Water_Shallow;
+                        tile.UpdateTerrainProperties();
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// Сгенерировать зону высокой плотности Ци.
+        /// Редактировано: 2026-04-14 08:00:00 UTC
+        /// </summary>
+        private void GenerateQiZone(int cx, int cy, int radius, int qiDensity, System.Random random)
+        {
+            for (int x = cx - radius; x <= cx + radius; x++)
+            {
+                for (int y = cy - radius; y <= cy + radius; y++)
+                {
+                    var tile = mapData.GetTile(x, y);
+                    if (tile == null) continue;
+
+                    float dist = Mathf.Sqrt((x - cx) * (x - cx) + (y - cy) * (y - cy));
+                    if (dist <= radius)
+                    {
+                        // Плотность убывает к краю зоны
+                        float falloff = 1f - (dist / radius);
+                        tile.baseQiDensity = (int)(qiDensity * falloff);
+                        tile.currentQiDensity = tile.baseQiDensity;
+                    }
+                }
+            }
+        }
+
+        /// <summary>
         /// Установить Void если текущий тип — Grass (для границ карты).
         /// </summary>
         private void SetVoidIfGrass(int x, int y)
@@ -447,42 +583,52 @@ namespace CultivationGame.TileSystem
         }
 
         /// <summary>
-        /// Проверить, находится ли тайл в специальной зоне (пруд, центр).
+        /// Проверить, находится ли тайл в специальной зоне (озёра, алтарь, лавовое озеро).
+        /// Редактировано: 2026-04-14 08:00:00 UTC — обновлено для карты 100×80
         /// </summary>
         private bool IsInSpecialZone(int x, int y, int centerX, int centerY)
         {
-            // Центральная каменная площадка
-            if (Mathf.Abs(x - centerX) <= 5 && Mathf.Abs(y - centerY) <= 5)
+            // Центральная каменная площадка (алтарь)
+            if (Mathf.Abs(x - centerX) <= 6 && Mathf.Abs(y - centerY) <= 6)
                 return true;
 
-            // Первое озеро
-            if (x >= 5 && x < 14 && y >= 5 && y < 13)
+            // Озеро 1: левый нижний
+            if (x >= 5 && x < 16 && y >= 5 && y < 15)
             {
-                float dx = (x - 9.5f) / 4f;
-                float dy = (y - 9f) / 3.5f;
+                float dx = (x - 10f) / 5f;
+                float dy = (y - 10f) / 4f;
                 if (dx * dx + dy * dy <= 1.2f)
                     return true;
             }
 
-            // Второе озеро
-            if (x >= mapData.width - 15 && x < mapData.width - 5 && y >= mapData.height - 12 && y < mapData.height - 4)
+            // Озеро 2: правый верхний
+            if (x >= mapData.width - 21 && x < mapData.width - 9 && y >= mapData.height - 15 && y < mapData.height - 5)
             {
-                float dx = (x - (mapData.width - 10f)) / 4f;
-                float dy = (y - (mapData.height - 8f)) / 3f;
+                float dx = (x - (mapData.width - 15f)) / 5f;
+                float dy = (y - (mapData.height - 10f)) / 4f;
+                if (dx * dx + dy * dy <= 1.2f)
+                    return true;
+            }
+
+            // Озеро 3: центральное
+            if (Mathf.Abs(x - (centerX + 15)) <= 4 && Mathf.Abs(y - (centerY - 5)) <= 4)
+            {
+                float dx = (x - (centerX + 15f)) / 3f;
+                float dy = (y - (centerY - 5f)) / 3f;
                 if (dx * dx + dy * dy <= 1.2f)
                     return true;
             }
 
             // Лавовое озеро
-            if (Mathf.Abs(x - centerX) <= 6 && y >= 3 && y < 11)
+            if (Mathf.Abs(x - centerX) <= 7 && y >= 3 && y < 12)
                 return true;
 
-            // Песчаный берег
-            if (x < 8 && y < 6)
+            // Песчаный берег (левый нижний)
+            if (x < 15 && y < 10)
                 return true;
 
-            // Песчаная пустошь
-            if (x >= mapData.width - 12 && y < 8)
+            // Пустыня (правый нижний)
+            if (x >= mapData.width - 20 && y < 12)
                 return true;
 
             return false;

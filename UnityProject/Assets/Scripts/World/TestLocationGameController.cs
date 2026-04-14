@@ -2,7 +2,7 @@
 // TestLocationGameController.cs — Контроллер тестовой локации
 // Cultivation World Simulator
 // Создано: 2026-04-08 06:17:46 UTC
-// Редактировано: 2026-04-11 14:50:00 UTC — FIX CS1503: FindObjectsByType — добавлен FindObjectsSortMode
+// Редактировано: 2026-04-14 08:05:00 UTC — обновлён размер карты 100×80, Camera2DSetup bounds
 // ============================================================================
 
 using System;
@@ -241,8 +241,9 @@ namespace CultivationGame.World
                 }
             }
             
-            // Дефолтная позиция
-            return new Vector3(80, 60, 0); // Центр карты 80×60 тайлов
+            // Дефолтная позиция — центр карты 100×80 тайлов (200×160 метров)
+            // Редактировано: 2026-04-14 08:05:00 UTC
+            return new Vector3(100, 80, 0);
         }
         
         /// <summary>
