@@ -2,7 +2,7 @@
 // TileMapController.cs — Контроллер карты тайлов
 // Cultivation World Simulator
 // Создано: 2026-04-07 14:24:05 UTC
-// Редактировано: 2026-04-14 08:00:00 UTC — улучшенная генерация для карты 100×80 (биомы, реки, зоны Ци)
+// Редактировано: 2026-04-14 13:45:00 UTC — snowTile, defaultWidth/Height=100×80, GetTerrainTile(Snow)
 // ============================================================================
 
 using System;
@@ -32,7 +32,8 @@ namespace CultivationGame.TileSystem
         [SerializeField] private TileBase sandTile;
         [SerializeField] private TileBase voidTile;
         // FIX: Добавлены недостающие типы террейна
-        // Редактировано: 2026-04-14 06:38:00 UTC
+        // Редактировано: 2026-04-14 13:45:00 UTC
+        [SerializeField] private TileBase snowTile;
         [SerializeField] private TileBase iceTile;
         [SerializeField] private TileBase lavaTile;
 
@@ -47,8 +48,10 @@ namespace CultivationGame.TileSystem
         [SerializeField] private TileBase herbTile;
 
         [Header("Settings")]
-        [SerializeField] private int defaultWidth = 80;
-        [SerializeField] private int defaultHeight = 60;
+        // FIX: Размер карты 100×80 тайлов = 200×160 метров (было 80×60)
+        // Редактировано: 2026-04-14 13:45:00 UTC
+        [SerializeField] private int defaultWidth = 100;
+        [SerializeField] private int defaultHeight = 80;
         [SerializeField] private bool generateOnStart = true;
 
         // === State ===
@@ -693,8 +696,9 @@ namespace CultivationGame.TileSystem
                 TerrainType.Water_Deep => waterDeepTile,
                 TerrainType.Sand => sandTile,
                 TerrainType.Void => voidTile,
-                // FIX: Добавлены Ice и Lava
-                // Редактировано: 2026-04-14 06:38:00 UTC
+                // FIX: Добавлены Snow, Ice и Lava
+                // Редактировано: 2026-04-14 13:45:00 UTC
+                TerrainType.Snow => snowTile,
                 TerrainType.Ice => iceTile,
                 TerrainType.Lava => lavaTile,
                 _ => null
