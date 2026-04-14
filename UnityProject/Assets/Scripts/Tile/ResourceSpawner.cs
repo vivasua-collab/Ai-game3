@@ -3,6 +3,7 @@
 // Cultivation World Simulator
 // Создано: 2026-04-14 07:35:00 UTC
 // Редактировано: 2026-04-14 07:55:00 UTC — увеличены лимиты для карты 100×80, новые типы ресурсов
+// Редактировано: 2026-04-16 14:30:00 UTC — FIX: безопасное назначение тега "Resource" (try-catch, не определён в TagManager)
 // ============================================================================
 
 using System.Collections.Generic;
@@ -222,7 +223,10 @@ namespace CultivationGame.TileSystem
             GameObject go = new GameObject($"Res_{entry.resourceId}");
             go.transform.SetParent(resourcesParent);
             go.transform.position = worldPos;
-            go.tag = "Resource";
+            // FIX: Тег "Resource" может быть не определён в TagManager.
+            // Назначаем безопасно — если тег не существует, используем Untagged.
+            // Для поиска ресурсов используйте FindObjectsOfType<ResourcePickup>().
+            try { go.tag = "Resource"; } catch { go.tag = "Untagged"; }
 
             // Спрайт
             SpriteRenderer sr = go.AddComponent<SpriteRenderer>();

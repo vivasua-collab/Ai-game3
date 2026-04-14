@@ -236,6 +236,10 @@ namespace CultivationGame.Player
         
         private void InitializePlayer()
         {
+            // FIX: Защита от двойной инициализации (Start + GameInitializer)
+            // Редактировано: 2026-04-16 14:40:00 UTC
+            if (isInitialized) return;
+
             state.PlayerId = playerId;
             state.Name = playerName;
             state.IsAlive = true;

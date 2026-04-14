@@ -279,16 +279,20 @@ namespace CultivationGame.Managers
         
         private IEnumerator InitializeTimeSystem()
         {
-            var timeController = FindFirstObjectByType<TimeController>();
-            
-            if (timeController != null)
+            // FIX: Проверяем, уже ли зарегистрирован в ServiceLocator (Awake регистрирует раньше)
+            // Редактировано: 2026-04-16 14:35:00 UTC
+            if (!ServiceLocator.IsRegistered<TimeController>())
             {
-                // Регистрируем в ServiceLocator
-                ServiceLocator.Register(timeController);
-            }
-            else
-            {
-                Debug.LogWarning("[GameInitializer] TimeController not found");
+                var timeController = FindFirstObjectByType<TimeController>();
+                
+                if (timeController != null)
+                {
+                    ServiceLocator.Register(timeController);
+                }
+                else
+                {
+                    Debug.LogWarning("[GameInitializer] TimeController not found");
+                }
             }
             
             yield return null;
@@ -296,15 +300,20 @@ namespace CultivationGame.Managers
         
         private IEnumerator InitializeWorldSystem()
         {
-            var worldController = FindFirstObjectByType<WorldController>();
-            
-            if (worldController != null)
+            // FIX: Проверяем, уже ли зарегистрирован в ServiceLocator (Awake регистрирует раньше)
+            // Редактировано: 2026-04-16 14:35:00 UTC
+            if (!ServiceLocator.IsRegistered<WorldController>())
             {
-                ServiceLocator.Register(worldController);
-            }
-            else
-            {
-                Debug.LogWarning("[GameInitializer] WorldController not found");
+                var worldController = FindFirstObjectByType<WorldController>();
+                
+                if (worldController != null)
+                {
+                    ServiceLocator.Register(worldController);
+                }
+                else
+                {
+                    Debug.LogWarning("[GameInitializer] WorldController not found");
+                }
             }
             
             yield return null;

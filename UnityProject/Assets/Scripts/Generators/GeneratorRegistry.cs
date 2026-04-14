@@ -100,6 +100,10 @@ namespace CultivationGame.Generators
         /// </summary>
         public void Initialize(long worldSeed)
         {
+            // FIX: Защита от двойной инициализации (Start autoInitialize + WorldController)
+            // Редактировано: 2026-04-16 14:45:00 UTC
+            if (isInitialized && currentSeed == worldSeed) return;
+
             currentSeed = worldSeed;
             worldRng = new SeededRandom(worldSeed); // FIX GEN-H01: SeededRandom now accepts long (2026-04-11)
             isInitialized = true;
@@ -107,6 +111,8 @@ namespace CultivationGame.Generators
             // Очищаем кэш
             cachedNPCs.Clear();
             cachedTechniques.Clear();
+            cacheOrderNPCs.Clear();
+            cacheOrderTechniques.Clear();
 
             OnInitialized?.Invoke(worldSeed);
 
