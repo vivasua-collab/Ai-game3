@@ -52,3 +52,25 @@ prompt
 server.log
 # Skills directory
 /skills/
+
+# === Инфраструктура песочницы (НЕ часть Unity проекта) ===
+src/
+public/
+prisma/
+db/
+.zscripts/
+mini-services/
+examples/
+bun.lock
+components.json
+eslint.config.mjs
+next.config.ts
+package.json
+postcss.config.mjs
+tailwind.config.ts
+tsconfig.json
+Caddyfile
+upload/
+node_modules/
+.next/
+.z-ai-config/
