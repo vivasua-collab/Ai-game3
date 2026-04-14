@@ -77,7 +77,45 @@ namespace CultivationGame.World
         public int Territory;
         
         // Отношения с другими фракциями
-        public Dictionary<string, int> FactionRelations;
+        // FIX: Dictionary<string,int> не сериализуется JsonUtility.
+        // Заменён на List<FactionRelationEntry> + helper-методы.
+        // Редактировано: 2026-04-14 06:11:00 UTC
+        public List<FactionRelationEntry> FactionRelationsList;
+        
+        // Runtime-кэш для быстрого доступа (не сериализуется)
+        private Dictionary<string, int> _factionRelationsCache;
+        
+        /// <summary>
+        /// Получить словарь отношений (с автосозданием кэша из списка).
+        /// </summary>
+        public Dictionary<string, int> FactionRelations
+        {
+            get
+            {
+                if (_factionRelationsCache == null || _factionRelationsCache.Count != (FactionRelationsList?.Count ?? 0))
+                {
+                    _factionRelationsCache = new Dictionary<string, int>();
+                    if (FactionRelationsList != null)
+                    {
+                        foreach (var entry in FactionRelationsList)
+                            _factionRelationsCache[entry.FactionId] = entry.Value;
+                    }
+                }
+                return _factionRelationsCache;
+            }
+        }
+        
+        /// <summary>
+        /// Синхронизировать List из Dictionary (перед сериализацией).
+        /// </summary>
+        public void SyncRelationsToList()
+        {
+            if (FactionRelationsList == null) FactionRelationsList = new List<FactionRelationEntry>();
+            else FactionRelationsList.Clear();
+            
+            foreach (var kvp in _factionRelationsCache ?? new Dictionary<string, int>())
+                FactionRelationsList.Add(new FactionRelationEntry { FactionId = kvp.Key, Value = kvp.Value });
+        }
         
         // Требования для вступления
         public CultivationLevel MinCultivationLevel;
@@ -92,10 +130,23 @@ namespace CultivationGame.World
         
         public FactionData()
         {
-            FactionRelations = new Dictionary<string, int>();
+            FactionRelationsList = new List<FactionRelationEntry>();
+            _factionRelationsCache = new Dictionary<string, int>();
             Allies = new List<string>();
             Enemies = new List<string>();
         }
+    }
+    
+    /// <summary>
+    /// Сериализуемая запись отношения между фракциями.
+    /// FIX: Замена Dictionary<string,int> для JsonUtility совместимости.
+    // Редактировано: 2026-04-14 06:11:00 UTC
+    /// </summary>
+    [Serializable]
+    public class FactionRelationEntry
+    {
+        public string FactionId;
+        public int Value;
     }
     
     /// <summary>
@@ -458,6 +509,11 @@ namespace CultivationGame.World
         
         public FactionSystemSaveData GetSaveData()
         {
+            // FIX: Синхронизируем Dictionary→List перед сериализацией
+            // Редактировано: 2026-04-14 06:12:00 UTC
+            foreach (var faction in factions.Values)
+                faction.SyncRelationsToList();
+            
             // FIX WLD-H04: Actually populate Memberships list for save data (2026-04-11)
             var membershipList = new List<FactionMembershipSaveData>();
             foreach (var kvp in playerMemberships)

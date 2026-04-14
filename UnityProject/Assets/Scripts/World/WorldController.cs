@@ -177,7 +177,15 @@ namespace CultivationGame.World
         
         private void Awake()
         {
+            // FIX: Регистрация в ServiceLocator для O(1) доступа
+            // Редактировано: 2026-04-14 06:10:00 UTC
+            ServiceLocator.Register(this);
             InitializeControllers();
+        }
+        
+        private void OnDestroy()
+        {
+            ServiceLocator.Unregister<WorldController>();
         }
         
         private void Start()

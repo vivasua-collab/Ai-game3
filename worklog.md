@@ -699,3 +699,27 @@ Stage Summary:
 - Audit report created with 12 sections: summary, critical bugs, high priority, medium, low, architectural issues, subsystem statistics, dead code, memory leaks, serialization issues, unfinished features, recommendations
 - Most critical issues: SleepSystem.GetComponent<StatDevelopment>() ArgumentException, player not moving, blue tile gaps, missing ProjectSettings/.meta files
 - Recommended 4-phase fix plan: Phase 1 (1-2 days critical), Phase 2 (3-5 days high), Phase 3 (1 week medium), Phase 4 (2 weeks refactor)
+
+---
+Task ID: fix-14-critical
+Agent: Main Agent
+Task: Fix-14 — Критические баги тестовой сцены (SleepSystem, WorldController, FactionController, TestLocationGameController)
+
+Work Log:
+- 2026-04-14 06:07 UTC: Начало сессии — очистка мусорных файлов (src/, prisma/, Caddyfile и т.д.)
+- 2026-04-14 06:08 UTC: Push очистки на GitHub (коммит 48df9eb)
+- 2026-04-14 06:09 UTC: FIX SleepSystem.cs — GetComponent<StatDevelopment>() → PlayerController.StatDevelopment + fallback new StatDevelopment()
+- 2026-04-14 06:09 UTC: FIX SleepSystem.cs — FindFirstObjectByType<TimeController> → ServiceLocator.GetOrFind<TimeController>()
+- 2026-04-14 06:10 UTC: FIX WorldController.cs — добавлен ServiceLocator.Register(this) в Awake() + Unregister в OnDestroy()
+- 2026-04-14 06:11 UTC: FIX FactionController.cs — Dictionary<string,int> FactionRelations → List<FactionRelationEntry> + Dictionary property с автокэшем + SyncRelationsToList() + вызов в GetSaveData()
+- 2026-04-14 06:13 UTC: FIX TestLocationGameController.cs — добавлены 5 компонентов: SleepSystem, InventoryController, EquipmentController, TechniqueController, InteractionController + using директивы
+
+Stage Summary:
+- 4 файла исправлены: SleepSystem.cs, WorldController.cs, FactionController.cs, TestLocationGameController.cs
+- 5 критических багов исправлено:
+  1. SleepSystem ArgumentException (StatDevelopment не MonoBehaviour)
+  2. SleepSystem ServiceLocator вместо FindFirstObjectByType
+  3. WorldController не регистрировался в ServiceLocator
+  4. FactionData.FactionRelations Dictionary не сериализовался JsonUtility
+  5. TestLocationGameController.CreateBasicPlayer() — недостающие компоненты
+- Push pending

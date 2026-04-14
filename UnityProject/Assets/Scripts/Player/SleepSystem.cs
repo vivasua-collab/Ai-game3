@@ -129,14 +129,26 @@ namespace CultivationGame.Player
 
         private void InitializeComponents()
         {
+            // FIX: StatDevelopment — [Serializable] класс, НЕ MonoBehaviour.
+            // GetComponent<StatDevelopment>() вызывает ArgumentException.
+            // Получаем через PlayerController.StatDevelopment (публичное свойство),
+            // либо создаём new экземпляр.
+            // Редактировано: 2026-04-14 06:09:00 UTC
             if (statDevelopment == null)
-                statDevelopment = GetComponent<StatDevelopment>();
+            {
+                var playerCtrl = GetComponent<PlayerController>();
+                if (playerCtrl != null)
+                    statDevelopment = playerCtrl.StatDevelopment;
+                if (statDevelopment == null)
+                    statDevelopment = new StatDevelopment();
+            }
             if (qiController == null)
                 qiController = GetComponent<QiController>();
             if (bodyController == null)
                 bodyController = GetComponent<BodyController>();
+            // FIX: Используем ServiceLocator вместо FindFirstObjectByType
             if (timeController == null)
-                timeController = FindFirstObjectByType<World.TimeController>();
+                timeController = ServiceLocator.GetOrFind<World.TimeController>();
 
             isInitialized = true;
         }

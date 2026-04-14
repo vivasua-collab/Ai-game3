@@ -12,6 +12,9 @@ using CultivationGame.Player;
 using CultivationGame.Core;
 using CultivationGame.Qi;
 using CultivationGame.Body;
+using CultivationGame.Inventory;
+using CultivationGame.Combat;
+using CultivationGame.Interaction;
 
 namespace CultivationGame.World
 {
@@ -244,6 +247,15 @@ namespace CultivationGame.World
             player.AddComponent<PlayerController>();
             player.AddComponent<BodyController>();
             player.AddComponent<QiController>();
+            
+            // FIX: Добавлены недостающие компоненты для полной инициализации игрока
+            // Без SleepSystem — сон не работает, без InventoryController — инвентарь
+            // Редактировано: 2026-04-14 06:13:00 UTC
+            player.AddComponent<SleepSystem>();
+            player.AddComponent<InventoryController>();
+            player.AddComponent<EquipmentController>();
+            player.AddComponent<TechniqueController>();
+            player.AddComponent<InteractionController>();
             
             // Sprite Renderer (временный визуал)
             SpriteRenderer sr = player.AddComponent<SpriteRenderer>();
