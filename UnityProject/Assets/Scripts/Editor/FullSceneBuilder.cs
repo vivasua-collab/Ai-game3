@@ -1643,6 +1643,10 @@ namespace CultivationGame.Editor
             CreateTerrainTileAsset("Tile_WaterDeep", "terrain_water_deep", TerrainType.Water_Deep, 0.0f, false, GameTileFlags.Swimable | GameTileFlags.Flyable);
             CreateTerrainTileAsset("Tile_Sand", "terrain_sand", TerrainType.Sand, 1.2f, true, GameTileFlags.Passable);
             CreateTerrainTileAsset("Tile_Void", "terrain_void", TerrainType.Void, 0.0f, false, GameTileFlags.None);
+            // FIX: Добавлены Ice и Lava .asset файлы
+            // Редактировано: 2026-04-14 06:41:00 UTC
+            CreateTerrainTileAsset("Tile_Ice", "terrain_ice", TerrainType.Ice, 1.5f, true, GameTileFlags.Passable);
+            CreateTerrainTileAsset("Tile_Lava", "terrain_lava", TerrainType.Lava, 0.0f, false, GameTileFlags.Flyable);
 
             // Шаг 4: Создать ObjectTile .asset файлы
             CreateObjectTileAsset("Tile_Tree", "obj_tree", TileObjectType.Tree_Oak, 200, true, true, true);
@@ -1650,6 +1654,10 @@ namespace CultivationGame.Editor
             CreateObjectTileAsset("Tile_RockMedium", "obj_rock_medium", TileObjectType.Rock_Medium, 300, true, true, true);
             CreateObjectTileAsset("Tile_Bush", "obj_bush", TileObjectType.Bush, 50, false, false, false);
             CreateObjectTileAsset("Tile_Chest", "obj_chest", TileObjectType.Chest, 50, false, false, false);
+            // FIX: Добавлены OreVein и Herb .asset файлы
+            // Редактировано: 2026-04-14 06:41:00 UTC
+            CreateObjectTileAsset("Tile_OreVein", "obj_ore_vein", TileObjectType.OreVein, 250, true, true, true);
+            CreateObjectTileAsset("Tile_Herb", "obj_herb", TileObjectType.Herb, 30, false, false, false);
 
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
@@ -1757,6 +1765,10 @@ namespace CultivationGame.Editor
             AssignTileProperty(so, "waterDeepTile", "Assets/Tiles/Terrain/Tile_WaterDeep.asset");
             AssignTileProperty(so, "sandTile", "Assets/Tiles/Terrain/Tile_Sand.asset");
             AssignTileProperty(so, "voidTile", "Assets/Tiles/Terrain/Tile_Void.asset");
+            // FIX: Добавлены Ice и Lava tile назначения
+            // Редактировано: 2026-04-14 06:40:00 UTC
+            AssignTileProperty(so, "iceTile", "Assets/Tiles/Terrain/Tile_Ice.asset");
+            AssignTileProperty(so, "lavaTile", "Assets/Tiles/Terrain/Tile_Lava.asset");
 
             // Object Tiles
             AssignTileProperty(so, "treeTile", "Assets/Tiles/Objects/Tile_Tree.asset");
@@ -1764,6 +1776,9 @@ namespace CultivationGame.Editor
             AssignTileProperty(so, "rockMediumTile", "Assets/Tiles/Objects/Tile_RockMedium.asset");
             AssignTileProperty(so, "bushTile", "Assets/Tiles/Objects/Tile_Bush.asset");
             AssignTileProperty(so, "chestTile", "Assets/Tiles/Objects/Tile_Chest.asset");
+            // FIX: Добавлены OreVein и Herb tile назначения
+            AssignTileProperty(so, "oreVeinTile", "Assets/Tiles/Objects/Tile_OreVein.asset");
+            AssignTileProperty(so, "herbTile", "Assets/Tiles/Objects/Tile_Herb.asset");
 
             so.ApplyModifiedProperties();
             Debug.Log("[FullSceneBuilder] TileBase ссылки назначены в TileMapController");

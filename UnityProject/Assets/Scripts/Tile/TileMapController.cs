@@ -31,6 +31,10 @@ namespace CultivationGame.TileSystem
         [SerializeField] private TileBase waterDeepTile;
         [SerializeField] private TileBase sandTile;
         [SerializeField] private TileBase voidTile;
+        // FIX: Добавлены недостающие типы террейна
+        // Редактировано: 2026-04-14 06:38:00 UTC
+        [SerializeField] private TileBase iceTile;
+        [SerializeField] private TileBase lavaTile;
 
         [Header("Object Tiles")]
         [SerializeField] private TileBase treeTile;
@@ -38,6 +42,9 @@ namespace CultivationGame.TileSystem
         [SerializeField] private TileBase rockMediumTile;
         [SerializeField] private TileBase bushTile;
         [SerializeField] private TileBase chestTile;
+        // FIX: Добавлены недостающие типы объектов
+        [SerializeField] private TileBase oreVeinTile;
+        [SerializeField] private TileBase herbTile;
 
         [Header("Settings")]
         [SerializeField] private int defaultWidth = 50;
@@ -384,6 +391,11 @@ namespace CultivationGame.TileSystem
                 TerrainType.Water_Shallow => waterShallowTile,
                 TerrainType.Water_Deep => waterDeepTile,
                 TerrainType.Sand => sandTile,
+                TerrainType.Void => voidTile,
+                // FIX: Добавлены Ice и Lava
+                // Редактировано: 2026-04-14 06:38:00 UTC
+                TerrainType.Ice => iceTile,
+                TerrainType.Lava => lavaTile,
                 _ => null
             };
         }
@@ -405,10 +417,12 @@ namespace CultivationGame.TileSystem
                 TileObjectType.Bush => bushTile,
                 TileObjectType.Bush_Berry => bushTile,
                 TileObjectType.Chest => chestTile,
-                TileObjectType.OreVein => rockMediumTile,   // Руда отображается как камень
-                TileObjectType.Herb => bushTile,            // Трава отображается как куст
-                TileObjectType.Grass_Tall => bushTile,      // Высокая трава как куст
-                TileObjectType.Flower => bushTile,          // Цветы как куст
+                // FIX: OreVein и Herb теперь используют собственные tile поля
+                // Редактировано: 2026-04-14 06:38:00 UTC
+                TileObjectType.OreVein => oreVeinTile ?? rockMediumTile,
+                TileObjectType.Herb => herbTile ?? bushTile,
+                TileObjectType.Grass_Tall => herbTile ?? bushTile,
+                TileObjectType.Flower => herbTile ?? bushTile,
                 _ => null
             };
         }
