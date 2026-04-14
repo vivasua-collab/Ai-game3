@@ -4,7 +4,7 @@
 // Версия: 1.2
 // ============================================================================
 // Создано: 2026-04-13 08:00:00 UTC
-// Редактировано: 2026-04-14 07:50:00 UTC — Camera2DSetup follow + bounds, размер карты 100×80, CleanMissingPrefabs улучшен
+// Редактировано: 2026-04-14 13:55:00 UTC — Snow tile asset + AssignTileBases, Camera2DSetup follow + bounds, 100×80
 //
 // АРХИТЕКТУРА:
 //   15 фаз, каждая идемпотентна (повторный запуск безопасен).
@@ -1696,8 +1696,9 @@ namespace CultivationGame.Editor
             CreateTerrainTileAsset("Tile_WaterDeep", "terrain_water_deep", TerrainType.Water_Deep, 0.0f, false, GameTileFlags.Swimable | GameTileFlags.Flyable);
             CreateTerrainTileAsset("Tile_Sand", "terrain_sand", TerrainType.Sand, 1.2f, true, GameTileFlags.Passable);
             CreateTerrainTileAsset("Tile_Void", "terrain_void", TerrainType.Void, 0.0f, false, GameTileFlags.None);
-            // FIX: Добавлены Ice и Lava .asset файлы
-            // Редактировано: 2026-04-14 06:41:00 UTC
+            // FIX: Добавлены Snow, Ice и Lava .asset файлы
+            // Редактировано: 2026-04-14 13:55:00 UTC
+            CreateTerrainTileAsset("Tile_Snow", "terrain_snow", TerrainType.Snow, 1.3f, true, GameTileFlags.Passable);
             CreateTerrainTileAsset("Tile_Ice", "terrain_ice", TerrainType.Ice, 1.5f, true, GameTileFlags.Passable);
             CreateTerrainTileAsset("Tile_Lava", "terrain_lava", TerrainType.Lava, 0.0f, false, GameTileFlags.Flyable);
 
@@ -1818,8 +1819,9 @@ namespace CultivationGame.Editor
             AssignTileProperty(so, "waterDeepTile", "Assets/Tiles/Terrain/Tile_WaterDeep.asset");
             AssignTileProperty(so, "sandTile", "Assets/Tiles/Terrain/Tile_Sand.asset");
             AssignTileProperty(so, "voidTile", "Assets/Tiles/Terrain/Tile_Void.asset");
-            // FIX: Добавлены Ice и Lava tile назначения
-            // Редактировано: 2026-04-14 06:40:00 UTC
+            // FIX: Добавлены Snow, Ice и Lava tile назначения
+            // Редактировано: 2026-04-14 13:55:00 UTC
+            AssignTileProperty(so, "snowTile", "Assets/Tiles/Terrain/Tile_Snow.asset");
             AssignTileProperty(so, "iceTile", "Assets/Tiles/Terrain/Tile_Ice.asset");
             AssignTileProperty(so, "lavaTile", "Assets/Tiles/Terrain/Tile_Lava.asset");
 
