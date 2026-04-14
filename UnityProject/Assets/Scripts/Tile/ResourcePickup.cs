@@ -39,6 +39,8 @@ namespace CultivationGame.TileSystem
         // === Properties ===
         public string ResourceId => resourceId;
         public int Amount => amount;
+        public float PickupRadius { get => pickupRadius; set => pickupRadius = value; }
+        public bool AutoPickup { get => autoPickup; set => autoPickup = value; }
         
         // === Unity Lifecycle ===
         

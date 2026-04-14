@@ -20,6 +20,7 @@ using UnityEngine.Tilemaps;
 using UnityEngine.UI;
 using TMPro;
 using CultivationGame.World;
+using CultivationGame.Core;
 
 namespace CultivationGame.TileSystem.Editor
 {
@@ -95,8 +96,8 @@ namespace CultivationGame.TileSystem.Editor
             var so = new SerializedObject(controller);
             so.FindProperty("terrainTilemap").objectReferenceValue = terrainTilemap;
             so.FindProperty("objectTilemap").objectReferenceValue = objectTilemap;
-            so.FindProperty("defaultWidth").intValue = 30;
-            so.FindProperty("defaultHeight").intValue = 20;
+            so.FindProperty("defaultWidth").intValue = 80;
+            so.FindProperty("defaultHeight").intValue = 60;
             so.ApplyModifiedProperties();
 
             // === Создать UI ===
@@ -113,9 +114,21 @@ namespace CultivationGame.TileSystem.Editor
                 cameraObj.AddComponent<Camera>();
                 cameraObj.tag = "MainCamera";
             }
-            cameraObj.transform.position = new Vector3(30, 20, -10);
-            cameraObj.GetComponent<Camera>().orthographic = true;
-            cameraObj.GetComponent<Camera>().orthographicSize = 15;
+            cameraObj.transform.position = new Vector3(80, 60, -10);
+            var cam = cameraObj.GetComponent<Camera>();
+            cam.orthographic = true;
+            cam.orthographicSize = 10;
+            
+            // Добавить Camera2DSetup с настройками слежения
+            var camera2D = cameraObj.GetComponent<Camera2DSetup>();
+            if (camera2D == null)
+                camera2D = cameraObj.AddComponent<Camera2DSetup>();
+            var camSo = new SerializedObject(camera2D);
+            camSo.FindProperty("orthographicSize").floatValue = 10f;
+            camSo.FindProperty("followEnabled").boolValue = true;
+            camSo.FindProperty("useBounds").boolValue = true;
+            camSo.FindProperty("boundsMax").vector2Value = new Vector2(160f, 120f);
+            camSo.ApplyModifiedProperties();
 
             // Создать источник света
             var lightObj = new GameObject("Directional Light");

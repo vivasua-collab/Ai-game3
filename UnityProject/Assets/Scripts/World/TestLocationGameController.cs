@@ -38,6 +38,9 @@ namespace CultivationGame.World
         [SerializeField] private TMPro.TMP_Text locationText;
         [SerializeField] private TMPro.TMP_Text positionText;
         
+        [Header("Camera")]
+        [SerializeField] private Camera2DSetup cameraSetup;
+        
         [Header("Settings")]
         [SerializeField] private bool spawnPlayerOnStart = true;
         [SerializeField] private bool showDebugInfo = true;
@@ -47,6 +50,7 @@ namespace CultivationGame.World
         private PlayerController playerController;
         private QiController qiController;
         private BodyController bodyController;
+        private ResourceSpawner resourceSpawner;
         
         // === Properties ===
         public GameObject SpawnedPlayer => spawnedPlayer;
@@ -62,6 +66,10 @@ namespace CultivationGame.World
             // Найти TileMapController если не назначен
             if (tileMapController == null)
                 tileMapController = FindFirstObjectByType<TileMapController>();
+            
+            // Найти камеру если не назначена
+            if (cameraSetup == null)
+                cameraSetup = FindFirstObjectByType<Camera2DSetup>();
             
             // Автоматически найти UI элементы если не назначены
             AutoFindUIElements();
@@ -128,6 +136,12 @@ namespace CultivationGame.World
             {
                 SpawnPlayer();
             }
+            
+            // Настроить камеру
+            SetupCamera();
+            
+            // Настроить спавнер ресурсов
+            SetupResourceSpawner();
         }
         
         private void OnDestroy()
@@ -185,6 +199,12 @@ namespace CultivationGame.World
             
             OnPlayerSpawned?.Invoke(spawnedPlayer);
             
+            // Привязать камеру к игроку
+            if (cameraSetup != null && spawnedPlayer != null)
+            {
+                cameraSetup.SetFollowTarget(spawnedPlayer.transform);
+            }
+            
             Debug.Log($"[TestLocationGameController] Player spawned at {spawnPosition}");
             
             return spawnedPlayer;
@@ -222,7 +242,7 @@ namespace CultivationGame.World
             }
             
             // Дефолтная позиция
-            return new Vector3(30, 20, 0); // Центр карты 30×20 тайлов
+            return new Vector3(80, 60, 0); // Центр карты 80×60 тайлов
         }
         
         /// <summary>
@@ -419,6 +439,51 @@ namespace CultivationGame.World
             if (number >= 1000)
                 return $"{number / 1000f:F1}K";
             return number.ToString();
+        }
+        
+        // === Camera Setup ===
+        
+        /// <summary>
+        /// Настроить камеру: привязать к игроку и установить границы карты.
+        /// Редактировано: 2026-04-14 07:45:00 UTC
+        /// </summary>
+        private void SetupCamera()
+        {
+            if (cameraSetup == null) return;
+            
+            // Установить границы карты
+            if (tileMapController != null && tileMapController.MapData != null)
+            {
+                var worldSize = tileMapController.MapData.GetWorldSize();
+                cameraSetup.SetBounds(Vector2.zero, worldSize);
+            }
+            
+            // Привязать к игроку
+            if (spawnedPlayer != null)
+            {
+                cameraSetup.SetFollowTarget(spawnedPlayer.transform);
+            }
+        }
+        
+        // === Resource Spawner ===
+        
+        /// <summary>
+        /// Настроить спавнер ресурсов.
+        /// Редактировано: 2026-04-14 07:45:00 UTC
+        /// </summary>
+        private void SetupResourceSpawner()
+        {
+            // Создать или найти ResourceSpawner
+            resourceSpawner = GetComponent<ResourceSpawner>();
+            if (resourceSpawner == null)
+            {
+                resourceSpawner = gameObject.AddComponent<ResourceSpawner>();
+            }
+            
+            // Установить стандартные типы ресурсов
+            resourceSpawner.SetDefaultResourceTypes();
+            
+            Debug.Log("[TestLocationGameController] ResourceSpawner настроен");
         }
         
         // === Context Menu ===
