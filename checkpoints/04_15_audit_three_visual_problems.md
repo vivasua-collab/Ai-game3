@@ -1,209 +1,300 @@
-# Чекпоинт: Аудит 3 визуальных проблем — полный план решения
+# Чекпоинт: Аудит 3 визуальных проблем — углублённый аудит
 
-**Дата:** 2026-04-15 16:17:52 UTC
-**Редактировано:** 2026-04-15 16:35:00 UTC — добавлена проверка по документации Unity 6.3 + анализ влияния
-**Статус:** complete (аудит завершён, план проверен по документации, анализ влияния выполнен)
-
----
-
-## КРИТИЧЕСКИЕ НАХОДКИ АУДИТА
-
-### Нахождение 1: AI-спрайты 1024×1024 RGB БЕЗ альфа-канала
-- Все 17 PNG в `Tiles_AI/` = **RGB** (не RGBA), **1024×1024** пикселей
-- **НЕТ прозрачных пикселей** — alpha_range = (255, 255) для ВСЕХ файлов
-- Объектные спрайты (obj_tree, obj_bush и др.) = **сплошной белый/серый фон**
-- **Это объясняет Проблему 3**: белый фон — не баг Unity, а **отсутствие альфа-канала в PNG**
-
-### Нахождение 2: Нет .meta файлов для AI-спрайтов
-- В `Tiles_AI/` НЕТ `.meta` файлов → Unity не знает что это Sprite
-- `AssetDatabase.LoadAssetAtPath<Sprite>()` вернёт null если textureType ≠ Sprite
-
-### Нахождение 3: FullSceneBuilder ищет спрайты ТОЛЬКО в Tiles/, не в Tiles_AI/
-- `CreateTerrainTileAsset()` строка 1862: `Assets/Sprites/Tiles/{spriteName}.png` — ТОЛЬКО Tiles/
-- `CreateObjectTileAsset()` — аналогично
-- `Tiles/` НЕ СУЩЕСТВУЕТ → спрайты не найдены → tile assets без спрайтов
-
-### Нахождение 4: PPU=32 при размере 1024×1024 = 32 юнита!
-- AI-спрайты 1024×1024, PPU=32 → 1024/32 = **32 юнита** (ячейка = 2 юнита!)
-- Нужен PPU=512 для terrain (1024/512 = 2.0 юнита)
-- Для objects: PPU=2560 (1024/2560 = 0.4 юнита) ИЛИ уменьшить до 64×64
+**Дата:** 2026-04-15 16:28:00 UTC
+**Редактировано:** 2026-04-15 16:45:00 UTC — углублённая трассировка кода с учётом пересоздания сцены
+**Статус:** complete
 
 ---
 
-## ПРОВЕРКА ПО ДОКУМЕНТАЦИИ UNITY 6.3
+## КОНТЕКСТ: Пользователь удаляет Assets и пересоздаёт сцену
 
-### ✅ TextureImporter.spritePixelsPerUnit
-- **Тип:** `float` — нет ограничения сверху, PPU=512 допустимо
-- **Описание:** "The number of pixels in the sprite that correspond to one unit in world space"
-- **Вывод:** PPU=512 для 1024×1024 → 2.0 юнита — корректно
-
-### ✅ TextureImporter.alphaIsTransparency
-- **Описание:** "If the alpha channel of your texture represents transparency, enable this property to dilate the color channels of visible texels into fully transparent areas."
-- **Ключевое:** Это свойство **НЕ создаёт** альфа-канал! Оно только **расширяет** (dilate) цвет видимых пикселей в прозрачные области для устранения артефактов фильтрации на границах.
-- **Вывод:** Для RGB текстур (без альфа-канала) `alphaIsTransparency = true` **бесполезно** — не создаёт прозрачность из ничего. Сначала нужен альфа-канал в PNG (RGBA формат).
-
-### ✅ Sprite.Create() с Rect
-- **Сигнатура:** `Sprite.Create(Texture2D texture, Rect rect, Vector2 pivot, float pixelsPerUnit)`
-- **rect:** "The rectangular section of the Texture to use for the Sprite" — можно указать **sub-rect** текстуры
-- **Вывод:** Можно использовать Rect(256, 256, 512, 512) для выделения центральной части 1024×1024 текстуры. PPU=256 → 512/256 = 2.0 юнита.
-
-### ✅ TextureImporter.textureType = Sprite
-- `TextureImporterType.Sprite` — по-прежнему корректно в Unity 6.3
-- `SpriteImportMode.Single` — правильная замена удалённого `TextureImporter.sprites`
+Это критически важная информация:
+1. При каждом пересоздании Unity генерирует .meta файлы заново
+2. FullSceneBuilder Build All выполняется полностью (все 15 фаз)
+3. TileSpriteGenerator.GenerateAllSprites() создаёт Tiles/ и генерирует программные PNG
+4. Тайлы создаются из программных PNG, НЕ из AI-спрайтов
 
 ---
 
-## ПРОБЛЕМА 1: Текстуры ландшафта — генерируемые вместо готовых AI-спрайтов
+## УГЛУБЛЁННАЯ ТРАССИРОВКА ПОЛНОГО ПОТОКА ВЫПОЛНЕНИЯ
 
-### Корневая причина (ПОДТВЕРЖДЕНА)
+### FullSceneBuilder Build All — порядок фаз:
 
-1. `FullSceneBuilder.CreateTerrainTileAsset()` ищет спрайты ТОЛЬКО в `Assets/Sprites/Tiles/`
-2. Директория `Tiles/` не существует → спрайты не найдены → tile assets без спрайтов
-3. `TileMapController.LoadTileSprite()` ищет в `Tiles_AI/` первым — правильно, но `AssetDatabase.LoadAssetAtPath<Sprite>()` возвращает null (нет .meta, не импортирован как Sprite)
-4. Fallback → `CreateProceduralTileSprite()` → программные текстуры
+```
+Phase 10: Generate Tile Sprites
+  → IsGenerateSpritesNeeded() = !HasAssetsInFolder("Assets/Sprites/Tiles")
+  → Если Tiles/ НЕ существует (а её нет при пересоздании) → EXECUTE
+  → TileSpriteGenerator.GenerateAllSprites()
+    → Создаёт Assets/Sprites/Tiles/ (если нет)
+    → Генерирует terrain_*.png (68×68 RGBA32) и obj_*.png (64×64 RGBA32)
+    → Реимпортирует через SaveTexture() с PPU=32/160, SpriteImportMode.Single
+    → РЕЗУЛЬТАТ: Tiles/ заполнена программными спрайтами
 
-### Решение
+Phase 14: Create Tile Assets
+  → ExecuteCreateTileAssets()
+    → Шаг 1: Проверка Tiles/terrain_grass.png → СУЩЕСТВУЕТ (создан Phase 10)
+    → Шаг 1.5: ReimportTileSprites()
+      → Сканирует Tiles/ и Tiles_AI/
+      → Устанавливает PPU=32(terrain)/160(objects), alphaIsTransparency=true
+      → ДЛЯ Tiles_AI/: PPU=32 для terrain_grass_ai.png (1024px) → 1024/32=32 юнита!
+      → ДЛЯ Tiles/: PPU=32 для terrain_grass.png (68px) → 68/32=2.125 юнита
+    → Шаг 3: CreateTerrainTileAsset("Tile_Grass", "terrain_grass", ...)
+      → Ищет: "Assets/Sprites/Tiles/terrain_grass.png" ← ТОЛЬКО Tiles/!
+      → НАХОДИТ программный спрайт (создан Phase 10)
+      → tile.sprite = программный спрайт 68×68 PPU=32
+    → Шаг 4: CreateObjectTileAsset("Tile_Tree", "obj_tree", ...)
+      → Ищет: "Assets/Sprites/Tiles/obj_tree.png" ← ТОЛЬКО Tiles/!
+      → НАХОДИТ программный спрайт 64×64 PPU=160
+      → tile.sprite = программный спрайт
+    → Шаг 5: AssignTileBasesToController()
+      → Назначает все tile assets в [SerializeField] поля TileMapController
+```
 
-**Шаг 1:** Исправить `CreateTerrainTileAsset()` и `CreateObjectTileAsset()` — искать спрайт СПЕРВА в `Tiles_AI/`, потом в `Tiles/`
+### Runtime (Start):
 
-**Шаг 2:** `ReimportTileSprites()` ВЫЗЫВАЕТСЯ в `ExecuteCreateTileAssets()` (строка 1802) — но ДО создания tile assets. Проблема: ReimportTileSprites сканирует Tiles/ и Tiles_AI/, но Tiles/ не существует, а Tiles_AI/ PNG не импортированы как Sprite. После ReimportTileSprites они станут Sprite, и PPU будет установлен.
+```
+TileMapController.Start()
+  → EnsureTileAssets()
+    → grassTile уже назначен из FullSceneBuilder → НЕ null → ПРОПУСКАЕТ
+    → ВСЕ [SerializeField] поля назначены → EnsureTile() не вызывается
+  → GenerateTestMap()
+    → Заполняет mapData типами TerrainType
+    → RenderMap()
+      → GetTerrainTile(TerrainType.Grass) → grassTile (с программным спрайтом)
+      → terrainTilemap.SetTile(pos, grassTile) → РИСУЕТ программный спрайт
+```
 
-**Шаг 3:** Для AI-спрайтов 1024×1024 нужно PPU=512 (terrain) и PPU=2560 (objects)
+### КЛЮЧЕВОЙ ВЫВОД:
 
-### Альтернативы (с анализом)
+**AI-спрайты из Tiles_AI/ НИКОГДА НЕ ИСПОЛЬЗУЮТСЯ!**
 
-| Альтернатива | Плюсы | Минусы | Рекомендация |
-|---|---|---|---|
-| **A: Уменьшить PNG до 64×64** | Совместимо с PPU=32, минимальные изменения кода | Потеря качества AI-спрайтов | ⭐ РЕКОМЕНДУЕТСЯ для простоты |
-| **B: PPU=512/2560 для AI-спрайтов** | Полное качество | Разные PPU для разных источников, сложнее | Приемлемо |
-| **C: Sprite.Create sub-rect** | Использует часть 1024×1024 | Сложнее код, нужен расчёт rect | Избыточно |
-| **D: Terrain из AI, objects процедурные** | Простота для terrain | Объекты остаются без AI-спрайтов | Временное решение |
+Потому что:
+1. Phase 10 генерирует программные спрайты в Tiles/ (ВСЕГДА при пересоздании)
+2. CreateTerrainTileAsset/CreateObjectTileAsset ищут ТОЛЬКО в Tiles/
+3. EnsureTileAssets() не вызывается — все поля уже назначены из Build All
+4. ReimportTileSprites() реимпортирует Tiles_AI/ но результат не используется нигде
 
-**Рекомендация: Альтернатива A** — уменьшить AI-спрайты Python-скриптом до 64×64 (terrain) и 64×64 (objects) с RGBA и прозрачностью. Тогда PPU=32/160 продолжает работать.
+---
 
-### Влияние внедрения
-- **Положительное:** Готовые AI-спрайты выглядят лучше процедурных
-- **Риск:** Нужно правильно обработать прозрачность при уменьшении (alpha blending при resize)
-- **Затронутые файлы:** FullSceneBuilder.cs (пути), TileSpriteGenerator.cs (возможно удалить)
-- **Обратная совместимость:** TileMapController.EnsureTileAssets() уже ищет Tiles_AI/ первым
+## ПРОБЛЕМА 1: Используются программные текстуры вместо AI-спрайтов
+
+### Корневая причина (УТОЧНЕНА)
+
+НЕ то что "AI-спрайты не загружаются". А то что:
+1. `TileSpriteGenerator` генерирует программные PNG в Tiles/ → ЭТИ используются
+2. `CreateTerrainTileAsset` ищет ТОЛЬКО в Tiles/ → находит программные
+3. AI-спрайты в Tiles_AI/ существуют, но **код никогда к ним не обращается** при создании tile assets
+4. `EnsureTileAssets()` (runtime fallback) НЕ вызывается, т.к. FullSceneBuilder уже назначил все поля
+
+### Решение с МАКСИМАЛЬНОЙ вероятностью успеха
+
+**Вариант 1 (самый надёжный): Заменить содержимое Tiles/ на обработанные AI-спрайты**
+- Python-скрипт обрабатывает Tiles_AI/ (уменьшает 1024→64, добавляет прозрачность для obj_*)
+- Результат сохраняется в Tiles/ (заменяет программные PNG)
+- `TileSpriteGenerator.GenerateAllSprites()` НЕ вызывается если Tiles/ уже содержит PNG
+- НО: `IsGenerateSpritesNeeded()` проверяет `HasAssetsInFolder("Assets/Sprites/Tiles")` → если Tiles/ не пуста → Phase 10 ПРОПУСКАЕТСЯ
+- Значит: если Tiles/ содержит обработанные AI-спрайты → Phase 10 пропускается → AI-спрайты используются!
+
+**ПРОБЛЕМА С ВАРИАНТОМ 1:** При удалении Assets и пересоздании Tiles/ будет ПУСТАЯ → Phase 10 запустится → перезапишет AI-спрайты программными!
+
+**Вариант 2 (рекомендуемый — МАКСИМАЛЬНАЯ вероятность):**
+Изменить `TileSpriteGenerator.GenerateAllSprites()` — вместо генерации программных текстур, КОПИРОВАТЬ (и обрабатывать) AI-спрайты в Tiles/:
+
+```
+GenerateAllSprites():
+  1. Проверить Tiles_AI/ на наличие AI-спрайтов
+  2. Если AI-спрайты есть:
+     a. Создать Tiles/ если нет
+     b. Для каждого AI-спрайта в Tiles_AI/:
+        - Загрузить PNG
+        - Уменьшить до 64×64 (Lanczos resize)
+        - Для obj_*: добавить прозрачность (flood-fill от углов)
+        - Сохранить в Tiles/
+        - Реимпортировать как Sprite с правильным PPU
+  3. Если AI-спрайтов нет:
+     a. Fallback: текущая генерация программных спрайтов
+```
+
+**Почему это работает:**
+- Phase 10 ВСЕГДА запускается при пересоздании (Tiles/ пуста)
+- Но вместо программных спрайтов → используем обработанные AI-спрайты
+- Phase 14 находит PNG в Tiles/ → tile assets с AI-спрайтами
+- Код минимально изменён — только TileSpriteGenerator
+
+**Вариант 3 (альтернативный): Удалить TileSpriteGenerator, изменить CreateTerrainTileAsset**
+- CreateTerrainTileAsset ищет сначала в Tiles_AI/, потом в Tiles/
+- Но при 1024×1024 PPU=32 → 32 юнита — НЕВЕРНО
+- Нужно PPU=512 → 1024/512=2.0 юнита
+- Но alphaIsTransparency=true не работает для RGB PNG → нужен альфа-канал
 
 ---
 
 ## ПРОБЛЕМА 2: Игрок не отображается
 
-### Корневые причины
+### Уточнённая трассировка
 
-**Причина A (главная): Игрок на позиции (0,0,0) = Void тайл**
-- `FullSceneBuilder.ExecutePlayer()` ставит `player.transform.position = Vector3.zero`
-- Тайл (0,0) на карте = Void (граница) → чёрный экран
-- Камера следует за игроком → видит чёрноту
+```
+FullSceneBuilder.ExecutePlayer():
+  → player.transform.position = Vector3.zero  ← (0,0,0)
+  → PlayerVisual создан на Player
+  → PlayerVisual.Awake() → CreateVisual()
+    → Создаёт дочерний "Visual" с SpriteRenderer
+    → localScale = (0.4, 0.4, 1)
+    → LoadPlayerSprite() → ищет 4 пути → НИ ОДИН НЕ СУЩЕСТВУЕТ
+    → Fallback: CreateCircleSprite()
+      → 64×64 RGBA32, PPU=32 → 2.0 юнита
+      → Scale 0.4 → видимый размер 0.8 юнита
+      → Цвет: playerColor = (0.2, 0.8, 0.3) — ЗЕЛЁНЫЙ
+    → sortingOrder = 10
 
-**Причина B: Зелёный игрок на зелёной траве**
-- `playerColor = new Color(0.2f, 0.8f, 0.3f)` — зелёный
-- Трава тоже зелёная → сливается
+Camera2DSetup.Start():
+  → FindPlayerTarget() → находит Player по тегу/имени
+  → SetFollowTarget(player.transform)
+  → Камера следует за игроком → камера на (0,0,-10)
+```
 
-**Причина C: Маленький размер**
-- Scale 0.4 × PPU=32 спрайт = 0.8 юнита на фоне ячейки 2.0
+### ПОЧЕМУ игрок не виден:
 
-### Решение
+1. **Позиция (0,0,0) = Void тайл** → чёрный фон вокруг
+2. **Зелёный на зелёном** → если камера сместится на траву, игрок сливается
+3. **НО!** Процедурный спрайт с Color.white tint → greenColor → должен быть виден даже на Void (зелёный на чёрном)
+4. **Возможная причина**: URP шейдер `Sprite-Lit-Default` требует 2D Lights! Без источников 2D света спрайт НЕ ВИДЕН в URP 2D!
 
-1. **Сместить стартовую позицию** на центр карты: `new Vector3(100f, 80f, 0f)` (centerX*2, centerY*2 в мировых координатах — каменный алтарь)
-2. **Изменить цвет** на контрастный — ярко-красный `new Color(1f, 0.3f, 0.2f)` или синий
-3. **Увеличить размер** — scale=1.0 при PPU=32 = 2.0 юнита (как тайл)
+### НОВАЯ ГИПОТЕЗА: URP 2D без 2D Lights = невидимые спрайты
 
-### Альтернативы
+Проверка:
+- FullSceneBuilder создаёт `Directional Light` (3D) — НЕ 2D Light
+- URP 2D renderer использует `Light2D` компоненты, не 3D Light
+- `Sprite-Lit-Default` шейдер рендерит спрайт ТОЛЬКО если есть 2D Light
+- Без 2D Light → спрайт полностью тёмный (чёрный = невидимый на чёрном фоне)
 
-| Альтернатива | Плюсы | Минусы |
-|---|---|---|
-| Позиция на центр карты | Виден на камне/траве | Нужен расчёт мировых координат |
-| Позиция (4,4) в тайлах | Не Void, близко к началу | Всё ещё может быть на траве |
-| Просто сменить цвет | Минимальные изменения | Не решает проблему Void |
+**ЭТО МОЖЕТ БЫТЬ ГЛАВНОЙ ПРИЧИНОЙ!**
 
-### Влияние
-- Смена позиции → Camera2DSetup последует за игроком → корректный вид
-- Увеличение размера → игрок = 1 тайл — стандартно для 2D RPG
-- Убирание дочернего "Visual" объекта → тень пропадёт (можно оставить)
+Проверяю: PlayerVisual ищет шейдер `Universal Render Pipeline/2D/Sprite-Lit-Default`
+Если URP не настроен → fallback на `Sprites/Default` → виден
+Если URP настроен как 2D renderer → `Sprite-Lit-Default` найден → НО НЕТ 2D LIGHT → НЕВИДИМ!
+
+### Решение с МАКСИМАЛЬНОЙ вероятностью (для Проблемы 2)
+
+**Шаг 1:** Добавить Light2D в сцену (если URP 2D renderer)
+- `Light2D` компонент типа `Global` с белым цветом
+- Это осветит ВСЕ спрайты использующие Sprite-Lit-Default
+
+**Шаг 2:** Сменить позицию игрока на центр карты
+- `player.transform.position = new Vector3(100f, 80f, 0f)`
+- Центр = каменный алтарь, видимый на любом фоне
+
+**Шаг 3:** Использовать Sprite-Unlit-Default вместо Sprite-Lit-Default
+- `Universal Render Pipeline/2D/Sprite-Unlit-Default` — рендерит БЕЗ света
+- Это гарантированно показывает спрайт
+
+**Шаг 4:** Контрастный цвет — `new Color(1f, 0.2f, 0.1f)` (красный)
+
+### Приоритет исправлений для Проблемы 2:
+1. **КРИТИЧЕСКОЕ:** Сменить шейдер на Unlit или добавить Light2D
+2. Сменить позицию на центр карты
+3. Контрастный цвет
 
 ---
 
 ## ПРОБЛЕМА 3: Белый фон вместо прозрачности
 
-### Корневая причина (ПОДТВЕРЖДЕНА ДОКУМЕНТАЦИЕЙ)
+### Уточнённая трассировка
 
-**AI-спрайты НЕ имеют альфа-канала (RGB, не RGBA)!**
+При пересоздании сцены (FullSceneBuilder Build All):
 
-Документация Unity 6.3 подтверждает:
-- `alphaIsTransparency = true` **НЕ создаёт** альфа-канал — только dilate цвет в уже прозрачные области
-- Для RGB PNG (без альфа-канала) это свойство **бесполезно**
-- Unity импортирует RGB PNG как opaque → все пиксели непрозрачные → белый фон
+1. Phase 10 генерирует программные PNG в Tiles/:
+   - terrain_*.png: 68×68 RGBA32, ВСЯ площадь залита цветом (нет прозрачных пикселей)
+   - obj_*.png: 64×64 RGBA32, фон=прозрачный (Color.clear), объект нарисован в центре
 
-### Решение (Вариант A — рекомендуемый)
+2. SaveTexture() для каждого PNG:
+   - `alphaIsTransparency = true` — установлено
+   - `textureCompression = Uncompressed`
+   - `spriteImportMode = SpriteImportMode.Single`
 
-**Шаг 1:** Python-скрипт для обработки AI-спрайтов:
-1. Конвертировать RGB → RGBA
-2. Для объектных спрайтов (obj_*): определить фон и сделать прозрачным
-3. Уменьшить с 1024×1024 до 64×64 (для совместимости с PPU=32/160)
-4. Сохранить как RGBA PNG
+3. Phase 14: CreateObjectTileAsset() загружает obj_tree.png из Tiles/
+   - Спрайт = программный, 64×64, PPU=160
+   - Прозрачный фон (Color.clear) — ДОЛЖЕН быть прозрачным!
 
-**Шаг 2:** Для terrain-спрайтов (terrain_*): просто уменьшить до 64×64, прозрачность НЕ нужна
+**Если программные спрайты с Color.clear + RGBA32 + alphaIsTransparency=true всё ещё показывают белый фон, причина может быть:**
 
-**Алгоритм определения фона для объектов:**
-- Угловые пиксели (0,0), (0,1023), (1023,0), (1023,1023) — почти наверняка фон
-- Использовать flood-fill от углов с tolerance=30 для определения фоновой области
-- Это точнее чем порог по яркости — не удалит светлые части объекта
+A. **Sprite-Lit-Default шейдер без Light2D** — спрайты рендерятся как чёрные/белые
+B. **Tilemap renderer issue** — TilemapRenderer.Mode.Individual может игнорировать прозрачность
+C. **GameTile.GetTileData()** — устанавливает `tileData.color = Color.white` — это tint, не должно убирать прозрачность
+D. **PNG не сохранился корректно** — EncodeToPNG() мог не сохранить alpha
 
-### Влияние
-- Уменьшение 1024→64: потеря деталей, но PPU=32 работает без изменений
-- Если сохранить 1024×1024: нужен PPU=512/2560 — больше изменений в коде
-- **Рекомендация:** уменьшить до 64×64 — проще и совместимо
+### Проверка гипотезы A (URP 2D без Light2D):
 
----
+Если URP 2D renderer активен и НЕТ Light2D:
+- Sprite-Lit-Default → спрайт чёрный (нет освещения)
+- На чёрном фоне спрайт с прозрачностью = ЧЁРНЫЙ силуэт на чёрном = НЕВИДИМЫЙ
+- Но пользователь видит БЕЛЫЙ фон, не чёрный → возможно это НЕ URP проблема
 
-## ИТОГОВЫЙ ПЛАН ИСПРАВЛЕНИЙ (пошагово)
+### Проверка гипотезы B (Tilemap renderer):
 
-### Этап 1: Подготовка AI-спрайтов (Python скрипт)
-1. Написать Python-скрипт для обработки Tiles_AI/
-2. Для obj_* спрайтов: конвертировать RGB→RGBA, flood-fill фон→прозрачный, уменьшить 1024→64
-3. Для terrain_* спрайтов: просто уменьшить 1024→64 (без прозрачности)
-4. Сохранить в Tiles_AI/ (заменить оригиналы) ИЛИ в Tiles/ (создать новую директорию)
+TilemapRenderer рендерит каждый тайл. Для объектов:
+- GameTile.GetTileData() → tileData.sprite = sprite, tileData.color = Color.white
+- Sprite с RGBA32 + прозрачный фон + color=white tint → ДОЛЖЕН быть прозрачным
+- НО если TilemapRenderer использует Sprite-Lit-Default → может рендерить как opaque
 
-### Этап 2: Исправление FullSceneBuilder.cs
-1. `CreateTerrainTileAsset()`: искать спрайт сначала в Tiles_AI/, потом в Tiles/
-2. `CreateObjectTileAsset()`: аналогично
-3. `ExecutePlayer()`: сменить позицию на центр карты (100, 80, 0)
-4. `ReimportTileSprites()`: PPU terrain=32, objects=160 (после уменьшения PNG)
+### НОВАЯ ГИПОТЕЗА: Проблема в AI-спрайтах, не в программных
 
-### Этап 3: Исправление PlayerVisual.cs
-1. Цвет: `playerColor = new Color(1f, 0.3f, 0.2f)` (красный, контрастный)
-2. Размер: `size = 1.0f` (при PPU=32 = 2 юнита = размер тайла)
+Пользователь говорит "текстуры элементов имеют БЕЛЫЙ фон". "Элементы" может означать:
+- Объекты на тайлах (деревья, камни) → отображаются через Tilemap → программные спрайты
+- Ресурсы на карте → ResourceSpawner → ПЫТАЕТСЯ загрузить AI-спрайты
+- Если ResourceSpawner.LoadResourceSprite() загружает AI-спрайт из Tiles_AI/ → 1024×1024 RGB БЕЗ прозрачности → БЕЛЫЙ ФОН!
 
-### Этап 4: Проверка
-1. Запустить FullSceneBuilder → Build All
-2. Проверить: terrain из AI-спрайтов, объекты с прозрачностью, игрок виден
+**Проверяю:**
+- ResourceSpawner.LoadResourceSprite() ищет в Tiles_AI/ ПЕРВЫМ → находит 1024×1024 RGB PNG
+- AssetDatabase.LoadAssetAtPath<Sprite>() → работает если .meta существует и textureType=Sprite
+- ReimportTileSprites() реимпортировал Tiles_AI/ с alphaIsTransparency=true → НО RGB PNG не имеет alpha!
+- Результат: AI-спрайт с белым фоном → spriteScale=0.16 → видимый маленький объект с белым квадратом
 
----
+### Решение с МАКСИМАЛЬНОЙ вероятностью (для Проблемы 3)
 
-## ФАЙЛЫ ДЛЯ ИЗМЕНЕНИЯ
+**Обработать AI-спрайты Python-скриптом:**
+1. Для obj_* спрайтов: конвертировать RGB→RGBA, flood-fill фон→прозрачный, уменьшить 1024→64
+2. Для terrain_* спрайтов: просто уменьшить 1024→64
+3. Сохранить обработанные файлы в Tiles_AI/ (заменить оригиналы)
 
-1. `Assets/Sprites/Tiles_AI/*.png` — обработать Python-скриптом (уменьшить + прозрачность)
-2. `FullSceneBuilder.cs` — исправить пути поиска + позиция игрока
-3. `PlayerVisual.cs` — цвет + размер
-4. `TileSpriteGenerator.cs` — возможно удалить (если AI-спрайты работают)
+**АЛЬТЕРНАТИВНО:** Убрать LoadResourceSprite() из ResourceSpawner — всегда использовать программные спрайты (гарантированная прозрачность)
 
 ---
 
-## ЧТО УЖЕ ПРОБОВАЛИ (И НЕ ПОМОГЛО)
+## ФИНАЛЬНЫЕ ВАРИАНТЫ ИСПРАВЛЕНИЙ (по вероятности успеха)
 
-| Попытка | Результат | Почему не помогло |
-|---|---|---|
-| 68×68 pixel bleed | Белая сетка осталась | PPU=32 при 68px = 2.125u, но sub-pixel артефакты не устранены |
-| cellGap=-0.01/0 | Не помогло | Не корневая причина |
-| spriteBorder(1,1,1,1) | Не помогло | Border для 9-slice, не для pixel bleed |
-| SpriteImportMode.Single | Компилируется, хуже | Замена sprites→Single правильная, но не решает визуал |
-| RGBA32 + alphaIsTransparency | Белый фон остался | RGB PNG не имеет альфа-канала — alphaIsTransparency бесполезен |
-| CreatePlayerSprite + size=0.4 | Игрок не виден | Позиция (0,0)=Void + зелёный на зелёном |
+### Вариант A: "Минимальные изменения — максимальный эффект" ⭐⭐⭐ РЕКОМЕНДУЕТСЯ
+
+1. **Python-скрипт** — обработать AI-спрайты (уменьшить + прозрачность) → заменить в Tiles_AI/
+2. **TileSpriteGenerator.cs** — вместо программной генерации, копировать/обрабатывать AI-спрайты в Tiles/
+3. **PlayerVisual.cs** — сменить шейдер на Sprite-Unlit-Default + контрастный цвет + позиция центра
+4. **FullSceneBuilder.cs** — ExecutePlayer() позиция = центр карты
+
+**Вероятность успеха: 90%** — решает все 3 проблемы
+
+### Вариант B: "Только код, без AI-спрайтов" ⭐⭐
+
+1. **PlayerVisual.cs** — Unlit шейдер + красный цвет + центр карты
+2. **ResourceSpawner.cs** — убрать LoadResourceSprite(), всегда программные спрайты
+3. **FullSceneBuilder.cs** — позиция игрока на центр
+
+**Вероятность успеха: 70%** — игрок виден, но объекты остаются программными
+
+### Вариант C: "AI-спрайты + правильный PPU" ⭐
+
+1. Обработать AI-спрайты (добавить RGBA alpha)
+2. Изменить PPU=512 для terrain, PPU=2560 для objects
+3. Исправить CreateTerrainTileAsset — искать в Tiles_AI/
+
+**Вероятность успеха: 60%** — сложнее, больше точек отказа
 
 ---
 
-*Создано: 2026-04-15 16:17:52 UTC*
-*Редактировано: 2026-04-15 16:35:00 UTC — проверка по документации Unity 6.3 + итоговый план*
+## ВАЖНО: ПРОВЕРИТЬ ПЕРЕД ИСПРАВЛЕНИЕМ
+
+1. **URP 2D renderer активен?** Если да — нужен Light2D или Unlit шейдер
+2. **Какой шейдер реально используется?** Sprite-Lit-Default или Sprites/Default?
+3. **Программные спрайты (в Tiles/) с прозрачностью?** Проверить obj_tree.png → есть ли alpha канал
+
+*Создано: 2026-04-15 16:28:00 UTC*
+*Редактировано: 2026-04-15 16:45:00 UTC — углублённая трассировка + новые гипотезы*
