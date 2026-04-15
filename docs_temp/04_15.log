@@ -1,0 +1,1001 @@
+[ServiceLocator] Service TimeController already registered. Replacing.
+UnityEngine.Debug:LogWarning (object)
+CultivationGame.Core.ServiceLocator:Register<CultivationGame.World.TimeController> (CultivationGame.World.TimeController) (at Assets/Scripts/Core/ServiceLocator.cs:66)
+CultivationGame.World.TimeController:Awake () (at Assets/Scripts/World/TimeController.cs:102)
+
+[ServiceLocator] Service WorldController already registered. Replacing.
+UnityEngine.Debug:LogWarning (object)
+CultivationGame.Core.ServiceLocator:Register<CultivationGame.World.WorldController> (CultivationGame.World.WorldController) (at Assets/Scripts/Core/ServiceLocator.cs:66)
+CultivationGame.World.WorldController:Awake () (at Assets/Scripts/World/WorldController.cs:182)
+
+[Camera2DSetup] Камера настроена: size=8, bg=RGBA(0.150, 0.180, 0.150, 1.000)
+UnityEngine.Debug:Log (object)
+CultivationGame.Core.Camera2DSetup:SetupCamera () (at Assets/Scripts/Core/Camera2DSetup.cs:127)
+CultivationGame.Core.Camera2DSetup:Awake () (at Assets/Scripts/Core/Camera2DSetup.cs:78)
+
+[Camera2DSetup] Цель слежения: Player
+UnityEngine.Debug:Log (object)
+CultivationGame.Core.Camera2DSetup:SetFollowTarget (UnityEngine.Transform) (at Assets/Scripts/Core/Camera2DSetup.cs:151)
+CultivationGame.World.TestLocationGameController:SpawnPlayer () (at Assets/Scripts/World/TestLocationGameController.cs:205)
+CultivationGame.World.TestLocationGameController:Start () (at Assets/Scripts/World/TestLocationGameController.cs:137)
+
+[TestLocationGameController] Player spawned at (100.00, 80.00, 0.00)
+UnityEngine.Debug:Log (object)
+CultivationGame.World.TestLocationGameController:SpawnPlayer () (at Assets/Scripts/World/TestLocationGameController.cs:208)
+CultivationGame.World.TestLocationGameController:Start () (at Assets/Scripts/World/TestLocationGameController.cs:137)
+
+[Camera2DSetup] Цель слежения: Player
+UnityEngine.Debug:Log (object)
+CultivationGame.Core.Camera2DSetup:SetFollowTarget (UnityEngine.Transform) (at Assets/Scripts/Core/Camera2DSetup.cs:151)
+CultivationGame.World.TestLocationGameController:SetupCamera () (at Assets/Scripts/World/TestLocationGameController.cs:465)
+CultivationGame.World.TestLocationGameController:Start () (at Assets/Scripts/World/TestLocationGameController.cs:141)
+
+[TestLocationGameController] ResourceSpawner настроен
+UnityEngine.Debug:Log (object)
+CultivationGame.World.TestLocationGameController:SetupResourceSpawner () (at Assets/Scripts/World/TestLocationGameController.cs:487)
+CultivationGame.World.TestLocationGameController:Start () (at Assets/Scripts/World/TestLocationGameController.cs:144)
+
+[TerrainConfig] Created runtime instance with defaults
+UnityEngine.Debug:Log (object)
+CultivationGame.TileSystem.TerrainConfig:get_Instance () (at Assets/Scripts/Data/TerrainConfig.cs:243)
+CultivationGame.TileSystem.TerrainConfig:GetTerrainConfig (CultivationGame.TileSystem.TerrainType) (at Assets/Scripts/Data/TerrainConfig.cs:256)
+CultivationGame.TileSystem.TileData:UpdateTerrainProperties () (at Assets/Scripts/Tile/TileData.cs:73)
+CultivationGame.TileSystem.TileData:.ctor (int,int,CultivationGame.TileSystem.TerrainType) (at Assets/Scripts/Tile/TileData.cs:61)
+CultivationGame.TileSystem.TileMapData:CreateTile (int,int,CultivationGame.TileSystem.TerrainType) (at Assets/Scripts/Tile/TileMapData.cs:107)
+CultivationGame.TileSystem.TileMapController:GenerateMap (int,int,string) (at Assets/Scripts/Tile/TileMapController.cs:111)
+CultivationGame.TileSystem.TileMapController:GenerateTestMap () (at Assets/Scripts/Tile/TileMapController.cs:96)
+CultivationGame.TileSystem.TileMapController:Start () (at Assets/Scripts/Tile/TileMapController.cs:84)
+
+[DestructibleObjectController] Cached 406 destructible objects
+UnityEngine.Debug:Log (object)
+CultivationGame.TileSystem.DestructibleObjectController:CacheObjects () (at Assets/Scripts/Tile/DestructibleObjectController.cs:207)
+CultivationGame.TileSystem.DestructibleObjectController:OnMapGenerated (CultivationGame.TileSystem.TileMapData) (at Assets/Scripts/Tile/DestructibleObjectController.cs:184)
+CultivationGame.TileSystem.TileMapController:GenerateMap (int,int,string) (at Assets/Scripts/Tile/TileMapController.cs:121)
+CultivationGame.TileSystem.TileMapController:GenerateTestMap () (at Assets/Scripts/Tile/TileMapController.cs:96)
+CultivationGame.TileSystem.TileMapController:Start () (at Assets/Scripts/Tile/TileMapController.cs:84)
+
+[TestLocationGameController] Map generated: 100x80
+UnityEngine.Debug:Log (object)
+CultivationGame.World.TestLocationGameController:OnMapGenerated (CultivationGame.TileSystem.TileMapData) (at Assets/Scripts/World/TestLocationGameController.cs:355)
+CultivationGame.TileSystem.TileMapController:GenerateMap (int,int,string) (at Assets/Scripts/Tile/TileMapController.cs:121)
+CultivationGame.TileSystem.TileMapController:GenerateTestMap () (at Assets/Scripts/Tile/TileMapController.cs:96)
+CultivationGame.TileSystem.TileMapController:Start () (at Assets/Scripts/Tile/TileMapController.cs:84)
+
+Generated map: 100x80 tiles (200x160 meters)
+UnityEngine.Debug:Log (object)
+CultivationGame.TileSystem.TileMapController:GenerateMap (int,int,string) (at Assets/Scripts/Tile/TileMapController.cs:122)
+CultivationGame.TileSystem.TileMapController:GenerateTestMap () (at Assets/Scripts/Tile/TileMapController.cs:96)
+CultivationGame.TileSystem.TileMapController:Start () (at Assets/Scripts/Tile/TileMapController.cs:84)
+
+Player initialized: Игрок
+UnityEngine.Debug:Log (object)
+CultivationGame.Player.PlayerController:InitializePlayer () (at Assets/Scripts/Player/PlayerController.cs:275)
+CultivationGame.Player.PlayerController:Start () (at Assets/Scripts/Player/PlayerController.cs:188)
+
+[GeneratorRegistry] Initialized with seed: 12345
+UnityEngine.Debug:Log (object)
+CultivationGame.Generators.GeneratorRegistry:Initialize (long) (at Assets/Scripts/Generators/GeneratorRegistry.cs:119)
+CultivationGame.Generators.GeneratorRegistry:Start () (at Assets/Scripts/Generators/GeneratorRegistry.cs:90)
+
+World initialized: Cultivation World (Seed: 12345)
+UnityEngine.Debug:Log (object)
+CultivationGame.World.WorldController:InitializeWorld () (at Assets/Scripts/World/WorldController.cs:246)
+CultivationGame.World.WorldController:Start () (at Assets/Scripts/World/WorldController.cs:193)
+
+[GameInitializer] Starting initialization...
+UnityEngine.Debug:Log (object)
+CultivationGame.Managers.GameInitializer:Log (string) (at Assets/Scripts/Managers/GameInitializer.cs:515)
+CultivationGame.Managers.GameInitializer/<InitializeGameAsync>d__31:MoveNext () (at Assets/Scripts/Managers/GameInitializer.cs:184)
+UnityEngine.MonoBehaviour:StartCoroutine (System.Collections.IEnumerator)
+CultivationGame.Managers.GameInitializer:Start () (at Assets/Scripts/Managers/GameInitializer.cs:108)
+
+Player initialized: Игрок
+UnityEngine.Debug:Log (object)
+CultivationGame.Player.PlayerController:InitializePlayer () (at Assets/Scripts/Player/PlayerController.cs:275)
+CultivationGame.Player.PlayerController:Start () (at Assets/Scripts/Player/PlayerController.cs:188)
+
+Tag: Resource is not defined.
+UnityEngine.GameObject:set_tag (string)
+CultivationGame.TileSystem.ResourceSpawner:SpawnSingleResource (CultivationGame.TileSystem.ResourceSpawnEntry,UnityEngine.Vector2) (at Assets/Scripts/Tile/ResourceSpawner.cs:229)
+CultivationGame.TileSystem.ResourceSpawner:SpawnResourceType (CultivationGame.TileSystem.ResourceSpawnEntry,int) (at Assets/Scripts/Tile/ResourceSpawner.cs:213)
+CultivationGame.TileSystem.ResourceSpawner:SpawnAllResources () (at Assets/Scripts/Tile/ResourceSpawner.cs:128)
+CultivationGame.TileSystem.ResourceSpawner:Start () (at Assets/Scripts/Tile/ResourceSpawner.cs:89)
+
+Tag: Resource is not defined.
+UnityEngine.GameObject:set_tag (string)
+CultivationGame.TileSystem.ResourceSpawner:SpawnSingleResource (CultivationGame.TileSystem.ResourceSpawnEntry,UnityEngine.Vector2) (at Assets/Scripts/Tile/ResourceSpawner.cs:229)
+CultivationGame.TileSystem.ResourceSpawner:SpawnResourceType (CultivationGame.TileSystem.ResourceSpawnEntry,int) (at Assets/Scripts/Tile/ResourceSpawner.cs:213)
+CultivationGame.TileSystem.ResourceSpawner:SpawnAllResources () (at Assets/Scripts/Tile/ResourceSpawner.cs:128)
+CultivationGame.TileSystem.ResourceSpawner:Start () (at Assets/Scripts/Tile/ResourceSpawner.cs:89)
+
+Tag: Resource is not defined.
+UnityEngine.GameObject:set_tag (string)
+CultivationGame.TileSystem.ResourceSpawner:SpawnSingleResource (CultivationGame.TileSystem.ResourceSpawnEntry,UnityEngine.Vector2) (at Assets/Scripts/Tile/ResourceSpawner.cs:229)
+CultivationGame.TileSystem.ResourceSpawner:SpawnResourceType (CultivationGame.TileSystem.ResourceSpawnEntry,int) (at Assets/Scripts/Tile/ResourceSpawner.cs:213)
+CultivationGame.TileSystem.ResourceSpawner:SpawnAllResources () (at Assets/Scripts/Tile/ResourceSpawner.cs:128)
+CultivationGame.TileSystem.ResourceSpawner:Start () (at Assets/Scripts/Tile/ResourceSpawner.cs:89)
+
+Tag: Resource is not defined.
+UnityEngine.GameObject:set_tag (string)
+CultivationGame.TileSystem.ResourceSpawner:SpawnSingleResource (CultivationGame.TileSystem.ResourceSpawnEntry,UnityEngine.Vector2) (at Assets/Scripts/Tile/ResourceSpawner.cs:229)
+CultivationGame.TileSystem.ResourceSpawner:SpawnResourceType (CultivationGame.TileSystem.ResourceSpawnEntry,int) (at Assets/Scripts/Tile/ResourceSpawner.cs:213)
+CultivationGame.TileSystem.ResourceSpawner:SpawnAllResources () (at Assets/Scripts/Tile/ResourceSpawner.cs:128)
+CultivationGame.TileSystem.ResourceSpawner:Start () (at Assets/Scripts/Tile/ResourceSpawner.cs:89)
+
+Tag: Resource is not defined.
+UnityEngine.GameObject:set_tag (string)
+CultivationGame.TileSystem.ResourceSpawner:SpawnSingleResource (CultivationGame.TileSystem.ResourceSpawnEntry,UnityEngine.Vector2) (at Assets/Scripts/Tile/ResourceSpawner.cs:229)
+CultivationGame.TileSystem.ResourceSpawner:SpawnResourceType (CultivationGame.TileSystem.ResourceSpawnEntry,int) (at Assets/Scripts/Tile/ResourceSpawner.cs:213)
+CultivationGame.TileSystem.ResourceSpawner:SpawnAllResources () (at Assets/Scripts/Tile/ResourceSpawner.cs:128)
+CultivationGame.TileSystem.ResourceSpawner:Start () (at Assets/Scripts/Tile/ResourceSpawner.cs:89)
+
+Tag: Resource is not defined.
+UnityEngine.GameObject:set_tag (string)
+CultivationGame.TileSystem.ResourceSpawner:SpawnSingleResource (CultivationGame.TileSystem.ResourceSpawnEntry,UnityEngine.Vector2) (at Assets/Scripts/Tile/ResourceSpawner.cs:229)
+CultivationGame.TileSystem.ResourceSpawner:SpawnResourceType (CultivationGame.TileSystem.ResourceSpawnEntry,int) (at Assets/Scripts/Tile/ResourceSpawner.cs:213)
+CultivationGame.TileSystem.ResourceSpawner:SpawnAllResources () (at Assets/Scripts/Tile/ResourceSpawner.cs:128)
+CultivationGame.TileSystem.ResourceSpawner:Start () (at Assets/Scripts/Tile/ResourceSpawner.cs:89)
+
+Tag: Resource is not defined.
+UnityEngine.GameObject:set_tag (string)
+CultivationGame.TileSystem.ResourceSpawner:SpawnSingleResource (CultivationGame.TileSystem.ResourceSpawnEntry,UnityEngine.Vector2) (at Assets/Scripts/Tile/ResourceSpawner.cs:229)
+CultivationGame.TileSystem.ResourceSpawner:SpawnResourceType (CultivationGame.TileSystem.ResourceSpawnEntry,int) (at Assets/Scripts/Tile/ResourceSpawner.cs:213)
+CultivationGame.TileSystem.ResourceSpawner:SpawnAllResources () (at Assets/Scripts/Tile/ResourceSpawner.cs:128)
+CultivationGame.TileSystem.ResourceSpawner:Start () (at Assets/Scripts/Tile/ResourceSpawner.cs:89)
+
+Tag: Resource is not defined.
+UnityEngine.GameObject:set_tag (string)
+CultivationGame.TileSystem.ResourceSpawner:SpawnSingleResource (CultivationGame.TileSystem.ResourceSpawnEntry,UnityEngine.Vector2) (at Assets/Scripts/Tile/ResourceSpawner.cs:229)
+CultivationGame.TileSystem.ResourceSpawner:SpawnResourceType (CultivationGame.TileSystem.ResourceSpawnEntry,int) (at Assets/Scripts/Tile/ResourceSpawner.cs:213)
+CultivationGame.TileSystem.ResourceSpawner:SpawnAllResources () (at Assets/Scripts/Tile/ResourceSpawner.cs:128)
+CultivationGame.TileSystem.ResourceSpawner:Start () (at Assets/Scripts/Tile/ResourceSpawner.cs:89)
+
+Tag: Resource is not defined.
+UnityEngine.GameObject:set_tag (string)
+CultivationGame.TileSystem.ResourceSpawner:SpawnSingleResource (CultivationGame.TileSystem.ResourceSpawnEntry,UnityEngine.Vector2) (at Assets/Scripts/Tile/ResourceSpawner.cs:229)
+CultivationGame.TileSystem.ResourceSpawner:SpawnResourceType (CultivationGame.TileSystem.ResourceSpawnEntry,int) (at Assets/Scripts/Tile/ResourceSpawner.cs:213)
+CultivationGame.TileSystem.ResourceSpawner:SpawnAllResources () (at Assets/Scripts/Tile/ResourceSpawner.cs:128)
+CultivationGame.TileSystem.ResourceSpawner:Start () (at Assets/Scripts/Tile/ResourceSpawner.cs:89)
+
+Tag: Resource is not defined.
+UnityEngine.GameObject:set_tag (string)
+CultivationGame.TileSystem.ResourceSpawner:SpawnSingleResource (CultivationGame.TileSystem.ResourceSpawnEntry,UnityEngine.Vector2) (at Assets/Scripts/Tile/ResourceSpawner.cs:229)
+CultivationGame.TileSystem.ResourceSpawner:SpawnResourceType (CultivationGame.TileSystem.ResourceSpawnEntry,int) (at Assets/Scripts/Tile/ResourceSpawner.cs:213)
+CultivationGame.TileSystem.ResourceSpawner:SpawnAllResources () (at Assets/Scripts/Tile/ResourceSpawner.cs:128)
+CultivationGame.TileSystem.ResourceSpawner:Start () (at Assets/Scripts/Tile/ResourceSpawner.cs:89)
+
+Tag: Resource is not defined.
+UnityEngine.GameObject:set_tag (string)
+CultivationGame.TileSystem.ResourceSpawner:SpawnSingleResource (CultivationGame.TileSystem.ResourceSpawnEntry,UnityEngine.Vector2) (at Assets/Scripts/Tile/ResourceSpawner.cs:229)
+CultivationGame.TileSystem.ResourceSpawner:SpawnResourceType (CultivationGame.TileSystem.ResourceSpawnEntry,int) (at Assets/Scripts/Tile/ResourceSpawner.cs:213)
+CultivationGame.TileSystem.ResourceSpawner:SpawnAllResources () (at Assets/Scripts/Tile/ResourceSpawner.cs:128)
+CultivationGame.TileSystem.ResourceSpawner:Start () (at Assets/Scripts/Tile/ResourceSpawner.cs:89)
+
+Tag: Resource is not defined.
+UnityEngine.GameObject:set_tag (string)
+CultivationGame.TileSystem.ResourceSpawner:SpawnSingleResource (CultivationGame.TileSystem.ResourceSpawnEntry,UnityEngine.Vector2) (at Assets/Scripts/Tile/ResourceSpawner.cs:229)
+CultivationGame.TileSystem.ResourceSpawner:SpawnResourceType (CultivationGame.TileSystem.ResourceSpawnEntry,int) (at Assets/Scripts/Tile/ResourceSpawner.cs:213)
+CultivationGame.TileSystem.ResourceSpawner:SpawnAllResources () (at Assets/Scripts/Tile/ResourceSpawner.cs:128)
+CultivationGame.TileSystem.ResourceSpawner:Start () (at Assets/Scripts/Tile/ResourceSpawner.cs:89)
+
+Tag: Resource is not defined.
+UnityEngine.GameObject:set_tag (string)
+CultivationGame.TileSystem.ResourceSpawner:SpawnSingleResource (CultivationGame.TileSystem.ResourceSpawnEntry,UnityEngine.Vector2) (at Assets/Scripts/Tile/ResourceSpawner.cs:229)
+CultivationGame.TileSystem.ResourceSpawner:SpawnResourceType (CultivationGame.TileSystem.ResourceSpawnEntry,int) (at Assets/Scripts/Tile/ResourceSpawner.cs:213)
+CultivationGame.TileSystem.ResourceSpawner:SpawnAllResources () (at Assets/Scripts/Tile/ResourceSpawner.cs:128)
+CultivationGame.TileSystem.ResourceSpawner:Start () (at Assets/Scripts/Tile/ResourceSpawner.cs:89)
+
+Tag: Resource is not defined.
+UnityEngine.GameObject:set_tag (string)
+CultivationGame.TileSystem.ResourceSpawner:SpawnSingleResource (CultivationGame.TileSystem.ResourceSpawnEntry,UnityEngine.Vector2) (at Assets/Scripts/Tile/ResourceSpawner.cs:229)
+CultivationGame.TileSystem.ResourceSpawner:SpawnResourceType (CultivationGame.TileSystem.ResourceSpawnEntry,int) (at Assets/Scripts/Tile/ResourceSpawner.cs:213)
+CultivationGame.TileSystem.ResourceSpawner:SpawnAllResources () (at Assets/Scripts/Tile/ResourceSpawner.cs:128)
+CultivationGame.TileSystem.ResourceSpawner:Start () (at Assets/Scripts/Tile/ResourceSpawner.cs:89)
+
+Tag: Resource is not defined.
+UnityEngine.GameObject:set_tag (string)
+CultivationGame.TileSystem.ResourceSpawner:SpawnSingleResource (CultivationGame.TileSystem.ResourceSpawnEntry,UnityEngine.Vector2) (at Assets/Scripts/Tile/ResourceSpawner.cs:229)
+CultivationGame.TileSystem.ResourceSpawner:SpawnResourceType (CultivationGame.TileSystem.ResourceSpawnEntry,int) (at Assets/Scripts/Tile/ResourceSpawner.cs:213)
+CultivationGame.TileSystem.ResourceSpawner:SpawnAllResources () (at Assets/Scripts/Tile/ResourceSpawner.cs:128)
+CultivationGame.TileSystem.ResourceSpawner:Start () (at Assets/Scripts/Tile/ResourceSpawner.cs:89)
+
+Tag: Resource is not defined.
+UnityEngine.GameObject:set_tag (string)
+CultivationGame.TileSystem.ResourceSpawner:SpawnSingleResource (CultivationGame.TileSystem.ResourceSpawnEntry,UnityEngine.Vector2) (at Assets/Scripts/Tile/ResourceSpawner.cs:229)
+CultivationGame.TileSystem.ResourceSpawner:SpawnResourceType (CultivationGame.TileSystem.ResourceSpawnEntry,int) (at Assets/Scripts/Tile/ResourceSpawner.cs:213)
+CultivationGame.TileSystem.ResourceSpawner:SpawnAllResources () (at Assets/Scripts/Tile/ResourceSpawner.cs:128)
+CultivationGame.TileSystem.ResourceSpawner:Start () (at Assets/Scripts/Tile/ResourceSpawner.cs:89)
+
+Tag: Resource is not defined.
+UnityEngine.GameObject:set_tag (string)
+CultivationGame.TileSystem.ResourceSpawner:SpawnSingleResource (CultivationGame.TileSystem.ResourceSpawnEntry,UnityEngine.Vector2) (at Assets/Scripts/Tile/ResourceSpawner.cs:229)
+CultivationGame.TileSystem.ResourceSpawner:SpawnResourceType (CultivationGame.TileSystem.ResourceSpawnEntry,int) (at Assets/Scripts/Tile/ResourceSpawner.cs:213)
+CultivationGame.TileSystem.ResourceSpawner:SpawnAllResources () (at Assets/Scripts/Tile/ResourceSpawner.cs:128)
+CultivationGame.TileSystem.ResourceSpawner:Start () (at Assets/Scripts/Tile/ResourceSpawner.cs:89)
+
+Tag: Resource is not defined.
+UnityEngine.GameObject:set_tag (string)
+CultivationGame.TileSystem.ResourceSpawner:SpawnSingleResource (CultivationGame.TileSystem.ResourceSpawnEntry,UnityEngine.Vector2) (at Assets/Scripts/Tile/ResourceSpawner.cs:229)
+CultivationGame.TileSystem.ResourceSpawner:SpawnResourceType (CultivationGame.TileSystem.ResourceSpawnEntry,int) (at Assets/Scripts/Tile/ResourceSpawner.cs:213)
+CultivationGame.TileSystem.ResourceSpawner:SpawnAllResources () (at Assets/Scripts/Tile/ResourceSpawner.cs:128)
+CultivationGame.TileSystem.ResourceSpawner:Start () (at Assets/Scripts/Tile/ResourceSpawner.cs:89)
+
+Tag: Resource is not defined.
+UnityEngine.GameObject:set_tag (string)
+CultivationGame.TileSystem.ResourceSpawner:SpawnSingleResource (CultivationGame.TileSystem.ResourceSpawnEntry,UnityEngine.Vector2) (at Assets/Scripts/Tile/ResourceSpawner.cs:229)
+CultivationGame.TileSystem.ResourceSpawner:SpawnResourceType (CultivationGame.TileSystem.ResourceSpawnEntry,int) (at Assets/Scripts/Tile/ResourceSpawner.cs:213)
+CultivationGame.TileSystem.ResourceSpawner:SpawnAllResources () (at Assets/Scripts/Tile/ResourceSpawner.cs:128)
+CultivationGame.TileSystem.ResourceSpawner:Start () (at Assets/Scripts/Tile/ResourceSpawner.cs:89)
+
+Tag: Resource is not defined.
+UnityEngine.GameObject:set_tag (string)
+CultivationGame.TileSystem.ResourceSpawner:SpawnSingleResource (CultivationGame.TileSystem.ResourceSpawnEntry,UnityEngine.Vector2) (at Assets/Scripts/Tile/ResourceSpawner.cs:229)
+CultivationGame.TileSystem.ResourceSpawner:SpawnResourceType (CultivationGame.TileSystem.ResourceSpawnEntry,int) (at Assets/Scripts/Tile/ResourceSpawner.cs:213)
+CultivationGame.TileSystem.ResourceSpawner:SpawnAllResources () (at Assets/Scripts/Tile/ResourceSpawner.cs:128)
+CultivationGame.TileSystem.ResourceSpawner:Start () (at Assets/Scripts/Tile/ResourceSpawner.cs:89)
+
+Tag: Resource is not defined.
+UnityEngine.GameObject:set_tag (string)
+CultivationGame.TileSystem.ResourceSpawner:SpawnSingleResource (CultivationGame.TileSystem.ResourceSpawnEntry,UnityEngine.Vector2) (at Assets/Scripts/Tile/ResourceSpawner.cs:229)
+CultivationGame.TileSystem.ResourceSpawner:SpawnResourceType (CultivationGame.TileSystem.ResourceSpawnEntry,int) (at Assets/Scripts/Tile/ResourceSpawner.cs:213)
+CultivationGame.TileSystem.ResourceSpawner:SpawnAllResources () (at Assets/Scripts/Tile/ResourceSpawner.cs:128)
+CultivationGame.TileSystem.ResourceSpawner:Start () (at Assets/Scripts/Tile/ResourceSpawner.cs:89)
+
+Tag: Resource is not defined.
+UnityEngine.GameObject:set_tag (string)
+CultivationGame.TileSystem.ResourceSpawner:SpawnSingleResource (CultivationGame.TileSystem.ResourceSpawnEntry,UnityEngine.Vector2) (at Assets/Scripts/Tile/ResourceSpawner.cs:229)
+CultivationGame.TileSystem.ResourceSpawner:SpawnResourceType (CultivationGame.TileSystem.ResourceSpawnEntry,int) (at Assets/Scripts/Tile/ResourceSpawner.cs:213)
+CultivationGame.TileSystem.ResourceSpawner:SpawnAllResources () (at Assets/Scripts/Tile/ResourceSpawner.cs:128)
+CultivationGame.TileSystem.ResourceSpawner:Start () (at Assets/Scripts/Tile/ResourceSpawner.cs:89)
+
+[ResourceSpawner] Целебная трава: заспавнено 22/22
+UnityEngine.Debug:Log (object)
+CultivationGame.TileSystem.ResourceSpawner:SpawnResourceType (CultivationGame.TileSystem.ResourceSpawnEntry,int) (at Assets/Scripts/Tile/ResourceSpawner.cs:218)
+CultivationGame.TileSystem.ResourceSpawner:SpawnAllResources () (at Assets/Scripts/Tile/ResourceSpawner.cs:128)
+CultivationGame.TileSystem.ResourceSpawner:Start () (at Assets/Scripts/Tile/ResourceSpawner.cs:89)
+
+Tag: Resource is not defined.
+UnityEngine.GameObject:set_tag (string)
+CultivationGame.TileSystem.ResourceSpawner:SpawnSingleResource (CultivationGame.TileSystem.ResourceSpawnEntry,UnityEngine.Vector2) (at Assets/Scripts/Tile/ResourceSpawner.cs:229)
+CultivationGame.TileSystem.ResourceSpawner:SpawnResourceType (CultivationGame.TileSystem.ResourceSpawnEntry,int) (at Assets/Scripts/Tile/ResourceSpawner.cs:213)
+CultivationGame.TileSystem.ResourceSpawner:SpawnAllResources () (at Assets/Scripts/Tile/ResourceSpawner.cs:128)
+CultivationGame.TileSystem.ResourceSpawner:Start () (at Assets/Scripts/Tile/ResourceSpawner.cs:89)
+
+Tag: Resource is not defined.
+UnityEngine.GameObject:set_tag (string)
+CultivationGame.TileSystem.ResourceSpawner:SpawnSingleResource (CultivationGame.TileSystem.ResourceSpawnEntry,UnityEngine.Vector2) (at Assets/Scripts/Tile/ResourceSpawner.cs:229)
+CultivationGame.TileSystem.ResourceSpawner:SpawnResourceType (CultivationGame.TileSystem.ResourceSpawnEntry,int) (at Assets/Scripts/Tile/ResourceSpawner.cs:213)
+CultivationGame.TileSystem.ResourceSpawner:SpawnAllResources () (at Assets/Scripts/Tile/ResourceSpawner.cs:128)
+CultivationGame.TileSystem.ResourceSpawner:Start () (at Assets/Scripts/Tile/ResourceSpawner.cs:89)
+
+Tag: Resource is not defined.
+UnityEngine.GameObject:set_tag (string)
+CultivationGame.TileSystem.ResourceSpawner:SpawnSingleResource (CultivationGame.TileSystem.ResourceSpawnEntry,UnityEngine.Vector2) (at Assets/Scripts/Tile/ResourceSpawner.cs:229)
+CultivationGame.TileSystem.ResourceSpawner:SpawnResourceType (CultivationGame.TileSystem.ResourceSpawnEntry,int) (at Assets/Scripts/Tile/ResourceSpawner.cs:213)
+CultivationGame.TileSystem.ResourceSpawner:SpawnAllResources () (at Assets/Scripts/Tile/ResourceSpawner.cs:128)
+CultivationGame.TileSystem.ResourceSpawner:Start () (at Assets/Scripts/Tile/ResourceSpawner.cs:89)
+
+Tag: Resource is not defined.
+UnityEngine.GameObject:set_tag (string)
+CultivationGame.TileSystem.ResourceSpawner:SpawnSingleResource (CultivationGame.TileSystem.ResourceSpawnEntry,UnityEngine.Vector2) (at Assets/Scripts/Tile/ResourceSpawner.cs:229)
+CultivationGame.TileSystem.ResourceSpawner:SpawnResourceType (CultivationGame.TileSystem.ResourceSpawnEntry,int) (at Assets/Scripts/Tile/ResourceSpawner.cs:213)
+CultivationGame.TileSystem.ResourceSpawner:SpawnAllResources () (at Assets/Scripts/Tile/ResourceSpawner.cs:128)
+CultivationGame.TileSystem.ResourceSpawner:Start () (at Assets/Scripts/Tile/ResourceSpawner.cs:89)
+
+Tag: Resource is not defined.
+UnityEngine.GameObject:set_tag (string)
+CultivationGame.TileSystem.ResourceSpawner:SpawnSingleResource (CultivationGame.TileSystem.ResourceSpawnEntry,UnityEngine.Vector2) (at Assets/Scripts/Tile/ResourceSpawner.cs:229)
+CultivationGame.TileSystem.ResourceSpawner:SpawnResourceType (CultivationGame.TileSystem.ResourceSpawnEntry,int) (at Assets/Scripts/Tile/ResourceSpawner.cs:213)
+CultivationGame.TileSystem.ResourceSpawner:SpawnAllResources () (at Assets/Scripts/Tile/ResourceSpawner.cs:128)
+CultivationGame.TileSystem.ResourceSpawner:Start () (at Assets/Scripts/Tile/ResourceSpawner.cs:89)
+
+Tag: Resource is not defined.
+UnityEngine.GameObject:set_tag (string)
+CultivationGame.TileSystem.ResourceSpawner:SpawnSingleResource (CultivationGame.TileSystem.ResourceSpawnEntry,UnityEngine.Vector2) (at Assets/Scripts/Tile/ResourceSpawner.cs:229)
+CultivationGame.TileSystem.ResourceSpawner:SpawnResourceType (CultivationGame.TileSystem.ResourceSpawnEntry,int) (at Assets/Scripts/Tile/ResourceSpawner.cs:213)
+CultivationGame.TileSystem.ResourceSpawner:SpawnAllResources () (at Assets/Scripts/Tile/ResourceSpawner.cs:128)
+CultivationGame.TileSystem.ResourceSpawner:Start () (at Assets/Scripts/Tile/ResourceSpawner.cs:89)
+
+Tag: Resource is not defined.
+UnityEngine.GameObject:set_tag (string)
+CultivationGame.TileSystem.ResourceSpawner:SpawnSingleResource (CultivationGame.TileSystem.ResourceSpawnEntry,UnityEngine.Vector2) (at Assets/Scripts/Tile/ResourceSpawner.cs:229)
+CultivationGame.TileSystem.ResourceSpawner:SpawnResourceType (CultivationGame.TileSystem.ResourceSpawnEntry,int) (at Assets/Scripts/Tile/ResourceSpawner.cs:213)
+CultivationGame.TileSystem.ResourceSpawner:SpawnAllResources () (at Assets/Scripts/Tile/ResourceSpawner.cs:128)
+CultivationGame.TileSystem.ResourceSpawner:Start () (at Assets/Scripts/Tile/ResourceSpawner.cs:89)
+
+Tag: Resource is not defined.
+UnityEngine.GameObject:set_tag (string)
+CultivationGame.TileSystem.ResourceSpawner:SpawnSingleResource (CultivationGame.TileSystem.ResourceSpawnEntry,UnityEngine.Vector2) (at Assets/Scripts/Tile/ResourceSpawner.cs:229)
+CultivationGame.TileSystem.ResourceSpawner:SpawnResourceType (CultivationGame.TileSystem.ResourceSpawnEntry,int) (at Assets/Scripts/Tile/ResourceSpawner.cs:213)
+CultivationGame.TileSystem.ResourceSpawner:SpawnAllResources () (at Assets/Scripts/Tile/ResourceSpawner.cs:128)
+CultivationGame.TileSystem.ResourceSpawner:Start () (at Assets/Scripts/Tile/ResourceSpawner.cs:89)
+
+Tag: Resource is not defined.
+UnityEngine.GameObject:set_tag (string)
+CultivationGame.TileSystem.ResourceSpawner:SpawnSingleResource (CultivationGame.TileSystem.ResourceSpawnEntry,UnityEngine.Vector2) (at Assets/Scripts/Tile/ResourceSpawner.cs:229)
+CultivationGame.TileSystem.ResourceSpawner:SpawnResourceType (CultivationGame.TileSystem.ResourceSpawnEntry,int) (at Assets/Scripts/Tile/ResourceSpawner.cs:213)
+CultivationGame.TileSystem.ResourceSpawner:SpawnAllResources () (at Assets/Scripts/Tile/ResourceSpawner.cs:128)
+CultivationGame.TileSystem.ResourceSpawner:Start () (at Assets/Scripts/Tile/ResourceSpawner.cs:89)
+
+Tag: Resource is not defined.
+UnityEngine.GameObject:set_tag (string)
+CultivationGame.TileSystem.ResourceSpawner:SpawnSingleResource (CultivationGame.TileSystem.ResourceSpawnEntry,UnityEngine.Vector2) (at Assets/Scripts/Tile/ResourceSpawner.cs:229)
+CultivationGame.TileSystem.ResourceSpawner:SpawnResourceType (CultivationGame.TileSystem.ResourceSpawnEntry,int) (at Assets/Scripts/Tile/ResourceSpawner.cs:213)
+CultivationGame.TileSystem.ResourceSpawner:SpawnAllResources () (at Assets/Scripts/Tile/ResourceSpawner.cs:128)
+CultivationGame.TileSystem.ResourceSpawner:Start () (at Assets/Scripts/Tile/ResourceSpawner.cs:89)
+
+Tag: Resource is not defined.
+UnityEngine.GameObject:set_tag (string)
+CultivationGame.TileSystem.ResourceSpawner:SpawnSingleResource (CultivationGame.TileSystem.ResourceSpawnEntry,UnityEngine.Vector2) (at Assets/Scripts/Tile/ResourceSpawner.cs:229)
+CultivationGame.TileSystem.ResourceSpawner:SpawnResourceType (CultivationGame.TileSystem.ResourceSpawnEntry,int) (at Assets/Scripts/Tile/ResourceSpawner.cs:213)
+CultivationGame.TileSystem.ResourceSpawner:SpawnAllResources () (at Assets/Scripts/Tile/ResourceSpawner.cs:128)
+CultivationGame.TileSystem.ResourceSpawner:Start () (at Assets/Scripts/Tile/ResourceSpawner.cs:89)
+
+Tag: Resource is not defined.
+UnityEngine.GameObject:set_tag (string)
+CultivationGame.TileSystem.ResourceSpawner:SpawnSingleResource (CultivationGame.TileSystem.ResourceSpawnEntry,UnityEngine.Vector2) (at Assets/Scripts/Tile/ResourceSpawner.cs:229)
+CultivationGame.TileSystem.ResourceSpawner:SpawnResourceType (CultivationGame.TileSystem.ResourceSpawnEntry,int) (at Assets/Scripts/Tile/ResourceSpawner.cs:213)
+CultivationGame.TileSystem.ResourceSpawner:SpawnAllResources () (at Assets/Scripts/Tile/ResourceSpawner.cs:128)
+CultivationGame.TileSystem.ResourceSpawner:Start () (at Assets/Scripts/Tile/ResourceSpawner.cs:89)
+
+Tag: Resource is not defined.
+UnityEngine.GameObject:set_tag (string)
+CultivationGame.TileSystem.ResourceSpawner:SpawnSingleResource (CultivationGame.TileSystem.ResourceSpawnEntry,UnityEngine.Vector2) (at Assets/Scripts/Tile/ResourceSpawner.cs:229)
+CultivationGame.TileSystem.ResourceSpawner:SpawnResourceType (CultivationGame.TileSystem.ResourceSpawnEntry,int) (at Assets/Scripts/Tile/ResourceSpawner.cs:213)
+CultivationGame.TileSystem.ResourceSpawner:SpawnAllResources () (at Assets/Scripts/Tile/ResourceSpawner.cs:128)
+CultivationGame.TileSystem.ResourceSpawner:Start () (at Assets/Scripts/Tile/ResourceSpawner.cs:89)
+
+Tag: Resource is not defined.
+UnityEngine.GameObject:set_tag (string)
+CultivationGame.TileSystem.ResourceSpawner:SpawnSingleResource (CultivationGame.TileSystem.ResourceSpawnEntry,UnityEngine.Vector2) (at Assets/Scripts/Tile/ResourceSpawner.cs:229)
+CultivationGame.TileSystem.ResourceSpawner:SpawnResourceType (CultivationGame.TileSystem.ResourceSpawnEntry,int) (at Assets/Scripts/Tile/ResourceSpawner.cs:213)
+CultivationGame.TileSystem.ResourceSpawner:SpawnAllResources () (at Assets/Scripts/Tile/ResourceSpawner.cs:128)
+CultivationGame.TileSystem.ResourceSpawner:Start () (at Assets/Scripts/Tile/ResourceSpawner.cs:89)
+
+Tag: Resource is not defined.
+UnityEngine.GameObject:set_tag (string)
+CultivationGame.TileSystem.ResourceSpawner:SpawnSingleResource (CultivationGame.TileSystem.ResourceSpawnEntry,UnityEngine.Vector2) (at Assets/Scripts/Tile/ResourceSpawner.cs:229)
+CultivationGame.TileSystem.ResourceSpawner:SpawnResourceType (CultivationGame.TileSystem.ResourceSpawnEntry,int) (at Assets/Scripts/Tile/ResourceSpawner.cs:213)
+CultivationGame.TileSystem.ResourceSpawner:SpawnAllResources () (at Assets/Scripts/Tile/ResourceSpawner.cs:128)
+CultivationGame.TileSystem.ResourceSpawner:Start () (at Assets/Scripts/Tile/ResourceSpawner.cs:89)
+
+Tag: Resource is not defined.
+UnityEngine.GameObject:set_tag (string)
+CultivationGame.TileSystem.ResourceSpawner:SpawnSingleResource (CultivationGame.TileSystem.ResourceSpawnEntry,UnityEngine.Vector2) (at Assets/Scripts/Tile/ResourceSpawner.cs:229)
+CultivationGame.TileSystem.ResourceSpawner:SpawnResourceType (CultivationGame.TileSystem.ResourceSpawnEntry,int) (at Assets/Scripts/Tile/ResourceSpawner.cs:213)
+CultivationGame.TileSystem.ResourceSpawner:SpawnAllResources () (at Assets/Scripts/Tile/ResourceSpawner.cs:128)
+CultivationGame.TileSystem.ResourceSpawner:Start () (at Assets/Scripts/Tile/ResourceSpawner.cs:89)
+
+Tag: Resource is not defined.
+UnityEngine.GameObject:set_tag (string)
+CultivationGame.TileSystem.ResourceSpawner:SpawnSingleResource (CultivationGame.TileSystem.ResourceSpawnEntry,UnityEngine.Vector2) (at Assets/Scripts/Tile/ResourceSpawner.cs:229)
+CultivationGame.TileSystem.ResourceSpawner:SpawnResourceType (CultivationGame.TileSystem.ResourceSpawnEntry,int) (at Assets/Scripts/Tile/ResourceSpawner.cs:213)
+CultivationGame.TileSystem.ResourceSpawner:SpawnAllResources () (at Assets/Scripts/Tile/ResourceSpawner.cs:128)
+CultivationGame.TileSystem.ResourceSpawner:Start () (at Assets/Scripts/Tile/ResourceSpawner.cs:89)
+
+Tag: Resource is not defined.
+UnityEngine.GameObject:set_tag (string)
+CultivationGame.TileSystem.ResourceSpawner:SpawnSingleResource (CultivationGame.TileSystem.ResourceSpawnEntry,UnityEngine.Vector2) (at Assets/Scripts/Tile/ResourceSpawner.cs:229)
+CultivationGame.TileSystem.ResourceSpawner:SpawnResourceType (CultivationGame.TileSystem.ResourceSpawnEntry,int) (at Assets/Scripts/Tile/ResourceSpawner.cs:213)
+CultivationGame.TileSystem.ResourceSpawner:SpawnAllResources () (at Assets/Scripts/Tile/ResourceSpawner.cs:128)
+CultivationGame.TileSystem.ResourceSpawner:Start () (at Assets/Scripts/Tile/ResourceSpawner.cs:89)
+
+Tag: Resource is not defined.
+UnityEngine.GameObject:set_tag (string)
+CultivationGame.TileSystem.ResourceSpawner:SpawnSingleResource (CultivationGame.TileSystem.ResourceSpawnEntry,UnityEngine.Vector2) (at Assets/Scripts/Tile/ResourceSpawner.cs:229)
+CultivationGame.TileSystem.ResourceSpawner:SpawnResourceType (CultivationGame.TileSystem.ResourceSpawnEntry,int) (at Assets/Scripts/Tile/ResourceSpawner.cs:213)
+CultivationGame.TileSystem.ResourceSpawner:SpawnAllResources () (at Assets/Scripts/Tile/ResourceSpawner.cs:128)
+CultivationGame.TileSystem.ResourceSpawner:Start () (at Assets/Scripts/Tile/ResourceSpawner.cs:89)
+
+[ResourceSpawner] Ягоды: заспавнено 19/19
+UnityEngine.Debug:Log (object)
+CultivationGame.TileSystem.ResourceSpawner:SpawnResourceType (CultivationGame.TileSystem.ResourceSpawnEntry,int) (at Assets/Scripts/Tile/ResourceSpawner.cs:218)
+CultivationGame.TileSystem.ResourceSpawner:SpawnAllResources () (at Assets/Scripts/Tile/ResourceSpawner.cs:128)
+CultivationGame.TileSystem.ResourceSpawner:Start () (at Assets/Scripts/Tile/ResourceSpawner.cs:89)
+
+Tag: Resource is not defined.
+UnityEngine.GameObject:set_tag (string)
+CultivationGame.TileSystem.ResourceSpawner:SpawnSingleResource (CultivationGame.TileSystem.ResourceSpawnEntry,UnityEngine.Vector2) (at Assets/Scripts/Tile/ResourceSpawner.cs:229)
+CultivationGame.TileSystem.ResourceSpawner:SpawnResourceType (CultivationGame.TileSystem.ResourceSpawnEntry,int) (at Assets/Scripts/Tile/ResourceSpawner.cs:213)
+CultivationGame.TileSystem.ResourceSpawner:SpawnAllResources () (at Assets/Scripts/Tile/ResourceSpawner.cs:128)
+CultivationGame.TileSystem.ResourceSpawner:Start () (at Assets/Scripts/Tile/ResourceSpawner.cs:89)
+
+Tag: Resource is not defined.
+UnityEngine.GameObject:set_tag (string)
+CultivationGame.TileSystem.ResourceSpawner:SpawnSingleResource (CultivationGame.TileSystem.ResourceSpawnEntry,UnityEngine.Vector2) (at Assets/Scripts/Tile/ResourceSpawner.cs:229)
+CultivationGame.TileSystem.ResourceSpawner:SpawnResourceType (CultivationGame.TileSystem.ResourceSpawnEntry,int) (at Assets/Scripts/Tile/ResourceSpawner.cs:213)
+CultivationGame.TileSystem.ResourceSpawner:SpawnAllResources () (at Assets/Scripts/Tile/ResourceSpawner.cs:128)
+CultivationGame.TileSystem.ResourceSpawner:Start () (at Assets/Scripts/Tile/ResourceSpawner.cs:89)
+
+Tag: Resource is not defined.
+UnityEngine.GameObject:set_tag (string)
+CultivationGame.TileSystem.ResourceSpawner:SpawnSingleResource (CultivationGame.TileSystem.ResourceSpawnEntry,UnityEngine.Vector2) (at Assets/Scripts/Tile/ResourceSpawner.cs:229)
+CultivationGame.TileSystem.ResourceSpawner:SpawnResourceType (CultivationGame.TileSystem.ResourceSpawnEntry,int) (at Assets/Scripts/Tile/ResourceSpawner.cs:213)
+CultivationGame.TileSystem.ResourceSpawner:SpawnAllResources () (at Assets/Scripts/Tile/ResourceSpawner.cs:128)
+CultivationGame.TileSystem.ResourceSpawner:Start () (at Assets/Scripts/Tile/ResourceSpawner.cs:89)
+
+Tag: Resource is not defined.
+UnityEngine.GameObject:set_tag (string)
+CultivationGame.TileSystem.ResourceSpawner:SpawnSingleResource (CultivationGame.TileSystem.ResourceSpawnEntry,UnityEngine.Vector2) (at Assets/Scripts/Tile/ResourceSpawner.cs:229)
+CultivationGame.TileSystem.ResourceSpawner:SpawnResourceType (CultivationGame.TileSystem.ResourceSpawnEntry,int) (at Assets/Scripts/Tile/ResourceSpawner.cs:213)
+CultivationGame.TileSystem.ResourceSpawner:SpawnAllResources () (at Assets/Scripts/Tile/ResourceSpawner.cs:128)
+CultivationGame.TileSystem.ResourceSpawner:Start () (at Assets/Scripts/Tile/ResourceSpawner.cs:89)
+
+Tag: Resource is not defined.
+UnityEngine.GameObject:set_tag (string)
+CultivationGame.TileSystem.ResourceSpawner:SpawnSingleResource (CultivationGame.TileSystem.ResourceSpawnEntry,UnityEngine.Vector2) (at Assets/Scripts/Tile/ResourceSpawner.cs:229)
+CultivationGame.TileSystem.ResourceSpawner:SpawnResourceType (CultivationGame.TileSystem.ResourceSpawnEntry,int) (at Assets/Scripts/Tile/ResourceSpawner.cs:213)
+CultivationGame.TileSystem.ResourceSpawner:SpawnAllResources () (at Assets/Scripts/Tile/ResourceSpawner.cs:128)
+CultivationGame.TileSystem.ResourceSpawner:Start () (at Assets/Scripts/Tile/ResourceSpawner.cs:89)
+
+Tag: Resource is not defined.
+UnityEngine.GameObject:set_tag (string)
+CultivationGame.TileSystem.ResourceSpawner:SpawnSingleResource (CultivationGame.TileSystem.ResourceSpawnEntry,UnityEngine.Vector2) (at Assets/Scripts/Tile/ResourceSpawner.cs:229)
+CultivationGame.TileSystem.ResourceSpawner:SpawnResourceType (CultivationGame.TileSystem.ResourceSpawnEntry,int) (at Assets/Scripts/Tile/ResourceSpawner.cs:213)
+CultivationGame.TileSystem.ResourceSpawner:SpawnAllResources () (at Assets/Scripts/Tile/ResourceSpawner.cs:128)
+CultivationGame.TileSystem.ResourceSpawner:Start () (at Assets/Scripts/Tile/ResourceSpawner.cs:89)
+
+Tag: Resource is not defined.
+UnityEngine.GameObject:set_tag (string)
+CultivationGame.TileSystem.ResourceSpawner:SpawnSingleResource (CultivationGame.TileSystem.ResourceSpawnEntry,UnityEngine.Vector2) (at Assets/Scripts/Tile/ResourceSpawner.cs:229)
+CultivationGame.TileSystem.ResourceSpawner:SpawnResourceType (CultivationGame.TileSystem.ResourceSpawnEntry,int) (at Assets/Scripts/Tile/ResourceSpawner.cs:213)
+CultivationGame.TileSystem.ResourceSpawner:SpawnAllResources () (at Assets/Scripts/Tile/ResourceSpawner.cs:128)
+CultivationGame.TileSystem.ResourceSpawner:Start () (at Assets/Scripts/Tile/ResourceSpawner.cs:89)
+
+Tag: Resource is not defined.
+UnityEngine.GameObject:set_tag (string)
+CultivationGame.TileSystem.ResourceSpawner:SpawnSingleResource (CultivationGame.TileSystem.ResourceSpawnEntry,UnityEngine.Vector2) (at Assets/Scripts/Tile/ResourceSpawner.cs:229)
+CultivationGame.TileSystem.ResourceSpawner:SpawnResourceType (CultivationGame.TileSystem.ResourceSpawnEntry,int) (at Assets/Scripts/Tile/ResourceSpawner.cs:213)
+CultivationGame.TileSystem.ResourceSpawner:SpawnAllResources () (at Assets/Scripts/Tile/ResourceSpawner.cs:128)
+CultivationGame.TileSystem.ResourceSpawner:Start () (at Assets/Scripts/Tile/ResourceSpawner.cs:89)
+
+[ResourceSpawner] Гриб Ци: заспавнено 8/8
+UnityEngine.Debug:Log (object)
+CultivationGame.TileSystem.ResourceSpawner:SpawnResourceType (CultivationGame.TileSystem.ResourceSpawnEntry,int) (at Assets/Scripts/Tile/ResourceSpawner.cs:218)
+CultivationGame.TileSystem.ResourceSpawner:SpawnAllResources () (at Assets/Scripts/Tile/ResourceSpawner.cs:128)
+CultivationGame.TileSystem.ResourceSpawner:Start () (at Assets/Scripts/Tile/ResourceSpawner.cs:89)
+
+Tag: Resource is not defined.
+UnityEngine.GameObject:set_tag (string)
+CultivationGame.TileSystem.ResourceSpawner:SpawnSingleResource (CultivationGame.TileSystem.ResourceSpawnEntry,UnityEngine.Vector2) (at Assets/Scripts/Tile/ResourceSpawner.cs:229)
+CultivationGame.TileSystem.ResourceSpawner:SpawnResourceType (CultivationGame.TileSystem.ResourceSpawnEntry,int) (at Assets/Scripts/Tile/ResourceSpawner.cs:213)
+CultivationGame.TileSystem.ResourceSpawner:SpawnAllResources () (at Assets/Scripts/Tile/ResourceSpawner.cs:128)
+CultivationGame.TileSystem.ResourceSpawner:Start () (at Assets/Scripts/Tile/ResourceSpawner.cs:89)
+
+Tag: Resource is not defined.
+UnityEngine.GameObject:set_tag (string)
+CultivationGame.TileSystem.ResourceSpawner:SpawnSingleResource (CultivationGame.TileSystem.ResourceSpawnEntry,UnityEngine.Vector2) (at Assets/Scripts/Tile/ResourceSpawner.cs:229)
+CultivationGame.TileSystem.ResourceSpawner:SpawnResourceType (CultivationGame.TileSystem.ResourceSpawnEntry,int) (at Assets/Scripts/Tile/ResourceSpawner.cs:213)
+CultivationGame.TileSystem.ResourceSpawner:SpawnAllResources () (at Assets/Scripts/Tile/ResourceSpawner.cs:128)
+CultivationGame.TileSystem.ResourceSpawner:Start () (at Assets/Scripts/Tile/ResourceSpawner.cs:89)
+
+Tag: Resource is not defined.
+UnityEngine.GameObject:set_tag (string)
+CultivationGame.TileSystem.ResourceSpawner:SpawnSingleResource (CultivationGame.TileSystem.ResourceSpawnEntry,UnityEngine.Vector2) (at Assets/Scripts/Tile/ResourceSpawner.cs:229)
+CultivationGame.TileSystem.ResourceSpawner:SpawnResourceType (CultivationGame.TileSystem.ResourceSpawnEntry,int) (at Assets/Scripts/Tile/ResourceSpawner.cs:213)
+CultivationGame.TileSystem.ResourceSpawner:SpawnAllResources () (at Assets/Scripts/Tile/ResourceSpawner.cs:128)
+CultivationGame.TileSystem.ResourceSpawner:Start () (at Assets/Scripts/Tile/ResourceSpawner.cs:89)
+
+Tag: Resource is not defined.
+UnityEngine.GameObject:set_tag (string)
+CultivationGame.TileSystem.ResourceSpawner:SpawnSingleResource (CultivationGame.TileSystem.ResourceSpawnEntry,UnityEngine.Vector2) (at Assets/Scripts/Tile/ResourceSpawner.cs:229)
+CultivationGame.TileSystem.ResourceSpawner:SpawnResourceType (CultivationGame.TileSystem.ResourceSpawnEntry,int) (at Assets/Scripts/Tile/ResourceSpawner.cs:213)
+CultivationGame.TileSystem.ResourceSpawner:SpawnAllResources () (at Assets/Scripts/Tile/ResourceSpawner.cs:128)
+CultivationGame.TileSystem.ResourceSpawner:Start () (at Assets/Scripts/Tile/ResourceSpawner.cs:89)
+
+Tag: Resource is not defined.
+UnityEngine.GameObject:set_tag (string)
+CultivationGame.TileSystem.ResourceSpawner:SpawnSingleResource (CultivationGame.TileSystem.ResourceSpawnEntry,UnityEngine.Vector2) (at Assets/Scripts/Tile/ResourceSpawner.cs:229)
+CultivationGame.TileSystem.ResourceSpawner:SpawnResourceType (CultivationGame.TileSystem.ResourceSpawnEntry,int) (at Assets/Scripts/Tile/ResourceSpawner.cs:213)
+CultivationGame.TileSystem.ResourceSpawner:SpawnAllResources () (at Assets/Scripts/Tile/ResourceSpawner.cs:128)
+CultivationGame.TileSystem.ResourceSpawner:Start () (at Assets/Scripts/Tile/ResourceSpawner.cs:89)
+
+Tag: Resource is not defined.
+UnityEngine.GameObject:set_tag (string)
+CultivationGame.TileSystem.ResourceSpawner:SpawnSingleResource (CultivationGame.TileSystem.ResourceSpawnEntry,UnityEngine.Vector2) (at Assets/Scripts/Tile/ResourceSpawner.cs:229)
+CultivationGame.TileSystem.ResourceSpawner:SpawnResourceType (CultivationGame.TileSystem.ResourceSpawnEntry,int) (at Assets/Scripts/Tile/ResourceSpawner.cs:213)
+CultivationGame.TileSystem.ResourceSpawner:SpawnAllResources () (at Assets/Scripts/Tile/ResourceSpawner.cs:128)
+CultivationGame.TileSystem.ResourceSpawner:Start () (at Assets/Scripts/Tile/ResourceSpawner.cs:89)
+
+Tag: Resource is not defined.
+UnityEngine.GameObject:set_tag (string)
+CultivationGame.TileSystem.ResourceSpawner:SpawnSingleResource (CultivationGame.TileSystem.ResourceSpawnEntry,UnityEngine.Vector2) (at Assets/Scripts/Tile/ResourceSpawner.cs:229)
+CultivationGame.TileSystem.ResourceSpawner:SpawnResourceType (CultivationGame.TileSystem.ResourceSpawnEntry,int) (at Assets/Scripts/Tile/ResourceSpawner.cs:213)
+CultivationGame.TileSystem.ResourceSpawner:SpawnAllResources () (at Assets/Scripts/Tile/ResourceSpawner.cs:128)
+CultivationGame.TileSystem.ResourceSpawner:Start () (at Assets/Scripts/Tile/ResourceSpawner.cs:89)
+
+[ResourceSpawner] Редкая трава: заспавнено 7/7
+UnityEngine.Debug:Log (object)
+CultivationGame.TileSystem.ResourceSpawner:SpawnResourceType (CultivationGame.TileSystem.ResourceSpawnEntry,int) (at Assets/Scripts/Tile/ResourceSpawner.cs:218)
+CultivationGame.TileSystem.ResourceSpawner:SpawnAllResources () (at Assets/Scripts/Tile/ResourceSpawner.cs:128)
+CultivationGame.TileSystem.ResourceSpawner:Start () (at Assets/Scripts/Tile/ResourceSpawner.cs:89)
+
+Tag: Resource is not defined.
+UnityEngine.GameObject:set_tag (string)
+CultivationGame.TileSystem.ResourceSpawner:SpawnSingleResource (CultivationGame.TileSystem.ResourceSpawnEntry,UnityEngine.Vector2) (at Assets/Scripts/Tile/ResourceSpawner.cs:229)
+CultivationGame.TileSystem.ResourceSpawner:SpawnResourceType (CultivationGame.TileSystem.ResourceSpawnEntry,int) (at Assets/Scripts/Tile/ResourceSpawner.cs:213)
+CultivationGame.TileSystem.ResourceSpawner:SpawnAllResources () (at Assets/Scripts/Tile/ResourceSpawner.cs:128)
+CultivationGame.TileSystem.ResourceSpawner:Start () (at Assets/Scripts/Tile/ResourceSpawner.cs:89)
+
+Tag: Resource is not defined.
+UnityEngine.GameObject:set_tag (string)
+CultivationGame.TileSystem.ResourceSpawner:SpawnSingleResource (CultivationGame.TileSystem.ResourceSpawnEntry,UnityEngine.Vector2) (at Assets/Scripts/Tile/ResourceSpawner.cs:229)
+CultivationGame.TileSystem.ResourceSpawner:SpawnResourceType (CultivationGame.TileSystem.ResourceSpawnEntry,int) (at Assets/Scripts/Tile/ResourceSpawner.cs:213)
+CultivationGame.TileSystem.ResourceSpawner:SpawnAllResources () (at Assets/Scripts/Tile/ResourceSpawner.cs:128)
+CultivationGame.TileSystem.ResourceSpawner:Start () (at Assets/Scripts/Tile/ResourceSpawner.cs:89)
+
+Tag: Resource is not defined.
+UnityEngine.GameObject:set_tag (string)
+CultivationGame.TileSystem.ResourceSpawner:SpawnSingleResource (CultivationGame.TileSystem.ResourceSpawnEntry,UnityEngine.Vector2) (at Assets/Scripts/Tile/ResourceSpawner.cs:229)
+CultivationGame.TileSystem.ResourceSpawner:SpawnResourceType (CultivationGame.TileSystem.ResourceSpawnEntry,int) (at Assets/Scripts/Tile/ResourceSpawner.cs:213)
+CultivationGame.TileSystem.ResourceSpawner:SpawnAllResources () (at Assets/Scripts/Tile/ResourceSpawner.cs:128)
+CultivationGame.TileSystem.ResourceSpawner:Start () (at Assets/Scripts/Tile/ResourceSpawner.cs:89)
+
+Tag: Resource is not defined.
+UnityEngine.GameObject:set_tag (string)
+CultivationGame.TileSystem.ResourceSpawner:SpawnSingleResource (CultivationGame.TileSystem.ResourceSpawnEntry,UnityEngine.Vector2) (at Assets/Scripts/Tile/ResourceSpawner.cs:229)
+CultivationGame.TileSystem.ResourceSpawner:SpawnResourceType (CultivationGame.TileSystem.ResourceSpawnEntry,int) (at Assets/Scripts/Tile/ResourceSpawner.cs:213)
+CultivationGame.TileSystem.ResourceSpawner:SpawnAllResources () (at Assets/Scripts/Tile/ResourceSpawner.cs:128)
+CultivationGame.TileSystem.ResourceSpawner:Start () (at Assets/Scripts/Tile/ResourceSpawner.cs:89)
+
+Tag: Resource is not defined.
+UnityEngine.GameObject:set_tag (string)
+CultivationGame.TileSystem.ResourceSpawner:SpawnSingleResource (CultivationGame.TileSystem.ResourceSpawnEntry,UnityEngine.Vector2) (at Assets/Scripts/Tile/ResourceSpawner.cs:229)
+CultivationGame.TileSystem.ResourceSpawner:SpawnResourceType (CultivationGame.TileSystem.ResourceSpawnEntry,int) (at Assets/Scripts/Tile/ResourceSpawner.cs:213)
+CultivationGame.TileSystem.ResourceSpawner:SpawnAllResources () (at Assets/Scripts/Tile/ResourceSpawner.cs:128)
+CultivationGame.TileSystem.ResourceSpawner:Start () (at Assets/Scripts/Tile/ResourceSpawner.cs:89)
+
+Tag: Resource is not defined.
+UnityEngine.GameObject:set_tag (string)
+CultivationGame.TileSystem.ResourceSpawner:SpawnSingleResource (CultivationGame.TileSystem.ResourceSpawnEntry,UnityEngine.Vector2) (at Assets/Scripts/Tile/ResourceSpawner.cs:229)
+CultivationGame.TileSystem.ResourceSpawner:SpawnResourceType (CultivationGame.TileSystem.ResourceSpawnEntry,int) (at Assets/Scripts/Tile/ResourceSpawner.cs:213)
+CultivationGame.TileSystem.ResourceSpawner:SpawnAllResources () (at Assets/Scripts/Tile/ResourceSpawner.cs:128)
+CultivationGame.TileSystem.ResourceSpawner:Start () (at Assets/Scripts/Tile/ResourceSpawner.cs:89)
+
+Tag: Resource is not defined.
+UnityEngine.GameObject:set_tag (string)
+CultivationGame.TileSystem.ResourceSpawner:SpawnSingleResource (CultivationGame.TileSystem.ResourceSpawnEntry,UnityEngine.Vector2) (at Assets/Scripts/Tile/ResourceSpawner.cs:229)
+CultivationGame.TileSystem.ResourceSpawner:SpawnResourceType (CultivationGame.TileSystem.ResourceSpawnEntry,int) (at Assets/Scripts/Tile/ResourceSpawner.cs:213)
+CultivationGame.TileSystem.ResourceSpawner:SpawnAllResources () (at Assets/Scripts/Tile/ResourceSpawner.cs:128)
+CultivationGame.TileSystem.ResourceSpawner:Start () (at Assets/Scripts/Tile/ResourceSpawner.cs:89)
+
+Tag: Resource is not defined.
+UnityEngine.GameObject:set_tag (string)
+CultivationGame.TileSystem.ResourceSpawner:SpawnSingleResource (CultivationGame.TileSystem.ResourceSpawnEntry,UnityEngine.Vector2) (at Assets/Scripts/Tile/ResourceSpawner.cs:229)
+CultivationGame.TileSystem.ResourceSpawner:SpawnResourceType (CultivationGame.TileSystem.ResourceSpawnEntry,int) (at Assets/Scripts/Tile/ResourceSpawner.cs:213)
+CultivationGame.TileSystem.ResourceSpawner:SpawnAllResources () (at Assets/Scripts/Tile/ResourceSpawner.cs:128)
+CultivationGame.TileSystem.ResourceSpawner:Start () (at Assets/Scripts/Tile/ResourceSpawner.cs:89)
+
+Tag: Resource is not defined.
+UnityEngine.GameObject:set_tag (string)
+CultivationGame.TileSystem.ResourceSpawner:SpawnSingleResource (CultivationGame.TileSystem.ResourceSpawnEntry,UnityEngine.Vector2) (at Assets/Scripts/Tile/ResourceSpawner.cs:229)
+CultivationGame.TileSystem.ResourceSpawner:SpawnResourceType (CultivationGame.TileSystem.ResourceSpawnEntry,int) (at Assets/Scripts/Tile/ResourceSpawner.cs:213)
+CultivationGame.TileSystem.ResourceSpawner:SpawnAllResources () (at Assets/Scripts/Tile/ResourceSpawner.cs:128)
+CultivationGame.TileSystem.ResourceSpawner:Start () (at Assets/Scripts/Tile/ResourceSpawner.cs:89)
+
+Tag: Resource is not defined.
+UnityEngine.GameObject:set_tag (string)
+CultivationGame.TileSystem.ResourceSpawner:SpawnSingleResource (CultivationGame.TileSystem.ResourceSpawnEntry,UnityEngine.Vector2) (at Assets/Scripts/Tile/ResourceSpawner.cs:229)
+CultivationGame.TileSystem.ResourceSpawner:SpawnResourceType (CultivationGame.TileSystem.ResourceSpawnEntry,int) (at Assets/Scripts/Tile/ResourceSpawner.cs:213)
+CultivationGame.TileSystem.ResourceSpawner:SpawnAllResources () (at Assets/Scripts/Tile/ResourceSpawner.cs:128)
+CultivationGame.TileSystem.ResourceSpawner:Start () (at Assets/Scripts/Tile/ResourceSpawner.cs:89)
+
+Tag: Resource is not defined.
+UnityEngine.GameObject:set_tag (string)
+CultivationGame.TileSystem.ResourceSpawner:SpawnSingleResource (CultivationGame.TileSystem.ResourceSpawnEntry,UnityEngine.Vector2) (at Assets/Scripts/Tile/ResourceSpawner.cs:229)
+CultivationGame.TileSystem.ResourceSpawner:SpawnResourceType (CultivationGame.TileSystem.ResourceSpawnEntry,int) (at Assets/Scripts/Tile/ResourceSpawner.cs:213)
+CultivationGame.TileSystem.ResourceSpawner:SpawnAllResources () (at Assets/Scripts/Tile/ResourceSpawner.cs:128)
+CultivationGame.TileSystem.ResourceSpawner:Start () (at Assets/Scripts/Tile/ResourceSpawner.cs:89)
+
+Tag: Resource is not defined.
+UnityEngine.GameObject:set_tag (string)
+CultivationGame.TileSystem.ResourceSpawner:SpawnSingleResource (CultivationGame.TileSystem.ResourceSpawnEntry,UnityEngine.Vector2) (at Assets/Scripts/Tile/ResourceSpawner.cs:229)
+CultivationGame.TileSystem.ResourceSpawner:SpawnResourceType (CultivationGame.TileSystem.ResourceSpawnEntry,int) (at Assets/Scripts/Tile/ResourceSpawner.cs:213)
+CultivationGame.TileSystem.ResourceSpawner:SpawnAllResources () (at Assets/Scripts/Tile/ResourceSpawner.cs:128)
+CultivationGame.TileSystem.ResourceSpawner:Start () (at Assets/Scripts/Tile/ResourceSpawner.cs:89)
+
+Tag: Resource is not defined.
+UnityEngine.GameObject:set_tag (string)
+CultivationGame.TileSystem.ResourceSpawner:SpawnSingleResource (CultivationGame.TileSystem.ResourceSpawnEntry,UnityEngine.Vector2) (at Assets/Scripts/Tile/ResourceSpawner.cs:229)
+CultivationGame.TileSystem.ResourceSpawner:SpawnResourceType (CultivationGame.TileSystem.ResourceSpawnEntry,int) (at Assets/Scripts/Tile/ResourceSpawner.cs:213)
+CultivationGame.TileSystem.ResourceSpawner:SpawnAllResources () (at Assets/Scripts/Tile/ResourceSpawner.cs:128)
+CultivationGame.TileSystem.ResourceSpawner:Start () (at Assets/Scripts/Tile/ResourceSpawner.cs:89)
+
+[ResourceSpawner] Камень: заспавнено 13/13
+UnityEngine.Debug:Log (object)
+CultivationGame.TileSystem.ResourceSpawner:SpawnResourceType (CultivationGame.TileSystem.ResourceSpawnEntry,int) (at Assets/Scripts/Tile/ResourceSpawner.cs:218)
+CultivationGame.TileSystem.ResourceSpawner:SpawnAllResources () (at Assets/Scripts/Tile/ResourceSpawner.cs:128)
+CultivationGame.TileSystem.ResourceSpawner:Start () (at Assets/Scripts/Tile/ResourceSpawner.cs:89)
+
+Tag: Resource is not defined.
+UnityEngine.GameObject:set_tag (string)
+CultivationGame.TileSystem.ResourceSpawner:SpawnSingleResource (CultivationGame.TileSystem.ResourceSpawnEntry,UnityEngine.Vector2) (at Assets/Scripts/Tile/ResourceSpawner.cs:229)
+CultivationGame.TileSystem.ResourceSpawner:SpawnResourceType (CultivationGame.TileSystem.ResourceSpawnEntry,int) (at Assets/Scripts/Tile/ResourceSpawner.cs:213)
+CultivationGame.TileSystem.ResourceSpawner:SpawnAllResources () (at Assets/Scripts/Tile/ResourceSpawner.cs:128)
+CultivationGame.TileSystem.ResourceSpawner:Start () (at Assets/Scripts/Tile/ResourceSpawner.cs:89)
+
+Tag: Resource is not defined.
+UnityEngine.GameObject:set_tag (string)
+CultivationGame.TileSystem.ResourceSpawner:SpawnSingleResource (CultivationGame.TileSystem.ResourceSpawnEntry,UnityEngine.Vector2) (at Assets/Scripts/Tile/ResourceSpawner.cs:229)
+CultivationGame.TileSystem.ResourceSpawner:SpawnResourceType (CultivationGame.TileSystem.ResourceSpawnEntry,int) (at Assets/Scripts/Tile/ResourceSpawner.cs:213)
+CultivationGame.TileSystem.ResourceSpawner:SpawnAllResources () (at Assets/Scripts/Tile/ResourceSpawner.cs:128)
+CultivationGame.TileSystem.ResourceSpawner:Start () (at Assets/Scripts/Tile/ResourceSpawner.cs:89)
+
+Tag: Resource is not defined.
+UnityEngine.GameObject:set_tag (string)
+CultivationGame.TileSystem.ResourceSpawner:SpawnSingleResource (CultivationGame.TileSystem.ResourceSpawnEntry,UnityEngine.Vector2) (at Assets/Scripts/Tile/ResourceSpawner.cs:229)
+CultivationGame.TileSystem.ResourceSpawner:SpawnResourceType (CultivationGame.TileSystem.ResourceSpawnEntry,int) (at Assets/Scripts/Tile/ResourceSpawner.cs:213)
+CultivationGame.TileSystem.ResourceSpawner:SpawnAllResources () (at Assets/Scripts/Tile/ResourceSpawner.cs:128)
+CultivationGame.TileSystem.ResourceSpawner:Start () (at Assets/Scripts/Tile/ResourceSpawner.cs:89)
+
+Tag: Resource is not defined.
+UnityEngine.GameObject:set_tag (string)
+CultivationGame.TileSystem.ResourceSpawner:SpawnSingleResource (CultivationGame.TileSystem.ResourceSpawnEntry,UnityEngine.Vector2) (at Assets/Scripts/Tile/ResourceSpawner.cs:229)
+CultivationGame.TileSystem.ResourceSpawner:SpawnResourceType (CultivationGame.TileSystem.ResourceSpawnEntry,int) (at Assets/Scripts/Tile/ResourceSpawner.cs:213)
+CultivationGame.TileSystem.ResourceSpawner:SpawnAllResources () (at Assets/Scripts/Tile/ResourceSpawner.cs:128)
+CultivationGame.TileSystem.ResourceSpawner:Start () (at Assets/Scripts/Tile/ResourceSpawner.cs:89)
+
+Tag: Resource is not defined.
+UnityEngine.GameObject:set_tag (string)
+CultivationGame.TileSystem.ResourceSpawner:SpawnSingleResource (CultivationGame.TileSystem.ResourceSpawnEntry,UnityEngine.Vector2) (at Assets/Scripts/Tile/ResourceSpawner.cs:229)
+CultivationGame.TileSystem.ResourceSpawner:SpawnResourceType (CultivationGame.TileSystem.ResourceSpawnEntry,int) (at Assets/Scripts/Tile/ResourceSpawner.cs:213)
+CultivationGame.TileSystem.ResourceSpawner:SpawnAllResources () (at Assets/Scripts/Tile/ResourceSpawner.cs:128)
+CultivationGame.TileSystem.ResourceSpawner:Start () (at Assets/Scripts/Tile/ResourceSpawner.cs:89)
+
+Tag: Resource is not defined.
+UnityEngine.GameObject:set_tag (string)
+CultivationGame.TileSystem.ResourceSpawner:SpawnSingleResource (CultivationGame.TileSystem.ResourceSpawnEntry,UnityEngine.Vector2) (at Assets/Scripts/Tile/ResourceSpawner.cs:229)
+CultivationGame.TileSystem.ResourceSpawner:SpawnResourceType (CultivationGame.TileSystem.ResourceSpawnEntry,int) (at Assets/Scripts/Tile/ResourceSpawner.cs:213)
+CultivationGame.TileSystem.ResourceSpawner:SpawnAllResources () (at Assets/Scripts/Tile/ResourceSpawner.cs:128)
+CultivationGame.TileSystem.ResourceSpawner:Start () (at Assets/Scripts/Tile/ResourceSpawner.cs:89)
+
+Tag: Resource is not defined.
+UnityEngine.GameObject:set_tag (string)
+CultivationGame.TileSystem.ResourceSpawner:SpawnSingleResource (CultivationGame.TileSystem.ResourceSpawnEntry,UnityEngine.Vector2) (at Assets/Scripts/Tile/ResourceSpawner.cs:229)
+CultivationGame.TileSystem.ResourceSpawner:SpawnResourceType (CultivationGame.TileSystem.ResourceSpawnEntry,int) (at Assets/Scripts/Tile/ResourceSpawner.cs:213)
+CultivationGame.TileSystem.ResourceSpawner:SpawnAllResources () (at Assets/Scripts/Tile/ResourceSpawner.cs:128)
+CultivationGame.TileSystem.ResourceSpawner:Start () (at Assets/Scripts/Tile/ResourceSpawner.cs:89)
+
+Tag: Resource is not defined.
+UnityEngine.GameObject:set_tag (string)
+CultivationGame.TileSystem.ResourceSpawner:SpawnSingleResource (CultivationGame.TileSystem.ResourceSpawnEntry,UnityEngine.Vector2) (at Assets/Scripts/Tile/ResourceSpawner.cs:229)
+CultivationGame.TileSystem.ResourceSpawner:SpawnResourceType (CultivationGame.TileSystem.ResourceSpawnEntry,int) (at Assets/Scripts/Tile/ResourceSpawner.cs:213)
+CultivationGame.TileSystem.ResourceSpawner:SpawnAllResources () (at Assets/Scripts/Tile/ResourceSpawner.cs:128)
+CultivationGame.TileSystem.ResourceSpawner:Start () (at Assets/Scripts/Tile/ResourceSpawner.cs:89)
+
+[ResourceSpawner] Руда: заспавнено 8/8
+UnityEngine.Debug:Log (object)
+CultivationGame.TileSystem.ResourceSpawner:SpawnResourceType (CultivationGame.TileSystem.ResourceSpawnEntry,int) (at Assets/Scripts/Tile/ResourceSpawner.cs:218)
+CultivationGame.TileSystem.ResourceSpawner:SpawnAllResources () (at Assets/Scripts/Tile/ResourceSpawner.cs:128)
+CultivationGame.TileSystem.ResourceSpawner:Start () (at Assets/Scripts/Tile/ResourceSpawner.cs:89)
+
+Tag: Resource is not defined.
+UnityEngine.GameObject:set_tag (string)
+CultivationGame.TileSystem.ResourceSpawner:SpawnSingleResource (CultivationGame.TileSystem.ResourceSpawnEntry,UnityEngine.Vector2) (at Assets/Scripts/Tile/ResourceSpawner.cs:229)
+CultivationGame.TileSystem.ResourceSpawner:SpawnResourceType (CultivationGame.TileSystem.ResourceSpawnEntry,int) (at Assets/Scripts/Tile/ResourceSpawner.cs:213)
+CultivationGame.TileSystem.ResourceSpawner:SpawnAllResources () (at Assets/Scripts/Tile/ResourceSpawner.cs:128)
+CultivationGame.TileSystem.ResourceSpawner:Start () (at Assets/Scripts/Tile/ResourceSpawner.cs:89)
+
+[ResourceSpawner] Железная руда: заспавнено 1/5
+UnityEngine.Debug:Log (object)
+CultivationGame.TileSystem.ResourceSpawner:SpawnResourceType (CultivationGame.TileSystem.ResourceSpawnEntry,int) (at Assets/Scripts/Tile/ResourceSpawner.cs:218)
+CultivationGame.TileSystem.ResourceSpawner:SpawnAllResources () (at Assets/Scripts/Tile/ResourceSpawner.cs:128)
+CultivationGame.TileSystem.ResourceSpawner:Start () (at Assets/Scripts/Tile/ResourceSpawner.cs:89)
+
+Tag: Resource is not defined.
+UnityEngine.GameObject:set_tag (string)
+CultivationGame.TileSystem.ResourceSpawner:SpawnSingleResource (CultivationGame.TileSystem.ResourceSpawnEntry,UnityEngine.Vector2) (at Assets/Scripts/Tile/ResourceSpawner.cs:229)
+CultivationGame.TileSystem.ResourceSpawner:SpawnResourceType (CultivationGame.TileSystem.ResourceSpawnEntry,int) (at Assets/Scripts/Tile/ResourceSpawner.cs:213)
+CultivationGame.TileSystem.ResourceSpawner:SpawnAllResources () (at Assets/Scripts/Tile/ResourceSpawner.cs:128)
+CultivationGame.TileSystem.ResourceSpawner:Start () (at Assets/Scripts/Tile/ResourceSpawner.cs:89)
+
+Tag: Resource is not defined.
+UnityEngine.GameObject:set_tag (string)
+CultivationGame.TileSystem.ResourceSpawner:SpawnSingleResource (CultivationGame.TileSystem.ResourceSpawnEntry,UnityEngine.Vector2) (at Assets/Scripts/Tile/ResourceSpawner.cs:229)
+CultivationGame.TileSystem.ResourceSpawner:SpawnResourceType (CultivationGame.TileSystem.ResourceSpawnEntry,int) (at Assets/Scripts/Tile/ResourceSpawner.cs:213)
+CultivationGame.TileSystem.ResourceSpawner:SpawnAllResources () (at Assets/Scripts/Tile/ResourceSpawner.cs:128)
+CultivationGame.TileSystem.ResourceSpawner:Start () (at Assets/Scripts/Tile/ResourceSpawner.cs:89)
+
+Tag: Resource is not defined.
+UnityEngine.GameObject:set_tag (string)
+CultivationGame.TileSystem.ResourceSpawner:SpawnSingleResource (CultivationGame.TileSystem.ResourceSpawnEntry,UnityEngine.Vector2) (at Assets/Scripts/Tile/ResourceSpawner.cs:229)
+CultivationGame.TileSystem.ResourceSpawner:SpawnResourceType (CultivationGame.TileSystem.ResourceSpawnEntry,int) (at Assets/Scripts/Tile/ResourceSpawner.cs:213)
+CultivationGame.TileSystem.ResourceSpawner:SpawnAllResources () (at Assets/Scripts/Tile/ResourceSpawner.cs:128)
+CultivationGame.TileSystem.ResourceSpawner:Start () (at Assets/Scripts/Tile/ResourceSpawner.cs:89)
+
+Tag: Resource is not defined.
+UnityEngine.GameObject:set_tag (string)
+CultivationGame.TileSystem.ResourceSpawner:SpawnSingleResource (CultivationGame.TileSystem.ResourceSpawnEntry,UnityEngine.Vector2) (at Assets/Scripts/Tile/ResourceSpawner.cs:229)
+CultivationGame.TileSystem.ResourceSpawner:SpawnResourceType (CultivationGame.TileSystem.ResourceSpawnEntry,int) (at Assets/Scripts/Tile/ResourceSpawner.cs:213)
+CultivationGame.TileSystem.ResourceSpawner:SpawnAllResources () (at Assets/Scripts/Tile/ResourceSpawner.cs:128)
+CultivationGame.TileSystem.ResourceSpawner:Start () (at Assets/Scripts/Tile/ResourceSpawner.cs:89)
+
+Tag: Resource is not defined.
+UnityEngine.GameObject:set_tag (string)
+CultivationGame.TileSystem.ResourceSpawner:SpawnSingleResource (CultivationGame.TileSystem.ResourceSpawnEntry,UnityEngine.Vector2) (at Assets/Scripts/Tile/ResourceSpawner.cs:229)
+CultivationGame.TileSystem.ResourceSpawner:SpawnResourceType (CultivationGame.TileSystem.ResourceSpawnEntry,int) (at Assets/Scripts/Tile/ResourceSpawner.cs:213)
+CultivationGame.TileSystem.ResourceSpawner:SpawnAllResources () (at Assets/Scripts/Tile/ResourceSpawner.cs:128)
+CultivationGame.TileSystem.ResourceSpawner:Start () (at Assets/Scripts/Tile/ResourceSpawner.cs:89)
+
+Tag: Resource is not defined.
+UnityEngine.GameObject:set_tag (string)
+CultivationGame.TileSystem.ResourceSpawner:SpawnSingleResource (CultivationGame.TileSystem.ResourceSpawnEntry,UnityEngine.Vector2) (at Assets/Scripts/Tile/ResourceSpawner.cs:229)
+CultivationGame.TileSystem.ResourceSpawner:SpawnResourceType (CultivationGame.TileSystem.ResourceSpawnEntry,int) (at Assets/Scripts/Tile/ResourceSpawner.cs:213)
+CultivationGame.TileSystem.ResourceSpawner:SpawnAllResources () (at Assets/Scripts/Tile/ResourceSpawner.cs:128)
+CultivationGame.TileSystem.ResourceSpawner:Start () (at Assets/Scripts/Tile/ResourceSpawner.cs:89)
+
+[ResourceSpawner] Ци-кристалл: заспавнено 6/6
+UnityEngine.Debug:Log (object)
+CultivationGame.TileSystem.ResourceSpawner:SpawnResourceType (CultivationGame.TileSystem.ResourceSpawnEntry,int) (at Assets/Scripts/Tile/ResourceSpawner.cs:218)
+CultivationGame.TileSystem.ResourceSpawner:SpawnAllResources () (at Assets/Scripts/Tile/ResourceSpawner.cs:128)
+CultivationGame.TileSystem.ResourceSpawner:Start () (at Assets/Scripts/Tile/ResourceSpawner.cs:89)
+
+Tag: Resource is not defined.
+UnityEngine.GameObject:set_tag (string)
+CultivationGame.TileSystem.ResourceSpawner:SpawnSingleResource (CultivationGame.TileSystem.ResourceSpawnEntry,UnityEngine.Vector2) (at Assets/Scripts/Tile/ResourceSpawner.cs:229)
+CultivationGame.TileSystem.ResourceSpawner:SpawnResourceType (CultivationGame.TileSystem.ResourceSpawnEntry,int) (at Assets/Scripts/Tile/ResourceSpawner.cs:213)
+CultivationGame.TileSystem.ResourceSpawner:SpawnAllResources () (at Assets/Scripts/Tile/ResourceSpawner.cs:128)
+CultivationGame.TileSystem.ResourceSpawner:Start () (at Assets/Scripts/Tile/ResourceSpawner.cs:89)
+
+[ResourceSpawner] Духовный камень: заспавнено 1/5
+UnityEngine.Debug:Log (object)
+CultivationGame.TileSystem.ResourceSpawner:SpawnResourceType (CultivationGame.TileSystem.ResourceSpawnEntry,int) (at Assets/Scripts/Tile/ResourceSpawner.cs:218)
+CultivationGame.TileSystem.ResourceSpawner:SpawnAllResources () (at Assets/Scripts/Tile/ResourceSpawner.cs:128)
+CultivationGame.TileSystem.ResourceSpawner:Start () (at Assets/Scripts/Tile/ResourceSpawner.cs:89)
+
+Tag: Resource is not defined.
+UnityEngine.GameObject:set_tag (string)
+CultivationGame.TileSystem.ResourceSpawner:SpawnSingleResource (CultivationGame.TileSystem.ResourceSpawnEntry,UnityEngine.Vector2) (at Assets/Scripts/Tile/ResourceSpawner.cs:229)
+CultivationGame.TileSystem.ResourceSpawner:SpawnResourceType (CultivationGame.TileSystem.ResourceSpawnEntry,int) (at Assets/Scripts/Tile/ResourceSpawner.cs:213)
+CultivationGame.TileSystem.ResourceSpawner:SpawnAllResources () (at Assets/Scripts/Tile/ResourceSpawner.cs:128)
+CultivationGame.TileSystem.ResourceSpawner:Start () (at Assets/Scripts/Tile/ResourceSpawner.cs:89)
+
+Tag: Resource is not defined.
+UnityEngine.GameObject:set_tag (string)
+CultivationGame.TileSystem.ResourceSpawner:SpawnSingleResource (CultivationGame.TileSystem.ResourceSpawnEntry,UnityEngine.Vector2) (at Assets/Scripts/Tile/ResourceSpawner.cs:229)
+CultivationGame.TileSystem.ResourceSpawner:SpawnResourceType (CultivationGame.TileSystem.ResourceSpawnEntry,int) (at Assets/Scripts/Tile/ResourceSpawner.cs:213)
+CultivationGame.TileSystem.ResourceSpawner:SpawnAllResources () (at Assets/Scripts/Tile/ResourceSpawner.cs:128)
+CultivationGame.TileSystem.ResourceSpawner:Start () (at Assets/Scripts/Tile/ResourceSpawner.cs:89)
+
+Tag: Resource is not defined.
+UnityEngine.GameObject:set_tag (string)
+CultivationGame.TileSystem.ResourceSpawner:SpawnSingleResource (CultivationGame.TileSystem.ResourceSpawnEntry,UnityEngine.Vector2) (at Assets/Scripts/Tile/ResourceSpawner.cs:229)
+CultivationGame.TileSystem.ResourceSpawner:SpawnResourceType (CultivationGame.TileSystem.ResourceSpawnEntry,int) (at Assets/Scripts/Tile/ResourceSpawner.cs:213)
+CultivationGame.TileSystem.ResourceSpawner:SpawnAllResources () (at Assets/Scripts/Tile/ResourceSpawner.cs:128)
+CultivationGame.TileSystem.ResourceSpawner:Start () (at Assets/Scripts/Tile/ResourceSpawner.cs:89)
+
+Tag: Resource is not defined.
+UnityEngine.GameObject:set_tag (string)
+CultivationGame.TileSystem.ResourceSpawner:SpawnSingleResource (CultivationGame.TileSystem.ResourceSpawnEntry,UnityEngine.Vector2) (at Assets/Scripts/Tile/ResourceSpawner.cs:229)
+CultivationGame.TileSystem.ResourceSpawner:SpawnResourceType (CultivationGame.TileSystem.ResourceSpawnEntry,int) (at Assets/Scripts/Tile/ResourceSpawner.cs:213)
+CultivationGame.TileSystem.ResourceSpawner:SpawnAllResources () (at Assets/Scripts/Tile/ResourceSpawner.cs:128)
+CultivationGame.TileSystem.ResourceSpawner:Start () (at Assets/Scripts/Tile/ResourceSpawner.cs:89)
+
+Tag: Resource is not defined.
+UnityEngine.GameObject:set_tag (string)
+CultivationGame.TileSystem.ResourceSpawner:SpawnSingleResource (CultivationGame.TileSystem.ResourceSpawnEntry,UnityEngine.Vector2) (at Assets/Scripts/Tile/ResourceSpawner.cs:229)
+CultivationGame.TileSystem.ResourceSpawner:SpawnResourceType (CultivationGame.TileSystem.ResourceSpawnEntry,int) (at Assets/Scripts/Tile/ResourceSpawner.cs:213)
+CultivationGame.TileSystem.ResourceSpawner:SpawnAllResources () (at Assets/Scripts/Tile/ResourceSpawner.cs:128)
+CultivationGame.TileSystem.ResourceSpawner:Start () (at Assets/Scripts/Tile/ResourceSpawner.cs:89)
+
+Tag: Resource is not defined.
+UnityEngine.GameObject:set_tag (string)
+CultivationGame.TileSystem.ResourceSpawner:SpawnSingleResource (CultivationGame.TileSystem.ResourceSpawnEntry,UnityEngine.Vector2) (at Assets/Scripts/Tile/ResourceSpawner.cs:229)
+CultivationGame.TileSystem.ResourceSpawner:SpawnResourceType (CultivationGame.TileSystem.ResourceSpawnEntry,int) (at Assets/Scripts/Tile/ResourceSpawner.cs:213)
+CultivationGame.TileSystem.ResourceSpawner:SpawnAllResources () (at Assets/Scripts/Tile/ResourceSpawner.cs:128)
+CultivationGame.TileSystem.ResourceSpawner:Start () (at Assets/Scripts/Tile/ResourceSpawner.cs:89)
+
+Tag: Resource is not defined.
+UnityEngine.GameObject:set_tag (string)
+CultivationGame.TileSystem.ResourceSpawner:SpawnSingleResource (CultivationGame.TileSystem.ResourceSpawnEntry,UnityEngine.Vector2) (at Assets/Scripts/Tile/ResourceSpawner.cs:229)
+CultivationGame.TileSystem.ResourceSpawner:SpawnResourceType (CultivationGame.TileSystem.ResourceSpawnEntry,int) (at Assets/Scripts/Tile/ResourceSpawner.cs:213)
+CultivationGame.TileSystem.ResourceSpawner:SpawnAllResources () (at Assets/Scripts/Tile/ResourceSpawner.cs:128)
+CultivationGame.TileSystem.ResourceSpawner:Start () (at Assets/Scripts/Tile/ResourceSpawner.cs:89)
+
+Tag: Resource is not defined.
+UnityEngine.GameObject:set_tag (string)
+CultivationGame.TileSystem.ResourceSpawner:SpawnSingleResource (CultivationGame.TileSystem.ResourceSpawnEntry,UnityEngine.Vector2) (at Assets/Scripts/Tile/ResourceSpawner.cs:229)
+CultivationGame.TileSystem.ResourceSpawner:SpawnResourceType (CultivationGame.TileSystem.ResourceSpawnEntry,int) (at Assets/Scripts/Tile/ResourceSpawner.cs:213)
+CultivationGame.TileSystem.ResourceSpawner:SpawnAllResources () (at Assets/Scripts/Tile/ResourceSpawner.cs:128)
+CultivationGame.TileSystem.ResourceSpawner:Start () (at Assets/Scripts/Tile/ResourceSpawner.cs:89)
+
+Tag: Resource is not defined.
+UnityEngine.GameObject:set_tag (string)
+CultivationGame.TileSystem.ResourceSpawner:SpawnSingleResource (CultivationGame.TileSystem.ResourceSpawnEntry,UnityEngine.Vector2) (at Assets/Scripts/Tile/ResourceSpawner.cs:229)
+CultivationGame.TileSystem.ResourceSpawner:SpawnResourceType (CultivationGame.TileSystem.ResourceSpawnEntry,int) (at Assets/Scripts/Tile/ResourceSpawner.cs:213)
+CultivationGame.TileSystem.ResourceSpawner:SpawnAllResources () (at Assets/Scripts/Tile/ResourceSpawner.cs:128)
+CultivationGame.TileSystem.ResourceSpawner:Start () (at Assets/Scripts/Tile/ResourceSpawner.cs:89)
+
+Tag: Resource is not defined.
+UnityEngine.GameObject:set_tag (string)
+CultivationGame.TileSystem.ResourceSpawner:SpawnSingleResource (CultivationGame.TileSystem.ResourceSpawnEntry,UnityEngine.Vector2) (at Assets/Scripts/Tile/ResourceSpawner.cs:229)
+CultivationGame.TileSystem.ResourceSpawner:SpawnResourceType (CultivationGame.TileSystem.ResourceSpawnEntry,int) (at Assets/Scripts/Tile/ResourceSpawner.cs:213)
+CultivationGame.TileSystem.ResourceSpawner:SpawnAllResources () (at Assets/Scripts/Tile/ResourceSpawner.cs:128)
+CultivationGame.TileSystem.ResourceSpawner:Start () (at Assets/Scripts/Tile/ResourceSpawner.cs:89)
+
+Tag: Resource is not defined.
+UnityEngine.GameObject:set_tag (string)
+CultivationGame.TileSystem.ResourceSpawner:SpawnSingleResource (CultivationGame.TileSystem.ResourceSpawnEntry,UnityEngine.Vector2) (at Assets/Scripts/Tile/ResourceSpawner.cs:229)
+CultivationGame.TileSystem.ResourceSpawner:SpawnResourceType (CultivationGame.TileSystem.ResourceSpawnEntry,int) (at Assets/Scripts/Tile/ResourceSpawner.cs:213)
+CultivationGame.TileSystem.ResourceSpawner:SpawnAllResources () (at Assets/Scripts/Tile/ResourceSpawner.cs:128)
+CultivationGame.TileSystem.ResourceSpawner:Start () (at Assets/Scripts/Tile/ResourceSpawner.cs:89)
+
+Tag: Resource is not defined.
+UnityEngine.GameObject:set_tag (string)
+CultivationGame.TileSystem.ResourceSpawner:SpawnSingleResource (CultivationGame.TileSystem.ResourceSpawnEntry,UnityEngine.Vector2) (at Assets/Scripts/Tile/ResourceSpawner.cs:229)
+CultivationGame.TileSystem.ResourceSpawner:SpawnResourceType (CultivationGame.TileSystem.ResourceSpawnEntry,int) (at Assets/Scripts/Tile/ResourceSpawner.cs:213)
+CultivationGame.TileSystem.ResourceSpawner:SpawnAllResources () (at Assets/Scripts/Tile/ResourceSpawner.cs:128)
+CultivationGame.TileSystem.ResourceSpawner:Start () (at Assets/Scripts/Tile/ResourceSpawner.cs:89)
+
+Tag: Resource is not defined.
+UnityEngine.GameObject:set_tag (string)
+CultivationGame.TileSystem.ResourceSpawner:SpawnSingleResource (CultivationGame.TileSystem.ResourceSpawnEntry,UnityEngine.Vector2) (at Assets/Scripts/Tile/ResourceSpawner.cs:229)
+CultivationGame.TileSystem.ResourceSpawner:SpawnResourceType (CultivationGame.TileSystem.ResourceSpawnEntry,int) (at Assets/Scripts/Tile/ResourceSpawner.cs:213)
+CultivationGame.TileSystem.ResourceSpawner:SpawnAllResources () (at Assets/Scripts/Tile/ResourceSpawner.cs:128)
+CultivationGame.TileSystem.ResourceSpawner:Start () (at Assets/Scripts/Tile/ResourceSpawner.cs:89)
+
+Tag: Resource is not defined.
+UnityEngine.GameObject:set_tag (string)
+CultivationGame.TileSystem.ResourceSpawner:SpawnSingleResource (CultivationGame.TileSystem.ResourceSpawnEntry,UnityEngine.Vector2) (at Assets/Scripts/Tile/ResourceSpawner.cs:229)
+CultivationGame.TileSystem.ResourceSpawner:SpawnResourceType (CultivationGame.TileSystem.ResourceSpawnEntry,int) (at Assets/Scripts/Tile/ResourceSpawner.cs:213)
+CultivationGame.TileSystem.ResourceSpawner:SpawnAllResources () (at Assets/Scripts/Tile/ResourceSpawner.cs:128)
+CultivationGame.TileSystem.ResourceSpawner:Start () (at Assets/Scripts/Tile/ResourceSpawner.cs:89)
+
+[ResourceSpawner] Древесина: заспавнено 14/14
+UnityEngine.Debug:Log (object)
+CultivationGame.TileSystem.ResourceSpawner:SpawnResourceType (CultivationGame.TileSystem.ResourceSpawnEntry,int) (at Assets/Scripts/Tile/ResourceSpawner.cs:218)
+CultivationGame.TileSystem.ResourceSpawner:SpawnAllResources () (at Assets/Scripts/Tile/ResourceSpawner.cs:128)
+CultivationGame.TileSystem.ResourceSpawner:Start () (at Assets/Scripts/Tile/ResourceSpawner.cs:89)
+
+Tag: Resource is not defined.
+UnityEngine.GameObject:set_tag (string)
+CultivationGame.TileSystem.ResourceSpawner:SpawnSingleResource (CultivationGame.TileSystem.ResourceSpawnEntry,UnityEngine.Vector2) (at Assets/Scripts/Tile/ResourceSpawner.cs:229)
+CultivationGame.TileSystem.ResourceSpawner:SpawnResourceType (CultivationGame.TileSystem.ResourceSpawnEntry,int) (at Assets/Scripts/Tile/ResourceSpawner.cs:213)
+CultivationGame.TileSystem.ResourceSpawner:SpawnAllResources () (at Assets/Scripts/Tile/ResourceSpawner.cs:128)
+CultivationGame.TileSystem.ResourceSpawner:Start () (at Assets/Scripts/Tile/ResourceSpawner.cs:89)
+
+Tag: Resource is not defined.
+UnityEngine.GameObject:set_tag (string)
+CultivationGame.TileSystem.ResourceSpawner:SpawnSingleResource (CultivationGame.TileSystem.ResourceSpawnEntry,UnityEngine.Vector2) (at Assets/Scripts/Tile/ResourceSpawner.cs:229)
+CultivationGame.TileSystem.ResourceSpawner:SpawnResourceType (CultivationGame.TileSystem.ResourceSpawnEntry,int) (at Assets/Scripts/Tile/ResourceSpawner.cs:213)
+CultivationGame.TileSystem.ResourceSpawner:SpawnAllResources () (at Assets/Scripts/Tile/ResourceSpawner.cs:128)
+CultivationGame.TileSystem.ResourceSpawner:Start () (at Assets/Scripts/Tile/ResourceSpawner.cs:89)
+
+Tag: Resource is not defined.
+UnityEngine.GameObject:set_tag (string)
+CultivationGame.TileSystem.ResourceSpawner:SpawnSingleResource (CultivationGame.TileSystem.ResourceSpawnEntry,UnityEngine.Vector2) (at Assets/Scripts/Tile/ResourceSpawner.cs:229)
+CultivationGame.TileSystem.ResourceSpawner:SpawnResourceType (CultivationGame.TileSystem.ResourceSpawnEntry,int) (at Assets/Scripts/Tile/ResourceSpawner.cs:213)
+CultivationGame.TileSystem.ResourceSpawner:SpawnAllResources () (at Assets/Scripts/Tile/ResourceSpawner.cs:128)
+CultivationGame.TileSystem.ResourceSpawner:Start () (at Assets/Scripts/Tile/ResourceSpawner.cs:89)
+
+[ResourceSpawner] Песчаная жемчужина: заспавнено 3/5
+UnityEngine.Debug:Log (object)
+CultivationGame.TileSystem.ResourceSpawner:SpawnResourceType (CultivationGame.TileSystem.ResourceSpawnEntry,int) (at Assets/Scripts/Tile/ResourceSpawner.cs:218)
+CultivationGame.TileSystem.ResourceSpawner:SpawnAllResources () (at Assets/Scripts/Tile/ResourceSpawner.cs:128)
+CultivationGame.TileSystem.ResourceSpawner:Start () (at Assets/Scripts/Tile/ResourceSpawner.cs:89)
+
+Tag: Resource is not defined.
+UnityEngine.GameObject:set_tag (string)
+CultivationGame.TileSystem.ResourceSpawner:SpawnSingleResource (CultivationGame.TileSystem.ResourceSpawnEntry,UnityEngine.Vector2) (at Assets/Scripts/Tile/ResourceSpawner.cs:229)
+CultivationGame.TileSystem.ResourceSpawner:SpawnResourceType (CultivationGame.TileSystem.ResourceSpawnEntry,int) (at Assets/Scripts/Tile/ResourceSpawner.cs:213)
+CultivationGame.TileSystem.ResourceSpawner:SpawnAllResources () (at Assets/Scripts/Tile/ResourceSpawner.cs:128)
+CultivationGame.TileSystem.ResourceSpawner:Start () (at Assets/Scripts/Tile/ResourceSpawner.cs:89)
+
+Tag: Resource is not defined.
+UnityEngine.GameObject:set_tag (string)
+CultivationGame.TileSystem.ResourceSpawner:SpawnSingleResource (CultivationGame.TileSystem.ResourceSpawnEntry,UnityEngine.Vector2) (at Assets/Scripts/Tile/ResourceSpawner.cs:229)
+CultivationGame.TileSystem.ResourceSpawner:SpawnResourceType (CultivationGame.TileSystem.ResourceSpawnEntry,int) (at Assets/Scripts/Tile/ResourceSpawner.cs:213)
+CultivationGame.TileSystem.ResourceSpawner:SpawnAllResources () (at Assets/Scripts/Tile/ResourceSpawner.cs:128)
+CultivationGame.TileSystem.ResourceSpawner:Start () (at Assets/Scripts/Tile/ResourceSpawner.cs:89)
+
+[ResourceSpawner] Пустынный кристалл: заспавнено 2/5
+UnityEngine.Debug:Log (object)
+CultivationGame.TileSystem.ResourceSpawner:SpawnResourceType (CultivationGame.TileSystem.ResourceSpawnEntry,int) (at Assets/Scripts/Tile/ResourceSpawner.cs:218)
+CultivationGame.TileSystem.ResourceSpawner:SpawnAllResources () (at Assets/Scripts/Tile/ResourceSpawner.cs:128)
+CultivationGame.TileSystem.ResourceSpawner:Start () (at Assets/Scripts/Tile/ResourceSpawner.cs:89)
+
+[ResourceSpawner] Заспавнено 104 ресурсов
+UnityEngine.Debug:Log (object)
+CultivationGame.TileSystem.ResourceSpawner:SpawnAllResources () (at Assets/Scripts/Tile/ResourceSpawner.cs:131)
+CultivationGame.TileSystem.ResourceSpawner:Start () (at Assets/Scripts/Tile/ResourceSpawner.cs:89)
+
+[GameInitializer] ✓ GameEvents initialized (1/8)
+UnityEngine.Debug:Log (object)
+CultivationGame.Managers.GameInitializer:Log (string) (at Assets/Scripts/Managers/GameInitializer.cs:515)
+CultivationGame.Managers.GameInitializer/<InitializeSystem>d__32:MoveNext () (at Assets/Scripts/Managers/GameInitializer.cs:250)
+UnityEngine.SetupCoroutine:InvokeMoveNext (System.Collections.IEnumerator,intptr)
+
+[GameInitializer] ✓ GameManager initialized (2/8)
+UnityEngine.Debug:Log (object)
+CultivationGame.Managers.GameInitializer:Log (string) (at Assets/Scripts/Managers/GameInitializer.cs:515)
+CultivationGame.Managers.GameInitializer/<InitializeSystem>d__32:MoveNext () (at Assets/Scripts/Managers/GameInitializer.cs:250)
+UnityEngine.SetupCoroutine:InvokeMoveNext (System.Collections.IEnumerator,intptr)
+
+[GameInitializer] ✓ TimeSystem initialized (3/8)
+UnityEngine.Debug:Log (object)
+CultivationGame.Managers.GameInitializer:Log (string) (at Assets/Scripts/Managers/GameInitializer.cs:515)
+CultivationGame.Managers.GameInitializer/<InitializeSystem>d__32:MoveNext () (at Assets/Scripts/Managers/GameInitializer.cs:250)
+UnityEngine.SetupCoroutine:InvokeMoveNext (System.Collections.IEnumerator,intptr)
+
+[GameInitializer] ✓ WorldSystem initialized (4/8)
+UnityEngine.Debug:Log (object)
+CultivationGame.Managers.GameInitializer:Log (string) (at Assets/Scripts/Managers/GameInitializer.cs:515)
+CultivationGame.Managers.GameInitializer/<InitializeSystem>d__32:MoveNext () (at Assets/Scripts/Managers/GameInitializer.cs:250)
+UnityEngine.SetupCoroutine:InvokeMoveNext (System.Collections.IEnumerator,intptr)
+
+[GameInitializer] ✓ SaveSystem initialized (5/8)
+UnityEngine.Debug:Log (object)
+CultivationGame.Managers.GameInitializer:Log (string) (at Assets/Scripts/Managers/GameInitializer.cs:515)
+CultivationGame.Managers.GameInitializer/<InitializeSystem>d__32:MoveNext () (at Assets/Scripts/Managers/GameInitializer.cs:250)
+UnityEngine.SetupCoroutine:InvokeMoveNext (System.Collections.IEnumerator,intptr)
+
+[GameInitializer] Player initialized: Игрок
+UnityEngine.Debug:Log (object)
+CultivationGame.Managers.GameInitializer:Log (string) (at Assets/Scripts/Managers/GameInitializer.cs:515)
+CultivationGame.Managers.GameInitializer/<InitializePlayerSystems>d__38:MoveNext () (at Assets/Scripts/Managers/GameInitializer.cs:349)
+UnityEngine.SetupCoroutine:InvokeMoveNext (System.Collections.IEnumerator,intptr)
+
+[GameInitializer] ✓ PlayerSystems initialized (6/8)
+UnityEngine.Debug:Log (object)
+CultivationGame.Managers.GameInitializer:Log (string) (at Assets/Scripts/Managers/GameInitializer.cs:515)
+CultivationGame.Managers.GameInitializer/<InitializeSystem>d__32:MoveNext () (at Assets/Scripts/Managers/GameInitializer.cs:250)
+UnityEngine.SetupCoroutine:InvokeMoveNext (System.Collections.IEnumerator,intptr)
+
+[GameInitializer] ✓ UISystem initialized (7/8)
+UnityEngine.Debug:Log (object)
+CultivationGame.Managers.GameInitializer:Log (string) (at Assets/Scripts/Managers/GameInitializer.cs:515)
+CultivationGame.Managers.GameInitializer/<InitializeSystem>d__32:MoveNext () (at Assets/Scripts/Managers/GameInitializer.cs:250)
+UnityEngine.SetupCoroutine:InvokeMoveNext (System.Collections.IEnumerator,intptr)
+
+[GameInitializer] ✓ FinalSetup initialized (8/8)
+UnityEngine.Debug:Log (object)
+CultivationGame.Managers.GameInitializer:Log (string) (at Assets/Scripts/Managers/GameInitializer.cs:515)
+CultivationGame.Managers.GameInitializer/<InitializeSystem>d__32:MoveNext () (at Assets/Scripts/Managers/GameInitializer.cs:250)
+UnityEngine.SetupCoroutine:InvokeMoveNext (System.Collections.IEnumerator,intptr)
+
+[GameInitializer] ✅ Initialization complete!
+UnityEngine.Debug:Log (object)
+CultivationGame.Managers.GameInitializer:Log (string) (at Assets/Scripts/Managers/GameInitializer.cs:515)
+CultivationGame.Managers.GameInitializer/<InitializeGameAsync>d__31:MoveNext () (at Assets/Scripts/Managers/GameInitializer.cs:219)
+UnityEngine.SetupCoroutine:InvokeMoveNext (System.Collections.IEnumerator,intptr)
+
+MissingComponentException: There is no 'RectTransform' attached to the "Fill Area" game object, but a script is trying to access it.
+You probably need to add a RectTransform to the game object "Fill Area". Or your script needs to check if the component is attached before using it.
+UnityEngine.Object+MarshalledUnityObject.TryThrowEditorNullExceptionObject (UnityEngine.Object unityObj, System.String parameterName) (at <5fbef2e591e14a4c91f3c5e34508b853>:0)
+UnityEngine.Bindings.ThrowHelper.ThrowNullReferenceException (System.Object obj) (at <5fbef2e591e14a4c91f3c5e34508b853>:0)
+UnityEngine.RectTransform.set_anchorMin (UnityEngine.Vector2 value) (at <5fbef2e591e14a4c91f3c5e34508b853>:0)
+CultivationGame.UI.HarvestFeedbackUI.EnsureCanvasExists (UnityEngine.Transform target) (at Assets/Scripts/UI/HarvestFeedbackUI.cs:187)
+CultivationGame.UI.HarvestFeedbackUI.ShowHarvestStarted (UnityEngine.Transform target, System.String resourceName, System.Single progress) (at Assets/Scripts/UI/HarvestFeedbackUI.cs:54)
+CultivationGame.Player.PlayerController.AttemptHarvest () (at Assets/Scripts/Player/PlayerController.cs:622)
+CultivationGame.Player.PlayerController.ProcessInput () (at Assets/Scripts/Player/PlayerController.cs:311)
+CultivationGame.Player.PlayerController.Update () (at Assets/Scripts/Player/PlayerController.cs:195)
+
+[PlayerController] Harvest hit: Дерево at (43,37), damage=25, durability=150/200
+UnityEngine.Debug:Log (object)
+CultivationGame.Player.PlayerController:AttemptHarvest () (at Assets/Scripts/Player/PlayerController.cs:634)
+CultivationGame.Player.PlayerController:ProcessInput () (at Assets/Scripts/Player/PlayerController.cs:311)
+CultivationGame.Player.PlayerController:Update () (at Assets/Scripts/Player/PlayerController.cs:195)
+
+[PlayerController] Harvest hit: Дерево at (43,37), damage=25, durability=125/200
+UnityEngine.Debug:Log (object)
+CultivationGame.Player.PlayerController:AttemptHarvest () (at Assets/Scripts/Player/PlayerController.cs:634)
+CultivationGame.Player.PlayerController:ProcessInput () (at Assets/Scripts/Player/PlayerController.cs:311)
+CultivationGame.Player.PlayerController:Update () (at Assets/Scripts/Player/PlayerController.cs:195)
+
+[PlayerController] Harvest hit: Дерево at (43,37), damage=25, durability=100/200
+UnityEngine.Debug:Log (object)
+CultivationGame.Player.PlayerController:AttemptHarvest () (at Assets/Scripts/Player/PlayerController.cs:634)
+CultivationGame.Player.PlayerController:ProcessInput () (at Assets/Scripts/Player/PlayerController.cs:311)
+CultivationGame.Player.PlayerController:Update () (at Assets/Scripts/Player/PlayerController.cs:195)
+
+MissingComponentException: There is no 'RectTransform' attached to the "Fill Area" game object, but a script is trying to access it.
+You probably need to add a RectTransform to the game object "Fill Area". Or your script needs to check if the component is attached before using it.
+UnityEngine.Object+MarshalledUnityObject.TryThrowEditorNullExceptionObject (UnityEngine.Object unityObj, System.String parameterName) (at <5fbef2e591e14a4c91f3c5e34508b853>:0)
+UnityEngine.Bindings.ThrowHelper.ThrowNullReferenceException (System.Object obj) (at <5fbef2e591e14a4c91f3c5e34508b853>:0)
+UnityEngine.RectTransform.set_anchorMin (UnityEngine.Vector2 value) (at <5fbef2e591e14a4c91f3c5e34508b853>:0)
+CultivationGame.UI.HarvestFeedbackUI.EnsureCanvasExists (UnityEngine.Transform target) (at Assets/Scripts/UI/HarvestFeedbackUI.cs:187)
+CultivationGame.UI.HarvestFeedbackUI.ShowHarvestFailed (System.String message) (at Assets/Scripts/UI/HarvestFeedbackUI.cs:123)
+CultivationGame.Player.PlayerController.AttemptHarvest () (at Assets/Scripts/Player/PlayerController.cs:569)
+CultivationGame.Player.PlayerController.ProcessInput () (at Assets/Scripts/Player/PlayerController.cs:311)
+CultivationGame.Player.PlayerController.Update () (at Assets/Scripts/Player/PlayerController.cs:195)
+
