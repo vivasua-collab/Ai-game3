@@ -1,0 +1,65 @@
+# Чекпоинт: Fix-09 — World System (Time + Location + Faction + Event)
+
+**Дата:** 2026-04-10 13:37:00 UTC
+**Фаза:** Phase 7 — Integration
+**Статус:** ✅ complete
+**Приоритет:** P0-HIGH
+
+---
+
+## Описание
+
+TimeController: пост-инкремент в событиях, нет валидации при загрузке, cascading event storms. Location: travel event order. Faction: save data неполная. Event: real time вместо game time.
+
+---
+
+## Файлы (5 файлов, ~2694 строк)
+
+| # | Файл | Строк | Изменение |
+|---|------|-------|-----------|
+| 1 | `World/TimeController.cs` | 560+ | AdvanceHour post-increment documented, LoadSaveData validation, event storms guard, SetTime/SetDate transition events, GetTotalDays accuracy |
+| 2 | `World/LocationController.cs` | 495 | CompleteTravel event order fix |
+| 3 | `World/FactionController.cs` | 515 | LoadSaveData playerMemberships restore + GetSaveData populate |
+| 4 | `World/EventController.cs` | 435 | Cooldown game time, check interval game time |
+| 5 | `World/WorldController.cs` | 475 | WorldEvent.EventData serializable structure |
+
+---
+
+## Задачи
+
+### CRITICAL
+- [x] WLD-C01: LocationController.CompleteTravel — сохранить travelDestinationId ДО ShouldTriggerTravelEvent
+
+### HIGH
+- [x] WLD-H01: TimeController.AdvanceHour — fire OnHourPassed с ПРЕ-инкремент значением (сохранить old, инкрементировать, fire с new)
+- [x] WLD-H02: EventController.Cooldown — использовать game time (TimeController) вместо Time.time
+- [x] WLD-H03: WorldController.WorldEvent.EventData — заменить Dictionary<string,object> на [Serializable] структуру
+- [x] WLD-H04: FactionController.LoadSaveData — восстановить playerMemberships
+- [x] WLD-H06: TimeController.LoadSaveData — добавить Clamp для hours (0-23), minutes (0-59), days (1+), months (1-12)
+
+### MEDIUM
+- [x] WLD-M01: TimeController.SetTime — вызвать transition events (hour/day change if crossed)
+- [x] WLD-M02: TimeController.AdvanceHours/Days — ограничить cascade (batch events, не вызывать по одному)
+- [x] WLD-M04: EventController.eventCheckInterval — перевести в game time (tick-based)
+- [x] WLD-M06: TimeController.GetTotalDays — уточнить семантику (включить ли текущий день, off-by-one)
+
+---
+
+## Порядок выполнения
+
+1. TimeController.cs — все фиксы (ядро мировой системы)
+2. LocationController.cs — CompleteTravel
+3. FactionController.cs — LoadSaveData
+4. EventController.cs — game time
+5. WorldController.cs — EventData сериализация
+
+---
+
+## Зависимости
+
+- **Предшествующие:** Fix-04 (GameEvents cleanup), Fix-01 (Qi types)
+- **Последующие:** Fix-08 (Save — WorldSaveData)
+
+---
+
+*Чекпоинт обновлён: 2026-04-11 UTC — все 10 задач выполнены*

@@ -1,0 +1,74 @@
+# Чекпоинт: Fix-06 — Buff Manager + Formation Effects
+
+**Дата:** 2026-04-10 13:37:00 UTC
+**Фаза:** Phase 7 — Integration
+**Статус:** complete
+**Приоритет:** P0-HIGH
+**Завершено:** 2026-04-11 UTC
+
+---
+
+## Описание
+
+BuffManager: float.Parse crash, Independent stacking, ConductivityModifier мёртвый код, SO утечки. FormationEffects: перманентный контроль, заглушка BuffManager, IsAlly сломан. FormationArrayEffect обходит BuffManager.
+
+---
+
+## Файлы (5 файлов, ~3250 строк)
+
+| # | Файл | Строк | Изменение |
+|---|------|-------|-----------|
+| 1 | `Buff/BuffManager.cs` | 1278→~1370 | float.Parse→TryParse, Independent, ConductivityModifier, SO leak, Slow |
+| 2 | `Formation/FormationEffects.cs` | 495→~620 | Control восстановление, IsAlly→через Attitude enum, заглушка BuffManager, ApplyHeal |
+| 3 | `Combat/Effects/FormationArrayEffect.cs` | ~200→~240 | ApplyBuff/Debuff через BuffManager |
+| 4 | `Combat/Effects/ExpandingEffect.cs` | ~150→~300 | ICombatTarget квалификация, using директивы |
+| 5 | `Formation/FormationCore.cs` | 685→~700 | OverlapCircleAll layer mask, ContributeQi cap, practitionerId |
+
+---
+
+## Задачи
+
+### CRITICAL
+- [x] BUF-C01: BuffManager — заменить 7 float.Parse → float.TryParse с fallback (:788,792,796,800,930,934,938)
+- [x] BUF-C02: BuffManager.HandleExistingBuff — Independent: реально добавить бафф, не просто вернуть Applied
+- [x] BUF-C03: BuffManager — применить ConductivityModifier к QiController (подключить мёртвый код)
+- [x] BUF-C04: FormationEffects.ApplyControlFallback — сохранять и восстанавливать оригинальные Rigidbody2D значения (Freeze/Slow/Root rollback)
+
+### HIGH
+- [x] BUF-H01: BuffManager — убрать ScriptableObject.CreateInstance утечки, использовать кэш
+- [x] BUF-H02: BuffManager — Slow effect использовать buff.data вместо hardcoded 50%
+- [x] BUF-H03: BuffManager.RemoveControl — проверять другие активные контроль-баффы перед сбросом флага
+- [x] FRM-H01: FormationCore.ApplyEffects — добавить layer mask в OverlapCircleAll
+- [x] FRM-H02: FormationEffects.IsAlly — исправить через FactionController + новый enum **Attitude** (после Fix-04). Allied/Friendly = союзник, Hostile/Hatred = враг
+- [x] FRM-H03: FormationArrayEffect.ApplyBuff/ApplyDebuff — маршрутизировать через BuffManager вместо TODO-заглушек
+
+### MEDIUM
+- [x] BUF-M01: RemoveBuff(FormationBuffType) — сузить критерий удаления
+- [x] BUF-M02: CreateTempBuffData — учесть tickInterval при секунды→тики
+- [x] BUF-M03: ApplySpecialEffect — triggerChance проверять при тике, не при применении
+- [x] BUF-M04: CurrentControl — хранить стек контроль-эффектов
+- [x] BUF-M05: Удалить заглушку BuffManager из FormationEffects.cs, использовать `using CultivationGame.Buff;`
+- [x] FRM-M01: FormationCore.ContributeQi — добавить проверку maxCapacity
+- [x] FRM-M02: FormationCore.practitionerId — использовать persistent ID вместо GetInstanceID()
+- [x] FRM-M04: FormationEffects.ApplyHeal — раздельный выбор: лечить Qi, Body, или оба
+
+---
+
+## Порядок выполнения
+
+1. BuffManager.cs — все Buff фиксы (крупный файл, много изменений)
+2. FormationEffects.cs — Control + IsAlly (через Attitude) + заглушка + ApplyHeal
+3. FormationCore.cs — layer mask + ContributeQi + practitionerId
+4. FormationArrayEffect.cs — BuffManager интеграция
+5. ExpandingEffect.cs — ICombatTarget
+
+---
+
+## Зависимости
+
+- **Предшествующие:** Fix-01 (Qi types), Fix-04 (Attitude enum для IsAlly)
+- **Последующие:** Fix-08 (Save — BuffSaveData)
+
+---
+
+*Чекпоинт обновлён: 2026-04-11 UTC — все 18 задач выполнены*
