@@ -3,7 +3,7 @@
 // Cultivation World Simulator
 // Создано: 2026-04-14 07:35:00 UTC
 // Редактировано: 2026-04-14 07:55:00 UTC — увеличены лимиты для карты 100×80, новые типы ресурсов
-// Редактировано: 2026-04-16 14:30:00 UTC — FIX: безопасное назначение тега "Resource" (try-catch, не определён в TagManager)
+// Редактировано: 2026-04-15 11:25:00 UTC — FIX: RGBA32 для fallback спрайтов, правильная прозрачность
 // ============================================================================
 
 using System.Collections.Generic;
@@ -275,7 +275,9 @@ namespace CultivationGame.TileSystem
             // Fallback: программный спрайт
             _lastSpriteWasAI = false;
             int size = spriteSize;
-            Texture2D texture = new Texture2D(size, size);
+            // FIX: RGBA32 формат для правильной прозрачности
+            // Редактировано: 2026-04-15 11:25:00 UTC
+            Texture2D texture = new Texture2D(size, size, TextureFormat.RGBA32, false);
             Color[] pixels = new Color[size * size];
 
             Color main = entry.spriteColor;

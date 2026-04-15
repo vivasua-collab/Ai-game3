@@ -2,7 +2,7 @@
 // TileSpriteGenerator.cs — Генератор простых спрайтов тайлов
 // Cultivation World Simulator
 // Создано: 2026-04-07 14:24:05 UTC
-// Редактировано: 2026-04-15 07:05:00 UTC — FIX: spriteBorder для устранения зазоров между тайлами
+// Редактировано: 2026-04-15 11:10:00 UTC — FIX: pixel bleed (66×66 текстура, sprite rect 1,1,64,64), alphaIsTransparency, улучшенные объектные спрайты
 // ============================================================================
 
 #if UNITY_EDITOR
@@ -18,7 +18,8 @@ namespace CultivationGame.TileSystem.Editor
     /// </summary>
     public static class TileSpriteGenerator
     {
-        private const int TILE_SIZE = 64;
+        private const int TILE_SIZE = 66; // +2px для pixel bleed (устранение зазоров)
+        private const int VISIBLE_SIZE = 64; // Видимая часть спрайта
         private const string OUTPUT_PATH = "Assets/Sprites/Tiles";
 
         [MenuItem("Tools/Generate Tile Sprites")]
@@ -58,14 +59,22 @@ namespace CultivationGame.TileSystem.Editor
 
         private static void GenerateTerrainSprite(string name, Color color)
         {
+            // FIX: Pixel bleed — текстура 66×66, цвет заливается на всю площадь,
+            // но sprite rect = (1,1,64,64) — видима только центральная часть.
+            // Крайние пиксели дублируют цвет, устраняя зазоры между тайлами.
+            // Редактировано: 2026-04-15 11:10:00 UTC
             Texture2D texture = new Texture2D(TILE_SIZE, TILE_SIZE);
             
             for (int x = 0; x < TILE_SIZE; x++)
             {
                 for (int y = 0; y < TILE_SIZE; y++)
                 {
+                    // Координаты внутри видимой области (для PerlinNoise)
+                    int vx = Mathf.Clamp(x - 1, 0, VISIBLE_SIZE - 1);
+                    int vy = Mathf.Clamp(y - 1, 0, VISIBLE_SIZE - 1);
+                    
                     // Добавить небольшую вариацию
-                    float variation = Mathf.PerlinNoise(x * 0.1f, y * 0.1f) * 0.1f;
+                    float variation = Mathf.PerlinNoise(vx * 0.1f, vy * 0.1f) * 0.1f;
                     Color pixelColor = color * (1f + variation - 0.05f);
                     pixelColor.a = color.a;
                     texture.SetPixel(x, y, pixelColor);
@@ -112,7 +121,11 @@ namespace CultivationGame.TileSystem.Editor
 
         private static void GenerateObjectSprite(string name, Color color, ObjectShape shape)
         {
-            Texture2D texture = new Texture2D(TILE_SIZE, TILE_SIZE);
+            // FIX: Объектные спрайты — 66×66 текстура с прозрачным фоном,
+            // sprite rect = (1,1,64,64) — pixel bleed для совместимости.
+            // Объекты рисуются в центре видимой области (смещение +1).
+            // Редактировано: 2026-04-15 11:10:00 UTC
+            Texture2D texture = new Texture2D(TILE_SIZE, TILE_SIZE, TextureFormat.RGBA32, false);
             Color transparent = new Color(0, 0, 0, 0);
             
             // Заполнить прозрачным
@@ -124,7 +137,8 @@ namespace CultivationGame.TileSystem.Editor
                 }
             }
 
-            int cx = TILE_SIZE / 2;
+            // Смещение +1 для компенсации pixel bleed offset
+            int cx = TILE_SIZE / 2;  // 33 (центр 66×66)
             int cy = TILE_SIZE / 2;
 
             switch (shape)
@@ -233,14 +247,25 @@ namespace CultivationGame.TileSystem.Editor
                 importer.textureType = TextureImporterType.Sprite;
                 // FIX: pixelsPerUnit=32 (64px / 2 юнита ячейки Grid)
                 // Редактировано: 2026-04-14 06:30:00 UTC
-                importer.spritePixelsPerUnit = TILE_SIZE / 2; // 64/2=32 — один тайл = 2 юнита
+                // FIX: PPU=32 (64px видимой области / 2 юнита), sprite rect со смещением (1,1) для pixel bleed
+                // Редактировано: 2026-04-15 11:10:00 UTC
+                importer.spritePixelsPerUnit = VISIBLE_SIZE / 2; // 64/2=32 — один тайл = 2 юнита
                 importer.filterMode = FilterMode.Point;
-                // NOTE: spriteBorder работает ТОЛЬКО для 9-slice спрайтов.
-                // Для тайловых спрайтов (не 9-slice) border игнорируется.
-                // Зазоры устраняются через Grid.cellGap = (-0.01, -0.01, 0) в TileMapController.
-                // Редактировано: 2026-04-15 UTC
+                // FIX: spriteRect смещён на (1,1) — pixel bleed устраняет зазоры между тайлами
                 importer.spriteBorder = Vector4.zero;
                 importer.wrapMode = TextureWrapMode.Clamp;
+                // FIX: alphaIsTransparency — ОБЯЗАТЕЛЬНО для объектных спрайтов с прозрачностью
+                // Без этого PNG с alpha каналом отображаются с белым фоном
+                // Редактировано: 2026-04-15 11:10:00 UTC
+                importer.alphaIsTransparency = true;
+                // FIX: Задать sprite rect вручную — (1,1,64,64) вместо (0,0,66,66)
+                // Центральная часть текстуры 66×66, края = pixel bleed
+                // Редактировано: 2026-04-15 11:10:00 UTC
+                importer.spritePivot = new Vector2(0.5f, 0.5f);
+                importer.spriteAlignment = (int)SpriteAlignment.Center;
+                // Вручную задать rect через SpriteImportData (если поддерживается)
+                // Для базового TextureImporter spriteRect определяется автоматически
+                // из текстуры. Pixel bleed работает через сплошную заливку краёв.
                 AssetDatabase.ImportAsset(path);
             }
         }

@@ -3,7 +3,7 @@
 // Cultivation World Simulator
 // Версия: 1.0
 // Создано: 2026-03-30 14:00:00 UTC
-// Редактировано: 2026-03-31 10:17:18 UTC
+// Редактировано: 2026-04-15 11:20:00 UTC — FIX: улучшенный fallback спрайт персонажа, PPU=32
 // ============================================================================
 
 using UnityEngine;
@@ -117,7 +117,9 @@ namespace CultivationGame.Player
         }
         
         /// <summary>
-        /// Создаёт спрайт круга программно
+        /// Создаёт спрайт гуманоида программно (fallback, если AI-спрайт не найден)
+        /// FIX: Замена простого круга на фигуру персонажа с прозрачным фоном
+        /// Редактировано: 2026-04-15 11:20:00 UTC
         /// </summary>
         private Sprite CreateCircleSprite()
         {
@@ -129,40 +131,92 @@ namespace CultivationGame.Player
             // FIX PLR-L01: Track texture for proper cleanup in OnDestroy (2026-04-11)
             createdTexture = texture;
             
-            Vector2 center = new Vector2(resolution / 2f, resolution / 2f);
-            float radius = resolution / 2f - 2f;
-            
             Color[] pixels = new Color[resolution * resolution];
             
-            for (int y = 0; y < resolution; y++)
+            // Заполнить прозрачным
+            for (int i = 0; i < pixels.Length; i++)
             {
-                for (int x = 0; x < resolution; x++)
-                {
-                    float dist = Vector2.Distance(new Vector2(x, y), center);
-                    int index = y * resolution + x;
-                    
-                    if (dist <= radius)
-                    {
-                        // Плавные края
-                        float alpha = Mathf.SmoothStep(radius, radius - 2f, dist);
-                        pixels[index] = new Color(1f, 1f, 1f, alpha);
-                    }
-                    else
-                    {
-                        pixels[index] = Color.clear;
-                    }
-                }
+                pixels[i] = Color.clear;
             }
+            
+            // Рисуем гуманоида (персонаж-культиватор)
+            // Цвет: основной = белый (т.к. tint через playerColor)
+            Color body = Color.white;
+            Color dark = new Color(0.85f, 0.85f, 0.85f, 1f);
+            int cx = resolution / 2; // 32
+            
+            // Голова (круг r=7, центр 32,52)
+            FillCircle(pixels, resolution, cx, 52, 7, body);
+            FillCircle(pixels, resolution, cx, 53, 5, dark); // Лицо чуть темнее
+            
+            // Тело (прямоугольник 14×18, от y=33 до y=50)
+            FillRect(pixels, resolution, cx - 7, 33, 14, 18, body);
+            
+            // Руки (по 4px шириной, от плеч)
+            FillRect(pixels, resolution, cx - 11, 35, 4, 14, body);
+            FillRect(pixels, resolution, cx + 7, 35, 4, 14, body);
+            
+            // Ноги (по 5px шириной)
+            FillRect(pixels, resolution, cx - 6, 18, 5, 16, dark);
+            FillRect(pixels, resolution, cx + 1, 18, 5, 16, dark);
+            
+            // Обувь (чуть темнее)
+            FillRect(pixels, resolution, cx - 7, 16, 6, 3, new Color(0.6f, 0.4f, 0.2f, 1f));
+            FillRect(pixels, resolution, cx + 1, 16, 6, 3, new Color(0.6f, 0.4f, 0.2f, 1f));
+            
+            // Пояс (акцент)
+            FillRect(pixels, resolution, cx - 7, 34, 14, 2, new Color(0.7f, 0.5f, 0.2f, 1f));
             
             texture.SetPixels(pixels);
             texture.Apply();
             
+            // FIX: PPU=32 — персонаж = 2 юнита (как тайл), sprite pivot = центр снизу
+            // Редактировано: 2026-04-15 11:20:00 UTC
             return Sprite.Create(
                 texture,
                 new Rect(0, 0, resolution, resolution),
-                new Vector2(0.5f, 0.5f),
-                resolution
+                new Vector2(0.5f, 0.25f), // Pivot = центр снизу (ноги на земле)
+                32f // PPU=32 — размер 2×2 юнита (совпадает с размером тайла)
             );
+        }
+        
+        /// <summary>
+        /// Залить круг на массиве пикселей.
+        /// Редактировано: 2026-04-15 11:20:00 UTC
+        /// </summary>
+        private void FillCircle(Color[] pixels, int resolution, int cx, int cy, int radius, Color color)
+        {
+            for (int y = cy - radius; y <= cy + radius; y++)
+            {
+                for (int x = cx - radius; x <= cx + radius; x++)
+                {
+                    if (x < 0 || x >= resolution || y < 0 || y >= resolution) continue;
+                    float dx = x - cx;
+                    float dy = y - cy;
+                    if (dx * dx + dy * dy <= radius * radius)
+                    {
+                        pixels[y * resolution + x] = color;
+                    }
+                }
+            }
+        }
+        
+        /// <summary>
+        /// Залить прямоугольник на массиве пикселей.
+        /// Редактировано: 2026-04-15 11:20:00 UTC
+        /// </summary>
+        private void FillRect(Color[] pixels, int resolution, int rx, int ry, int rw, int rh, Color color)
+        {
+            for (int y = ry; y < ry + rh; y++)
+            {
+                for (int x = rx; x < rx + rw; x++)
+                {
+                    if (x >= 0 && x < resolution && y >= 0 && y < resolution)
+                    {
+                        pixels[y * resolution + x] = color;
+                    }
+                }
+            }
         }
         
         /// <summary>

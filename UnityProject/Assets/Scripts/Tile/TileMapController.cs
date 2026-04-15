@@ -2,7 +2,7 @@
 // TileMapController.cs — Контроллер карты тайлов
 // Cultivation World Simulator
 // Создано: 2026-04-07 14:24:05 UTC
-// Редактировано: 2026-04-14 14:14:00 UTC — snowTile + Snow биом, defaultWidth/Height=100×80, GetTerrainTile(Snow)
+// Редактировано: 2026-04-15 11:15:00 UTC — FIX: EnsureTileAssets() автосоздание тайлов из спрайтов, устранение зазоров
 // ============================================================================
 
 using System;
@@ -88,9 +88,277 @@ namespace CultivationGame.TileSystem
 
         private void Start()
         {
+            // FIX: Автосоздание GameTile из спрайтов, если [SerializeField] поля не назначены
+            // Редактировано: 2026-04-15 11:15:00 UTC
+            EnsureTileAssets();
+
             if (generateOnStart)
             {
                 GenerateTestMap();
+            }
+        }
+
+        // === Tile Asset Auto-Creation ===
+
+        /// <summary>
+        /// FIX: Автоматически создать GameTile из спрайтов, если [SerializeField] поля не назначены.
+        /// Это устраняет проблему "цветных точек" — когда тайлы не назначены в Inspector,
+        /// Tilemap показывает пустые клетки. Метод загружает спрайты из Assets/Sprites/
+        /// и создаёт GameTile экземпляры runtime.
+        /// Редактировано: 2026-04-15 11:15:00 UTC
+        /// </summary>
+        private void EnsureTileAssets()
+        {
+            // Terrain tile mappings: field → sprite name → passable flag
+            var terrainMappings = new (TileBase field, string spriteName, bool passable, TerrainType terrain)[]
+            {
+                (grassTile, "terrain_grass", true, TerrainType.Grass),
+                (dirtTile, "terrain_dirt", true, TerrainType.Dirt),
+                (stoneTile, "terrain_stone", true, TerrainType.Stone),
+                (waterShallowTile, "terrain_water_shallow", false, TerrainType.Water_Shallow),
+                (waterDeepTile, "terrain_water_deep", false, TerrainType.Water_Deep),
+                (sandTile, "terrain_sand", true, TerrainType.Sand),
+                (voidTile, "terrain_void", false, TerrainType.Void),
+                (snowTile, "terrain_snow", true, TerrainType.Snow),
+                (iceTile, "terrain_ice", false, TerrainType.Ice),
+                (lavaTile, "terrain_lava", false, TerrainType.Lava),
+            };
+
+            // Object tile mappings
+            var objectMappings = new (TileBase field, string spriteName, bool passable)[]
+            {
+                (treeTile, "obj_tree", false),
+                (rockSmallTile, "obj_rock_small", false),
+                (rockMediumTile, "obj_rock_medium", false),
+                (bushTile, "obj_bush", true),
+                (chestTile, "obj_chest", true),
+                (oreVeinTile, "obj_ore_vein", false),
+                (herbTile, "obj_herb", true),
+            };
+
+            // Обработка terrain тайлов
+            grassTile = EnsureTile(grassTile, "terrain_grass", true, TerrainType.Grass);
+            dirtTile = EnsureTile(dirtTile, "terrain_dirt", true, TerrainType.Dirt);
+            stoneTile = EnsureTile(stoneTile, "terrain_stone", true, TerrainType.Stone);
+            waterShallowTile = EnsureTile(waterShallowTile, "terrain_water_shallow", false, TerrainType.Water_Shallow);
+            waterDeepTile = EnsureTile(waterDeepTile, "terrain_water_deep", false, TerrainType.Water_Deep);
+            sandTile = EnsureTile(sandTile, "terrain_sand", true, TerrainType.Sand);
+            voidTile = EnsureTile(voidTile, "terrain_void", false, TerrainType.Void);
+            snowTile = EnsureTile(snowTile, "terrain_snow", true, TerrainType.Snow);
+            iceTile = EnsureTile(iceTile, "terrain_ice", false, TerrainType.Ice);
+            lavaTile = EnsureTile(lavaTile, "terrain_lava", false, TerrainType.Lava);
+
+            // Обработка object тайлов
+            treeTile = EnsureTile(treeTile, "obj_tree", false, TerrainType.Grass);
+            rockSmallTile = EnsureTile(rockSmallTile, "obj_rock_small", false, TerrainType.Grass);
+            rockMediumTile = EnsureTile(rockMediumTile, "obj_rock_medium", false, TerrainType.Grass);
+            bushTile = EnsureTile(bushTile, "obj_bush", true, TerrainType.Grass);
+            chestTile = EnsureTile(chestTile, "obj_chest", true, TerrainType.Grass);
+            oreVeinTile = EnsureTile(oreVeinTile, "obj_ore_vein", false, TerrainType.Stone);
+            herbTile = EnsureTile(herbTile, "obj_herb", true, TerrainType.Grass);
+
+            // FIX: Устранение зазоров — отрицательный cellGap на Grid
+            // Редактировано: 2026-04-15 11:15:00 UTC
+            var grid = GetComponentInParent<Grid>();
+            if (grid != null)
+            {
+                grid.cellGap = new Vector3(-0.01f, -0.01f, 0f);
+            }
+        }
+
+        /// <summary>
+        /// Создать GameTile из спрайта, если поле не назначено.
+        /// Загружает спрайт из Assets/Sprites/Tiles_AI/ или Assets/Sprites/Tiles/.
+        /// Fallback: создаёт процедурный спрайт.
+        /// Редактировано: 2026-04-15 11:15:00 UTC
+        /// </summary>
+        private TileBase EnsureTile(TileBase currentTile, string spriteName, bool passable, TerrainType terrain)
+        {
+            if (currentTile != null) return currentTile;
+
+            Sprite loadedSprite = LoadTileSprite(spriteName);
+            if (loadedSprite == null)
+            {
+                // Fallback: создать процедурный спрайт
+                loadedSprite = CreateProceduralTileSprite(spriteName, terrain);
+            }
+
+            if (loadedSprite != null)
+            {
+                var tile = ScriptableObject.CreateInstance<GameTile>();
+                tile.sprite = loadedSprite;
+                tile.color = Color.white;
+                tile.terrainType = terrain;
+                tile.isPassable = passable;
+                tile.moveCost = passable ? 1f : 0f;
+                tile.flags = passable ? GameTileFlags.Passable : GameTileFlags.None;
+                Debug.Log($"[TileMapController] Автосоздан GameTile: {spriteName} (passable={passable})");
+                return tile;
+            }
+
+            Debug.LogWarning($"[TileMapController] Не удалось создать тайл: {spriteName}");
+            return null;
+        }
+
+        /// <summary>
+        /// Загрузить спрайт из Assets/Sprites/.
+        /// Редактировано: 2026-04-15 11:15:00 UTC
+        /// </summary>
+        private Sprite LoadTileSprite(string spriteName)
+        {
+#if UNITY_EDITOR
+            string[] searchPaths = new string[]
+            {
+                $"Assets/Sprites/Tiles_AI/{spriteName}.png",
+                $"Assets/Sprites/Tiles/{spriteName}.png"
+            };
+            foreach (var path in searchPaths)
+            {
+                var sprite = UnityEditor.AssetDatabase.LoadAssetAtPath<Sprite>(path);
+                if (sprite != null) return sprite;
+            }
+#else
+            // В build версии — загрузка из Resources
+            var resSprite = UnityEngine.Resources.Load<Sprite>($"Sprites/{spriteName}");
+            if (resSprite != null) return resSprite;
+#endif
+            return null;
+        }
+
+        /// <summary>
+        /// Создать процедурный спрайт тайла (fallback при отсутствии файла).
+        /// Редактировано: 2026-04-15 11:15:00 UTC
+        /// </summary>
+        private Sprite CreateProceduralTileSprite(string spriteName, TerrainType terrain)
+        {
+            int size = 66; // Pixel bleed: 64 + 2
+            Texture2D texture = new Texture2D(size, size, TextureFormat.RGBA32, false);
+            texture.filterMode = FilterMode.Point;
+            texture.wrapMode = TextureWrapMode.Clamp;
+
+            Color color = GetTerrainColor(terrain);
+            bool isObject = spriteName.StartsWith("obj_");
+
+            for (int x = 0; x < size; x++)
+            {
+                for (int y = 0; y < size; y++)
+                {
+                    if (isObject)
+                    {
+                        // Объектные спрайты — прозрачный фон, форма в центре
+                        texture.SetPixel(x, y, Color.clear);
+                    }
+                    else
+                    {
+                        // Тайловые спрайты — сплошная заливка (pixel bleed)
+                        float variation = UnityEngine.Random.Range(0.95f, 1.05f);
+                        Color pixelColor = color * variation;
+                        pixelColor.a = color.a;
+                        texture.SetPixel(x, y, pixelColor);
+                    }
+                }
+            }
+
+            // Для объектных спрайтов — нарисовать простую форму
+            if (isObject)
+            {
+                int cx = size / 2;
+                int cy = size / 2;
+                if (spriteName.Contains("tree"))
+                {
+                    // Ствол + крона
+                    DrawRectOnTexture(texture, cx - 2, 1, 4, 20, new Color(0.4f, 0.25f, 0.15f));
+                    DrawEllipseOnTexture(texture, cx, cy + 10, 14, 16, color);
+                }
+                else if (spriteName.Contains("rock"))
+                {
+                    DrawEllipseOnTexture(texture, cx, cy - 3, 16, 12, color);
+                    DrawEllipseOnTexture(texture, cx, cy - 3, 14, 10, color * 1.1f);
+                }
+                else if (spriteName.Contains("ore"))
+                {
+                    DrawEllipseOnTexture(texture, cx, cy - 3, 16, 12, new Color(0.45f, 0.4f, 0.35f));
+                    DrawEllipseOnTexture(texture, cx - 4, cy - 2, 5, 3, new Color(0.8f, 0.6f, 0.2f));
+                    DrawEllipseOnTexture(texture, cx + 3, cy - 5, 4, 3, new Color(0.7f, 0.5f, 0.15f));
+                }
+                else if (spriteName.Contains("bush"))
+                {
+                    DrawEllipseOnTexture(texture, cx - 6, cy, 8, 10, color);
+                    DrawEllipseOnTexture(texture, cx + 6, cy, 8, 10, color * 0.9f);
+                    DrawEllipseOnTexture(texture, cx, cy + 4, 12, 8, color * 1.1f);
+                }
+                else if (spriteName.Contains("chest"))
+                {
+                    DrawRectOnTexture(texture, 12, 12, 40, 26, color);
+                    DrawRectOnTexture(texture, 10, 34, 44, 10, color * 1.2f);
+                }
+                else if (spriteName.Contains("herb"))
+                {
+                    DrawRectOnTexture(texture, cx - 1, 5, 2, 22, new Color(0.2f, 0.4f, 0.15f));
+                    DrawEllipseOnTexture(texture, cx, cy + 5, 8, 8, color);
+                }
+            }
+
+            texture.Apply();
+
+            // Sprite rect = (1,1,64,64) — pixel bleed
+            return Sprite.Create(texture, new Rect(1, 1, 64, 64), new Vector2(0.5f, 0.5f), 32f);
+        }
+
+        /// <summary>
+        /// Получить цвет для типа террейна (для процедурных спрайтов).
+        /// Редактировано: 2026-04-15 11:15:00 UTC
+        /// </summary>
+        private Color GetTerrainColor(TerrainType terrain)
+        {
+            return terrain switch
+            {
+                TerrainType.Grass => new Color(0.4f, 0.7f, 0.3f),
+                TerrainType.Dirt => new Color(0.6f, 0.4f, 0.2f),
+                TerrainType.Stone => new Color(0.5f, 0.5f, 0.55f),
+                TerrainType.Water_Shallow => new Color(0.3f, 0.5f, 0.8f, 0.8f),
+                TerrainType.Water_Deep => new Color(0.2f, 0.3f, 0.7f, 0.9f),
+                TerrainType.Sand => new Color(0.9f, 0.85f, 0.6f),
+                TerrainType.Void => new Color(0.1f, 0.1f, 0.1f),
+                TerrainType.Snow => new Color(0.95f, 0.95f, 1f),
+                TerrainType.Ice => new Color(0.7f, 0.85f, 0.95f),
+                TerrainType.Lava => new Color(0.9f, 0.3f, 0.05f),
+                _ => new Color(0.5f, 0.5f, 0.5f)
+            };
+        }
+
+        /// <summary>
+        /// Нарисовать прямоугольник на текстуре (для процедурных спрайтов).
+        /// Редактировано: 2026-04-15 11:15:00 UTC
+        /// </summary>
+        private void DrawRectOnTexture(Texture2D texture, int x, int y, int w, int h, Color color)
+        {
+            for (int px = x; px < x + w && px < texture.width; px++)
+            {
+                for (int py = y; py < y + h && py < texture.height; py++)
+                {
+                    if (px >= 0 && py >= 0) texture.SetPixel(px, py, color);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Нарисовать эллипс на текстуре (для процедурных спрайтов).
+        /// Редактировано: 2026-04-15 11:15:00 UTC
+        /// </summary>
+        private void DrawEllipseOnTexture(Texture2D texture, int cx, int cy, int rx, int ry, Color color)
+        {
+            for (int x = cx - rx; x <= cx + rx; x++)
+            {
+                for (int y = cy - ry; y <= cy + ry; y++)
+                {
+                    float dx = (x - cx) / (float)rx;
+                    float dy = (y - cy) / (float)ry;
+                    if (dx * dx + dy * dy <= 1f && x >= 0 && y >= 0 && x < texture.width && y < texture.height)
+                    {
+                        texture.SetPixel(x, y, color);
+                    }
+                }
             }
         }
 
