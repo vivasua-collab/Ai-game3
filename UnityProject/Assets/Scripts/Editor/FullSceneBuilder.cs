@@ -136,6 +136,7 @@ namespace CultivationGame.Editor
             "Interactable",
             "Item",
             "Enemy",
+            "Resource",  // FIX: Добавлен тег "Resource" для ResourceSpawner. Редактировано: 2026-04-15 12:00:00 UTC
         };
 
         // Слои (имя → номер)
@@ -807,10 +808,12 @@ namespace CultivationGame.Editor
             player.AddComponent<SleepSystem>();
             player.AddComponent<InteractionController>();
 
-            // SpriteRenderer — генерируем видимый спрайт персонажа
-            var sr = player.AddComponent<SpriteRenderer>();
-            sr.sortingOrder = 10;
-            sr.sprite = CreatePlayerSprite();
+            // FIX: НЕ добавляем SpriteRenderer напрямую на Player!
+            // PlayerVisual создаёт дочерний "Visual" объект со SpriteRenderer в Awake().
+            // Дублирование SpriteRenderer приводит к конфликту — спрайт не отображается.
+            // PlayerVisual загружает AI-спрайт или создаёт процедурный fallback.
+            // Редактировано: 2026-04-15 12:00:00 UTC
+            player.AddComponent<PlayerVisual>();
 
             // Настройка PlayerController
             SetupPlayerComponent<PlayerController>(player, pc =>
@@ -1552,17 +1555,18 @@ namespace CultivationGame.Editor
         /// <summary>
         /// Загружает спрайт персонажа из Assets/Sprites/Characters/Player/.
         /// Если не найден — генерирует процедурный (fallback).
-        /// Редактировано: 2026-04-15 07:10:00 UTC — загрузка из AI-спрайтов + PPU=32
+        /// Редактировано: 2026-04-15 12:00:00 UTC — исправлены пути (добавлено .png), добавлен PlayerVisual
         /// </summary>
         private static Sprite CreatePlayerSprite()
         {
             // Попробовать загрузить готовый спрайт персонажа
-            // Редактировано: 2026-04-15 07:10:00 UTC
+            // FIX: Добавлены расширения .png — AssetDatabase.LoadAssetAtPath требует полный путь
+            // Редактировано: 2026-04-15 12:00:00 UTC
             string[] playerSpritePaths = new string[]
             {
-                "Assets/Sprites/Characters/Player/player_variant1_cultivator",
-                "Assets/Sprites/Characters/Player/player_variant3_warrior",
-                "Assets/Sprites/player_sprite",
+                "Assets/Sprites/Characters/Player/player_variant1_cultivator.png",
+                "Assets/Sprites/Characters/Player/player_variant3_warrior.png",
+                "Assets/Sprites/player_sprite.png",
             };
 
             foreach (var spritePath in playerSpritePaths)
@@ -1708,9 +1712,10 @@ namespace CultivationGame.Editor
 
         /// <summary>
         /// Реимпорт всех PNG спрайтов тайлов с правильными настройками:
-        /// PPU=32, spriteBorder(1,1,1,1), filterMode=Point, wrapMode=Clamp.
-        /// FIX: AI-спрайты (64x64) имеют дефолтный PPU=100 — зазоры между тайлами.
-        /// Редактировано: 2026-04-15 08:05:00 UTC
+        /// PPU=32, alphaIsTransparency=true, filterMode=Point, wrapMode=Clamp,
+        /// spriteRect: terrain=(0,0,66,66), objects=(1,1,64,64).
+        /// FIX: Используем sprites[] metadata — единственный способ задать spriteRect в Unity 6.3.
+        /// Редактировано: 2026-04-15 12:00:00 UTC
         /// </summary>
         private static void ReimportTileSprites()
         {
@@ -1729,41 +1734,56 @@ namespace CultivationGame.Editor
                 var importer = AssetImporter.GetAtPath(pngPath) as TextureImporter;
                 if (importer == null) continue;
 
-                bool needsReimport = false;
+                string fileName = Path.GetFileNameWithoutExtension(pngPath);
+                bool isObject = fileName.StartsWith("obj_");
 
-                // Проверить текущие настройки
-                if (importer.textureType != TextureImporterType.Sprite)
+                // Всегда принудительно обновляем — гарантируем правильные настройки
+                importer.textureType = TextureImporterType.Sprite;
+                importer.spriteImportMode = SpriteImportMode.Multiple;
+                importer.spritePixelsPerUnit = 32; // 64px / 32 PPU = 2 юнита на тайл
+                importer.filterMode = FilterMode.Point;
+                importer.wrapMode = TextureWrapMode.Clamp;
+                importer.spriteBorder = Vector4.zero;
+                // FIX: alphaIsTransparency — ОБЯЗАТЕЛЬНО для объектов с прозрачным фоном
+                // Без этого PNG с RGBA отображаются с белым фоном
+                // Редактировано: 2026-04-15 12:00:00 UTC
+                importer.alphaIsTransparency = true;
+
+                // FIX: Задаём sprite metadata через sprites[] — spriteRect
+                // Terrain: (0,0,66,66) — полный pixel bleed, 2.0625 юнита при PPU=32
+                // Objects: (1,1,64,64) — центральная часть, 2.0 юнита при PPU=32
+                // Редактировано: 2026-04-15 12:00:00 UTC
+                if (isObject)
                 {
-                    importer.textureType = TextureImporterType.Sprite;
-                    needsReimport = true;
+                    importer.sprites = new SpriteMetaData[]
+                    {
+                        new SpriteMetaData
+                        {
+                            name = fileName,
+                            rect = new Rect(1, 1, 64, 64),
+                            pivot = new Vector2(0.5f, 0.5f),
+                            alignment = (int)SpriteAlignment.Center,
+                            border = Vector4.zero
+                        }
+                    };
                 }
-                if (importer.spritePixelsPerUnit != 32)
+                else
                 {
-                    importer.spritePixelsPerUnit = 32; // 64px / 32 PPU = 2 юнита на тайл
-                    needsReimport = true;
-                }
-                if (importer.filterMode != FilterMode.Point)
-                {
-                    importer.filterMode = FilterMode.Point; // Пиксель-арт без размытия
-                    needsReimport = true;
-                }
-                if (importer.wrapMode != TextureWrapMode.Clamp)
-                {
-                    importer.wrapMode = TextureWrapMode.Clamp; // Без повтора на краях
-                    needsReimport = true;
-                }
-                if (importer.spriteBorder != new Vector4(1, 1, 1, 1))
-                {
-                    importer.spriteBorder = new Vector4(1, 1, 1, 1); // Extrude padding — устраняет зазоры
-                    needsReimport = true;
+                    importer.sprites = new SpriteMetaData[]
+                    {
+                        new SpriteMetaData
+                        {
+                            name = fileName,
+                            rect = new Rect(0, 0, 66, 66),
+                            pivot = new Vector2(0.5f, 0.5f),
+                            alignment = (int)SpriteAlignment.Center,
+                            border = Vector4.zero
+                        }
+                    };
                 }
 
-                if (needsReimport)
-                {
-                    importer.spriteImportMode = SpriteImportMode.Single;
-                    AssetDatabase.ImportAsset(pngPath, ImportAssetOptions.ForceUpdate);
-                    reimportCount++;
-                }
+                AssetDatabase.ImportAsset(pngPath, ImportAssetOptions.ForceUpdate);
+                reimportCount++;
             }
 
             if (reimportCount > 0)

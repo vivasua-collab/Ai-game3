@@ -278,10 +278,13 @@ namespace CultivationGame.World
             player.AddComponent<TechniqueController>();
             player.AddComponent<InteractionController>();
             
-            // FIX: Используем PlayerVisual для загрузки AI-спрайта вместо процедурного круга
-            // PlayerVisual автоматически загружает спрайт из Assets/Sprites/Characters/Player/
-            // Редактировано: 2026-04-15 UTC
-            player.AddComponent<PlayerVisual>();
+            // FIX: PlayerVisual создаёт SpriteRenderer на дочернем "Visual" объекте.
+            // Проверяем, не добавлен ли уже (FullSceneBuilder тоже добавляет PlayerVisual).
+            // Редактировано: 2026-04-15 12:00:00 UTC
+            if (player.GetComponent<PlayerVisual>() == null)
+            {
+                player.AddComponent<PlayerVisual>();
+            }
             
             return player;
         }

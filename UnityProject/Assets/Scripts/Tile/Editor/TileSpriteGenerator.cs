@@ -2,7 +2,7 @@
 // TileSpriteGenerator.cs — Генератор простых спрайтов тайлов
 // Cultivation World Simulator
 // Создано: 2026-04-07 14:24:05 UTC
-// Редактировано: 2026-04-15 11:10:00 UTC — FIX: pixel bleed (66×66 текстура, sprite rect 1,1,64,64), alphaIsTransparency, улучшенные объектные спрайты
+// Редактировано: 2026-04-15 12:00:00 UTC — FIX: spriteRect через sprites[], alphaIsTransparency, Terrain/Object раздельные настройки
 // ============================================================================
 
 #if UNITY_EDITOR
@@ -244,32 +244,57 @@ namespace CultivationGame.TileSystem.Editor
             var importer = AssetImporter.GetAtPath(path) as TextureImporter;
             if (importer != null)
             {
+                bool isObject = name.StartsWith("obj_");
+
                 importer.textureType = TextureImporterType.Sprite;
-                // FIX: pixelsPerUnit=32 (64px / 2 юнита ячейки Grid)
-                // Редактировано: 2026-04-14 06:30:00 UTC
-                // FIX: PPU=32 (64px видимой области / 2 юнита), sprite rect со смещением (1,1) для pixel bleed
-                // Редактировано: 2026-04-15 11:10:00 UTC
-                importer.spritePixelsPerUnit = VISIBLE_SIZE / 2; // 64/2=32 — один тайл = 2 юнита
+                importer.spriteImportMode = SpriteImportMode.Multiple;
+                // FIX: PPU=32 для terrain (66px/32=2.0625 — перекрытие ячейки 2.0, устраняет зазоры),
+                // PPU=32 для objects (64px/32=2.0 — ровно ячейка, без перекрытия прозрачного фона)
+                // Редактировано: 2026-04-15 12:00:00 UTC
+                importer.spritePixelsPerUnit = VISIBLE_SIZE / 2; // 64/2=32
                 importer.filterMode = FilterMode.Point;
-                // FIX: spriteRect смещён на (1,1) — pixel bleed устраняет зазоры между тайлами
                 importer.spriteBorder = Vector4.zero;
                 importer.wrapMode = TextureWrapMode.Clamp;
-                // FIX: alphaIsTransparency — ОБЯЗАТЕЛЬНО для объектных спрайтов с прозрачностью
-                // Без этого PNG с alpha каналом отображаются с белым фоном
-                // Редактировано: 2026-04-15 11:10:00 UTC
+                // FIX: alphaIsTransparency — ОБЯЗАТЕЛЬНО для PNG с прозрачностью
+                // Без этого RGBA PNG отображаются с белым/чёрным фоном
+                // Редактировано: 2026-04-15 12:00:00 UTC
                 importer.alphaIsTransparency = true;
-                // FIX: Используем TextureImporterSettings вместо устаревших свойств spritePivot/spriteAlignment
-                // В Unity 6.3 прямые свойства spritePivot/spriteAlignment удалены из TextureImporter
-                // Редактировано: 2026-04-16 08:00:00 UTC
-                var texSettings = new TextureImporterSettings();
-                importer.ReadTextureSettings(texSettings);
-                texSettings.spriteAlignment = (int)SpriteAlignment.Center;
-                texSettings.spritePivot = new Vector2(0.5f, 0.5f);
-                // FIX: Задать sprite rect вручную — (1,1,64,64) вместо (0,0,66,66)
-                // Центральная часть текстуры 66×66, края = pixel bleed
-                // Редактировано: 2026-04-15 11:10:00 UTC
-                importer.SetTextureSettings(texSettings);
-                AssetDatabase.ImportAsset(path);
+
+                // FIX: Задаём sprite metadata через sprites[] — это ЕДИНСТВЕННЫЙ способ
+                // задать spriteRect в Unity 6.3. TextureImporterSettings не имеет свойства spriteRect.
+                // Terrain: rect=(0,0,66,66) — полный pixel bleed, 2.0625 юнита при PPU=32
+                // Objects: rect=(1,1,64,64) — центральная часть, 2.0 юнита при PPU=32
+                // Редактировано: 2026-04-15 12:00:00 UTC
+                if (isObject)
+                {
+                    importer.sprites = new SpriteMetaData[]
+                    {
+                        new SpriteMetaData
+                        {
+                            name = name,
+                            rect = new Rect(1, 1, 64, 64),
+                            pivot = new Vector2(0.5f, 0.5f),
+                            alignment = (int)SpriteAlignment.Center,
+                            border = Vector4.zero
+                        }
+                    };
+                }
+                else
+                {
+                    importer.sprites = new SpriteMetaData[]
+                    {
+                        new SpriteMetaData
+                        {
+                            name = name,
+                            rect = new Rect(0, 0, 66, 66),
+                            pivot = new Vector2(0.5f, 0.5f),
+                            alignment = (int)SpriteAlignment.Center,
+                            border = Vector4.zero
+                        }
+                    };
+                }
+
+                AssetDatabase.ImportAsset(path, ImportAssetOptions.ForceUpdate);
             }
         }
 

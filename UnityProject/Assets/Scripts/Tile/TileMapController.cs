@@ -2,7 +2,7 @@
 // TileMapController.cs — Контроллер карты тайлов
 // Cultivation World Simulator
 // Создано: 2026-04-07 14:24:05 UTC
-// Редактировано: 2026-04-15 11:15:00 UTC — FIX: EnsureTileAssets() автосоздание тайлов из спрайтов, устранение зазоров
+// Редактировано: 2026-04-15 12:00:00 UTC — FIX: terrain Rect(0,0,66,66) для pixel bleed overlap, объектные спрайты с прозрачностью
 // ============================================================================
 
 using System;
@@ -301,8 +301,21 @@ namespace CultivationGame.TileSystem
 
             texture.Apply();
 
-            // Sprite rect = (1,1,64,64) — pixel bleed
-            return Sprite.Create(texture, new Rect(1, 1, 64, 64), new Vector2(0.5f, 0.5f), 32f);
+            // FIX: Terrain-спрайты используют ПОЛНЫЙ rect (0,0,66,66) при PPU=32.
+            // 66px / 32PPU = 2.0625 юнита — чуть больше ячейки Grid (2.0).
+            // Перекрытие устраняет sub-pixel зазоры (белая сетка).
+            // Крайние пиксели — pixel bleed, цвет совпадает с краем тайла.
+            // Объектные спрайты используют rect (1,1,64,64) — ровно 2.0 юнита,
+            // чтобы прозрачный фон НЕ перекрывал соседние клетки.
+            // Редактировано: 2026-04-15 12:00:00 UTC
+            if (isObject)
+            {
+                return Sprite.Create(texture, new Rect(1, 1, 64, 64), new Vector2(0.5f, 0.5f), 32f);
+            }
+            else
+            {
+                return Sprite.Create(texture, new Rect(0, 0, 66, 66), new Vector2(0.5f, 0.5f), 32f);
+            }
         }
 
         /// <summary>

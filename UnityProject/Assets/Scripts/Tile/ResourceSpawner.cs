@@ -2,8 +2,7 @@
 // ResourceSpawner.cs — Спавнер ресурсных объектов на локации
 // Cultivation World Simulator
 // Создано: 2026-04-14 07:35:00 UTC
-// Редактировано: 2026-04-14 07:55:00 UTC — увеличены лимиты для карты 100×80, новые типы ресурсов
-// Редактировано: 2026-04-15 11:25:00 UTC — FIX: RGBA32 для fallback спрайтов, правильная прозрачность
+// Редактировано: 2026-04-15 12:00:00 UTC — FIX: увеличен размер спрайтов, правильная прозрачность, маппинг всех ресурсов
 // ============================================================================
 
 using System.Collections.Generic;
@@ -57,8 +56,8 @@ namespace CultivationGame.TileSystem
         [SerializeField] private int spawnMargin = 3; // отступ от краёв карты (увеличен)
 
         [Header("Visuals")]
-        [SerializeField] private int spriteSize = 24;
-        [SerializeField] private float spriteScale = 0.6f;
+        [SerializeField] private int spriteSize = 48; // Редактировано: 2026-04-15 — увеличено с 24 для лучшей видимости
+        [SerializeField] private float spriteScale = 0.8f; // Редактировано: 2026-04-15 — увеличено с 0.6
 
         // === Runtime ===
         private List<GameObject> spawnedResources = new List<GameObject>();
@@ -226,11 +225,9 @@ namespace CultivationGame.TileSystem
             GameObject go = new GameObject($"Res_{entry.resourceId}");
             go.transform.SetParent(resourcesParent);
             go.transform.position = worldPos;
-            // FIX: Тег "Resource" не определён в TagManager — Unity НЕ выбрасывает
-            // C# исключение для неопределённых тегов, try-catch не работает.
-            // Для поиска ресурсов используйте FindObjectsOfType<ResourcePickup>().
-            // Редактировано: 2026-04-15 UTC
-            go.tag = "Untagged";
+            // FIX: Тег "Resource" теперь добавлен в TagManager через FullSceneBuilder Phase 02
+            // Редактировано: 2026-04-15 12:00:00 UTC
+            go.tag = "Resource";
 
             // Спрайт
             SpriteRenderer sr = go.AddComponent<SpriteRenderer>();
@@ -278,7 +275,11 @@ namespace CultivationGame.TileSystem
             // FIX: RGBA32 формат для правильной прозрачности
             // Редактировано: 2026-04-15 11:25:00 UTC
             Texture2D texture = new Texture2D(size, size, TextureFormat.RGBA32, false);
+            texture.filterMode = FilterMode.Point;
             Color[] pixels = new Color[size * size];
+
+            // Заполнить прозрачным
+            for (int i = 0; i < pixels.Length; i++) pixels[i] = Color.clear;
 
             Color main = entry.spriteColor;
             Color dark = new Color(main.r * 0.6f, main.g * 0.6f, main.b * 0.6f);
@@ -289,34 +290,50 @@ namespace CultivationGame.TileSystem
             );
 
             float center = size * 0.5f;
-            float radius = size * 0.4f;
+            float radius = size * 0.35f;
 
+            // FIX: Рисуем кристалл/гем вместо простого круга — более узнаваемый
+            // Редактировано: 2026-04-15 12:00:00 UTC
             for (int x = 0; x < size; x++)
             {
                 for (int y = 0; y < size; y++)
                 {
                     float dx = x - center;
                     float dy = y - center;
-                    float dist = Mathf.Sqrt(dx * dx + dy * dy);
 
-                    if (dist < radius * 0.5f)
+                    // Ромбовидная форма кристалла
+                    float diamondDist = Mathf.Abs(dx) / radius + Mathf.Abs(dy) / (radius * 1.2f);
+
+                    if (diamondDist < 0.4f)
                     {
-                        // Яркое ядро
+                        // Яркое ядро — блик
                         pixels[y * size + x] = light;
                     }
-                    else if (dist < radius)
+                    else if (diamondDist < 0.85f)
                     {
                         // Основной цвет
                         pixels[y * size + x] = main;
                     }
-                    else if (dist < radius + 1.5f)
+                    else if (diamondDist < 1.0f)
                     {
                         // Контур
                         pixels[y * size + x] = dark;
                     }
-                    else
+                    // else: прозрачный (уже заполнен Color.clear)
+                }
+            }
+
+            // Маленький блик сверху-слева
+            int hlSize = size / 6;
+            int hlX = (int)(center - radius * 0.25f);
+            int hlY = (int)(center + radius * 0.3f);
+            for (int x = hlX; x < hlX + hlSize && x < size; x++)
+            {
+                for (int y = hlY; y < hlY + hlSize && y < size; y++)
+                {
+                    if (x >= 0 && y >= 0)
                     {
-                        pixels[y * size + x] = Color.clear;
+                        pixels[y * size + x] = Color.white;
                     }
                 }
             }
@@ -547,6 +564,8 @@ namespace CultivationGame.TileSystem
         private Sprite LoadResourceSprite(string resourceId)
         {
             // Маппинг resourceId → имя файла спрайта
+            // FIX: Добавлены маппинги для ВСЕХ типов ресурсов
+            // Редактировано: 2026-04-15 12:00:00 UTC
             string spriteName = resourceId switch
             {
                 "ore" => "obj_ore_vein",
@@ -554,9 +573,13 @@ namespace CultivationGame.TileSystem
                 "stone" => "obj_rock_medium",
                 "wood" => "obj_tree",
                 "herb" => "obj_herb",
+                "rare_herb" => "obj_herb",
                 "berries" => "obj_bush",
                 "mushroom" => "obj_herb",
-                "rare_herb" => "obj_herb",
+                "qi_crystal" => "obj_ore_vein",
+                "spirit_stone" => "obj_rock_medium",
+                "sand_pearl" => "obj_rock_small",
+                "desert_crystal" => "obj_ore_vein",
                 _ => null
             };
 
