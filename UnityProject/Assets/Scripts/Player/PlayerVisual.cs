@@ -69,9 +69,20 @@ namespace CultivationGame.Player
             // Добавляем SpriteRenderer
             mainSprite = visualObj.AddComponent<SpriteRenderer>();
             
-            // Создаём текстуру программно
-            mainSprite.sprite = CreateCircleSprite();
-            mainSprite.color = playerColor;
+            // FIX: Пытаемся загрузить AI-спрайт персонажа вместо процедурного круга
+            // Редактировано: 2026-04-15 UTC
+            Sprite loadedSprite = LoadPlayerSprite();
+            if (loadedSprite != null)
+            {
+                mainSprite.sprite = loadedSprite;
+                mainSprite.color = Color.white; // Не тонировать реальный спрайт
+            }
+            else
+            {
+                // Fallback: программный круг
+                mainSprite.sprite = CreateCircleSprite();
+                mainSprite.color = playerColor;
+            }
             mainSprite.sortingOrder = 10;
             
             // FIX PLR-M07: Try correct URP 2D sprite shader first, then fallback (2026-04-11)
@@ -152,6 +163,46 @@ namespace CultivationGame.Player
                 new Vector2(0.5f, 0.5f),
                 resolution
             );
+        }
+        
+        /// <summary>
+        /// Загрузить AI-спрайт персонажа.
+        /// В Editor: загрузка из Assets/Sprites/Characters/Player/
+        /// В Build: загрузка из Resources/Sprites/
+        /// Fallback: программный круг
+        /// Редактировано: 2026-04-15 UTC
+        /// </summary>
+        private Sprite LoadPlayerSprite()
+        {
+            #if UNITY_EDITOR
+            // Editor: загрузка из Assets по прямому пути
+            string[] editorPaths = new string[]
+            {
+                "Assets/Sprites/Characters/Player/player_variant1_cultivator.png",
+                "Assets/Sprites/Characters/Player/player_variant2_cultivator.png",
+                "Assets/Sprites/player_sprite.png",
+                "Assets/TempPlayerSprite.png"
+            };
+            foreach (var path in editorPaths)
+            {
+                var sprite = UnityEditor.AssetDatabase.LoadAssetAtPath<Sprite>(path);
+                if (sprite != null)
+                {
+                    Debug.Log($"[PlayerVisual] Loaded AI sprite: {path}");
+                    return sprite;
+                }
+            }
+            Debug.LogWarning("[PlayerVisual] No AI player sprite found, using procedural circle");
+            #else
+            // Runtime build: загрузка из Resources
+            var sprite = Resources.Load<Sprite>("Sprites/player_variant1_cultivator");
+            if (sprite != null)
+            {
+                Debug.Log("[PlayerVisual] Loaded AI sprite from Resources");
+                return sprite;
+            }
+            #endif
+            return null;
         }
         
         /// <summary>

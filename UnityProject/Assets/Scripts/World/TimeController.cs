@@ -98,8 +98,8 @@ namespace CultivationGame.World
         
         private void Awake()
         {
-            // Регистрируем в ServiceLocator для быстрого доступа
-            ServiceLocator.Register(this);
+            // Registration handled by GameInitializer to avoid double-registration warning
+            // ServiceLocator.Register(this);
         }
         
         private void Update()

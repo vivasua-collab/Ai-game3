@@ -278,10 +278,10 @@ namespace CultivationGame.World
             player.AddComponent<TechniqueController>();
             player.AddComponent<InteractionController>();
             
-            // Sprite Renderer (временный визуал)
-            SpriteRenderer sr = player.AddComponent<SpriteRenderer>();
-            sr.sprite = CreateTempSprite();
-            sr.sortingOrder = 10;
+            // FIX: Используем PlayerVisual для загрузки AI-спрайта вместо процедурного круга
+            // PlayerVisual автоматически загружает спрайт из Assets/Sprites/Characters/Player/
+            // Редактировано: 2026-04-15 UTC
+            player.AddComponent<PlayerVisual>();
             
             return player;
         }

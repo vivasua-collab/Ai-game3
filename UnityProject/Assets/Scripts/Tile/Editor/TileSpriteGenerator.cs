@@ -231,15 +231,15 @@ namespace CultivationGame.TileSystem.Editor
             if (importer != null)
             {
                 importer.textureType = TextureImporterType.Sprite;
-                // FIX: pixelsPerUnit=32 (64px / 2 юнита ячейки Grid), иначе зазоры между тайлами
+                // FIX: pixelsPerUnit=32 (64px / 2 юнита ячейки Grid)
                 // Редактировано: 2026-04-14 06:30:00 UTC
                 importer.spritePixelsPerUnit = TILE_SIZE / 2; // 64/2=32 — один тайл = 2 юнита
                 importer.filterMode = FilterMode.Point;
-                // FIX: spriteBorder для устранения зазоров между тайлами (extrude padding)
-                // Каждый край получает 1 пиксель дублирования — Unity растягивает край
-                // вместо показа фона при субпиксельном позиционировании
-                // Редактировано: 2026-04-15 07:05:00 UTC
-                importer.spriteBorder = new Vector4(1, 1, 1, 1);
+                // NOTE: spriteBorder работает ТОЛЬКО для 9-slice спрайтов.
+                // Для тайловых спрайтов (не 9-slice) border игнорируется.
+                // Зазоры устраняются через Grid.cellGap = (-0.01, -0.01, 0) в TileMapController.
+                // Редактировано: 2026-04-15 UTC
+                importer.spriteBorder = Vector4.zero;
                 importer.wrapMode = TextureWrapMode.Clamp;
                 AssetDatabase.ImportAsset(path);
             }

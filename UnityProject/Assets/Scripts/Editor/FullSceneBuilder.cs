@@ -1007,6 +1007,11 @@ namespace CultivationGame.Editor
             GameObject gridObj = new GameObject("Grid");
             Grid grid = gridObj.AddComponent<Grid>();
             grid.cellSize = new Vector3(2f, 2f, 1f);
+            // FIX: Отрицательный cellGap для устранения зазоров между тайлами.
+            // При sub-pixel рендеринге между тайлами могут появляться тонкие линии фона.
+            // Небольшое перекрытие (0.01 юнита) полностью устраняет этот артефакт.
+            // Редактировано: 2026-04-15 UTC
+            grid.cellGap = new Vector3(-0.01f, -0.01f, 0f);
 
             // Terrain Tilemap
             GameObject terrainObj = new GameObject("Terrain");

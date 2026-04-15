@@ -65,6 +65,9 @@ namespace CultivationGame.TileSystem
         private float respawnTimer;
         private System.Random rng;
         private Transform resourcesParent;
+        // FIX: Флаг для отслеживания загрузки AI-спрайтов (не тонировать их)
+        // Редактировано: 2026-04-15 UTC
+        private bool _lastSpriteWasAI;
 
         // === Unity Lifecycle ===
 
@@ -223,16 +226,20 @@ namespace CultivationGame.TileSystem
             GameObject go = new GameObject($"Res_{entry.resourceId}");
             go.transform.SetParent(resourcesParent);
             go.transform.position = worldPos;
-            // FIX: Тег "Resource" может быть не определён в TagManager.
-            // Назначаем безопасно — если тег не существует, используем Untagged.
+            // FIX: Тег "Resource" не определён в TagManager — Unity НЕ выбрасывает
+            // C# исключение для неопределённых тегов, try-catch не работает.
             // Для поиска ресурсов используйте FindObjectsOfType<ResourcePickup>().
-            try { go.tag = "Resource"; } catch { go.tag = "Untagged"; }
+            // Редактировано: 2026-04-15 UTC
+            go.tag = "Untagged";
 
             // Спрайт
             SpriteRenderer sr = go.AddComponent<SpriteRenderer>();
             sr.sprite = CreateResourceSprite(entry);
             sr.sortingOrder = 5;
-            sr.color = entry.spriteColor;
+            // FIX: AI-спрайты не тонируем (используем оригинальные цвета),
+            // программные fallback-спрайты — тонируем entry.spriteColor
+            // Редактировано: 2026-04-15 UTC
+            sr.color = _lastSpriteWasAI ? Color.white : entry.spriteColor;
 
             // Масштаб
             go.transform.localScale = Vector3.one * spriteScale;
@@ -255,6 +262,18 @@ namespace CultivationGame.TileSystem
 
         private Sprite CreateResourceSprite(ResourceSpawnEntry entry)
         {
+            // FIX: Пытаемся загрузить AI-спрайт из Assets/Sprites/Tiles_AI/ или Assets/Sprites/Tiles/
+            // Если не найден — fallback на программный круг
+            // Редактировано: 2026-04-15 UTC
+            Sprite loadedSprite = LoadResourceSprite(entry.resourceId);
+            if (loadedSprite != null)
+            {
+                _lastSpriteWasAI = true;
+                return loadedSprite;
+            }
+            
+            // Fallback: программный спрайт
+            _lastSpriteWasAI = false;
             int size = spriteSize;
             Texture2D texture = new Texture2D(size, size);
             Color[] pixels = new Color[size * size];
@@ -515,6 +534,54 @@ namespace CultivationGame.TileSystem
                 spawnTerrain = new[] { TerrainType.Sand },
                 autoPickup = true
             });
+        }
+
+        /// <summary>
+        /// Загрузить AI-спрайт ресурса.
+        /// Маппинг resourceId → файл спрайта в Assets/Sprites/Tiles_AI/ или Assets/Sprites/Tiles/
+        /// Fallback: null (используется программный спрайт)
+        /// Редактировано: 2026-04-15 UTC
+        /// </summary>
+        private Sprite LoadResourceSprite(string resourceId)
+        {
+            // Маппинг resourceId → имя файла спрайта
+            string spriteName = resourceId switch
+            {
+                "ore" => "obj_ore_vein",
+                "iron_ore" => "obj_ore_vein",
+                "stone" => "obj_rock_medium",
+                "wood" => "obj_tree",
+                "herb" => "obj_herb",
+                "berries" => "obj_bush",
+                "mushroom" => "obj_herb",
+                "rare_herb" => "obj_herb",
+                _ => null
+            };
+
+            if (spriteName == null) return null;
+
+            #if UNITY_EDITOR
+            // Editor: загрузка из Assets по прямому пути
+            string[] searchPaths = new string[]
+            {
+                $"Assets/Sprites/Tiles_AI/{spriteName}.png",
+                $"Assets/Sprites/Tiles/{spriteName}.png"
+            };
+            foreach (var path in searchPaths)
+            {
+                var sprite = UnityEditor.AssetDatabase.LoadAssetAtPath<Sprite>(path);
+                if (sprite != null)
+                {
+                    return sprite;
+                }
+            }
+            #else
+            // Runtime build: загрузка из Resources
+            var resSprite = Resources.Load<Sprite>($"Sprites/{spriteName}");
+            if (resSprite != null) return resSprite;
+            #endif
+
+            return null;
         }
     }
 }

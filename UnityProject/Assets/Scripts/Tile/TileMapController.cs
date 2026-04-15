@@ -75,6 +75,15 @@ namespace CultivationGame.TileSystem
             // Создать родительский объект для спавна
             objectsParent = new GameObject("SpawnedObjects").transform;
             objectsParent.SetParent(transform);
+
+            // FIX: Отрицательный cellGap на Grid для устранения зазоров между тайлами
+            // При sub-pixel рендеринге между тайлами появляются тонкие линии фона.
+            // Редактировано: 2026-04-15 UTC
+            var grid = GetComponentInParent<Grid>();
+            if (grid != null && grid.cellGap.x >= 0f)
+            {
+                grid.cellGap = new Vector3(-0.01f, -0.01f, 0f);
+            }
         }
 
         private void Start()

@@ -183,7 +183,11 @@ namespace CultivationGame.UI
             // Fill Area
             var fillAreaGO = new GameObject("Fill Area");
             fillAreaGO.transform.SetParent(sliderGO.transform, false);
+            // Explicitly add RectTransform — new GameObject() only creates a regular Transform
+            // and it may not auto-convert when parented under a Slider
             var fillAreaRect = fillAreaGO.GetComponent<RectTransform>();
+            if (fillAreaRect == null)
+                fillAreaRect = fillAreaGO.AddComponent<RectTransform>();
             fillAreaRect.anchorMin = Vector2.zero;
             fillAreaRect.anchorMax = Vector2.one;
             fillAreaRect.offsetMin = Vector2.zero;
