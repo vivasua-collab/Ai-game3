@@ -675,54 +675,54 @@ namespace CultivationGame.Player
             {
                 case "wood":
                     itemData.itemId = "wood";
-                    itemData.itemName = "Древесина";
-                    itemData.category = CultivationGame.Data.ScriptableObjects.ItemCategory.Material;
-                    itemData.rarity = CultivationGame.Data.ScriptableObjects.ItemRarity.Common;
+                    itemData.nameRu = "Древесина";
+                    itemData.category = CultivationGame.Core.ItemCategory.Material;
+                    itemData.rarity = CultivationGame.Core.ItemRarity.Common;
                     itemData.stackable = true;
                     itemData.maxStack = 99;
                     break;
 
                 case "stone":
                     itemData.itemId = "stone";
-                    itemData.itemName = "Камень";
-                    itemData.category = CultivationGame.Data.ScriptableObjects.ItemCategory.Material;
-                    itemData.rarity = CultivationGame.Data.ScriptableObjects.ItemRarity.Common;
+                    itemData.nameRu = "Камень";
+                    itemData.category = CultivationGame.Core.ItemCategory.Material;
+                    itemData.rarity = CultivationGame.Core.ItemRarity.Common;
                     itemData.stackable = true;
                     itemData.maxStack = 99;
                     break;
 
                 case "ore":
                     itemData.itemId = "ore";
-                    itemData.itemName = "Руда";
-                    itemData.category = CultivationGame.Data.ScriptableObjects.ItemCategory.Material;
-                    itemData.rarity = CultivationGame.Data.ScriptableObjects.ItemRarity.Uncommon;
+                    itemData.nameRu = "Руда";
+                    itemData.category = CultivationGame.Core.ItemCategory.Material;
+                    itemData.rarity = CultivationGame.Core.ItemRarity.Uncommon;
                     itemData.stackable = true;
                     itemData.maxStack = 50;
                     break;
 
                 case "berries":
                     itemData.itemId = "berries";
-                    itemData.itemName = "Ягоды";
-                    itemData.category = CultivationGame.Data.ScriptableObjects.ItemCategory.Consumable;
-                    itemData.rarity = CultivationGame.Data.ScriptableObjects.ItemRarity.Common;
+                    itemData.nameRu = "Ягоды";
+                    itemData.category = CultivationGame.Core.ItemCategory.Consumable;
+                    itemData.rarity = CultivationGame.Core.ItemRarity.Common;
                     itemData.stackable = true;
                     itemData.maxStack = 30;
                     break;
 
                 case "herb":
                     itemData.itemId = "herb";
-                    itemData.itemName = "Трава";
-                    itemData.category = CultivationGame.Data.ScriptableObjects.ItemCategory.Consumable;
-                    itemData.rarity = CultivationGame.Data.ScriptableObjects.ItemRarity.Common;
+                    itemData.nameRu = "Трава";
+                    itemData.category = CultivationGame.Core.ItemCategory.Consumable;
+                    itemData.rarity = CultivationGame.Core.ItemRarity.Common;
                     itemData.stackable = true;
                     itemData.maxStack = 50;
                     break;
 
                 default:
                     itemData.itemId = resourceId;
-                    itemData.itemName = resourceId;
-                    itemData.category = CultivationGame.Data.ScriptableObjects.ItemCategory.Material;
-                    itemData.rarity = CultivationGame.Data.ScriptableObjects.ItemRarity.Common;
+                    itemData.nameRu = resourceId;
+                    itemData.category = CultivationGame.Core.ItemCategory.Material;
+                    itemData.rarity = CultivationGame.Core.ItemRarity.Common;
                     itemData.stackable = true;
                     itemData.maxStack = 99;
                     break;
