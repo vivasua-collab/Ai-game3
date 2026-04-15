@@ -2,7 +2,7 @@
 // ResourceSpawner.cs — Спавнер ресурсных объектов на локации
 // Cultivation World Simulator
 // Создано: 2026-04-14 07:35:00 UTC
-// Редактировано: 2026-04-15 17:14:21 UTC — FIX 3A/3B: убран Tiles_AI/, spriteScale=1.0, Unlit шейдер
+// Редактировано: 2026-04-15 17:31:49 UTC — FIX 3A: spriteScale=2.0, ResourceLogger логирование, PPU для AI sprite
 // ============================================================================
 
 using System.Collections.Generic;
@@ -57,9 +57,9 @@ namespace CultivationGame.TileSystem
 
         [Header("Visuals")]
         [SerializeField] private int spriteSize = 64; // Размер текстуры (совпадает с объектами тайлов)
-        [SerializeField] private float spriteScale = 1.0f; // FIX: 1.0 — ресурсы нормально видны (было 0.16 — микроскопические)
-        // При PPU=160: 64/160=0.4 юнита × scale=1.0 = 0.4 юнита (разумный размер)
-        // Редактировано: 2026-04-15 17:14:21 UTC
+        [SerializeField] private float spriteScale = 1.0f; // FIX 3A: 1.0 — при PPU=32: 64/32=2.0 юнита × 1.0 = 2.0 юнита (1 тайл)
+        // Ранее PPU=160 + scale=0.16 = 0.064 юнита (микроскопический)
+        // Редактировано: 2026-04-15 17:31:49 UTC
 
         // === Runtime ===
         private List<GameObject> spawnedResources = new List<GameObject>();
@@ -133,6 +133,7 @@ namespace CultivationGame.TileSystem
             }
 
             Debug.Log($"[ResourceSpawner] Заспавнено {spawnedResources.Count} ресурсов");
+            ResourceLogger.LogSpawnSummary(spawnedResources.Count, resourceTypes.Count, 0f);
         }
 
         /// <summary>
@@ -226,9 +227,8 @@ namespace CultivationGame.TileSystem
         {
             GameObject go = new GameObject($"Res_{entry.resourceId}");
             go.transform.SetParent(resourcesParent);
-            go.transform.position = worldPos;
-            // FIX: Тег "Resource" теперь добавлен в TagManager через FullSceneBuilder Phase 02
-            // Редактировано: 2026-04-15 12:00:00 UTC
+            go.transform.position = new Vector3(worldPos.x, worldPos.y, -0.5f); // FIX 3A: Z=-0.5f — перед terrain (Z=0)
+            // Редактировано: 2026-04-15 17:31:49 UTC
             go.tag = "Resource";
 
             // Спрайт
@@ -242,7 +242,7 @@ namespace CultivationGame.TileSystem
             
             // FIX: Используем Unlit шейдер — рендерит БЕЗ Light2D (гарантированно виден).
             // Sprite-Lit-Default без Light2D = чёрный (невидимый).
-            // Редактировано: 2026-04-15 17:14:21 UTC
+            // Редактировано: 2026-04-15 17:31:49 UTC
             Shader spriteShader = Shader.Find("Universal Render Pipeline/2D/Sprite-Unlit-Default");
             if (spriteShader == null)
                 spriteShader = Shader.Find("Universal Render Pipeline/2D/Sprite-Lit-Default");
@@ -251,8 +251,13 @@ namespace CultivationGame.TileSystem
             if (spriteShader != null)
                 sr.material = new Material(spriteShader);
 
+            string shaderName = spriteShader != null ? spriteShader.name : "null";
+
             // Масштаб
             go.transform.localScale = Vector3.one * spriteScale;
+
+            // FIX 3A: Логирование деталей спавна через ResourceLogger
+            ResourceLogger.LogSpawn(entry.resourceId, go.transform.position, sr.sprite, spriteScale, shaderName);
 
             // Коллайдер для подбора
             CircleCollider2D col = go.AddComponent<CircleCollider2D>();
@@ -272,18 +277,20 @@ namespace CultivationGame.TileSystem
 
         private Sprite CreateResourceSprite(ResourceSpawnEntry entry)
         {
-            // FIX: Пытаемся загрузить AI-спрайт из Assets/Sprites/Tiles_AI/ или Assets/Sprites/Tiles/
-            // Если не найден — fallback на программный круг
-            // Редактировано: 2026-04-15 UTC
+            // FIX 3A: Пытаемся загрузить AI-спрайт из Assets/Sprites/Tiles/
+            // Если не найден — fallback на программный кристалл
+            // Редактировано: 2026-04-15 17:31:49 UTC
             Sprite loadedSprite = LoadResourceSprite(entry.resourceId);
             if (loadedSprite != null)
             {
                 _lastSpriteWasAI = true;
+                ResourceLogger.LogSpriteLoad(entry.resourceId, "AI", true, loadedSprite.name);
                 return loadedSprite;
             }
             
             // Fallback: программный спрайт
             _lastSpriteWasAI = false;
+            ResourceLogger.LogSpriteLoad(entry.resourceId, "procedural", true, "fallback_kristal");
             int size = spriteSize;
             // FIX: RGBA32 формат для правильной прозрачности
             // Редактировано: 2026-04-15 11:25:00 UTC
@@ -354,9 +361,10 @@ namespace CultivationGame.TileSystem
             texture.SetPixels(pixels);
             texture.Apply();
 
-            // PPU=160 → 64/160 = 0.4 юнита (в 5 раз меньше ячейки 2.0)
-            // Редактировано: 2026-04-15 — PPU увеличен с 32 до 160
-            return Sprite.Create(texture, new Rect(0, 0, size, size), new Vector2(0.5f, 0.5f), 160);
+            // FIX 3A: PPU=32 — 64/32 = 2.0 юнита × spriteScale=1.0 = 2.0 юнита (размер тайла)
+            // Ранее PPU=160 + scale=0.16 = 0.064 юнита (микроскопический)
+            // Редактировано: 2026-04-15 17:31:49 UTC
+            return Sprite.Create(texture, new Rect(0, 0, size, size), new Vector2(0.5f, 0.5f), 32);
         }
 
         private bool IsAllowedTerrain(TerrainType terrain, TerrainType[] allowed)

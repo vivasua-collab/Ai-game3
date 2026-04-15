@@ -3,7 +3,7 @@
 // Cultivation World Simulator
 // Версия: 1.0
 // Создано: 2026-03-30 14:00:00 UTC
-// Редактировано: 2026-04-15 16:53:48 UTC — FIX 2C: контрастный красно-оранжевый цвет, Unlit шейдер
+// Редактировано: 2026-04-15 17:31:49 UTC — FIX 1A: обработанный AI-спрайт (128×128 RGBA, без белого фона), PPU=64
 // ============================================================================
 
 using UnityEngine;
@@ -19,13 +19,14 @@ namespace CultivationGame.Player
     {
         [Header("Visual Settings")]
         [Tooltip("Цвет игрока")]
-        // FIX 2C: Красно-оранжевый вместо зелёного — контрастный на любом фоне.
-        // Зелёный сливается с травой и другими природными объектами.
-        // Редактировано: 2026-04-15 16:53:48 UTC
-        public Color playerColor = new Color(1f, 0.3f, 0.15f); // Красно-оранжевый
+        // FIX 2C: Красно-оранжевый — контрастный на любом фоне
+        // Редактировано: 2026-04-15 17:31:49 UTC
+        public Color playerColor = new Color(1f, 0.3f, 0.15f);
         
         [Tooltip("Размер игрока")]
-        public float size = 0.4f; // Редактировано: 2026-04-15 — уменьшено с 0.8 до 0.4 (соответствует объектам)
+        // FIX: size=1.0 — при PPU=64, 128/64=2.0 юнита × 1.0 = 2.0 юнита (1 тайл)
+        // Редактировано: 2026-04-15 17:31:49 UTC
+        public float size = 1.0f;
         
         [Tooltip("Создать тень")]
         public bool createShadow = true;
@@ -72,13 +73,14 @@ namespace CultivationGame.Player
             // Добавляем SpriteRenderer
             mainSprite = visualObj.AddComponent<SpriteRenderer>();
             
-            // FIX: Пытаемся загрузить AI-спрайт персонажа вместо процедурного круга
-            // Редактировано: 2026-04-15 UTC
+            // FIX 1A: Загружаем обработанный AI-спрайт (128×128 RGBA, без белого фона)
+            // Редактировано: 2026-04-15 17:31:49 UTC
             Sprite loadedSprite = LoadPlayerSprite();
             if (loadedSprite != null)
             {
                 mainSprite.sprite = loadedSprite;
-                mainSprite.color = Color.white; // Не тонировать реальный спрайт
+                mainSprite.color = Color.white; // Не тонировать AI-спрайт (у него свой цвет)
+                Debug.Log($"[PlayerVisual] AI-спрайт загружен: size={loadedSprite.bounds.size}, PPU={loadedSprite.pixelsPerUnit}");
             }
             else
             {
@@ -176,13 +178,13 @@ namespace CultivationGame.Player
             texture.SetPixels(pixels);
             texture.Apply();
             
-            // FIX: PPU=32 — персонаж = 2 юнита (как тайл), sprite pivot = центр снизу
-            // Редактировано: 2026-04-15 11:20:00 UTC
+            // FIX: PPU=64 — персонаж = 1 юнит, sprite pivot = центр снизу
+            // Редактировано: 2026-04-15 17:31:49 UTC
             return Sprite.Create(
                 texture,
                 new Rect(0, 0, resolution, resolution),
                 new Vector2(0.5f, 0.25f), // Pivot = центр снизу (ноги на земле)
-                32f // PPU=32 — размер 2×2 юнита (совпадает с размером тайла)
+                64f // PPU=64 — 64/64 = 1.0 юнит × size=1.0 = 1.0 юнита
             );
         }
         
@@ -227,10 +229,10 @@ namespace CultivationGame.Player
         
         /// <summary>
         /// Загрузить AI-спрайт персонажа.
-        /// В Editor: загрузка из Assets/Sprites/Characters/Player/
+        /// В Editor: загрузка из Assets/Sprites/Characters/Player/ с автонастройкой PPU=64
         /// В Build: загрузка из Resources/Sprites/
         /// Fallback: программный круг
-        /// Редактировано: 2026-04-15 UTC
+        /// Редактировано: 2026-04-15 17:31:49 UTC
         /// </summary>
         private Sprite LoadPlayerSprite()
         {
@@ -248,22 +250,54 @@ namespace CultivationGame.Player
                 var sprite = UnityEditor.AssetDatabase.LoadAssetAtPath<Sprite>(path);
                 if (sprite != null)
                 {
-                    Debug.Log($"[PlayerVisual] Loaded AI sprite: {path}");
-                    return sprite;
+                    // FIX 1A: Убеждаемся, что PPU=64 для правильного размера спрайта
+                    // 128×128 при PPU=64 = 2.0 юнита × size=1.0 = 2.0 юнита
+                    // Редактировано: 2026-04-15 17:31:49 UTC
+                    EnsurePlayerSpritePPU(path);
+                    // Перезагружаем после возможного реимпорта
+                    sprite = UnityEditor.AssetDatabase.LoadAssetAtPath<Sprite>(path);
+                    if (sprite != null)
+                    {
+                        Debug.Log($"[PlayerVisual] AI-спрайт загружен: {path}, PPU={sprite.pixelsPerUnit}, bounds={sprite.bounds.size}");
+                        return sprite;
+                    }
                 }
             }
-            Debug.LogWarning("[PlayerVisual] No AI player sprite found, using procedural circle");
+            Debug.LogWarning("[PlayerVisual] AI-спрайт не найден, используется программный fallback");
             #else
             // Runtime build: загрузка из Resources
             var sprite = Resources.Load<Sprite>("Sprites/player_variant1_cultivator");
             if (sprite != null)
             {
-                Debug.Log("[PlayerVisual] Loaded AI sprite from Resources");
+                Debug.Log("[PlayerVisual] AI-спрайт загружен из Resources");
                 return sprite;
             }
             #endif
             return null;
         }
+
+        #if UNITY_EDITOR
+        /// <summary>
+        /// Убедиться, что спрайт персонажа импортирован с PPU=64.
+        /// При первом запуске Unity может использовать дефолтный PPU=100.
+        // Редактировано: 2026-04-15 17:31:49 UTC
+        /// </summary>
+        private void EnsurePlayerSpritePPU(string assetPath)
+        {
+            var importer = UnityEditor.AssetImporter.GetAtPath(assetPath) as UnityEditor.TextureImporter;
+            if (importer != null && importer.spritePixelsPerUnit != 64)
+            {
+                importer.textureType = UnityEditor.TextureImporterType.Sprite;
+                importer.spriteImportMode = UnityEditor.SpriteImportMode.Single;
+                importer.spritePixelsPerUnit = 64;
+                importer.filterMode = FilterMode.Bilinear;
+                importer.alphaIsTransparency = true;
+                importer.textureCompression = UnityEditor.TextureImporterCompression.Uncompressed;
+                UnityEditor.AssetDatabase.ImportAsset(assetPath, UnityEditor.ImportAssetOptions.ForceUpdate);
+                Debug.Log($"[PlayerVisual] PPU исправлен: {assetPath} → PPU=64");
+            }
+        }
+        #endif
         
         /// <summary>
         /// Изменить цвет игрока

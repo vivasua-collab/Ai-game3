@@ -3,9 +3,8 @@
 // Cultivation World Simulator
 // Версия: 2.0
 // Создано: 2026-04-07 14:24:05 UTC
-// Редактировано: 2026-04-15 16:53:48 UTC — FIX 1A: полная переработка —
-//   обработка AI-спрайтов из Tiles_AI/ (resize + прозрачность) вместо
-//   процедурной генерации. Fallback на процедурные при отсутствии AI.
+// Редактировано: 2026-04-15 17:31:49 UTC — FIX 2A: terrain 68×68 PPU=32 Bilinear,
+//   убрана обработка AI terrain (белая сетка), obj_* AI-спрайты сохраняются.
 // ============================================================================
 
 #if UNITY_EDITOR
@@ -19,29 +18,25 @@ namespace CultivationGame.TileSystem.Editor
     /// <summary>
     /// Генератор спрайтов для тайловой системы.
     ///
-    /// Версия 2.0 — приоритет AI-спрайтов:
-    ///   1. Сканирует Assets/Sprites/Tiles_AI/ на наличие AI-спрайтов
-    ///   2. Если найдены — обрабатывает (уменьшает 1024→64, добавляет прозрачность для obj_*)
-    ///   3. Сохраняет обработанные в Assets/Sprites/Tiles/
-    ///   4. Если AI-спрайтов нет — fallback на процедурную генерацию
+    /// Версия 3.0 — раздельная обработка:
+    ///   Terrain: ТОЛЬКО процедурные 68×68 PPU=32 Bilinear → 2.125 юнита →
+    ///     перекрытие ячейки (2.0 юнита) = нет белой сетки.
+    ///     AI terrain-спрайты УДАЛЕНЫ (вызывали белую сетку при 64×64 PPU=31).
     ///
-    /// Terrain: 64×64 px (было 68×68 — pixel bleed не нужен с AI-спрайтами),
-    ///   PPU=32 → 2.0 юнита (точно совпадает с ячейкой, без белой сетки).
-    ///
-    /// Objects: 64×64 px, PPU=160 → 0.4 юнита.
-    ///   Прозрачный фон RGBA32.
+    ///   Objects: AI-спрайты из Tiles_AI/ (обработка: resize + прозрачность).
+    ///     64×64 px, PPU=160 → 0.4 юнита.
+    ///     Прозрачный фон RGBA32.
     /// </summary>
     public static class TileSpriteGenerator
     {
-        // FIX 1A: Terrain 64×64 вместо 68×68 — pixel bleed не нужен с AI-спрайтами.
-        // С 64×64 при PPU=32 → 2.0 юнита = точный размер ячейки → НЕТ белой сетки.
-        // Редактировано: 2026-04-15 16:53:48 UTC
-        private const int TERRAIN_SIZE = 64;   // Стандартный размер тайла
-        private const int OBJECT_SIZE = 64;    // Стандартный размер объекта
-        // FIX: Terrain PPU=31 вместо 32. 64/31 = 2.065 юнита — лёгкое перекрытие устраняет белую сетку.
-        // При PPU=32: 64/32 = 2.0 юнита точно = ячейка, но float-погрешность → белые зазоры.
-        // Редактировано: 2026-04-15 17:14:21 UTC
-        private const int TERRAIN_PPU = 31;    // 64/31 = 2.065 юнита — перекрытие устраняет зазоры
+        // FIX 2A: Terrain 68×68 PPU=32 → 68/32 = 2.125 юнита → 0.0625 юнита перекрытие с каждой стороны.
+        // Перекрытие устраняет белую сетку между тайлами (pixel bleed approach).
+        // AI terrain спрайты удалены — 64×64 при любом PPU давали белую сетку.
+        // Редактировано: 2026-04-15 17:31:49 UTC
+        private const int TERRAIN_SIZE = 68;   // 68×68 — на 4 пикселя больше ячейки для pixel bleed
+        private const int OBJECT_SIZE = 64;    // 64×64 — стандартный размер объекта
+        // Terrain PPU=32: 68/32 = 2.125 юнита → перекрытие 0.0625 юнита с каждой стороны
+        private const int TERRAIN_PPU = 32;    // 68/32 = 2.125 юнита — перекрытие устраняет зазоры
         private const int OBJECT_PPU = 160;    // 64/160 = 0.4 юнита — в 5 раз меньше ячейки
         private const string OUTPUT_PATH = "Assets/Sprites/Tiles";
         private const string AI_SPRITES_PATH = "Assets/Sprites/Tiles_AI";
@@ -52,20 +47,29 @@ namespace CultivationGame.TileSystem.Editor
             if (!Directory.Exists(OUTPUT_PATH))
                 Directory.CreateDirectory(OUTPUT_PATH);
 
-            // FIX 1A: Проверяем AI-спрайты в первую очередь
-            // Редактировано: 2026-04-15 16:53:48 UTC
+            // FIX 2A: Обрабатываем ТОЛЬКО obj_* AI-спрайты (terrain — процедурные!)
+            // AI terrain вызывал белую сетку — удалён. Terrain генерируется программно.
+            // Редактировано: 2026-04-15 17:31:49 UTC
             bool usedAI = false;
             if (Directory.Exists(AI_SPRITES_PATH))
             {
-                string[] aiFiles = Directory.GetFiles(AI_SPRITES_PATH, "*.png");
-                if (aiFiles.Length > 0)
+                // Фильтруем только obj_* файлы
+                string[] allAiFiles = Directory.GetFiles(AI_SPRITES_PATH, "*.png");
+                var objFiles = new System.Collections.Generic.List<string>();
+                foreach (var f in allAiFiles)
                 {
-                    Debug.Log($"[TileSpriteGenerator] Найдено {aiFiles.Length} AI-спрайтов. Обработка...");
-                    usedAI = ProcessAISprites(aiFiles);
+                    string name = System.IO.Path.GetFileNameWithoutExtension(f);
+                    if (name.StartsWith("obj_"))
+                        objFiles.Add(f);
+                }
+                if (objFiles.Count > 0)
+                {
+                    Debug.Log($"[TileSpriteGenerator] Найдено {objFiles.Count} AI obj_* спрайтов. Обработка...");
+                    usedAI = ProcessAISprites(objFiles.ToArray());
                 }
             }
 
-            // Fallback: генерация недостающих программных спрайтов
+            // Генерация процедурных terrain-спрайтов (68×68 PPU=32 Bilinear)
             GenerateMissingProceduralSprites();
 
             AssetDatabase.SaveAssets();
@@ -302,7 +306,8 @@ namespace CultivationGame.TileSystem.Editor
 
         /// <summary>
         /// Настроить импорт спрайта с правильным PPU и настройками.
-        /// Редактировано: 2026-04-15 16:53:48 UTC
+        /// FIX 2A: Bilinear для terrain (сглаживает границы), Point для objects.
+        /// Редактировано: 2026-04-15 17:31:49 UTC
         /// </summary>
         private static void SetupSpriteImport(string path, bool isObject)
         {
@@ -313,7 +318,8 @@ namespace CultivationGame.TileSystem.Editor
                 importer.textureType = TextureImporterType.Sprite;
                 importer.spriteImportMode = SpriteImportMode.Single;
                 importer.spritePixelsPerUnit = isObject ? OBJECT_PPU : TERRAIN_PPU;
-                importer.filterMode = FilterMode.Point;
+                // FIX 2A: Terrain — Bilinear (устраняет белую сетку), Objects — Point (резкие края)
+                importer.filterMode = isObject ? FilterMode.Point : FilterMode.Bilinear;
                 importer.spriteBorder = Vector4.zero;
                 importer.wrapMode = TextureWrapMode.Clamp;
                 importer.alphaIsTransparency = true;
@@ -382,11 +388,12 @@ namespace CultivationGame.TileSystem.Editor
 
         private static void GenerateTerrainSprite(string name, Color color)
         {
-            // FIX 1A: Текстура 64×64 вместо 68×68 — точный размер ячейки при PPU=32.
-            // 64/32 = 2.0 юнита = ячейка 2.0 юнита → нет зазоров, нет белой сетки.
-            // Редактировано: 2026-04-15 16:53:48 UTC
+            // FIX 2A: Текстура 68×68 вместо 64×64 — pixel bleed для устранения белой сетки.
+            // 68/32 = 2.125 юнита → 0.0625 юнита перекрытие с каждой стороны ячейки (2.0).
+            // Это надёжно закрывает субпиксельные зазоры между тайлами.
+            // Редактировано: 2026-04-15 17:31:49 UTC
             Texture2D texture = new Texture2D(TERRAIN_SIZE, TERRAIN_SIZE, TextureFormat.RGBA32, false);
-            texture.filterMode = FilterMode.Point;
+            texture.filterMode = FilterMode.Bilinear; // FIX 2A: Bilinear — сглаживает границы между тайлами
             texture.wrapMode = TextureWrapMode.Clamp;
 
             for (int x = 0; x < TERRAIN_SIZE; x++)
@@ -559,7 +566,8 @@ namespace CultivationGame.TileSystem.Editor
                 importer.textureType = TextureImporterType.Sprite;
                 importer.spriteImportMode = SpriteImportMode.Single;
                 importer.spritePixelsPerUnit = isObject ? OBJECT_PPU : TERRAIN_PPU;
-                importer.filterMode = FilterMode.Point;
+                // FIX 2A: Terrain — Bilinear (устраняет белую сетку), Objects — Point
+                importer.filterMode = isObject ? FilterMode.Point : FilterMode.Bilinear;
                 importer.spriteBorder = Vector4.zero;
                 importer.wrapMode = TextureWrapMode.Clamp;
                 importer.alphaIsTransparency = true;

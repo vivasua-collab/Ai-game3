@@ -2,7 +2,7 @@
 // TileMapController.cs — Контроллер карты тайлов
 // Cultivation World Simulator
 // Создано: 2026-04-07 14:24:05 UTC
-// Редактировано: 2026-04-15 12:00:00 UTC — FIX: terrain Rect(0,0,66,66) для pixel bleed overlap, объектные спрайты с прозрачностью
+// Редактировано: 2026-04-15 17:31:49 UTC — FIX 2A: terrain 68×68 PPU=32 Bilinear для pixel bleed (устраняет белую сетку)
 // ============================================================================
 
 using System;
@@ -229,21 +229,23 @@ namespace CultivationGame.TileSystem
 
         /// <summary>
         /// Создать процедурный спрайт тайла (fallback при отсутствии файла).
-        /// Редактировано: 2026-04-15 11:15:00 UTC
+        /// FIX 2A: Terrain 68×68 PPU=32 Bilinear → 2.125 юнита — pixel bleed устраняет белую сетку.
+        /// Objects: 64×64 PPU=160 → 0.4 юнита.
+        /// Редактировано: 2026-04-15 17:31:49 UTC
         /// </summary>
         private Sprite CreateProceduralTileSprite(string spriteName, TerrainType terrain)
         {
             bool isObject = spriteName.StartsWith("obj_");
 
-            // Terrain: 68×68, PPU=31 → 2.194 юнита (pixel bleed устраняет белую сетку)
+            // Terrain: 68×68, PPU=32 → 2.125 юнита (pixel bleed устраняет белую сетку)
             // Objects: 64×64, PPU=160 → 0.4 юнита (в 5 раз меньше ячейки)
-            // FIX: PPU=31 вместо 32 — 64/31=2.065 > 2.0, перекрытие устраняет зазоры
-            // Редактировано: 2026-04-15 17:14:21 UTC
+            // FIX 2A: 68×68 вместо 64×64 для terrain — перекрытие 0.0625 юнита с каждой стороны
+            // Редактировано: 2026-04-15 17:31:49 UTC
             int texSize = isObject ? 64 : 68;
-            int ppu = isObject ? 160 : 31;
+            int ppu = isObject ? 160 : 32;
 
             Texture2D texture = new Texture2D(texSize, texSize, TextureFormat.RGBA32, false);
-            texture.filterMode = FilterMode.Point;
+            texture.filterMode = isObject ? FilterMode.Point : FilterMode.Bilinear; // FIX 2A: Bilinear для terrain
             texture.wrapMode = TextureWrapMode.Clamp;
 
             Color color = GetTerrainColor(terrain);

@@ -4,7 +4,7 @@
 // Версия: 1.2
 // ============================================================================
 // Создано: 2026-04-13 08:00:00 UTC
-// Редактировано: 2026-04-15 16:53:48 UTC — FIX: Global Light2D (URP 2D), позиция игрока на центр карты, AI-спрайты
+// Редактировано: 2026-04-15 17:31:49 UTC — FIX 2A: terrain 68×68 PPU=32 Bilinear, TilemapRenderer Chunk mode
 //
 // АРХИТЕКТУРА:
 //   15 фаз, каждая идемпотентна (повторный запуск безопасен).
@@ -1070,9 +1070,11 @@ namespace CultivationGame.Editor
             var terrainTilemap = terrainObj.AddComponent<Tilemap>();
             var terrainRenderer = terrainObj.AddComponent<TilemapRenderer>();
             terrainRenderer.sortOrder = (TilemapRenderer.SortOrder)0;
-            // FIX: Individual режим устраняет артефакты на границах чанков (белая сетка)
-            // Редактировано: 2026-04-15 UTC
-            terrainRenderer.mode = TilemapRenderer.Mode.Individual;
+            // FIX 2A: TilemapRenderer.mode = Chunk — рендерит чанк целиком,
+            // нет субпиксельных зазоров между тайлами (устраняет белую сетку).
+            // Individual режим создавал отдельный draw call для каждого тайла → зазоры.
+            // Редактировано: 2026-04-15 17:31:49 UTC
+            terrainRenderer.mode = TilemapRenderer.Mode.Chunk;
             // FIX: НЕ добавляем TilemapCollider2D на Terrain!
             // Terrain тайлы проходимые (трава, грязь) — коллайдер блокирует движение.
             // Коллайдеры terrain управляются через GameTile.colliderType (isPassable).
@@ -1085,8 +1087,9 @@ namespace CultivationGame.Editor
             var objectTilemap = objectsObj.AddComponent<Tilemap>();
             var objectRenderer = objectsObj.AddComponent<TilemapRenderer>();
             objectRenderer.sortOrder = (TilemapRenderer.SortOrder)1;
-            // FIX: Individual режим для объектов тоже
-            objectRenderer.mode = TilemapRenderer.Mode.Individual;
+            // FIX 2A: Chunk mode для объектов тоже (консистентность с terrain)
+            // Редактировано: 2026-04-15 17:31:49 UTC
+            objectRenderer.mode = TilemapRenderer.Mode.Chunk;
             // Коллайдер для объектов (деревья, камни и т.д.)
             objectsObj.AddComponent<TilemapCollider2D>();
 
