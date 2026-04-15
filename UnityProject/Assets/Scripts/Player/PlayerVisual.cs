@@ -22,7 +22,7 @@ namespace CultivationGame.Player
         public Color playerColor = new Color(0.2f, 0.8f, 0.3f); // Зелёный
         
         [Tooltip("Размер игрока")]
-        public float size = 0.8f;
+        public float size = 0.4f; // Редактировано: 2026-04-16 — уменьшено с 0.8 до 0.4 (соответствует объектам)
         
         [Tooltip("Создать тень")]
         public bool createShadow = true;

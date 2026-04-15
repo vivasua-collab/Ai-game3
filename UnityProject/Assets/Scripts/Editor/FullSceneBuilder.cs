@@ -1010,11 +1010,10 @@ namespace CultivationGame.Editor
             GameObject gridObj = new GameObject("Grid");
             Grid grid = gridObj.AddComponent<Grid>();
             grid.cellSize = new Vector3(2f, 2f, 1f);
-            // FIX: Отрицательный cellGap для устранения зазоров между тайлами.
-            // При sub-pixel рендеринге между тайлами могут появляться тонкие линии фона.
-            // Небольшое перекрытие (0.01 юнита) полностью устраняет этот артефакт.
-            // Редактировано: 2026-04-15 UTC
-            grid.cellGap = new Vector3(-0.01f, -0.01f, 0f);
+            // FIX: cellGap = 0. Pixel bleed через увеличенные terrain-спрайты (68×68 PPU=32 → 2.125 юнита)
+            // устраняет белую сетку надёжнее, чем отрицательный cellGap.
+            // Редактировано: 2026-04-16 UTC
+            grid.cellGap = Vector3.zero;
 
             // Terrain Tilemap
             GameObject terrainObj = new GameObject("Terrain");
@@ -1022,6 +1021,9 @@ namespace CultivationGame.Editor
             var terrainTilemap = terrainObj.AddComponent<Tilemap>();
             var terrainRenderer = terrainObj.AddComponent<TilemapRenderer>();
             terrainRenderer.sortOrder = (TilemapRenderer.SortOrder)0;
+            // FIX: Individual режим устраняет артефакты на границах чанков (белая сетка)
+            // Редактировано: 2026-04-16 UTC
+            terrainRenderer.mode = TilemapRenderer.Mode.Individual;
             // FIX: НЕ добавляем TilemapCollider2D на Terrain!
             // Terrain тайлы проходимые (трава, грязь) — коллайдер блокирует движение.
             // Коллайдеры terrain управляются через GameTile.colliderType (isPassable).
@@ -1034,6 +1036,8 @@ namespace CultivationGame.Editor
             var objectTilemap = objectsObj.AddComponent<Tilemap>();
             var objectRenderer = objectsObj.AddComponent<TilemapRenderer>();
             objectRenderer.sortOrder = (TilemapRenderer.SortOrder)1;
+            // FIX: Individual режим для объектов тоже
+            objectRenderer.mode = TilemapRenderer.Mode.Individual;
             // Коллайдер для объектов (деревья, камни и т.д.)
             objectsObj.AddComponent<TilemapCollider2D>();
 
@@ -1713,17 +1717,21 @@ namespace CultivationGame.Editor
         /// <summary>
         /// Реимпорт всех PNG спрайтов тайлов с правильными настройками:
         /// PPU=32, alphaIsTransparency=true, filterMode=Point, wrapMode=Clamp,
-        /// spriteRect: terrain=(0,0,66,66), objects=(1,1,64,64).
-        /// FIX: Используем sprites[] metadata — единственный способ задать spriteRect в Unity 6.3.
-        /// Редактировано: 2026-04-15 12:00:00 UTC
+        /// Переимпорт спрайтов с правильными настройками PPU и прозрачности.
+        /// Terrain: PPU=32 (pixel bleed), Objects: PPU=160 (5x меньше ячейки).
+        /// Редактировано: 2026-04-16 — обновлены PPU, убран sprites[]
         /// </summary>
         private static void ReimportTileSprites()
         {
-            string spritesDir = "Assets/Sprites/Tiles";
-            if (!Directory.Exists(spritesDir))
+            // Сканируем обе директории спрайтов
+            string[] spriteDirs = new string[] { "Assets/Sprites/Tiles", "Assets/Sprites/Tiles_AI" };
+            int reimportCount = 0;
+
+            foreach (string spritesDir in spriteDirs)
             {
-                Debug.LogWarning("[FullSceneBuilder] ReimportTileSprites: директория не найдена: " + spritesDir);
-                return;
+                if (!Directory.Exists(spritesDir)) continue;
+
+                string[] pngFiles = Directory.GetFiles(spritesDir, "*.png");
             }
 
             string[] pngFiles = Directory.GetFiles(spritesDir, "*.png");
@@ -1734,17 +1742,19 @@ namespace CultivationGame.Editor
                 var importer = AssetImporter.GetAtPath(pngPath) as TextureImporter;
                 if (importer == null) continue;
 
-                // SpriteImportMode.Single — один спрайт на всю текстуру (64×64)
-                // В Unity 6.3 TextureImporter.sprites удалён, используем Single режим
-                // Редактировано: 2026-04-16 — заменено с Multiple на Single
+                // Редактировано: 2026-04-16 — Terrain PPU=32 (68×68→2.125u, pixel bleed),
+                // Object PPU=160 (64×64→0.4u, в 5 раз меньше ячейки)
+                string fileName = Path.GetFileNameWithoutExtension(pngPath);
+                bool isObject = fileName.StartsWith("obj_");
+
                 importer.textureType = TextureImporterType.Sprite;
                 importer.spriteImportMode = SpriteImportMode.Single;
-                importer.spritePixelsPerUnit = 32; // 64px / 32 PPU = 2 юнита на тайл
+                importer.spritePixelsPerUnit = isObject ? 160 : 32;
                 importer.filterMode = FilterMode.Point;
                 importer.wrapMode = TextureWrapMode.Clamp;
                 importer.spriteBorder = Vector4.zero;
-                // alphaIsTransparency — ОБЯЗАТЕЛЬНО для объектов с прозрачным фоном
                 importer.alphaIsTransparency = true;
+                importer.textureCompression = TextureImporterCompression.Uncompressed;
 
                 AssetDatabase.ImportAsset(pngPath, ImportAssetOptions.ForceUpdate);
                 reimportCount++;

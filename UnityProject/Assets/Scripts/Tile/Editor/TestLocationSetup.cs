@@ -72,6 +72,7 @@ namespace CultivationGame.TileSystem.Editor
             var gridObj = new GameObject("Grid");
             var grid = gridObj.AddComponent<Grid>();
             grid.cellSize = new Vector3(2f, 2f, 1f); // Тайл = 2×2 м
+            grid.cellGap = Vector3.zero; // Pixel bleed через terrain-спрайты устраняет зазоры
 
             // Создать Tilemap для поверхности
             var terrainObj = new GameObject("Terrain");
@@ -79,6 +80,7 @@ namespace CultivationGame.TileSystem.Editor
             var terrainTilemap = terrainObj.AddComponent<Tilemap>();
             var terrainRenderer = terrainObj.AddComponent<TilemapRenderer>();
             terrainRenderer.sortOrder = (TilemapRenderer.SortOrder)0; // FIX CS0266 (2026-04-11)
+            terrainRenderer.mode = TilemapRenderer.Mode.Individual; // FIX: устраняет белую сетку
             terrainObj.AddComponent<TilemapCollider2D>();
 
             // Создать Tilemap для объектов
@@ -87,6 +89,7 @@ namespace CultivationGame.TileSystem.Editor
             var objectTilemap = objectsObj.AddComponent<Tilemap>();
             var objectRenderer = objectsObj.AddComponent<TilemapRenderer>();
             objectRenderer.sortOrder = (TilemapRenderer.SortOrder)1; // FIX CS0266 (2026-04-11)
+            objectRenderer.mode = TilemapRenderer.Mode.Individual;
 
             // Создать контроллер карты
             var controllerObj = new GameObject("TileMapController");

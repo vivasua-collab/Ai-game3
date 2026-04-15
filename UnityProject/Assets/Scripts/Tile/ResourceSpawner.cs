@@ -2,7 +2,7 @@
 // ResourceSpawner.cs — Спавнер ресурсных объектов на локации
 // Cultivation World Simulator
 // Создано: 2026-04-14 07:35:00 UTC
-// Редактировано: 2026-04-15 12:00:00 UTC — FIX: увеличен размер спрайтов, правильная прозрачность, маппинг всех ресурсов
+// Редактировано: 2026-04-16 — FIX: spriteScale=0.16 (5x меньше), PPU=160, прозрачность
 // ============================================================================
 
 using System.Collections.Generic;
@@ -56,8 +56,8 @@ namespace CultivationGame.TileSystem
         [SerializeField] private int spawnMargin = 3; // отступ от краёв карты (увеличен)
 
         [Header("Visuals")]
-        [SerializeField] private int spriteSize = 48; // Редактировано: 2026-04-15 — увеличено с 24 для лучшей видимости
-        [SerializeField] private float spriteScale = 0.8f; // Редактировано: 2026-04-15 — увеличено с 0.6
+        [SerializeField] private int spriteSize = 64; // Размер текстуры (совпадает с объектами тайлов)
+        [SerializeField] private float spriteScale = 0.16f; // В 5 раз меньше (было 0.8) — объекты не перекрывают клетки
 
         // === Runtime ===
         private List<GameObject> spawnedResources = new List<GameObject>();
@@ -341,7 +341,9 @@ namespace CultivationGame.TileSystem
             texture.SetPixels(pixels);
             texture.Apply();
 
-            return Sprite.Create(texture, new Rect(0, 0, size, size), new Vector2(0.5f, 0.5f), 32);
+            // PPU=160 → 64/160 = 0.4 юнита (в 5 раз меньше ячейки 2.0)
+            // Редактировано: 2026-04-16 — PPU увеличен с 32 до 160
+            return Sprite.Create(texture, new Rect(0, 0, size, size), new Vector2(0.5f, 0.5f), 160);
         }
 
         private bool IsAllowedTerrain(TerrainType terrain, TerrainType[] allowed)

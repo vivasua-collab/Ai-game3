@@ -76,13 +76,13 @@ namespace CultivationGame.TileSystem
             objectsParent = new GameObject("SpawnedObjects").transform;
             objectsParent.SetParent(transform);
 
-            // FIX: Отрицательный cellGap на Grid для устранения зазоров между тайлами
-            // При sub-pixel рендеринге между тайлами появляются тонкие линии фона.
-            // Редактировано: 2026-04-15 UTC
+            // FIX: cellGap = 0. Pixel bleed через увеличенные terrain-спрайты (68×68 PPU=32 → 2.125u)
+            // устраняет белую сетку надёжнее, чем отрицательный cellGap.
+            // Редактировано: 2026-04-16 UTC
             var grid = GetComponentInParent<Grid>();
-            if (grid != null && grid.cellGap.x >= 0f)
+            if (grid != null)
             {
-                grid.cellGap = new Vector3(-0.01f, -0.01f, 0f);
+                grid.cellGap = Vector3.zero;
             }
         }
 
@@ -157,12 +157,12 @@ namespace CultivationGame.TileSystem
             oreVeinTile = EnsureTile(oreVeinTile, "obj_ore_vein", false, TerrainType.Stone);
             herbTile = EnsureTile(herbTile, "obj_herb", true, TerrainType.Grass);
 
-            // FIX: Устранение зазоров — отрицательный cellGap на Grid
-            // Редактировано: 2026-04-15 11:15:00 UTC
+            // FIX: cellGap = 0. Pixel bleed через terrain-спрайты устраняет зазоры.
+            // Редактировано: 2026-04-16 UTC
             var grid = GetComponentInParent<Grid>();
             if (grid != null)
             {
-                grid.cellGap = new Vector3(-0.01f, -0.01f, 0f);
+                grid.cellGap = Vector3.zero;
             }
         }
 
@@ -231,21 +231,27 @@ namespace CultivationGame.TileSystem
         /// </summary>
         private Sprite CreateProceduralTileSprite(string spriteName, TerrainType terrain)
         {
-            int size = 66; // Pixel bleed: 64 + 2
-            Texture2D texture = new Texture2D(size, size, TextureFormat.RGBA32, false);
+            bool isObject = spriteName.StartsWith("obj_");
+
+            // Terrain: 68×68, PPU=32 → 2.125 юнита (pixel bleed устраняет белую сетку)
+            // Objects: 64×64, PPU=160 → 0.4 юнита (в 5 раз меньше ячейки)
+            // Редактировано: 2026-04-16 UTC
+            int texSize = isObject ? 64 : 68;
+            int ppu = isObject ? 160 : 32;
+
+            Texture2D texture = new Texture2D(texSize, texSize, TextureFormat.RGBA32, false);
             texture.filterMode = FilterMode.Point;
             texture.wrapMode = TextureWrapMode.Clamp;
 
             Color color = GetTerrainColor(terrain);
-            bool isObject = spriteName.StartsWith("obj_");
 
-            for (int x = 0; x < size; x++)
+            for (int x = 0; x < texSize; x++)
             {
-                for (int y = 0; y < size; y++)
+                for (int y = 0; y < texSize; y++)
                 {
                     if (isObject)
                     {
-                        // Объектные спрайты — прозрачный фон, форма в центре
+                        // Объектные спрайты — прозрачный фон
                         texture.SetPixel(x, y, Color.clear);
                     }
                     else
@@ -259,63 +265,53 @@ namespace CultivationGame.TileSystem
                 }
             }
 
-            // Для объектных спрайтов — нарисовать простую форму
+            // Для объектных спрайтов — нарисовать простую форму (уменьшенную)
             if (isObject)
             {
-                int cx = size / 2;
-                int cy = size / 2;
+                int cx = texSize / 2;
+                int cy = texSize / 2;
                 if (spriteName.Contains("tree"))
                 {
-                    // Ствол + крона
-                    DrawRectOnTexture(texture, cx - 2, 1, 4, 20, new Color(0.4f, 0.25f, 0.15f));
-                    DrawEllipseOnTexture(texture, cx, cy + 10, 14, 16, color);
+                    DrawRectOnTexture(texture, cx - 3, 8, 6, 24, new Color(0.4f, 0.25f, 0.15f));
+                    for (int y = 24; y < 56; y++)
+                    {
+                        int width = (56 - y) / 3;
+                        DrawRectOnTexture(texture, cx - width, y, width * 2, 1, color);
+                    }
                 }
                 else if (spriteName.Contains("rock"))
                 {
-                    DrawEllipseOnTexture(texture, cx, cy - 3, 16, 12, color);
-                    DrawEllipseOnTexture(texture, cx, cy - 3, 14, 10, color * 1.1f);
+                    DrawEllipseOnTexture(texture, cx, cy - 2, 8, 6, color);
+                    DrawEllipseOnTexture(texture, cx, cy - 2, 6, 4, color * 1.1f);
                 }
                 else if (spriteName.Contains("ore"))
                 {
-                    DrawEllipseOnTexture(texture, cx, cy - 3, 16, 12, new Color(0.45f, 0.4f, 0.35f));
-                    DrawEllipseOnTexture(texture, cx - 4, cy - 2, 5, 3, new Color(0.8f, 0.6f, 0.2f));
-                    DrawEllipseOnTexture(texture, cx + 3, cy - 5, 4, 3, new Color(0.7f, 0.5f, 0.15f));
+                    DrawEllipseOnTexture(texture, cx, cy - 3, 10, 8, new Color(0.45f, 0.4f, 0.35f));
+                    DrawEllipseOnTexture(texture, cx - 3, cy - 2, 4, 3, new Color(0.8f, 0.6f, 0.2f));
                 }
                 else if (spriteName.Contains("bush"))
                 {
-                    DrawEllipseOnTexture(texture, cx - 6, cy, 8, 10, color);
-                    DrawEllipseOnTexture(texture, cx + 6, cy, 8, 10, color * 0.9f);
-                    DrawEllipseOnTexture(texture, cx, cy + 4, 12, 8, color * 1.1f);
+                    DrawEllipseOnTexture(texture, cx - 5, cy, 7, 8, color);
+                    DrawEllipseOnTexture(texture, cx + 5, cy, 7, 8, color * 0.9f);
+                    DrawEllipseOnTexture(texture, cx, cy + 3, 10, 7, color * 1.1f);
                 }
                 else if (spriteName.Contains("chest"))
                 {
-                    DrawRectOnTexture(texture, 12, 12, 40, 26, color);
-                    DrawRectOnTexture(texture, 10, 34, 44, 10, color * 1.2f);
+                    DrawRectOnTexture(texture, cx - 8, cy - 6, 16, 12, color);
+                    DrawRectOnTexture(texture, cx - 9, cy + 4, 18, 4, color * 1.2f);
                 }
                 else if (spriteName.Contains("herb"))
                 {
-                    DrawRectOnTexture(texture, cx - 1, 5, 2, 22, new Color(0.2f, 0.4f, 0.15f));
-                    DrawEllipseOnTexture(texture, cx, cy + 5, 8, 8, color);
+                    DrawRectOnTexture(texture, cx - 1, 10, 2, 20, new Color(0.2f, 0.4f, 0.15f));
+                    DrawEllipseOnTexture(texture, cx, cy + 5, 6, 6, color);
                 }
             }
 
             texture.Apply();
 
-            // FIX: Terrain-спрайты используют ПОЛНЫЙ rect (0,0,66,66) при PPU=32.
-            // 66px / 32PPU = 2.0625 юнита — чуть больше ячейки Grid (2.0).
-            // Перекрытие устраняет sub-pixel зазоры (белая сетка).
-            // Крайние пиксели — pixel bleed, цвет совпадает с краем тайла.
-            // Объектные спрайты используют rect (1,1,64,64) — ровно 2.0 юнита,
-            // чтобы прозрачный фон НЕ перекрывал соседние клетки.
-            // Редактировано: 2026-04-15 12:00:00 UTC
-            if (isObject)
-            {
-                return Sprite.Create(texture, new Rect(1, 1, 64, 64), new Vector2(0.5f, 0.5f), 32f);
-            }
-            else
-            {
-                return Sprite.Create(texture, new Rect(0, 0, 66, 66), new Vector2(0.5f, 0.5f), 32f);
-            }
+            // Terrain: полный rect (0,0,68,68) при PPU=32 → 2.125u (перекрытие ячейки 2.0u)
+            // Objects: полный rect (0,0,64,64) при PPU=160 → 0.4u (в 5 раз меньше ячейки)
+            return Sprite.Create(texture, new Rect(0, 0, texSize, texSize), new Vector2(0.5f, 0.5f), ppu);
         }
 
         /// <summary>
