@@ -1734,53 +1734,17 @@ namespace CultivationGame.Editor
                 var importer = AssetImporter.GetAtPath(pngPath) as TextureImporter;
                 if (importer == null) continue;
 
-                string fileName = Path.GetFileNameWithoutExtension(pngPath);
-                bool isObject = fileName.StartsWith("obj_");
-
-                // Всегда принудительно обновляем — гарантируем правильные настройки
+                // SpriteImportMode.Single — один спрайт на всю текстуру (64×64)
+                // В Unity 6.3 TextureImporter.sprites удалён, используем Single режим
+                // Редактировано: 2026-04-16 — заменено с Multiple на Single
                 importer.textureType = TextureImporterType.Sprite;
-                importer.spriteImportMode = SpriteImportMode.Multiple;
+                importer.spriteImportMode = SpriteImportMode.Single;
                 importer.spritePixelsPerUnit = 32; // 64px / 32 PPU = 2 юнита на тайл
                 importer.filterMode = FilterMode.Point;
                 importer.wrapMode = TextureWrapMode.Clamp;
                 importer.spriteBorder = Vector4.zero;
-                // FIX: alphaIsTransparency — ОБЯЗАТЕЛЬНО для объектов с прозрачным фоном
-                // Без этого PNG с RGBA отображаются с белым фоном
-                // Редактировано: 2026-04-15 12:00:00 UTC
+                // alphaIsTransparency — ОБЯЗАТЕЛЬНО для объектов с прозрачным фоном
                 importer.alphaIsTransparency = true;
-
-                // FIX: Задаём sprite metadata через sprites[] — spriteRect
-                // Terrain: (0,0,66,66) — полный pixel bleed, 2.0625 юнита при PPU=32
-                // Objects: (1,1,64,64) — центральная часть, 2.0 юнита при PPU=32
-                // Редактировано: 2026-04-15 12:00:00 UTC
-                if (isObject)
-                {
-                    importer.sprites = new SpriteMetaData[]
-                    {
-                        new SpriteMetaData
-                        {
-                            name = fileName,
-                            rect = new Rect(1, 1, 64, 64),
-                            pivot = new Vector2(0.5f, 0.5f),
-                            alignment = (int)SpriteAlignment.Center,
-                            border = Vector4.zero
-                        }
-                    };
-                }
-                else
-                {
-                    importer.sprites = new SpriteMetaData[]
-                    {
-                        new SpriteMetaData
-                        {
-                            name = fileName,
-                            rect = new Rect(0, 0, 66, 66),
-                            pivot = new Vector2(0.5f, 0.5f),
-                            alignment = (int)SpriteAlignment.Center,
-                            border = Vector4.zero
-                        }
-                    };
-                }
 
                 AssetDatabase.ImportAsset(pngPath, ImportAssetOptions.ForceUpdate);
                 reimportCount++;

@@ -18,8 +18,7 @@ namespace CultivationGame.TileSystem.Editor
     /// </summary>
     public static class TileSpriteGenerator
     {
-        private const int TILE_SIZE = 66; // +2px для pixel bleed (устранение зазоров)
-        private const int VISIBLE_SIZE = 64; // Видимая часть спрайта
+        private const int TILE_SIZE = 64; // Размер тайла 64×64
         private const string OUTPUT_PATH = "Assets/Sprites/Tiles";
 
         [MenuItem("Tools/Generate Tile Sprites")]
@@ -59,19 +58,16 @@ namespace CultivationGame.TileSystem.Editor
 
         private static void GenerateTerrainSprite(string name, Color color)
         {
-            // FIX: Pixel bleed — текстура 66×66, цвет заливается на всю площадь,
-            // но sprite rect = (1,1,64,64) — видима только центральная часть.
-            // Крайние пиксели дублируют цвет, устраняя зазоры между тайлами.
-            // Редактировано: 2026-04-15 11:10:00 UTC
+            // Текстура 64×64, SpriteImportMode.Single — один спрайт на всю текстуру
+            // Редактировано: 2026-04-16 — убран pixel bleed (не работал), упрощено до Single режима
             Texture2D texture = new Texture2D(TILE_SIZE, TILE_SIZE);
             
             for (int x = 0; x < TILE_SIZE; x++)
             {
                 for (int y = 0; y < TILE_SIZE; y++)
                 {
-                    // Координаты внутри видимой области (для PerlinNoise)
-                    int vx = Mathf.Clamp(x - 1, 0, VISIBLE_SIZE - 1);
-                    int vy = Mathf.Clamp(y - 1, 0, VISIBLE_SIZE - 1);
+                    int vx = x;
+                    int vy = y;
                     
                     // Добавить небольшую вариацию
                     float variation = Mathf.PerlinNoise(vx * 0.1f, vy * 0.1f) * 0.1f;
@@ -121,10 +117,8 @@ namespace CultivationGame.TileSystem.Editor
 
         private static void GenerateObjectSprite(string name, Color color, ObjectShape shape)
         {
-            // FIX: Объектные спрайты — 66×66 текстура с прозрачным фоном,
-            // sprite rect = (1,1,64,64) — pixel bleed для совместимости.
-            // Объекты рисуются в центре видимой области (смещение +1).
-            // Редактировано: 2026-04-15 11:10:00 UTC
+            // Объектные спрайты — 64×64 текстура с прозрачным фоном, SpriteImportMode.Single
+            // Редактировано: 2026-04-16 — убран pixel bleed, упрощено до Single режима
             Texture2D texture = new Texture2D(TILE_SIZE, TILE_SIZE, TextureFormat.RGBA32, false);
             Color transparent = new Color(0, 0, 0, 0);
             
@@ -137,8 +131,7 @@ namespace CultivationGame.TileSystem.Editor
                 }
             }
 
-            // Смещение +1 для компенсации pixel bleed offset
-            int cx = TILE_SIZE / 2;  // 33 (центр 66×66)
+            int cx = TILE_SIZE / 2;  // 32 (центр 64×64)
             int cy = TILE_SIZE / 2;
 
             switch (shape)
@@ -244,55 +237,17 @@ namespace CultivationGame.TileSystem.Editor
             var importer = AssetImporter.GetAtPath(path) as TextureImporter;
             if (importer != null)
             {
-                bool isObject = name.StartsWith("obj_");
-
+                // SpriteImportMode.Single — один спрайт на всю текстуру (64×64)
+                // В Unity 6.3 TextureImporter.sprites удалён, используем Single режим
+                // Редактировано: 2026-04-16 — заменено с Multiple на Single
                 importer.textureType = TextureImporterType.Sprite;
-                importer.spriteImportMode = SpriteImportMode.Multiple;
-                // FIX: PPU=32 для terrain (66px/32=2.0625 — перекрытие ячейки 2.0, устраняет зазоры),
-                // PPU=32 для objects (64px/32=2.0 — ровно ячейка, без перекрытия прозрачного фона)
-                // Редактировано: 2026-04-15 12:00:00 UTC
-                importer.spritePixelsPerUnit = VISIBLE_SIZE / 2; // 64/2=32
+                importer.spriteImportMode = SpriteImportMode.Single;
+                importer.spritePixelsPerUnit = 32; // 64px / 32 PPU = 2 юнита на тайл
                 importer.filterMode = FilterMode.Point;
                 importer.spriteBorder = Vector4.zero;
                 importer.wrapMode = TextureWrapMode.Clamp;
-                // FIX: alphaIsTransparency — ОБЯЗАТЕЛЬНО для PNG с прозрачностью
-                // Без этого RGBA PNG отображаются с белым/чёрным фоном
-                // Редактировано: 2026-04-15 12:00:00 UTC
+                // alphaIsTransparency — ОБЯЗАТЕЛЬНО для PNG с прозрачностью
                 importer.alphaIsTransparency = true;
-
-                // FIX: Задаём sprite metadata через sprites[] — это ЕДИНСТВЕННЫЙ способ
-                // задать spriteRect в Unity 6.3. TextureImporterSettings не имеет свойства spriteRect.
-                // Terrain: rect=(0,0,66,66) — полный pixel bleed, 2.0625 юнита при PPU=32
-                // Objects: rect=(1,1,64,64) — центральная часть, 2.0 юнита при PPU=32
-                // Редактировано: 2026-04-15 12:00:00 UTC
-                if (isObject)
-                {
-                    importer.sprites = new SpriteMetaData[]
-                    {
-                        new SpriteMetaData
-                        {
-                            name = name,
-                            rect = new Rect(1, 1, 64, 64),
-                            pivot = new Vector2(0.5f, 0.5f),
-                            alignment = (int)SpriteAlignment.Center,
-                            border = Vector4.zero
-                        }
-                    };
-                }
-                else
-                {
-                    importer.sprites = new SpriteMetaData[]
-                    {
-                        new SpriteMetaData
-                        {
-                            name = name,
-                            rect = new Rect(0, 0, 66, 66),
-                            pivot = new Vector2(0.5f, 0.5f),
-                            alignment = (int)SpriteAlignment.Center,
-                            border = Vector4.zero
-                        }
-                    };
-                }
 
                 AssetDatabase.ImportAsset(path, ImportAssetOptions.ForceUpdate);
             }
