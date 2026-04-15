@@ -603,6 +603,7 @@ namespace CultivationGame.NPC
             state.Personality = (PersonalityTrait)data.PersonalityFlags;
             state.ElementAffinities = data.ElementAffinities;
             // FIX NPC-C02: Deserialize skill levels from array (2026-04-11)
+#pragma warning disable CS0618 // SkillLevels устарел, но нужен для обратной совместимости
             if (data.SkillLevels != null)
             {
                 var skillData = new SkillLevelData { entries = data.SkillLevels };
@@ -612,6 +613,7 @@ namespace CultivationGame.NPC
             {
                 state.SkillLevels = new Dictionary<string, float>();
             }
+#pragma warning restore CS0618
             state.IsAlive = data.IsAlive;
             state.SectId = data.SectId;
             state.CurrentLocation = data.CurrentLocation;

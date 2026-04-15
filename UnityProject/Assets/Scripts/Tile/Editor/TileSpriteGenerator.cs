@@ -258,14 +258,17 @@ namespace CultivationGame.TileSystem.Editor
                 // Без этого PNG с alpha каналом отображаются с белым фоном
                 // Редактировано: 2026-04-15 11:10:00 UTC
                 importer.alphaIsTransparency = true;
+                // FIX: Используем TextureImporterSettings вместо устаревших свойств spritePivot/spriteAlignment
+                // В Unity 6.3 прямые свойства spritePivot/spriteAlignment удалены из TextureImporter
+                // Редактировано: 2026-04-16 08:00:00 UTC
+                var texSettings = new TextureImporterSettings();
+                importer.ReadTextureSettings(texSettings);
+                texSettings.spriteAlignment = (int)SpriteAlignment.Center;
+                texSettings.spritePivot = new Vector2(0.5f, 0.5f);
                 // FIX: Задать sprite rect вручную — (1,1,64,64) вместо (0,0,66,66)
                 // Центральная часть текстуры 66×66, края = pixel bleed
                 // Редактировано: 2026-04-15 11:10:00 UTC
-                importer.spritePivot = new Vector2(0.5f, 0.5f);
-                importer.spriteAlignment = (int)SpriteAlignment.Center;
-                // Вручную задать rect через SpriteImportData (если поддерживается)
-                // Для базового TextureImporter spriteRect определяется автоматически
-                // из текстуры. Pixel bleed работает через сплошную заливку краёв.
+                importer.SetTextureSettings(texSettings);
                 AssetDatabase.ImportAsset(path);
             }
         }
