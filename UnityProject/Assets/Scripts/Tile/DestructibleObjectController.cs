@@ -2,7 +2,7 @@
 // DestructibleObjectController.cs — Контроллер разрушаемых объектов
 // Cultivation World Simulator
 // Создано: 2026-04-08
-// Редактировано: 2026-04-11 08:24:40 UTC — FIX TIL-H02: DamageType→TileDamageType (конфликт с Core.DamageType)
+// Редактировано: 2026-04-15 11:30:00 UTC — FIX: RGBA32 для fallback спрайтов дропа (прозрачность)
 // ============================================================================
 
 using System;
@@ -333,25 +333,40 @@ namespace CultivationGame.TileSystem
         // Это допустимо для краткосрочных визуалов дропа, но может течь при накоплении. (2026-04-11)
         private Sprite CreateDropSprite(string resourceId)
         {
-            Texture2D texture = new Texture2D(32, 32);
+            // FIX: RGBA32 для правильной прозрачности fallback спрайтов
+            // Редактировано: 2026-04-15 11:30:00 UTC
+            Texture2D texture = new Texture2D(32, 32, TextureFormat.RGBA32, false);
             Color[] colors = new Color[32 * 32];
             Color color = GetResourceColor(resourceId);
             
-            // Создать простую форму (квадрат с закруглёнными углами)
+            // Заполнить прозрачным фоном
+            for (int i = 0; i < colors.Length; i++) colors[i] = Color.clear;
+            
+            // Создать форму (круг — лучше видно чем квадрат)
             for (int x = 0; x < 32; x++)
             {
                 for (int y = 0; y < 32; y++)
                 {
-                    float dx = Mathf.Abs(x - 16);
-                    float dy = Mathf.Abs(y - 16);
+                    float dx = x - 16;
+                    float dy = y - 16;
+                    float dist = Mathf.Sqrt(dx * dx + dy * dy);
                     
-                    if (dx < 12 && dy < 12)
+                    if (dist < 10f)
+                    {
+                        // Яркое ядро
+                        colors[y * 32 + x] = new Color(
+                            Mathf.Min(1f, color.r * 1.3f),
+                            Mathf.Min(1f, color.g * 1.3f),
+                            Mathf.Min(1f, color.b * 1.3f), 1f);
+                    }
+                    else if (dist < 13f)
                     {
                         colors[y * 32 + x] = color;
                     }
-                    else
+                    else if (dist < 14f)
                     {
-                        colors[y * 32 + x] = Color.clear;
+                        // Контур
+                        colors[y * 32 + x] = new Color(color.r * 0.6f, color.g * 0.6f, color.b * 0.6f, 1f);
                     }
                 }
             }
