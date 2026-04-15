@@ -462,7 +462,9 @@ namespace CultivationGame.Tests
             pool.currentQi = 25;
             pool.lastDrainTick = 0;
 
+#pragma warning disable CS0219
             bool depletedFired = false;
+#pragma warning restore CS0219
             pool.OnDepleted += () => depletedFired = true;
 
             pool.ProcessDrain(120); // 2 drain cycles = 20 Qi
@@ -838,7 +840,9 @@ namespace CultivationGame.Tests
         // === ICombatant Events ===
         public event Action OnDeath;
         public event Action<float> OnDamageTaken;
+#pragma warning disable CS0067
         public event Action<long, long> OnQiChanged;
+#pragma warning restore CS0067
 
         public void Setup(int level, QiController qi)
         {

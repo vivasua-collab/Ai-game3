@@ -42,7 +42,9 @@ namespace CultivationGame.Combat.OrbitalSystem // FIX: CultivationWorld→Cultiv
         private OrbitalWeaponController _controller;
         private Collider2D[] _hitResults = new Collider2D[10];
         private bool _isActive = true;
+#pragma warning disable CS0414
         private bool _isInitialized;
+#pragma warning restore CS0414
 
         #endregion
 

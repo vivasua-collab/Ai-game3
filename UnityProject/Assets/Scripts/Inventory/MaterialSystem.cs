@@ -48,7 +48,9 @@ namespace CultivationGame.Inventory
 
         #region Events
 
+#pragma warning disable CS0067
         public event Action<Data.ScriptableObjects.MaterialData> OnMaterialDiscovered;
+#pragma warning restore CS0067
 
         #endregion
 

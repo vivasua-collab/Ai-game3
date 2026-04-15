@@ -62,9 +62,9 @@ namespace CultivationGame.Examples
             // === Combat ===
             public int baseDamage;
             public int baseDefense;
-#pragma warning disable CS0612 // Disposition устарел, используется для обратной совместимости
+#pragma warning disable CS0618 // Disposition устарел, используется для обратной совместимости
             public Disposition disposition;
-#pragma warning restore CS0612
+#pragma warning restore CS0618
             public float aggressionLevel;
 
             // === Equipment ===
@@ -135,9 +135,9 @@ namespace CultivationGame.Examples
             npc.conductivity = generatedNPC.conductivity;
             npc.baseDamage = generatedNPC.baseDamage;
             npc.baseDefense = generatedNPC.baseDefense;
-#pragma warning disable CS0612 // Disposition устарел
+#pragma warning disable CS0618 // Disposition устарел
             npc.disposition = generatedNPC.baseDisposition;
-#pragma warning restore CS0612
+#pragma warning restore CS0618
             npc.aggressionLevel = generatedNPC.aggressionLevel;
 
             // Qi Density = 2^(level-1) = 2^5 = 32
@@ -297,9 +297,9 @@ namespace CultivationGame.Examples
             sb.AppendLine($"║ ID: {npc.id}");
             sb.AppendLine($"║ Качество ядра: {npc.coreQuality}");
             sb.AppendLine($"║ Категория: {npc.category}");
-#pragma warning disable CS0612 // Disposition устарел
+#pragma warning disable CS0618 // Disposition устарел
             sb.AppendLine($"║ Характер: {npc.disposition}");
-#pragma warning restore CS0612
+#pragma warning restore CS0618
             sb.AppendLine($"║ Агрессивность: {npc.aggressionLevel:P0}");
 
             // Stats
@@ -382,7 +382,7 @@ namespace CultivationGame.Examples
             foreach (var consumable in npc.consumables)
             {
                 sb.AppendLine($"║ {consumable.icon} [{consumable.rarity}] {consumable.nameRu}");
-                sb.AppendLine($"║   Эффекты: {string.Join(", ", consumable.effects.ConvertAll(e => $"{e.effectType}:{(e.isPercentage ? (e.value * 100).ToString("F0") + "%" : e.value.ToString())}"))}");
+                sb.AppendLine($"║   Эффекты: {string.Join(", ", consumable.effects.ConvertAll(e => $"{e.effectType}:{(e.isPercentage ? (e.valueFloat * 100).ToString("F0") + "%" : e.isLongValue ? e.valueLong.ToString() : e.valueFloat.ToString())}"))}");
                 if (consumable.sideEffects.Count > 0)
                 {
                     sb.AppendLine($"║   ⚠️ Побочные эффекты: {string.Join(", ", consumable.sideEffects.ConvertAll(s => s.effectType))}");

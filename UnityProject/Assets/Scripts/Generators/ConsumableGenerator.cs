@@ -389,7 +389,8 @@ namespace CultivationGame.Generators
                     consumable.effects.Add(new ConsumableEffect
                     {
                         effectType = "healHP",
-                        value = baseValue * 2,
+                        valueFloat = baseValue * 2,
+                        isLongValue = false,
                         duration = consumable.duration,
                         isPercentage = false
                     });
@@ -413,7 +414,8 @@ namespace CultivationGame.Generators
                     consumable.effects.Add(new ConsumableEffect
                     {
                         effectType = buff,
-                        value = rng.NextFloat(0.1f, 0.3f) * ((int)consumable.rarity + 1),
+                        valueFloat = rng.NextFloat(0.1f, 0.3f) * ((int)consumable.rarity + 1),
+                        isLongValue = false,
                         duration = consumable.duration,
                         isPercentage = true
                     });
@@ -425,7 +427,8 @@ namespace CultivationGame.Generators
                     consumable.effects.Add(new ConsumableEffect
                     {
                         effectType = debuff,
-                        value = baseValue * 0.5f,
+                        valueFloat = baseValue * 0.5f,
+                        isLongValue = false,
                         duration = consumable.duration,
                         isPercentage = false
                     });
@@ -490,7 +493,8 @@ namespace CultivationGame.Generators
                 consumable.sideEffects.Add(new ConsumableEffect
                 {
                     effectType = sideEffect,
-                    value = rng.NextFloat(0.1f, 0.3f),
+                    valueFloat = rng.NextFloat(0.1f, 0.3f),
+                    isLongValue = false,
                     duration = 30 + rng.Next(30), // 30-60 тиков
                     isPercentage = true
                 });

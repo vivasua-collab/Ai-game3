@@ -63,7 +63,9 @@ namespace CultivationGame.UI
         private string currentLocationName = "";
         
         // === Events ===
+#pragma warning disable CS0067
         public event Action<int> OnQuickSlotUsed;
+#pragma warning restore CS0067
         
         // === Unity Lifecycle ===
         

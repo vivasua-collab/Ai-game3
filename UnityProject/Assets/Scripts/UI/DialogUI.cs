@@ -42,7 +42,9 @@ namespace CultivationGame.UI
         [SerializeField] private TMP_Text continueText;
         
         [Header("Typing Effect")]
+#pragma warning disable CS0414
         [SerializeField] private float typingSpeed = 0.03f;
+#pragma warning restore CS0414
         [SerializeField] private bool useTypingEffect = true;
         
         [Header("Animation")]

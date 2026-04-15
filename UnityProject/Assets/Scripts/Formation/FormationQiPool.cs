@@ -129,7 +129,9 @@ namespace CultivationGame.Formation
         /// <summary>
         /// Накопленная утечка (для точности).
         /// </summary>
+#pragma warning disable CS0414
         private float accumulatedDrain;
+#pragma warning restore CS0414
 
         #endregion
 

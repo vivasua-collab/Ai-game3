@@ -139,7 +139,9 @@ namespace CultivationGame.Formation
         /// <summary>
         /// Событие активации формации.
         /// </summary>
+#pragma warning disable CS0067
         public event Action<FormationCore> OnFormationActivated;
+#pragma warning restore CS0067
 
         /// <summary>
         /// Событие истощения формации.

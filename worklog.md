@@ -796,3 +796,94 @@ Stage Summary:
 - Все 3 критические ошибки исправлены (Tag, RectTransform, ServiceLocator)
 - Зазоры тайлов — исправлены через Grid.cellGap
 - Спрайты игрока и руд — загружаются из AI-ассетов (fallback на процедурные)
+
+---
+Task ID: 2
+Agent: Sub Agent
+Task: Fix CS0618 Disposition warnings — replace CS0612 pragmas with CS0618
+
+Work Log:
+- Прочитаны все 4 целевых файла + NPCAI.cs (обнаружен дополнительный CS0612 pragma)
+- Корневая причина: код использует `#pragma warning disable CS0612`, но компилятор emits CS0618 для [Obsolete] с сообщением
+- CS0612 = obsolete без сообщения; CS0618 = obsolete с сообщением (более широкий)
+
+Изменения в 5 файлах:
+
+**NPCData.cs:**
+- Заменён CS0612→CS0618 вокруг Disposition в конструкторе NPCState (строки 149-151)
+- Добавлен #pragma warning disable/restore CS0618 вокруг SkillLevels в конструкторе (строка 156-158)
+- Добавлен #pragma warning disable/restore CS0618 вокруг SkillLevels в GetSkillLevelData (строки 170-172)
+- Добавлен #pragma warning disable/restore CS0618 вокруг SkillLevels в SetSkillLevelData (строки 180-182)
+
+**NPCController.cs:**
+- Заменён CS0612→CS0618 в ApplyPreset (строки 126-129)
+- Заменён CS0612→CS0618 в InitializeFromGenerated + расширен блок pragma для покрытия ConvertDispositionToAttitude/ConvertDispositionToPersonality вызовов (строки 398-403)
+- Добавлен #pragma warning disable/restore CS0618 вокруг ConvertDispositionToAttitude метода (строки 450-468)
+- Добавлен #pragma warning disable/restore CS0618 вокруг ConvertDispositionToPersonality метода (строки 473-499)
+- Заменён CS0612→CS0618 в GetSaveData (строки 555-557)
+- Заменён CS0612→CS0618 в LoadSaveData (строки 597-599)
+
+**NPCGenerator.cs:**
+- Заменён CS0612→CS0618 вокруг baseDisposition поля (строки 111-113)
+- Заменён CS0612→CS0618 вокруг GetDispositionForRole вызова (строки 230-232)
+- Заменён CS0612→CS0618 вокруг GetDispositionForRole метода (строки 437-453)
+
+**NPCAssemblyExample.cs:**
+- Заменён CS0612→CS0618 вокруг disposition поля (строки 65-67)
+- Заменён CS0612→CS0618 вокруг npc.disposition присваивания (строки 138-140)
+- Заменён CS0612→CS0618 вокруг npc.disposition вывода (строки 300-302)
+- Добавлен #pragma warning disable/restore CS0618 вокруг ConsumableEffect.value (строки 385-387)
+
+**NPCAI.cs (дополнительно найден):**
+- Заменён CS0612→CS0618 вокруг ApplyDispositionModifiers метода (строки 591-625)
+
+Stage Summary:
+- 5 файлов изменено, все CS0612→CS0618 замены выполнены
+- Добавлены недостающие pragma блоки: SkillLevels (3 места), ConvertDispositionToAttitude/ConvertDispositionToPersonality (2 метода), ConsumableEffect.value (1 место)
+- Расширен pragma блок в InitializeFromGenerated для покрытия всех Disposition ссылок
+- Обsolete поля/свойства НЕ удалены — сохранены для обратной совместимости
+- Каждый #pragma disable имеет парный #pragma restore
+
+---
+Task ID: 5-6
+Agent: Sub Agent
+Task: Fix CS0067, CS0414, CS0219 warnings — pragma suppression
+
+Work Log:
+- 2026-03-05 UTC: Прочитан worklog.md для контекста
+- Найдены актуальные пути всех 14 целевых файлов через Glob
+- Прочитаны релевантные строки каждого файла перед редактированием
+
+**CS0067 — 8 неиспользуемых событий (7 файлов):**
+- PlayerController.cs: OnHealthChanged — #pragma warning disable/restore CS0067
+- MaterialSystem.cs: OnMaterialDiscovered — #pragma warning disable/restore CS0067
+- EquipmentController.cs: OnSlotAvailabilityChanged — #pragma warning disable/restore CS0067
+- FormationController.cs: OnFormationActivated — #pragma warning disable/restore CS0067
+- IntegrationTests.cs: OnQiChanged (MockCombatant) — #pragma warning disable/restore CS0067
+- CraftingController.cs: OnCraftProgress — #pragma warning disable/restore CS0067
+- HUDController.cs: OnQuickSlotUsed — #pragma warning disable/restore CS0067
+- NPCController.cs: OnBreakthrough — #pragma warning disable/restore CS0067
+
+**CS0414 — 19 назначенных но неиспользуемых полей (10 файлов):**
+- UIManager.cs: fadeInDuration, fadeOutDuration — #pragma warning disable/restore CS0414
+- FormationQiPool.cs: accumulatedDrain — #pragma warning disable/restore CS0414
+- SleepSystem.cs: optimalSleepHours, staminaRecoveryRate, isInitialized — #pragma warning disable/restore CS0414
+- CharacterPanelUI.cs: isInitialized — #pragma warning disable/restore CS0414
+- NPCAI.cs: aggroRange, detectionRange, currentPatrolIndex — #pragma warning disable/restore CS0414
+- VFXPool.cs: initialPoolSize, prewarmOnStart — #pragma warning disable/restore CS0414
+- RelationshipController.cs: maxHistorySize, relationshipDecayRate — #pragma warning disable/restore CS0414
+- ChargerData.cs: minCultivationLevel — #pragma warning disable/restore CS0414
+- FactionController.cs: relationDecayRate — #pragma warning disable/restore CS0414
+- OrbitalWeapon.cs: _isInitialized — #pragma warning disable/restore CS0414
+- DialogUI.cs: typingSpeed — #pragma warning disable/restore CS0414
+- EventController.cs: baseEventChance — #pragma warning disable/restore CS0414
+
+**CS0219 — 1 неиспользуемая переменная (1 файл):**
+- IntegrationTests.cs: depletedFired — #pragma warning disable/restore CS0219
+
+Stage Summary:
+- 14 файлов изменено, 28 предупреждений подавлено (8 CS0067 + 19 CS0414 + 1 CS0219)
+- Все #pragma disable имеют парные #pragma restore
+- Код НЕ удалён и НЕ модифицирован — только подавлены предупреждения компилятора
+- [SerializeField] поля сохранены для Unity Inspector сериализации
+- События сохранены для будущего использования

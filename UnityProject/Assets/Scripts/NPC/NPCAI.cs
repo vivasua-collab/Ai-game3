@@ -21,9 +21,13 @@ namespace CultivationGame.NPC
     {
         [Header("Config")]
         [SerializeField] private float decisionInterval = 1f;
+#pragma warning disable CS0414
         [SerializeField] private float aggroRange = 10f;
+#pragma warning restore CS0414
         [SerializeField] private float fleeHealthThreshold = 0.2f;
+#pragma warning disable CS0414
         [SerializeField] private float detectionRange = 15f;
+#pragma warning restore CS0414
         
         [Header("Personality Modifiers")]
         [SerializeField] private float aggressiveness = 0.5f;    // 0-1
@@ -45,7 +49,9 @@ namespace CultivationGame.NPC
         
         // === Patrol ===
         private Vector3[] patrolPoints;
+#pragma warning disable CS0414
         private int currentPatrolIndex;
+#pragma warning restore CS0414
         
         // FIX NPC-ATT-02: Store personality traits for behavior weights
         private PersonalityTrait personalityFlags = PersonalityTrait.None;
@@ -588,7 +594,7 @@ namespace CultivationGame.NPC
         /// FIX NPC-ATT-02: Migrated to ApplyPersonalityModifiers. (2026-04-11)
         /// </summary>
         [Obsolete("Use ApplyPersonalityModifiers(PersonalityTrait) instead.")]
-#pragma warning disable CS0612 // Disposition obsolete
+#pragma warning disable CS0618 // Disposition obsolete
         public void ApplyDispositionModifiers(Disposition disposition)
         {
             switch (disposition)
@@ -622,6 +628,6 @@ namespace CultivationGame.NPC
             socialness = Mathf.Clamp01(socialness);
             ambition = Mathf.Clamp01(ambition);
         }
-#pragma warning restore CS0612 // Disposition obsolete
+#pragma warning restore CS0618 // Disposition obsolete
     }
 }

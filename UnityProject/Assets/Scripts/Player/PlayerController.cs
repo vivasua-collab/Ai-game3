@@ -75,7 +75,9 @@ namespace CultivationGame.Player
         private string lastHarvestResource = "";
         
         // === Events ===
+#pragma warning disable CS0067
         public event Action<int, int> OnHealthChanged;
+#pragma warning restore CS0067
         public event Action<long, long> OnQiChanged;
         public event Action<CultivationLevel> OnCultivationLevelChanged;
         public event Action<string> OnLocationChanged;

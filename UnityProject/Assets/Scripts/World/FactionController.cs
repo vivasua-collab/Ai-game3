@@ -174,7 +174,9 @@ namespace CultivationGame.World
     public class FactionController : MonoBehaviour
     {
         [Header("Config")]
+#pragma warning disable CS0414
         [SerializeField] private float relationDecayRate = 0.1f;
+#pragma warning restore CS0414
         [SerializeField] private float warThreshold = -50;
         [SerializeField] private float allianceThreshold = 50;
         

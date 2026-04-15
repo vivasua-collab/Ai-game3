@@ -96,7 +96,9 @@ namespace CultivationGame.World
     {
         [Header("Config")]
         [SerializeField] private float eventCheckInterval = 60f;    // Проверка каждую минуту
+#pragma warning disable CS0414
         [SerializeField] private float baseEventChance = 0.05f;    // 5% базовый шанс
+#pragma warning restore CS0414
         [SerializeField] private int maxActiveEvents = 5;
         [SerializeField] private int eventHistorySize = 50;
         

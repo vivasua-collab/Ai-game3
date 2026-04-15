@@ -78,11 +78,15 @@ namespace CultivationGame.Player
         [Header("Sleep Settings")]
         [SerializeField] private float minSleepHours = 4f;
         [SerializeField] private float maxSleepHours = 12f;
+#pragma warning disable CS0414
         [SerializeField] private float optimalSleepHours = 8f;
+#pragma warning restore CS0414
 
         [Header("Recovery")]
         [SerializeField] private float hpRecoveryRate = 0.125f;      // 12.5% в час (100% за 8ч)
+#pragma warning disable CS0414
         [SerializeField] private float staminaRecoveryRate = 1.0f;    // 100% за час
+#pragma warning restore CS0414
 
         [Header("References")]
         [SerializeField] private StatDevelopment statDevelopment;
@@ -97,7 +101,9 @@ namespace CultivationGame.Player
         private SleepState currentState = SleepState.Awake;
         private float sleepStartTime = 0f;
         private float sleepDuration = 0f;
+#pragma warning disable CS0414
         private bool isInitialized = false;
+#pragma warning restore CS0414
 
         #endregion
 

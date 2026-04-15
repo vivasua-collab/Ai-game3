@@ -36,8 +36,10 @@ namespace CultivationGame.UI
         
         [Header("Config")]
         [SerializeField] private bool pauseOnMenu = true;
+#pragma warning disable CS0414
         [SerializeField] private float fadeInDuration = 0.3f;
         [SerializeField] private float fadeOutDuration = 0.2f;
+#pragma warning restore CS0414
         
         // === State ===
         private GameState currentState = GameState.None;  // FIX: Sentinel state для первого запуска

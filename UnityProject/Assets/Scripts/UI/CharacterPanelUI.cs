@@ -77,7 +77,9 @@ namespace CultivationGame.UI
 
         private Dictionary<BodyPartType, BodyPartUI> bodyPartUIs = new Dictionary<BodyPartType, BodyPartUI>();
         private Dictionary<string, StatRowUI> statRows = new Dictionary<string, StatRowUI>();
+#pragma warning disable CS0414
         private bool isInitialized = false;
+#pragma warning restore CS0414
 
         #endregion
 

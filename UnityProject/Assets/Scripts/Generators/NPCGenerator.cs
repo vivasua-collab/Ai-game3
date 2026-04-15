@@ -108,9 +108,9 @@ namespace CultivationGame.Generators
         public List<string> equipmentIds = new List<string>();
         
         // AI — FIX: Disposition→Attitude+PersonalityTrait (2026-04-11)
-#pragma warning disable CS0612 // Disposition obsolete
+#pragma warning disable CS0618 // Disposition obsolete
         public Disposition baseDisposition; // Устарело — для обратной совместимости
-#pragma warning restore CS0612
+#pragma warning restore CS0618
         public Attitude baseAttitude; // Отношение к игроку
         public PersonalityTrait basePersonality; // Характер [Flags]
         public float aggressionLevel;
@@ -227,9 +227,9 @@ namespace CultivationGame.Generators
             // Disposition → Attitude + PersonalityTrait (2026-04-11)
             npc.baseAttitude = GetAttitudeForRole(npc.role, rng);
             npc.basePersonality = GetPersonalityForRole(npc.role, rng);
-#pragma warning disable CS0612 // Disposition obsolete — обратная совместимость
+#pragma warning disable CS0618 // Disposition obsolete — обратная совместимость
             npc.baseDisposition = GetDispositionForRole(npc.role);
-#pragma warning restore CS0612
+#pragma warning restore CS0618
             npc.aggressionLevel = GetAggressionForRole(npc.role, rng);
             
             // Генерация техник для практиков
@@ -434,7 +434,7 @@ namespace CultivationGame.Generators
             return trait;
         }
 
-#pragma warning disable CS0612 // Disposition obsolete — обратная совместимость
+#pragma warning disable CS0618 // Disposition obsolete — обратная совместимость
         private static Disposition GetDispositionForRole(NPCRole role)
         {
             return role switch
@@ -450,7 +450,7 @@ namespace CultivationGame.Generators
                 _ => Disposition.Neutral
             };
         }
-#pragma warning restore CS0612 // Disposition obsolete
+#pragma warning restore CS0618 // Disposition obsolete
 
         private static float GetAggressionForRole(NPCRole role, SeededRandom rng)
         {

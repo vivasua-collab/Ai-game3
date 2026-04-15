@@ -91,8 +91,10 @@ namespace CultivationGame.NPC
     public class RelationshipController : MonoBehaviour
     {
         [Header("Config")]
+#pragma warning disable CS0414
         [SerializeField] private int maxHistorySize = 50;
         [SerializeField] private float relationshipDecayRate = 0.01f; // В день
+#pragma warning restore CS0414
         [SerializeField] private float decayStartDelay = 7f;         // Дней до начала затухания
         
         // === Storage ===

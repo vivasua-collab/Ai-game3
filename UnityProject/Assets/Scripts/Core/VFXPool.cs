@@ -33,9 +33,13 @@ namespace CultivationGame.Core
         #region Settings
 
         [Header("Settings")]
+#pragma warning disable CS0414
         [SerializeField] private int initialPoolSize = 10;
+#pragma warning restore CS0414
         [SerializeField] private int maxPoolSize = 50;
+#pragma warning disable CS0414
         [SerializeField] private bool prewarmOnStart = true;
+#pragma warning restore CS0414
 
         #endregion
 

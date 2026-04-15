@@ -138,7 +138,9 @@ namespace CultivationGame.Charger
         [SerializeField] private int vitalityBonus;
         
         [Header("Requirements")]
+#pragma warning disable CS0414
         [SerializeField] private int minCultivationLevel = 1;
+#pragma warning restore CS0414
         [SerializeField] private int minStrength;
         [SerializeField] private int minIntelligence;
         

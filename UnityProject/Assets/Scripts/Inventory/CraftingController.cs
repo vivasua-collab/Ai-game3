@@ -62,7 +62,9 @@ namespace CultivationGame.Inventory
         public event Action<CraftingResult> OnCraftSuccess;
         public event Action<CraftingResult> OnCraftFailure;
         public event Action<CraftingRecipe> OnRecipeLearned;
+#pragma warning disable CS0067
         public event Action<float> OnCraftProgress;
+#pragma warning restore CS0067
 
         #endregion
 

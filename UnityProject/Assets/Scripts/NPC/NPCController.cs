@@ -53,7 +53,9 @@ namespace CultivationGame.NPC
         
         // === Events ===
         public event Action<NPCController> OnNPCDeath;
+#pragma warning disable CS0067
         public event Action<NPCController, CultivationLevel> OnBreakthrough;
+#pragma warning restore CS0067
         public event Action<NPCController, string, int> OnRelationshipChanged;
         public event Action<NPCController, NPCAIState> OnAIStateChanged;
         
@@ -123,10 +125,10 @@ namespace CultivationGame.NPC
             
             // FIX NPC-ATT-01: Convert baseDisposition int → Attitude enum (2026-04-11)
             state.Attitude = NPCState.ValueToAttitude(preset.baseDisposition);
-#pragma warning disable CS0612 // Disposition obsolete
+#pragma warning disable CS0618 // Disposition obsolete
             // Keep legacy Disposition in sync for any remaining references
             state.Disposition = (Disposition)preset.baseDisposition;
-#pragma warning restore CS0612
+#pragma warning restore CS0618
             
             // Инициализируем аффинности элементов (по умолчанию нейтральные)
             state.ElementAffinities = new float[Enum.GetValues(typeof(Element)).Length]; // FIX CORE-H05
@@ -395,12 +397,12 @@ namespace CultivationGame.NPC
 
             // FIX NPC-ATT-01: Replace Disposition with Attitude + PersonalityTrait (2026-04-11)
             // Convert GeneratedNPC.baseDisposition (Disposition enum) to Attitude + PersonalityTrait
-#pragma warning disable CS0612 // Disposition obsolete — обратная совместимость
+#pragma warning disable CS0618 // Disposition obsolete — обратная совместимость
             state.Disposition = generated.baseDisposition;
-#pragma warning restore CS0612
             // FIX: Используем новые поля Attitude+PersonalityTrait из генератора (2026-04-11)
             state.Attitude = generated.baseAttitude != default ? generated.baseAttitude : ConvertDispositionToAttitude(generated.baseDisposition);
             state.Personality = generated.basePersonality != PersonalityTrait.None ? generated.basePersonality : ConvertDispositionToPersonality(generated.baseDisposition);
+#pragma warning restore CS0618
 
             // Элементальные аффинности
             state.ElementAffinities = new float[Enum.GetValues(typeof(Element)).Length]; // FIX CORE-H05
@@ -447,6 +449,7 @@ namespace CultivationGame.NPC
         /// <summary>
         /// Convert legacy Disposition enum to Attitude enum.
         /// </summary>
+#pragma warning disable CS0618 // Disposition obsolete
         private static Attitude ConvertDispositionToAttitude(Disposition disposition)
         {
             return disposition switch
@@ -464,10 +467,12 @@ namespace CultivationGame.NPC
                 _ => Attitude.Neutral
             };
         }
+#pragma warning restore CS0618
 
         /// <summary>
         /// Convert legacy Disposition enum to PersonalityTrait flags.
         /// </summary>
+#pragma warning disable CS0618 // Disposition obsolete
         private static PersonalityTrait ConvertDispositionToPersonality(Disposition disposition)
         {
             PersonalityTrait trait = PersonalityTrait.None;
@@ -493,6 +498,7 @@ namespace CultivationGame.NPC
             }
             return trait;
         }
+#pragma warning restore CS0618
 
         /// <summary>
         /// Создать и инициализировать NPC из генератора.
@@ -548,9 +554,9 @@ namespace CultivationGame.NPC
                 Intelligence = state.Intelligence,
                 Wisdom = state.Wisdom,
                 // FIX NPC-ATT-04: Save Attitude + PersonalityTrait (2026-04-11)
-#pragma warning disable CS0612 // Disposition obsolete
+#pragma warning disable CS0618 // Disposition obsolete
                 Disposition = (int)state.Disposition,
-#pragma warning restore CS0612
+#pragma warning restore CS0618
                 AttitudeValue = (int)state.Attitude,
                 PersonalityFlags = (int)state.Personality,
                 ElementAffinities = state.ElementAffinities,
@@ -590,9 +596,9 @@ namespace CultivationGame.NPC
             state.Intelligence = data.Intelligence;
             state.Wisdom = data.Wisdom;
             // FIX NPC-ATT-04: Load Attitude + PersonalityTrait (2026-04-11)
-#pragma warning disable CS0612 // Disposition obsolete
+#pragma warning disable CS0618 // Disposition obsolete
             state.Disposition = (Disposition)data.Disposition;
-#pragma warning restore CS0612
+#pragma warning restore CS0618
             state.Attitude = (Attitude)data.AttitudeValue;
             state.Personality = (PersonalityTrait)data.PersonalityFlags;
             state.ElementAffinities = data.ElementAffinities;

@@ -51,7 +51,9 @@ namespace CultivationGame.Inventory
         public event Action<EquipmentSlot, EquipmentInstance> OnEquipmentEquipped;
         public event Action<EquipmentSlot, EquipmentInstance> OnEquipmentUnequipped;
         public event Action<EquipmentStats> OnStatsChanged;
+#pragma warning disable CS0067
         public event Action<EquipmentSlot, bool> OnSlotAvailabilityChanged;
+#pragma warning restore CS0067
 
         #endregion
 

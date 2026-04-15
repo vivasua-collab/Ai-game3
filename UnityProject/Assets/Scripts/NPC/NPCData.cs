@@ -146,14 +146,16 @@ namespace CultivationGame.NPC
             CultivationLevel = CultivationLevel.None;
             SubLevel = 1;
             MortalStage = MortalStage.Adult;
-#pragma warning disable CS0612 // Disposition obsolete
+#pragma warning disable CS0618 // Disposition obsolete
             Disposition = Disposition.Neutral;
-#pragma warning restore CS0612
+#pragma warning restore CS0618
             Attitude = Attitude.Neutral;
             Personality = PersonalityTrait.None;
             IsAlive = true;
             ElementAffinities = new float[Enum.GetValues(typeof(Element)).Length];
+#pragma warning disable CS0618 // SkillLevels obsolete
             SkillLevels = new Dictionary<string, float>();
+#pragma warning restore CS0618
             CurrentAIState = NPCAIState.Idle;
             Lifespan = 80;
             MaxLifespan = 80;
@@ -165,7 +167,9 @@ namespace CultivationGame.NPC
         /// </summary>
         public SkillLevelData GetSkillLevelData()
         {
+#pragma warning disable CS0618 // SkillLevels obsolete
             return new SkillLevelData(SkillLevels);
+#pragma warning restore CS0618
         }
         
         /// <summary>
@@ -173,7 +177,9 @@ namespace CultivationGame.NPC
         /// </summary>
         public void SetSkillLevelData(SkillLevelData data)
         {
+#pragma warning disable CS0618 // SkillLevels obsolete
             SkillLevels = data?.ToDictionary() ?? new Dictionary<string, float>();
+#pragma warning restore CS0618
         }
         
         // FIX NPC-ATT-01: Helper to convert numeric value to Attitude enum
