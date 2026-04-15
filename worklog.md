@@ -887,3 +887,25 @@ Stage Summary:
 - Код НЕ удалён и НЕ модифицирован — только подавлены предупреждения компилятора
 - [SerializeField] поля сохранены для Unity Inspector сериализации
 - События сохранены для будущего использования
+
+---
+Task ID: consolidated-visual-fix
+Agent: Main Agent
+Task: Консолидированное исправление 3 визуальных проблем на основе анализа 8 чекпоинтов
+
+Work Log:
+- Прочитаны START_PROMPT.md, Caveman.md — правила работы (lite режим, русские комментарии, обязательные метки даты)
+- Прочитаны все 8 чекпоинтов за 04_15 — полный анализ итераций исправлений
+- Выявлены КОРНЕВЫЕ ПРИЧИНЫ оставшихся проблем:
+  1. Белая сетка: ReimportTileSprites() использует PPU=31 Point — ПЕРЕЗАПИСЫВАЕТ правильные PPU=32 Bilinear от TileSpriteGenerator
+  2. Белый фон игрока: EnsurePlayerSpritePPU проверяет только PPU, не alphaIsTransparency
+  3. Мелкие ресурсы: AI obj спрайты PPU=160 = 0.4u при scale=1.0 — микроскопические
+- Реализованы 3 исправления:
+  - Fix 1: FullSceneBuilder.ReimportTileSprites — PPU=32 Bilinear для terrain, убран Tiles_AI/ из сканирования
+  - Fix 2: PlayerVisual.EnsurePlayerSpritePPU — проверка alphaIsTransparency, принудительный реимпорт
+  - Fix 3: ResourceSpawner — динамический scale через CalculateResourceScale() по PPU спрайта
+
+Stage Summary:
+- 3 файла изменены: FullSceneBuilder.cs, PlayerVisual.cs, ResourceSpawner.cs
+- Commit: 3bbc8a2, push: success
+- Чекпоинт: checkpoints/04_15_consolidated_visual_fix.md — complete
