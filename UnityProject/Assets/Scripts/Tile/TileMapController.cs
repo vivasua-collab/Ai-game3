@@ -207,9 +207,11 @@ namespace CultivationGame.TileSystem
         private Sprite LoadTileSprite(string spriteName)
         {
 #if UNITY_EDITOR
+            // FIX: Tiles_AI/ убран из поиска — AI-спрайты 1024×1024 RGB без альфа-канала.
+            // Обработанные AI-спрайты лежат в Tiles/ (64×64 RGBA с прозрачностью).
+            // Редактировано: 2026-04-15 17:14:21 UTC
             string[] searchPaths = new string[]
             {
-                $"Assets/Sprites/Tiles_AI/{spriteName}.png",
                 $"Assets/Sprites/Tiles/{spriteName}.png"
             };
             foreach (var path in searchPaths)
@@ -233,11 +235,12 @@ namespace CultivationGame.TileSystem
         {
             bool isObject = spriteName.StartsWith("obj_");
 
-            // Terrain: 68×68, PPU=32 → 2.125 юнита (pixel bleed устраняет белую сетку)
+            // Terrain: 68×68, PPU=31 → 2.194 юнита (pixel bleed устраняет белую сетку)
             // Objects: 64×64, PPU=160 → 0.4 юнита (в 5 раз меньше ячейки)
-            // Редактировано: 2026-04-15 UTC
+            // FIX: PPU=31 вместо 32 — 64/31=2.065 > 2.0, перекрытие устраняет зазоры
+            // Редактировано: 2026-04-15 17:14:21 UTC
             int texSize = isObject ? 64 : 68;
-            int ppu = isObject ? 160 : 32;
+            int ppu = isObject ? 160 : 31;
 
             Texture2D texture = new Texture2D(texSize, texSize, TextureFormat.RGBA32, false);
             texture.filterMode = FilterMode.Point;

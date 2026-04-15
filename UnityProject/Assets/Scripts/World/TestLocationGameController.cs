@@ -168,6 +168,39 @@ namespace CultivationGame.World
         /// </summary>
         public GameObject SpawnPlayer()
         {
+            // FIX: Проверяем, не создан ли уже игрок (FullSceneBuilder создаёт в Phase 06).
+            // Если Player уже существует в сцене — используем его, не создаём нового.
+            // Это устраняет задвоение спрайта (2 PlayerVisual = 2 спрайта персонажа).
+            // Редактировано: 2026-04-15 17:14:21 UTC
+            GameObject existingPlayer = GameObject.Find("Player");
+            if (existingPlayer != null)
+            {
+                spawnedPlayer = existingPlayer;
+                playerController = spawnedPlayer.GetComponent<PlayerController>();
+                qiController = spawnedPlayer.GetComponent<QiController>();
+                bodyController = spawnedPlayer.GetComponent<BodyController>();
+                
+                // Подписаться на события
+                SubscribeToPlayer();
+                
+                // Установить локацию
+                if (playerController != null && tileMapController != null)
+                {
+                    playerController.SetLocation(tileMapController.MapData?.mapName ?? "Test Location");
+                }
+                
+                OnPlayerSpawned?.Invoke(spawnedPlayer);
+                
+                // Привязать камеру к игроку
+                if (cameraSetup != null && spawnedPlayer != null)
+                {
+                    cameraSetup.SetFollowTarget(spawnedPlayer.transform);
+                }
+                
+                Debug.Log($"[TestLocationGameController] Использован существующий Player at {spawnedPlayer.transform.position}");
+                return spawnedPlayer;
+            }
+            
             // Определить позицию спавна
             Vector3 spawnPosition = GetSpawnPosition();
             

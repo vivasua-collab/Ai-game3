@@ -1789,7 +1789,7 @@ namespace CultivationGame.Editor
 
                     importer.textureType = TextureImporterType.Sprite;
                     importer.spriteImportMode = SpriteImportMode.Single;
-                    importer.spritePixelsPerUnit = isObject ? 160 : 32;
+                    importer.spritePixelsPerUnit = isObject ? 160 : 31;
                     importer.filterMode = FilterMode.Point;
                     importer.wrapMode = TextureWrapMode.Clamp;
                     importer.spriteBorder = Vector4.zero;

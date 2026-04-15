@@ -179,8 +179,19 @@ namespace CultivationGame.TileSystem
                 }
                 
                 // ItemData не найден — ресурсы типа "wood"/"stone" без ScriptableObject
-                // FIX: Возвращаем false — предмет НЕ подобран, чтобы не терять его бесследно.
-                // Редактировано: 2026-04-14 06:28:00 UTC
+                // FIX: Создаём временный ItemData runtime, чтобы ресурсы подбирались.
+                // Ранее возвращали false — предметы накапливались и не уничтожались.
+                // Редактировано: 2026-04-15 17:14:21 UTC
+                itemData = CreateTemporaryItemData(resourceId);
+                if (itemData != null)
+                {
+                    var slot = inventory.AddItem(itemData, amount);
+                    if (slot != null)
+                    {
+                        Debug.Log($"[ResourcePickup] Добавлено в инвентарь (временный ItemData): {resourceId} x{amount}");
+                        return true;
+                    }
+                }
                 Debug.LogWarning($"[ResourcePickup] ItemData не найден для '{resourceId}'. Предмет НЕ подобран — назначьте ItemData в Inspector или создайте ItemData для этого ресурса.");
                 return false;
             }
@@ -207,6 +218,45 @@ namespace CultivationGame.TileSystem
             }
             
             return null;
+        }
+        
+        /// <summary>
+        /// Создать временный ItemData runtime для ресурса без ScriptableObject.
+        /// Это позволяет подбирать ресурсы даже если ItemData .asset не создан.
+        /// Редактировано: 2026-04-15 17:14:21 UTC
+        /// </summary>
+        private ItemData CreateTemporaryItemData(string id)
+        {
+            if (string.IsNullOrEmpty(id)) return null;
+            
+            var data = ScriptableObject.CreateInstance<ItemData>();
+            data.itemId = id;
+            
+            // Маппинг resourceId → отображаемое имя и категория
+            switch (id)
+            {
+                case "herb": data.nameRu = "Целебная трава"; data.category = ItemCategory.Consumable; data.rarity = ItemRarity.Common; break;
+                case "berries": data.nameRu = "Ягоды"; data.category = ItemCategory.Consumable; data.rarity = ItemRarity.Common; break;
+                case "mushroom": data.nameRu = "Гриб Ци"; data.category = ItemCategory.Consumable; data.rarity = ItemRarity.Uncommon; break;
+                case "rare_herb": data.nameRu = "Редкая трава"; data.category = ItemCategory.Consumable; data.rarity = ItemRarity.Rare; break;
+                case "stone": data.nameRu = "Камень"; data.category = ItemCategory.Material; data.rarity = ItemRarity.Common; break;
+                case "ore": data.nameRu = "Руда"; data.category = ItemCategory.Material; data.rarity = ItemRarity.Uncommon; break;
+                case "iron_ore": data.nameRu = "Железная руда"; data.category = ItemCategory.Material; data.rarity = ItemRarity.Uncommon; break;
+                case "qi_crystal": data.nameRu = "Ци-кристалл"; data.category = ItemCategory.Material; data.rarity = ItemRarity.Rare; break;
+                case "spirit_stone": data.nameRu = "Духовный камень"; data.category = ItemCategory.Material; data.rarity = ItemRarity.Epic; break;
+                case "wood": data.nameRu = "Древесина"; data.category = ItemCategory.Material; data.rarity = ItemRarity.Common; break;
+                case "sand_pearl": data.nameRu = "Песчаная жемчужина"; data.category = ItemCategory.Material; data.rarity = ItemRarity.Rare; break;
+                case "desert_crystal": data.nameRu = "Пустынный кристалл"; data.category = ItemCategory.Material; data.rarity = ItemRarity.Rare; break;
+                default: data.nameRu = id; data.category = ItemCategory.Misc; data.rarity = ItemRarity.Common; break;
+            }
+            
+            data.nameEn = id;
+            data.stackable = true;
+            data.maxStack = 99;
+            data.weight = 0.1f;
+            data.value = 1;
+            
+            return data;
         }
         
         // === Gizmos ===

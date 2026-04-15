@@ -38,7 +38,10 @@ namespace CultivationGame.TileSystem.Editor
         // Редактировано: 2026-04-15 16:53:48 UTC
         private const int TERRAIN_SIZE = 64;   // Стандартный размер тайла
         private const int OBJECT_SIZE = 64;    // Стандартный размер объекта
-        private const int TERRAIN_PPU = 32;    // 64/32 = 2.0 юнита — точно в ячейку
+        // FIX: Terrain PPU=31 вместо 32. 64/31 = 2.065 юнита — лёгкое перекрытие устраняет белую сетку.
+        // При PPU=32: 64/32 = 2.0 юнита точно = ячейка, но float-погрешность → белые зазоры.
+        // Редактировано: 2026-04-15 17:14:21 UTC
+        private const int TERRAIN_PPU = 31;    // 64/31 = 2.065 юнита — перекрытие устраняет зазоры
         private const int OBJECT_PPU = 160;    // 64/160 = 0.4 юнита — в 5 раз меньше ячейки
         private const string OUTPUT_PATH = "Assets/Sprites/Tiles";
         private const string AI_SPRITES_PATH = "Assets/Sprites/Tiles_AI";

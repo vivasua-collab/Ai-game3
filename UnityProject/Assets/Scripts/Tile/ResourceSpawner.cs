@@ -2,7 +2,7 @@
 // ResourceSpawner.cs — Спавнер ресурсных объектов на локации
 // Cultivation World Simulator
 // Создано: 2026-04-14 07:35:00 UTC
-// Редактировано: 2026-04-15 16:53:48 UTC — FIX 3A: убран Tiles_AI/ из поиска (RGB без alpha → белый фон)
+// Редактировано: 2026-04-15 17:14:21 UTC — FIX 3A/3B: убран Tiles_AI/, spriteScale=1.0, Unlit шейдер
 // ============================================================================
 
 using System.Collections.Generic;
@@ -57,7 +57,9 @@ namespace CultivationGame.TileSystem
 
         [Header("Visuals")]
         [SerializeField] private int spriteSize = 64; // Размер текстуры (совпадает с объектами тайлов)
-        [SerializeField] private float spriteScale = 0.16f; // В 5 раз меньше (было 0.8) — объекты не перекрывают клетки
+        [SerializeField] private float spriteScale = 1.0f; // FIX: 1.0 — ресурсы нормально видны (было 0.16 — микроскопические)
+        // При PPU=160: 64/160=0.4 юнита × scale=1.0 = 0.4 юнита (разумный размер)
+        // Редактировано: 2026-04-15 17:14:21 UTC
 
         // === Runtime ===
         private List<GameObject> spawnedResources = new List<GameObject>();
@@ -237,6 +239,17 @@ namespace CultivationGame.TileSystem
             // программные fallback-спрайты — тонируем entry.spriteColor
             // Редактировано: 2026-04-15 UTC
             sr.color = _lastSpriteWasAI ? Color.white : entry.spriteColor;
+            
+            // FIX: Используем Unlit шейдер — рендерит БЕЗ Light2D (гарантированно виден).
+            // Sprite-Lit-Default без Light2D = чёрный (невидимый).
+            // Редактировано: 2026-04-15 17:14:21 UTC
+            Shader spriteShader = Shader.Find("Universal Render Pipeline/2D/Sprite-Unlit-Default");
+            if (spriteShader == null)
+                spriteShader = Shader.Find("Universal Render Pipeline/2D/Sprite-Lit-Default");
+            if (spriteShader == null)
+                spriteShader = Shader.Find("Sprites/Default");
+            if (spriteShader != null)
+                sr.material = new Material(spriteShader);
 
             // Масштаб
             go.transform.localScale = Vector3.one * spriteScale;
