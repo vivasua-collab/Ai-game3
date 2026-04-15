@@ -2,7 +2,7 @@
 // TileSpriteGenerator.cs — Генератор простых спрайтов тайлов
 // Cultivation World Simulator
 // Создано: 2026-04-07 14:24:05 UTC
-// Редактировано: 2026-04-13 14:03:25 UTC — добавлены Ice, Lava, OreVein, Herb
+// Редактировано: 2026-04-15 07:05:00 UTC — FIX: spriteBorder для устранения зазоров между тайлами
 // ============================================================================
 
 #if UNITY_EDITOR
@@ -235,6 +235,12 @@ namespace CultivationGame.TileSystem.Editor
                 // Редактировано: 2026-04-14 06:30:00 UTC
                 importer.spritePixelsPerUnit = TILE_SIZE / 2; // 64/2=32 — один тайл = 2 юнита
                 importer.filterMode = FilterMode.Point;
+                // FIX: spriteBorder для устранения зазоров между тайлами (extrude padding)
+                // Каждый край получает 1 пиксель дублирования — Unity растягивает край
+                // вместо показа фона при субпиксельном позиционировании
+                // Редактировано: 2026-04-15 07:05:00 UTC
+                importer.spriteBorder = new Vector4(1, 1, 1, 1);
+                importer.wrapMode = TextureWrapMode.Clamp;
                 AssetDatabase.ImportAsset(path);
             }
         }

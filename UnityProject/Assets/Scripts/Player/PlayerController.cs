@@ -20,6 +20,8 @@ using CultivationGame.NPC;
 using CultivationGame.Interaction;
 using CultivationGame.World;
 using CultivationGame.Save;
+using CultivationGame.TileSystem;
+using CultivationGame.UI;
 using UnityEngine.InputSystem;
 
 namespace CultivationGame.Player
@@ -50,15 +52,27 @@ namespace CultivationGame.Player
         [Header("References")]
         [SerializeField] private WorldController worldController;
         [SerializeField] private TimeController timeController;
-        
+
+        [Header("Harvest")]
+        [SerializeField] private float harvestRange = 2.5f;
+        [SerializeField] private int harvestDamage = 25;
+        [SerializeField] private float harvestCooldown = 0.8f;
+
         // === State ===
         private PlayerState state = new PlayerState();
         private bool isInitialized = false;
-        
+
         // === Movement ===
         private Vector2 moveInput;
         private bool isRunning = false;
         private Rigidbody2D rb;
+
+        // === Harvest ===
+        private DestructibleObjectController destructibleController;
+        private HarvestFeedbackUI harvestFeedback;
+        private float lastHarvestTime;
+        private Vector2Int lastHarvestTile;
+        private string lastHarvestResource = "";
         
         // === Events ===
         public event Action<int, int> OnHealthChanged;
@@ -67,6 +81,7 @@ namespace CultivationGame.Player
         public event Action<string> OnLocationChanged;
         public event Action OnPlayerDeath;
         public event Action OnPlayerRevive;
+        public event Action<string, int> OnHarvestComplete; // resourceName, amount
         
         // FIX PLR-H01: ICombatant events (2026-04-11)
         event Action ICombatant.OnDeath { add { OnPlayerDeath += value; } remove { OnPlayerDeath -= value; } }
@@ -288,6 +303,13 @@ namespace CultivationGame.Player
                 {
                     StartMeditation();
                 }
+
+                // Добыча ресурса (F)
+                // Редактировано: 2026-04-15 08:15:00 UTC — F-key harvest с обратной связью
+                if (Keyboard.current.fKey.wasPressedThisFrame)
+                {
+                    AttemptHarvest();
+                }
             }
         }
         
@@ -478,7 +500,193 @@ namespace CultivationGame.Player
         {
             OnCultivationLevelChanged?.Invoke((CultivationLevel)level);
         }
-        
+
+        // === Harvest (F-key) ===
+        // Редактировано: 2026-04-15 08:15:00 UTC — обратная связь при добыче
+
+        /// <summary>
+        /// Попытка добычи ресурса ближайшего объекта (F-key).
+        /// </summary>
+        private void AttemptHarvest()
+        {
+            EnsureHarvestComponents();
+
+            // Проверить кулдаун
+            if (Time.time - lastHarvestTime < harvestCooldown)
+            {
+                harvestFeedback?.ShowHarvestFailed("Подождите...");
+                return;
+            }
+
+            // Найти ближайший разрушаемый объект
+            var tileMapCtrl = ServiceLocator.GetOrFind<TileMapController>();
+            if (tileMapCtrl == null || tileMapCtrl.MapData == null)
+            {
+                Debug.LogWarning("[PlayerController] TileMapController не найден для добычи");
+                harvestFeedback?.ShowHarvestFailed("Нет карты");
+                return;
+            }
+
+            // Определить тайл перед игроком (по направлению движения)
+            Vector2 playerPos = transform.position;
+            Vector2 checkPos = playerPos + moveInput.normalized * 1.5f;
+
+            // Если не двигается — проверяем тайл под игроком и соседние
+            if (moveInput.magnitude < 0.1f)
+            {
+                checkPos = playerPos + Vector2.up * 1.5f; // По умолчанию — вверх
+            }
+
+            var tilePos = tileMapCtrl.MapData.WorldToTile(checkPos);
+            var tile = tileMapCtrl.GetTile(tilePos.x, tilePos.y);
+
+            if (tile == null || tile.objects.Count == 0)
+            {
+                // Попробовать соседние тайлы
+                Vector2Int[] neighbors = new Vector2Int[]
+                {
+                    new Vector2Int(tilePos.x + 1, tilePos.y),
+                    new Vector2Int(tilePos.x - 1, tilePos.y),
+                    new Vector2Int(tilePos.x, tilePos.y + 1),
+                    new Vector2Int(tilePos.x, tilePos.y - 1),
+                };
+
+                bool found = false;
+                foreach (var neighbor in neighbors)
+                {
+                    var neighborTile = tileMapCtrl.GetTile(neighbor.x, neighbor.y);
+                    if (neighborTile?.objects.Count > 0)
+                    {
+                        tilePos = neighbor;
+                        tile = neighborTile;
+                        found = true;
+                        break;
+                    }
+                }
+
+                if (!found)
+                {
+                    harvestFeedback?.ShowHarvestFailed("Рядом нет ресурсов");
+                    return;
+                }
+            }
+
+            // Проверить дистанцию
+            float distToTile = Vector2.Distance(playerPos, tileMapCtrl.MapData.TileToWorld(tilePos.x, tilePos.y));
+            if (distToTile > harvestRange)
+            {
+                harvestFeedback?.ShowHarvestFailed("Слишком далеко");
+                return;
+            }
+
+            var obj = tile.objects[0];
+            if (!obj.isHarvestable || obj.maxDurability <= 0)
+            {
+                harvestFeedback?.ShowHarvestFailed("Нельзя добыть");
+                return;
+            }
+
+            // Получить название ресурса
+            string resourceName = GetResourceName(obj.objectType);
+
+            // Нанести урон
+            if (destructibleController == null)
+                destructibleController = ServiceLocator.GetOrFind<DestructibleObjectController>();
+
+            int damage = harvestDamage;
+
+            // Подписаться на событие разрушения один раз
+            if (destructibleController != null)
+            {
+                int result = destructibleController.DamageObjectAtTile(tilePos.x, tilePos.y, damage);
+
+                if (result > 0)
+                {
+                    lastHarvestTime = Time.time;
+                    lastHarvestTile = tilePos;
+                    lastHarvestResource = resourceName;
+
+                    // Рассчитать прогресс
+                    float progress = 1f - ((float)obj.currentDurability / obj.maxDurability);
+
+                    // Создать/обновить обратную связь
+                    if (harvestFeedback == null)
+                    {
+                        harvestFeedback = gameObject.AddComponent<HarvestFeedbackUI>();
+                    }
+
+                    // Создать временный объект для позиционирования фидбека
+                    GameObject feedbackTarget = new GameObject("HarvestTarget");
+                    feedbackTarget.transform.position = tileMapCtrl.MapData.TileToWorld(tilePos.x, tilePos.y);
+
+                    harvestFeedback.ShowHarvestStarted(feedbackTarget.transform, resourceName, progress);
+
+                    // Проверить, разрушен ли объект
+                    if (obj.currentDurability <= 0 || obj.IsDestroyed())
+                    {
+                        harvestFeedback.ShowHarvestComplete(resourceName, GetResourceAmount(obj.objectType));
+                        OnHarvestComplete?.Invoke(resourceName, GetResourceAmount(obj.objectType));
+
+                        // Добавить опыт
+                        AddStatExperience(StatType.Strength, 0.5f);
+                    }
+
+                    Debug.Log($"[PlayerController] Harvest hit: {resourceName} at ({tilePos.x},{tilePos.y}), damage={result}, durability={obj.currentDurability}/{obj.maxDurability}");
+                }
+                else
+                {
+                    harvestFeedback?.ShowHarvestFailed("Не удалось добыть");
+                }
+            }
+        }
+
+        /// <summary>
+        /// Получить название ресурса из типа объекта.
+        /// </summary>
+        private string GetResourceName(TileObjectType objectType)
+        {
+            return objectType switch
+            {
+                TileObjectType.Tree_Oak => "Дерево",
+                TileObjectType.Tree_Pine => "Дерево",
+                TileObjectType.Rock_Small => "Камень",
+                TileObjectType.Rock_Medium => "Камень",
+                TileObjectType.OreVein => "Руду",
+                TileObjectType.Bush => "Ягоды",
+                TileObjectType.Herb => "Траву",
+                TileObjectType.Chest => "Сундук",
+                _ => "Ресурс"
+            };
+        }
+
+        /// <summary>
+        /// Получить количество добываемого ресурса.
+        /// </summary>
+        private int GetResourceAmount(TileObjectType objectType)
+        {
+            return objectType switch
+            {
+                TileObjectType.Tree_Oak => 3,
+                TileObjectType.Tree_Pine => 3,
+                TileObjectType.Rock_Small => 2,
+                TileObjectType.Rock_Medium => 4,
+                TileObjectType.OreVein => 2,
+                TileObjectType.Bush => 2,
+                TileObjectType.Herb => 1,
+                TileObjectType.Chest => 1,
+                _ => 1
+            };
+        }
+
+        /// <summary>
+        /// Инициализация компонентов для добычи.
+        /// </summary>
+        private void EnsureHarvestComponents()
+        {
+            if (destructibleController == null)
+                destructibleController = ServiceLocator.GetOrFind<DestructibleObjectController>();
+        }
+
         // === Stat Development ===
 
         /// <summary>

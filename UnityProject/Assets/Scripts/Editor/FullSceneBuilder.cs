@@ -1545,10 +1545,58 @@ namespace CultivationGame.Editor
         // ====================================================================
 
         /// <summary>
-        /// Генерирует процедурный спрайт персонажа (фигурка с контуром).
-        /// Временно используется, пока нет художественных ассетов.
+        /// Загружает спрайт персонажа из Assets/Sprites/Characters/Player/.
+        /// Если не найден — генерирует процедурный (fallback).
+        /// Редактировано: 2026-04-15 07:10:00 UTC — загрузка из AI-спрайтов + PPU=32
         /// </summary>
         private static Sprite CreatePlayerSprite()
+        {
+            // Попробовать загрузить готовый спрайт персонажа
+            // Редактировано: 2026-04-15 07:10:00 UTC
+            string[] playerSpritePaths = new string[]
+            {
+                "Assets/Sprites/Characters/Player/player_variant1_cultivator",
+                "Assets/Sprites/Characters/Player/player_variant3_warrior",
+                "Assets/Sprites/player_sprite",
+            };
+
+            foreach (var spritePath in playerSpritePaths)
+            {
+                var sprite = AssetDatabase.LoadAssetAtPath<Sprite>(spritePath);
+                if (sprite != null)
+                {
+                    // Переимпортировать с правильным PPU=32 (один тайл = 2 юнита)
+                    string assetPath = AssetDatabase.GetAssetPath(sprite);
+                    var importer = AssetImporter.GetAtPath(assetPath) as TextureImporter;
+                    if (importer != null)
+                    {
+                        importer.textureType = TextureImporterType.Sprite;
+                        importer.spritePixelsPerUnit = 32;
+                        importer.filterMode = FilterMode.Point;
+                        importer.wrapMode = TextureWrapMode.Clamp;
+                        AssetDatabase.ImportAsset(assetPath);
+                        // Перезагрузить после реимпорта
+                        sprite = AssetDatabase.LoadAssetAtPath<Sprite>(assetPath);
+                    }
+
+                    if (sprite != null)
+                    {
+                        Debug.Log($"[FullSceneBuilder] Player sprite loaded from: {spritePath}");
+                        return sprite;
+                    }
+                }
+            }
+
+            // Fallback: процедурная генерация
+            Debug.LogWarning("[FullSceneBuilder] Player sprite assets not found, using procedural fallback");
+            return CreateProceduralPlayerSprite();
+        }
+
+        /// <summary>
+        /// Процедурная генерация спрайта персонажа (fallback).
+        /// Редактировано: 2026-04-15 07:10:00 UTC — PPU=32 вместо 64
+        /// </summary>
+        private static Sprite CreateProceduralPlayerSprite()
         {
             int size = 64;
             Texture2D tex = new Texture2D(size, size, TextureFormat.RGBA32, false);
@@ -1595,7 +1643,9 @@ namespace CultivationGame.Editor
             tex.SetPixels(pixels);
             tex.Apply();
 
-            return Sprite.Create(tex, new Rect(0, 0, size, size), new Vector2(0.5f, 0.5f), 64f);
+            // FIX: PPU=32 — один тайл = 2 юнита Grid, персонаж занимает 1 тайл
+            // Редактировано: 2026-04-15 07:10:00 UTC — было 64, теперь 32
+            return Sprite.Create(tex, new Rect(0, 0, size, size), new Vector2(0.5f, 0.5f), 32f);
         }
 
         /// <summary>
@@ -1651,6 +1701,77 @@ namespace CultivationGame.Editor
         //  Редактировано: 2026-04-13 13:35:27 UTC
         // ====================================================================
 
+        /// <summary>
+        /// Реимпорт всех PNG спрайтов тайлов с правильными настройками:
+        /// PPU=32, spriteBorder(1,1,1,1), filterMode=Point, wrapMode=Clamp.
+        /// FIX: AI-спрайты (64x64) имеют дефолтный PPU=100 — зазоры между тайлами.
+        /// Редактировано: 2026-04-15 08:05:00 UTC
+        /// </summary>
+        private static void ReimportTileSprites()
+        {
+            string spritesDir = "Assets/Sprites/Tiles";
+            if (!Directory.Exists(spritesDir))
+            {
+                Debug.LogWarning("[FullSceneBuilder] ReimportTileSprites: директория не найдена: " + spritesDir);
+                return;
+            }
+
+            string[] pngFiles = Directory.GetFiles(spritesDir, "*.png");
+            int reimportCount = 0;
+
+            foreach (string pngPath in pngFiles)
+            {
+                var importer = AssetImporter.GetAtPath(pngPath) as TextureImporter;
+                if (importer == null) continue;
+
+                bool needsReimport = false;
+
+                // Проверить текущие настройки
+                if (importer.textureType != TextureImporterType.Sprite)
+                {
+                    importer.textureType = TextureImporterType.Sprite;
+                    needsReimport = true;
+                }
+                if (importer.spritePixelsPerUnit != 32)
+                {
+                    importer.spritePixelsPerUnit = 32; // 64px / 32 PPU = 2 юнита на тайл
+                    needsReimport = true;
+                }
+                if (importer.filterMode != FilterMode.Point)
+                {
+                    importer.filterMode = FilterMode.Point; // Пиксель-арт без размытия
+                    needsReimport = true;
+                }
+                if (importer.wrapMode != TextureWrapMode.Clamp)
+                {
+                    importer.wrapMode = TextureWrapMode.Clamp; // Без повтора на краях
+                    needsReimport = true;
+                }
+                if (importer.spriteBorder != new Vector4(1, 1, 1, 1))
+                {
+                    importer.spriteBorder = new Vector4(1, 1, 1, 1); // Extrude padding — устраняет зазоры
+                    needsReimport = true;
+                }
+
+                if (needsReimport)
+                {
+                    importer.spriteImportMode = SpriteImportMode.Single;
+                    AssetDatabase.ImportAsset(pngPath, ImportAssetOptions.ForceUpdate);
+                    reimportCount++;
+                }
+            }
+
+            if (reimportCount > 0)
+            {
+                AssetDatabase.Refresh();
+                Debug.Log($"[FullSceneBuilder] ReimportTileSprites: переимпортировано {reimportCount} спрайтов с PPU=32 + spriteBorder");
+            }
+            else
+            {
+                Debug.Log("[FullSceneBuilder] ReimportTileSprites: все спрайты уже имеют правильные настройки");
+            }
+        }
+
         private static bool IsCreateTileAssetsNeeded()
         {
             // Проверяем: существуют ли .asset файлы тайлов
@@ -1683,6 +1804,11 @@ namespace CultivationGame.Editor
                 Debug.Log("[FullSceneBuilder] Phase 14: Спрайты не найдены, генерируем...");
                 TileSpriteGenerator.GenerateAllSprites();
             }
+
+            // Шаг 1.5: Реимпорт всех спрайтов тайлов с правильными настройками
+            // FIX: AI-спрайты имеют дефолтный PPU=100, нужно PPU=32 + spriteBorder для устранения зазоров
+            // Редактировано: 2026-04-15 08:05:00 UTC
+            ReimportTileSprites();
 
             // Шаг 2: Создать папки для тайлов
             EnsureDirectory("Assets/Tiles/Terrain");

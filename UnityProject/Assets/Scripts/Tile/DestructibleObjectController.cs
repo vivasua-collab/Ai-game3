@@ -42,6 +42,10 @@ namespace CultivationGame.TileSystem
         
         /// <summary>Событие при появлении дропа ресурсов.</summary>
         public event Action<ResourceDrop> OnResourceDropped;
+
+        /// <summary>Событие при начале добычи ресурса игроком (F-key).</summary>
+        // Редактировано: 2026-04-15 08:20:00 UTC — обратная связь при добыче
+        public event Action<Vector2Int, TileObjectData> OnHarvestStarted;
         
         // === Properties ===
         public int PendingDestructionCount => pendingDestructions.Count;
@@ -115,6 +119,13 @@ namespace CultivationGame.TileSystem
             
             // Уведомить о повреждении
             OnObjectDamaged?.Invoke(new Vector2Int(tileX, tileY), obj, actualDamage, damageType);
+
+            // Уведомить о начале добычи (если объект добываемый)
+            // Редактировано: 2026-04-15 08:20:00 UTC — обратная связь при добыче
+            if (obj.isHarvestable && actualDamage > 0)
+            {
+                OnHarvestStarted?.Invoke(new Vector2Int(tileX, tileY), obj);
+            }
             
             // Проверить на разрушение
             if (obj.IsDestroyed())
