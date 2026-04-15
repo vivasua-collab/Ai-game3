@@ -1012,7 +1012,7 @@ namespace CultivationGame.Editor
             grid.cellSize = new Vector3(2f, 2f, 1f);
             // FIX: cellGap = 0. Pixel bleed через увеличенные terrain-спрайты (68×68 PPU=32 → 2.125 юнита)
             // устраняет белую сетку надёжнее, чем отрицательный cellGap.
-            // Редактировано: 2026-04-16 UTC
+            // Редактировано: 2026-04-15 UTC
             grid.cellGap = Vector3.zero;
 
             // Terrain Tilemap
@@ -1022,7 +1022,7 @@ namespace CultivationGame.Editor
             var terrainRenderer = terrainObj.AddComponent<TilemapRenderer>();
             terrainRenderer.sortOrder = (TilemapRenderer.SortOrder)0;
             // FIX: Individual режим устраняет артефакты на границах чанков (белая сетка)
-            // Редактировано: 2026-04-16 UTC
+            // Редактировано: 2026-04-15 UTC
             terrainRenderer.mode = TilemapRenderer.Mode.Individual;
             // FIX: НЕ добавляем TilemapCollider2D на Terrain!
             // Terrain тайлы проходимые (трава, грязь) — коллайдер блокирует движение.
@@ -1718,7 +1718,7 @@ namespace CultivationGame.Editor
         /// Реимпорт спрайтов тайлов с правильными PPU и прозрачностью.
         /// Terrain: PPU=32 (pixel bleed), Objects: PPU=160 (5x меньше ячейки).
         /// Сканирует Assets/Sprites/Tiles/ и Assets/Sprites/Tiles_AI/
-        /// Редактировано: 2026-04-16 20:00:00 UTC
+        /// Редактировано: 2026-04-15 20:00:00 UTC
         /// </summary>
         private static void ReimportTileSprites()
         {

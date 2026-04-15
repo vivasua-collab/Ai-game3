@@ -78,7 +78,7 @@ namespace CultivationGame.TileSystem
 
             // FIX: cellGap = 0. Pixel bleed через увеличенные terrain-спрайты (68×68 PPU=32 → 2.125u)
             // устраняет белую сетку надёжнее, чем отрицательный cellGap.
-            // Редактировано: 2026-04-16 UTC
+            // Редактировано: 2026-04-15 UTC
             var grid = GetComponentInParent<Grid>();
             if (grid != null)
             {
@@ -158,7 +158,7 @@ namespace CultivationGame.TileSystem
             herbTile = EnsureTile(herbTile, "obj_herb", true, TerrainType.Grass);
 
             // FIX: cellGap = 0. Pixel bleed через terrain-спрайты устраняет зазоры.
-            // Редактировано: 2026-04-16 UTC
+            // Редактировано: 2026-04-15 UTC
             var grid = GetComponentInParent<Grid>();
             if (grid != null)
             {
@@ -235,7 +235,7 @@ namespace CultivationGame.TileSystem
 
             // Terrain: 68×68, PPU=32 → 2.125 юнита (pixel bleed устраняет белую сетку)
             // Objects: 64×64, PPU=160 → 0.4 юнита (в 5 раз меньше ячейки)
-            // Редактировано: 2026-04-16 UTC
+            // Редактировано: 2026-04-15 UTC
             int texSize = isObject ? 64 : 68;
             int ppu = isObject ? 160 : 32;
 

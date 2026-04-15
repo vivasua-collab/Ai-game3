@@ -280,7 +280,7 @@ namespace CultivationGame.Managers
         private IEnumerator InitializeTimeSystem()
         {
             // FIX: Проверяем, уже ли зарегистрирован в ServiceLocator (Awake регистрирует раньше)
-            // Редактировано: 2026-04-16 14:35:00 UTC
+            // Редактировано: 2026-04-15 14:35:00 UTC
             if (!ServiceLocator.IsRegistered<TimeController>())
             {
                 var timeController = FindFirstObjectByType<TimeController>();
@@ -301,7 +301,7 @@ namespace CultivationGame.Managers
         private IEnumerator InitializeWorldSystem()
         {
             // FIX: Проверяем, уже ли зарегистрирован в ServiceLocator (Awake регистрирует раньше)
-            // Редактировано: 2026-04-16 14:35:00 UTC
+            // Редактировано: 2026-04-15 14:35:00 UTC
             if (!ServiceLocator.IsRegistered<WorldController>())
             {
                 var worldController = FindFirstObjectByType<WorldController>();

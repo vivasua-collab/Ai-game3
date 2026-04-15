@@ -101,7 +101,7 @@ namespace CultivationGame.Generators
         public void Initialize(long worldSeed)
         {
             // FIX: Защита от двойной инициализации (Start autoInitialize + WorldController)
-            // Редактировано: 2026-04-16 14:45:00 UTC
+            // Редактировано: 2026-04-15 14:45:00 UTC
             if (isInitialized && currentSeed == worldSeed) return;
 
             currentSeed = worldSeed;

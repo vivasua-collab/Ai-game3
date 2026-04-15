@@ -2,7 +2,7 @@
 // ResourceSpawner.cs — Спавнер ресурсных объектов на локации
 // Cultivation World Simulator
 // Создано: 2026-04-14 07:35:00 UTC
-// Редактировано: 2026-04-16 — FIX: spriteScale=0.16 (5x меньше), PPU=160, прозрачность
+// Редактировано: 2026-04-15 — FIX: spriteScale=0.16 (5x меньше), PPU=160, прозрачность
 // ============================================================================
 
 using System.Collections.Generic;
@@ -342,7 +342,7 @@ namespace CultivationGame.TileSystem
             texture.Apply();
 
             // PPU=160 → 64/160 = 0.4 юнита (в 5 раз меньше ячейки 2.0)
-            // Редактировано: 2026-04-16 — PPU увеличен с 32 до 160
+            // Редактировано: 2026-04-15 — PPU увеличен с 32 до 160
             return Sprite.Create(texture, new Rect(0, 0, size, size), new Vector2(0.5f, 0.5f), 160);
         }
 
