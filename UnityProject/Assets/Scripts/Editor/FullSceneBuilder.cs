@@ -1715,59 +1715,51 @@ namespace CultivationGame.Editor
         // ====================================================================
 
         /// <summary>
-        /// Реимпорт всех PNG спрайтов тайлов с правильными настройками:
-        /// PPU=32, alphaIsTransparency=true, filterMode=Point, wrapMode=Clamp,
-        /// Переимпорт спрайтов с правильными настройками PPU и прозрачности.
+        /// Реимпорт спрайтов тайлов с правильными PPU и прозрачностью.
         /// Terrain: PPU=32 (pixel bleed), Objects: PPU=160 (5x меньше ячейки).
-        /// Редактировано: 2026-04-16 — обновлены PPU, убран sprites[]
+        /// Сканирует Assets/Sprites/Tiles/ и Assets/Sprites/Tiles_AI/
+        /// Редактировано: 2026-04-16 20:00:00 UTC
         /// </summary>
         private static void ReimportTileSprites()
         {
-            // Сканируем обе директории спрайтов
             string[] spriteDirs = new string[] { "Assets/Sprites/Tiles", "Assets/Sprites/Tiles_AI" };
             int reimportCount = 0;
 
-            foreach (string spritesDir in spriteDirs)
+            foreach (string dir in spriteDirs)
             {
-                if (!Directory.Exists(spritesDir)) continue;
+                if (!Directory.Exists(dir)) continue;
 
-                string[] pngFiles = Directory.GetFiles(spritesDir, "*.png");
-            }
+                string[] pngFiles = Directory.GetFiles(dir, "*.png");
+                foreach (string pngPath in pngFiles)
+                {
+                    var importer = AssetImporter.GetAtPath(pngPath) as TextureImporter;
+                    if (importer == null) continue;
 
-            string[] pngFiles = Directory.GetFiles(spritesDir, "*.png");
-            int reimportCount = 0;
+                    string fileName = Path.GetFileNameWithoutExtension(pngPath);
+                    bool isObject = fileName.StartsWith("obj_");
 
-            foreach (string pngPath in pngFiles)
-            {
-                var importer = AssetImporter.GetAtPath(pngPath) as TextureImporter;
-                if (importer == null) continue;
+                    importer.textureType = TextureImporterType.Sprite;
+                    importer.spriteImportMode = SpriteImportMode.Single;
+                    importer.spritePixelsPerUnit = isObject ? 160 : 32;
+                    importer.filterMode = FilterMode.Point;
+                    importer.wrapMode = TextureWrapMode.Clamp;
+                    importer.spriteBorder = Vector4.zero;
+                    importer.alphaIsTransparency = true;
+                    importer.textureCompression = TextureImporterCompression.Uncompressed;
 
-                // Редактировано: 2026-04-16 — Terrain PPU=32 (68×68→2.125u, pixel bleed),
-                // Object PPU=160 (64×64→0.4u, в 5 раз меньше ячейки)
-                string fileName = Path.GetFileNameWithoutExtension(pngPath);
-                bool isObject = fileName.StartsWith("obj_");
-
-                importer.textureType = TextureImporterType.Sprite;
-                importer.spriteImportMode = SpriteImportMode.Single;
-                importer.spritePixelsPerUnit = isObject ? 160 : 32;
-                importer.filterMode = FilterMode.Point;
-                importer.wrapMode = TextureWrapMode.Clamp;
-                importer.spriteBorder = Vector4.zero;
-                importer.alphaIsTransparency = true;
-                importer.textureCompression = TextureImporterCompression.Uncompressed;
-
-                AssetDatabase.ImportAsset(pngPath, ImportAssetOptions.ForceUpdate);
-                reimportCount++;
+                    AssetDatabase.ImportAsset(pngPath, ImportAssetOptions.ForceUpdate);
+                    reimportCount++;
+                }
             }
 
             if (reimportCount > 0)
             {
                 AssetDatabase.Refresh();
-                Debug.Log($"[FullSceneBuilder] ReimportTileSprites: переимпортировано {reimportCount} спрайтов с PPU=32 + spriteBorder");
+                Debug.Log($"[FullSceneBuilder] ReimportTileSprites: переимпортировано {reimportCount} спрайтов");
             }
             else
             {
-                Debug.Log("[FullSceneBuilder] ReimportTileSprites: все спрайты уже имеют правильные настройки");
+                Debug.Log("[FullSceneBuilder] ReimportTileSprites: спрайты не найдены");
             }
         }
 
