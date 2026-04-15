@@ -909,3 +909,45 @@ Stage Summary:
 - 3 файла изменены: FullSceneBuilder.cs, PlayerVisual.cs, ResourceSpawner.cs
 - Commit: 3bbc8a2, push: success
 - Чекпоинт: checkpoints/04_15_consolidated_visual_fix.md — complete
+
+---
+Task ID: harvest-theory-session
+Agent: Main Agent
+Task: Теоретическая проработка Harvest System — верификация тиковой системы, самопроверка, черновик инструментов
+
+Work Log:
+- 2026-04-16 UTC: Восстановление контекста после сбоя сессии
+- Прочитан чекпоинт 04_15_harvest_system_plan.md (v3) — план системы добычи
+- Прочитан START_PROMPT.md — правила работы
+- Прочитан docs/TIME_SYSTEM.md — документация системы времени
+- Этап 1: Верификация тиковой системы — прочитаны TimeController.cs, HUDController.cs, GameInitializer.cs, FullSceneBuilder.cs
+  - TimeController — ПОЛНОСТЬЮ работает (не заглушка): FixedUpdate, tickInterval, OnTick, AdvanceMinute cascade
+  - ОБНАРУЖЕНА КРИТИЧЕСКАЯ ПРОБЛЕМА: время НЕ ВИДНО на экране — 3 разрыва:
+    1. FullSceneBuilder.CreateHUDPanel() НЕ добавляет HUDController компонент
+    2. [SerializeField] timeText/dateText = null → UpdateTimeDisplay() return
+    3. FormattedTime = "HH:MM" — нет секунд/тиков, нет визуальной динамики
+  - ОБНАРУЖЕНО расхождение: docs/TIME_SYSTEM.md устарел (6 скоростей vs 4, TimeManager vs TimeController)
+- Этап 2: Самопроверка — сверены 7 ответов чекпоинта v3 с замечаниями пользователя
+  - Все 7 ответов корректны: Variant C, независимый MonoBehaviour, прогресс-бар за 1 тик, настраиваемый лут + коэффициент инструмента, Physics-слой, НЕТ респауна, визуальная индикация
+  - Выявлено упущение: анализ тиковой системы в §3 был неполным (не проверен HUD wiring)
+- Этап 2b: Обновлён чекпоинт §3 — расширен с верифицированными данными
+  - Добавлена таблица диагностики (5 проблем со статусами)
+  - Добавлен §3.3 — расхождение docs/TIME_SYSTEM.md с реализацией
+  - Добавлен §3.4 — рекомендации по отображению времени (P1/P2)
+- Этап 3: Создан docs_temp/tool_system_draft.md — черновик системы инструментов
+  - 4 типа инструментов: Кулаки, Топор, Кирка, Серп
+  - 4 категории объектов добычи: Wood, Stone, Ore, Plant
+  - ToolData : EquipmentData (Вариант A — наследование)
+  - Множители: damageMultiplier, yieldMultiplier, harvestSpeedMultiplier
+  - Правило неэффективного инструмента (×0.5)
+  - 5 тиров инструментов (Камень → Звёздный металл)
+  - Влияние грейда на множители
+  - Износ инструмента, формулы добычи, новые enum (ToolType, HarvestableCategory)
+  - Открытые вопросы для следующей итерации
+
+Stage Summary:
+- Верификация тиковой системы: РАБОТАЕТ, но НЕ ВИДНО (3 разрыва в HUD wiring)
+- Самопроверка: 7/7 ответов корректны
+- Чекпоинт обновлён до v3.1 (§3 расширен)
+- Создан docs_temp/tool_system_draft.md (ч черновик инструментов)
+- GitHub push pending

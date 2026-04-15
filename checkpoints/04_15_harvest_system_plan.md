@@ -96,7 +96,7 @@ objectTilemap используется только для не-harvestable об
 | Регистрация в ServiceLocator | ✅ Через GameInitializer |
 | Сохранение/загрузка | ✅ TimeSaveData |
 
-### 3.2 Отображение в HUD
+### 3.2 Отображение в HUD — КРИТИЧЕСКАЯ ПРОБЛЕМА
 
 **HUDController.UpdateTimeDisplay()** — вызывает каждый кадр:
 ```
@@ -104,28 +104,45 @@ timeText.text = timeController.FormattedTime;  // "HH:MM"
 dateText.text = timeController.FormattedDate;  // "DD.MM.YYYY"
 ```
 
-**Проблема:** `[SerializeField] private TMP_Text timeText/dateText` — назначаются через Inspector.  
-Если объект HUD не имеет этих TMP_Text компонентов — отображения не будет.  
-Нужна проверка: создаются ли эти элементы в FullSceneBuilder.
+**Диагноз (верифицировано кодом 2026-04-16):**
 
-### 3.3 Проблема: нет тикового отображения
+| Проблема | Статус | Пояснение |
+|----------|--------|-----------|
+| HUDController НЕ добавляется к HUD панели | ❌ | FullSceneBuilder.CreateHUDPanel() не вызывает AddComponent<HUDController>() |
+| timeText/dateText НЕ подключаются | ❌ | [SerializeField] поля = null → UpdateTimeDisplay() просто return |
+| TestLocationGameController НЕ отображает время | ❌ | Только HP, Qi, Stamina, Location, Position |
+| FormattedTime = "HH:MM" (нет секунд) | ⚠️ | Минуты меняются каждую секунду, но нет визуальной динамики |
+| CurrentTick НЕ отображается | ⚠️ | OnTick подписан только FormationController + QuestController |
 
-Пользователь указал: «в отображении не идёт тиковое время».  
+**Вывод:** Время ИДЁТ (система работает), но НЕ ВИДНО на экране — 3 разрыва в цепочке:
+1. FullSceneBuilder не добавляет HUDController компонент
+2. Даже если добавить — timeText/dateText не подключены к TMP объектам
+3. Даже если подключить — "HH:MM" не даёт тиковой динамики (нет секунд/тиков)
 
-**Анализ:** FormattedTime показывает `HH:MM` — минуты обновляются каждую реальную секунду  
-(при normalSpeedRatio=60, 1 реальная секунда = 1 игровая минута).  
-Тики (OnTick) отправляются каждую реальную секунду (`tickInterval = 1f`),  
-но **нигде не отображаются**. OnTick используется только в FormationController.
+### 3.3 Расхождение docs/TIME_SYSTEM.md с реализацией
 
-**Диагноз:** Время РАБОТАЕТ и обновляется, но:
-1. Если TMP_Text поля не назначены в Inspector — ничего не видно
-2. Секунды не отображаются (только HH:MM) — поэтому кажется что время стоит
-3. Тиковый счётчик (CurrentTick) не выводится в UI
+| Параметр | docs/TIME_SYSTEM.md | Реализация (TimeController.cs) |
+|----------|---------------------|-------------------------------|
+| Класс-менеджер | TimeManager (Singleton) | TimeController (MonoBehaviour) |
+| Структура времени | WorldTime (отдельный класс) | Прямые поля int (year, month, day...) |
+| Таймер | TickTimer (корутина) | FixedUpdate + deterministicAccumulator |
+| Скорости | 6 (superSuperSlow..ultra) | 4 (Paused, Normal, Fast, VeryFast) |
+| Activity Manager | Описан | Не реализован |
+| minutesPerTick | Да (0.25..60) | Нет (используются speedRatio: 60, 300, 900) |
 
-**Рекомендация:**  
-- Добавить отображение секунд: `HH:MM:SS`  
-- Или добавить отдельный текст для тикового времени  
-- Проверить назначение timeText/dateText в сцене
+**docs/TIME_SYSTEM.md — устаревший документ**, требует актуализации.
+
+### 3.4 Рекомендации по отображению времени
+
+**Приоритет P1 (для следующей итерации после Harvest):**
+1. В FullSceneBuilder: добавить HUDController к HUD панели + подключить timeText/dateText
+2. Изменить FormattedTime на "HH:MM:SS" (добавить секунды)
+3. Или добавить отдельный текст для CurrentTick / FormattedTick
+
+**Приоритет P2 (дальше):**
+4. Актуализировать docs/TIME_SYSTEM.md под реальную реализацию
+5. Добавить недостающие скорости (superSuperSlow, slow, ultra)
+6. Реализовать ActivityManager для автопереключения скоростей
 
 ---
 
@@ -436,4 +453,4 @@ harvestable.HarvestHit(actualDamage, yieldMult);
 ---
 
 *Создано: 2026-04-15 18:04:04 UTC*  
-*Редактировано: 2026-04-15 18:18:27 UTC — v3 с учётом замечаний пользователя*
+*Редактировано: 2026-04-16 v3.1 — дополнен §3: верификация тиковой системы (HUD wiring, расхождение docs)*
