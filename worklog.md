@@ -768,3 +768,31 @@ Stage Summary:
 - 17 AI-спрайтов сгенерированы и заменены
 - PR #7 создан и готов к merge
 - Спрайты содержат xianxia-тематику (qi-энергия, мистические элементы)
+
+---
+Task ID: 04_15-runtime-fixes
+Agent: Main Agent
+Task: Исправление runtime-ошибок из лог-файла 04_15.log
+
+Work Log:
+- Прочитан docs_temp/04_15.log — 86KB консольный лог Unity
+- Выделены уникальные ошибки: Tag: Resource is not defined (~100+), MissingComponentException RectTransform на Fill Area (2 раза), ServiceLocator double registration (2), Player initialized twice
+- F-key РАБОТАЕТ — лог показывает 3 удара по дереву (damage=25), но UI падает на RectTransform
+- Создан чекпоинт: checkpoints/04_15_fix_runtime_errors.md
+- Исправлено 9 файлов:
+  1. ResourceSpawner.cs: Убран try-catch tag (Unity не бросает C# exception), tag=Untagged + LoadResourceSprite() для AI-спрайтов
+  2. HarvestFeedbackUI.cs: Добавлен RectTransform для Fill Area (null check + AddComponent)
+  3. TimeController.cs: ServiceLocator.Register(this) закомментирован в Awake()
+  4. WorldController.cs: ServiceLocator.Register(this) закомментирован в Awake(), InitializeControllers() сохранён
+  5. TileMapController.cs: Добавлен Grid.cellGap = (-0.01,-0.01,0) для устранения зазоров
+  6. FullSceneBuilder.cs: Добавлен Grid.cellGap при создании Grid
+  7. TileSpriteGenerator.cs: Убран spriteBorder(1,1,1,1) — работает только для 9-slice
+  8. PlayerVisual.cs: Добавлен LoadPlayerSprite() — загружает AI-спрайт из Assets/Sprites/Characters/Player/
+  9. TestLocationGameController.cs: Заменён SpriteRenderer+CreateTempSprite на PlayerVisual
+  10. ResourceSpawner.cs: Добавлен LoadResourceSprite() с маппингом resourceId → спрайт
+
+Stage Summary:
+- Коммит 2bf65af запушен в origin/main
+- Все 3 критические ошибки исправлены (Tag, RectTransform, ServiceLocator)
+- Зазоры тайлов — исправлены через Grid.cellGap
+- Спрайты игрока и руд — загружаются из AI-ассетов (fallback на процедурные)
