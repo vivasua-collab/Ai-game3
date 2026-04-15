@@ -3,7 +3,7 @@
 // Cultivation World Simulator
 // Версия: 1.0
 // Создано: 2026-03-30 14:00:00 UTC
-// Редактировано: 2026-04-15 11:20:00 UTC — FIX: улучшенный fallback спрайт персонажа, PPU=32
+// Редактировано: 2026-04-15 16:53:48 UTC — FIX 2C: контрастный красно-оранжевый цвет, Unlit шейдер
 // ============================================================================
 
 using UnityEngine;
@@ -19,7 +19,10 @@ namespace CultivationGame.Player
     {
         [Header("Visual Settings")]
         [Tooltip("Цвет игрока")]
-        public Color playerColor = new Color(0.2f, 0.8f, 0.3f); // Зелёный
+        // FIX 2C: Красно-оранжевый вместо зелёного — контрастный на любом фоне.
+        // Зелёный сливается с травой и другими природными объектами.
+        // Редактировано: 2026-04-15 16:53:48 UTC
+        public Color playerColor = new Color(1f, 0.3f, 0.15f); // Красно-оранжевый
         
         [Tooltip("Размер игрока")]
         public float size = 0.4f; // Редактировано: 2026-04-15 — уменьшено с 0.8 до 0.4 (соответствует объектам)
@@ -85,10 +88,13 @@ namespace CultivationGame.Player
             }
             mainSprite.sortingOrder = 10;
             
-            // FIX PLR-M07: Try correct URP 2D sprite shader first, then fallback (2026-04-11)
-            // "Universal Render Pipeline/2D/Sprite-Unlit-Default" does not exist in URP.
-            // The correct shader is "Universal Render Pipeline/2D/Sprite-Lit-Default".
-            Shader spriteShader = Shader.Find("Universal Render Pipeline/2D/Sprite-Lit-Default");
+            // FIX 2A-alt: Сначала пробуем Unlit шейдер — рендерит БЕЗ Light2D (гарантированно виден).
+            // Sprite-Lit-Default требует Light2D для видимости — без него спрайт чёрный.
+            // Sprite-Unlit-Default рендерит без освещения — всегда виден.
+            // Редактировано: 2026-04-15 16:53:48 UTC
+            Shader spriteShader = Shader.Find("Universal Render Pipeline/2D/Sprite-Unlit-Default");
+            if (spriteShader == null)
+                spriteShader = Shader.Find("Universal Render Pipeline/2D/Sprite-Lit-Default");
             if (spriteShader == null)
                 spriteShader = Shader.Find("Sprites/Default");
             

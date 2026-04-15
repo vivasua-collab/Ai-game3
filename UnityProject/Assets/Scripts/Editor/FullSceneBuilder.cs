@@ -4,7 +4,7 @@
 // Версия: 1.2
 // ============================================================================
 // Создано: 2026-04-13 08:00:00 UTC
-// Редактировано: 2026-04-14 14:15:00 UTC — Snow tile asset + AssignTileBases, Camera2DSetup follow + bounds, 100×80, pre-gen sprites
+// Редактировано: 2026-04-15 16:53:48 UTC — FIX: Global Light2D (URP 2D), позиция игрока на центр карты, AI-спрайты
 //
 // АРХИТЕКТУРА:
 //   15 фаз, каждая идемпотентна (повторный запуск безопасен).
@@ -624,7 +624,10 @@ namespace CultivationGame.Editor
         {
             EnsureSceneOpen();
             var cam = Camera.main;
-            return cam == null;
+            // FIX 2A: Также проверяем Global Light2D — без него спрайты невидимы в URP 2D
+            // Редактировано: 2026-04-15 16:53:48 UTC
+            bool hasLight2D = GameObject.Find("GlobalLight2D") != null;
+            return cam == null || !hasLight2D;
         }
 
         private static void ExecuteCameraLight()
@@ -666,7 +669,7 @@ namespace CultivationGame.Editor
 
             Undo.RegisterCreatedObjectUndo(camObj, "Create Camera");
 
-            // --- Light ---
+            // --- 3D Light (для материалов, не влияющих на 2D спрайты) ---
             var lightObj = GameObject.Find("Directional Light");
             if (lightObj == null)
             {
@@ -678,6 +681,48 @@ namespace CultivationGame.Editor
                 lightObj.transform.rotation = Quaternion.Euler(50f, -30f, 0f);
 
                 Undo.RegisterCreatedObjectUndo(lightObj, "Create Light");
+            }
+
+            // --- FIX 2A: Global Light2D для URP 2D Renderer ---
+            // Renderer2D.asset активен → Sprite-Lit-Default шейдер требует Light2D.
+            // Без Light2D ВСЕ спрайты рендерятся как чёрные (невидимые на тёмном фоне).
+            // Это КРИТИЧЕСКОЕ исправление — без него ни один спрайт не виден.
+            // Редактировано: 2026-04-15 16:53:48 UTC
+            var light2DObj = GameObject.Find("GlobalLight2D");
+            if (light2DObj == null)
+            {
+                light2DObj = new GameObject("GlobalLight2D");
+                // Используем System.Type.GetType для безопасного добавления Light2D
+                // (класс в сборке Unity.2D.RenderPipeline.Runtime)
+                var light2DType = System.Type.GetType("UnityEngine.Rendering.Universal.Light2D, Unity.2D.RenderPipeline.Runtime");
+                if (light2DType != null)
+                {
+                    var light2D = light2DObj.AddComponent(light2DType);
+                    // Настраиваем через Reflection — Light2D.lightType = Global
+                    var lightTypeProp = light2DType.GetProperty("lightType");
+                    if (lightTypeProp != null)
+                        lightTypeProp.SetValue(light2D, 1); // 1 = Global
+                    // Настраиваем интенсивность
+                    var intensityProp = light2DType.GetProperty("intensity");
+                    if (intensityProp != null)
+                        intensityProp.SetValue(light2D, 1f);
+                    // Настраиваем цвет
+                    var colorProp = light2DType.GetProperty("color");
+                    if (colorProp != null)
+                        colorProp.SetValue(light2D, Color.white);
+
+                    Undo.RegisterCreatedObjectUndo(light2DObj, "Create Global Light2D");
+                    Debug.Log("[FullSceneBuilder] Global Light2D создан — URP 2D спрайты теперь видимы");
+                }
+                else
+                {
+                    // Light2D тип не найден — используем альтернативный подход
+                    // Добавляем компонент через SerializedObject
+                    Debug.LogWarning("[FullSceneBuilder] Light2D тип не найден через Reflection. " +
+                        "URP 2D renderer может не освещать спрайты. " +
+                        "Добавьте Light2D вручную: GameObject → Light → 2D → Global Light");
+                    Object.DestroyImmediate(light2DObj);
+                }
             }
 
             Debug.Log("[FullSceneBuilder] Camera & Light configured");
@@ -778,7 +823,11 @@ namespace CultivationGame.Editor
             }
 
             GameObject player = new GameObject("Player");
-            player.transform.position = Vector3.zero;
+            // FIX 2B: Позиция на центр карты вместо (0,0) = Void.
+            // Карта 100×80 тайлов × 2м/тайл → центр = (100, 80, 0).
+            // На центре — каменный алтарь, видимый на любом фоне.
+            // Редактировано: 2026-04-15 16:53:48 UTC
+            player.transform.position = new Vector3(100f, 80f, 0f);
             player.tag = "Player";
 
             // Установить слой Player (6)

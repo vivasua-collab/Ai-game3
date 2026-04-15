@@ -2,7 +2,7 @@
 // ResourceSpawner.cs — Спавнер ресурсных объектов на локации
 // Cultivation World Simulator
 // Создано: 2026-04-14 07:35:00 UTC
-// Редактировано: 2026-04-15 — FIX: spriteScale=0.16 (5x меньше), PPU=160, прозрачность
+// Редактировано: 2026-04-15 16:53:48 UTC — FIX 3A: убран Tiles_AI/ из поиска (RGB без alpha → белый фон)
 // ============================================================================
 
 using System.Collections.Generic;
@@ -559,9 +559,11 @@ namespace CultivationGame.TileSystem
 
         /// <summary>
         /// Загрузить AI-спрайт ресурса.
-        /// Маппинг resourceId → файл спрайта в Assets/Sprites/Tiles_AI/ или Assets/Sprites/Tiles/
-        /// Fallback: null (используется программный спрайт)
-        /// Редактировано: 2026-04-15 UTC
+        /// Маппинг resourceId → файл спрайта в Assets/Sprites/Tiles/
+        /// (обработанные AI-спрайты с прозрачностью лежат в Tiles/).
+        /// FIX 3A: Убран Tiles_AI/ из поиска — AI-спрайты там RGB без альфа-канала,
+        /// что приводит к белому фону. Обработанные RGBA-спрайты лежат в Tiles/.
+        /// Редактировано: 2026-04-15 16:53:48 UTC
         /// </summary>
         private Sprite LoadResourceSprite(string resourceId)
         {
@@ -588,11 +590,12 @@ namespace CultivationGame.TileSystem
             if (spriteName == null) return null;
 
             #if UNITY_EDITOR
-            // Editor: загрузка из Assets по прямому пути
+            // Editor: загрузка из Assets/Sprites/Tiles/ (обработанные AI-спрайты с прозрачностью)
+            // FIX 3A: Tiles_AI/ убран из поиска — там RGB спрайты без alpha → белый фон
+            // Редактировано: 2026-04-15 16:53:48 UTC
             string[] searchPaths = new string[]
             {
-                $"Assets/Sprites/Tiles_AI/{spriteName}.png",
-                $"Assets/Sprites/Tiles/{spriteName}.png"
+                $"Assets/Sprites/Tiles/{spriteName}.png"  // Только обработанные спрайты с прозрачностью
             };
             foreach (var path in searchPaths)
             {

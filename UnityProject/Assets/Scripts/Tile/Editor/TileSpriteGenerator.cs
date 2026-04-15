@@ -1,77 +1,387 @@
 // ============================================================================
-// TileSpriteGenerator.cs — Генератор простых спрайтов тайлов
+// TileSpriteGenerator.cs — Генератор спрайтов тайлов с поддержкой AI-спрайтов
 // Cultivation World Simulator
+// Версия: 2.0
 // Создано: 2026-04-07 14:24:05 UTC
-// Редактировано: 2026-04-15 — FIX: terrain 68×68 pixel bleed для устранения белой сетки,
-//   objects PPU=160 (уменьшение в 5 раз), RGBA32 прозрачность, SpriteImportMode.Single
+// Редактировано: 2026-04-15 16:53:48 UTC — FIX 1A: полная переработка —
+//   обработка AI-спрайтов из Tiles_AI/ (resize + прозрачность) вместо
+//   процедурной генерации. Fallback на процедурные при отсутствии AI.
 // ============================================================================
 
 #if UNITY_EDITOR
 using UnityEngine;
 using UnityEditor;
 using System.IO;
+using System.Collections.Generic;
 
 namespace CultivationGame.TileSystem.Editor
 {
     /// <summary>
-    /// Генератор простых спрайтов для тайловой системы.
-    /// Создаёт базовые цветные тайлы для тестирования.
+    /// Генератор спрайтов для тайловой системы.
     ///
-    /// Terrain: 68×68 px, PPU=32 → 2.125 юнита (перекрытие 0.0625 юнита с каждой стороны,
-    ///   устраняет белую сетку между тайлами). SpriteImportMode.Single.
+    /// Версия 2.0 — приоритет AI-спрайтов:
+    ///   1. Сканирует Assets/Sprites/Tiles_AI/ на наличие AI-спрайтов
+    ///   2. Если найдены — обрабатывает (уменьшает 1024→64, добавляет прозрачность для obj_*)
+    ///   3. Сохраняет обработанные в Assets/Sprites/Tiles/
+    ///   4. Если AI-спрайтов нет — fallback на процедурную генерацию
     ///
-    /// Objects: 64×64 px, PPU=160 → 0.4 юнита (в 5 раз меньше ячейки 2.0 юнита).
-    ///   Прозрачный фон RGBA32. SpriteImportMode.Single.
+    /// Terrain: 64×64 px (было 68×68 — pixel bleed не нужен с AI-спрайтами),
+    ///   PPU=32 → 2.0 юнита (точно совпадает с ячейкой, без белой сетки).
+    ///
+    /// Objects: 64×64 px, PPU=160 → 0.4 юнита.
+    ///   Прозрачный фон RGBA32.
     /// </summary>
     public static class TileSpriteGenerator
     {
-        private const int TERRAIN_SIZE = 68;  // 64 + 4px pixel bleed (2px с каждой стороны)
+        // FIX 1A: Terrain 64×64 вместо 68×68 — pixel bleed не нужен с AI-спрайтами.
+        // С 64×64 при PPU=32 → 2.0 юнита = точный размер ячейки → НЕТ белой сетки.
+        // Редактировано: 2026-04-15 16:53:48 UTC
+        private const int TERRAIN_SIZE = 64;   // Стандартный размер тайла
         private const int OBJECT_SIZE = 64;    // Стандартный размер объекта
-        private const int TERRAIN_PPU = 32;    // 68/32 = 2.125 юнита — перекрытие устраняет зазоры
+        private const int TERRAIN_PPU = 32;    // 64/32 = 2.0 юнита — точно в ячейку
         private const int OBJECT_PPU = 160;    // 64/160 = 0.4 юнита — в 5 раз меньше ячейки
         private const string OUTPUT_PATH = "Assets/Sprites/Tiles";
+        private const string AI_SPRITES_PATH = "Assets/Sprites/Tiles_AI";
 
         [MenuItem("Tools/Generate Tile Sprites")]
         public static void GenerateAllSprites()
         {
             if (!Directory.Exists(OUTPUT_PATH))
-            {
                 Directory.CreateDirectory(OUTPUT_PATH);
+
+            // FIX 1A: Проверяем AI-спрайты в первую очередь
+            // Редактировано: 2026-04-15 16:53:48 UTC
+            bool usedAI = false;
+            if (Directory.Exists(AI_SPRITES_PATH))
+            {
+                string[] aiFiles = Directory.GetFiles(AI_SPRITES_PATH, "*.png");
+                if (aiFiles.Length > 0)
+                {
+                    Debug.Log($"[TileSpriteGenerator] Найдено {aiFiles.Length} AI-спрайтов. Обработка...");
+                    usedAI = ProcessAISprites(aiFiles);
+                }
             }
 
-            // Terrain sprites (68×68, PPU=32 → 2.125 units, pixel bleed)
-            GenerateTerrainSprite("terrain_grass", new Color(0.4f, 0.7f, 0.3f));
-            GenerateTerrainSprite("terrain_dirt", new Color(0.6f, 0.4f, 0.2f));
-            GenerateTerrainSprite("terrain_stone", new Color(0.5f, 0.5f, 0.55f));
-            GenerateTerrainSprite("terrain_water_shallow", new Color(0.3f, 0.5f, 0.8f, 0.8f));
-            GenerateTerrainSprite("terrain_water_deep", new Color(0.2f, 0.3f, 0.7f, 0.9f));
-            GenerateTerrainSprite("terrain_sand", new Color(0.9f, 0.85f, 0.6f));
-            GenerateTerrainSprite("terrain_snow", new Color(0.95f, 0.95f, 1f));
-            GenerateTerrainSprite("terrain_ice", new Color(0.7f, 0.85f, 0.95f));
-            GenerateTerrainSprite("terrain_lava", new Color(0.9f, 0.3f, 0.05f));
-            GenerateTerrainSprite("terrain_void", new Color(0.1f, 0.1f, 0.1f));
-
-            // Object sprites (64×64, PPU=160 → 0.4 units, 5x smaller than cell)
-            GenerateObjectSprite("obj_tree", new Color(0.3f, 0.5f, 0.2f), ObjectShape.Tree);
-            GenerateObjectSprite("obj_rock_small", new Color(0.6f, 0.55f, 0.5f), ObjectShape.SmallRock);
-            GenerateObjectSprite("obj_rock_medium", new Color(0.5f, 0.45f, 0.4f), ObjectShape.MediumRock);
-            GenerateObjectSprite("obj_bush", new Color(0.35f, 0.55f, 0.25f), ObjectShape.Bush);
-            GenerateObjectSprite("obj_chest", new Color(0.6f, 0.4f, 0.2f), ObjectShape.Chest);
-            GenerateObjectSprite("obj_ore_vein", new Color(0.7f, 0.5f, 0.2f), ObjectShape.OreVein);
-            GenerateObjectSprite("obj_herb", new Color(0.2f, 0.6f, 0.3f), ObjectShape.Herb);
+            // Fallback: генерация недостающих программных спрайтов
+            GenerateMissingProceduralSprites();
 
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
 
-            Debug.Log("Generated tile sprites at " + OUTPUT_PATH);
+            Debug.Log($"[TileSpriteGenerator] Спрайты сгенерированы (AI: {usedAI}) в {OUTPUT_PATH}");
+        }
+
+        // ====================================================================
+        //  AI-СПРАЙТЫ: обработка и копирование в Tiles/
+        // ====================================================================
+
+        /// <summary>
+        /// Обработать AI-спрайты: уменьшить 1024→64, добавить прозрачность для obj_*,
+        /// сохранить в Tiles/ с правильными настройками импорта.
+        /// Редактировано: 2026-04-15 16:53:48 UTC
+        /// </summary>
+        private static bool ProcessAISprites(string[] aiFiles)
+        {
+            int processed = 0;
+            int failed = 0;
+
+            foreach (string aiPath in aiFiles)
+            {
+                string fileName = Path.GetFileNameWithoutExtension(aiPath);
+                bool isObject = fileName.StartsWith("obj_");
+
+                try
+                {
+                    // Загружаем AI-спрайт как текстуру
+                    Texture2D sourceTex = LoadAITexture(aiPath);
+                    if (sourceTex == null)
+                    {
+                        Debug.LogWarning($"[TileSpriteGenerator] Не удалось загрузить AI-спрайт: {aiPath}");
+                        failed++;
+                        continue;
+                    }
+
+                    // Для obj_*: удаляем фон (flood fill от углов → прозрачный)
+                    if (isObject)
+                    {
+                        RemoveBackground(sourceTex, tolerance: 0.12f);
+                    }
+
+                    // Уменьшаем до целевого размера
+                    int targetSize = isObject ? OBJECT_SIZE : TERRAIN_SIZE;
+                    Texture2D resizedTex = ResizeTexture(sourceTex, targetSize, targetSize);
+
+                    // Сохраняем в Tiles/
+                    string outputPath = Path.Combine(OUTPUT_PATH, fileName + ".png");
+                    SaveTextureToPNG(resizedTex, outputPath);
+
+                    // Настраиваем импорт с правильным PPU
+                    SetupSpriteImport(outputPath, isObject);
+
+                    // Освобождаем временные текстуры
+                    if (resizedTex != sourceTex)
+                        Object.DestroyImmediate(resizedTex);
+                    Object.DestroyImmediate(sourceTex);
+
+                    processed++;
+                    Debug.Log($"[TileSpriteGenerator] AI-спрайт обработан: {fileName} (isObject={isObject})");
+                }
+                catch (System.Exception ex)
+                {
+                    Debug.LogError($"[TileSpriteGenerator] Ошибка обработки {fileName}: {ex.Message}");
+                    failed++;
+                }
+            }
+
+            Debug.Log($"[TileSpriteGenerator] AI-спрайты: обработано {processed}, ошибок {failed}");
+            return processed > 0;
+        }
+
+        /// <summary>
+        /// Загрузить AI-спрайт из файла как Texture2D.
+        /// Используем LoadImage() — работает с RGB PNG, результат RGBA32.
+        /// Редактировано: 2026-04-15 16:53:48 UTC
+        /// </summary>
+        private static Texture2D LoadAITexture(string assetPath)
+        {
+            // Метод 1: Пробуем через AssetDatabase (быстрее, но может дать compressed текстуру)
+            var sourceSprite = AssetDatabase.LoadAssetAtPath<Sprite>(assetPath);
+            if (sourceSprite != null && sourceSprite.texture != null)
+            {
+                var srcTex = sourceSprite.texture;
+                // Создаём копию в RGBA32 (оригинал может быть compressed)
+                var copy = new Texture2D(srcTex.width, srcTex.height, TextureFormat.RGBA32, false);
+                copy.SetPixels(srcTex.GetPixels());
+                copy.Apply();
+                return copy;
+            }
+
+            // Метод 2: Читаем PNG файл напрямую и загружаем через LoadImage
+            string fullPath = Path.GetFullPath(assetPath);
+            if (!File.Exists(fullPath))
+                return null;
+
+            byte[] fileData = File.ReadAllBytes(fullPath);
+            var tex = new Texture2D(2, 2, TextureFormat.RGBA32, false);
+            tex.LoadImage(fileData); // LoadImage автоматически определяет размер и формат
+            return tex;
+        }
+
+        /// <summary>
+        /// Уменьшить текстуру до целевого размера.
+        /// Использует RenderTexture с билинейной фильтрацией для качественного масштабирования.
+        /// Редактировано: 2026-04-15 16:53:48 UTC
+        /// </summary>
+        private static Texture2D ResizeTexture(Texture2D source, int newWidth, int newHeight)
+        {
+            // Если размер уже совпадает — просто возвращаем копию
+            if (source.width == newWidth && source.height == newHeight)
+            {
+                var copy = new Texture2D(newWidth, newHeight, TextureFormat.RGBA32, false);
+                copy.SetPixels(source.GetPixels());
+                copy.Apply();
+                return copy;
+            }
+
+            // RenderTexture для качественного масштабирования
+            RenderTexture rt = RenderTexture.GetTemporary(newWidth, newHeight, 0, RenderTextureFormat.Default, RenderTextureReadWrite.Default);
+            rt.filterMode = FilterMode.Bilinear;
+
+            Graphics.Blit(source, rt);
+
+            RenderTexture prev = RenderTexture.active;
+            RenderTexture.active = rt;
+
+            var result = new Texture2D(newWidth, newHeight, TextureFormat.RGBA32, false);
+            result.filterMode = FilterMode.Point;
+            result.ReadPixels(new Rect(0, 0, newWidth, newHeight), 0, 0);
+            result.Apply();
+
+            RenderTexture.active = prev;
+            RenderTexture.ReleaseTemporary(rt);
+
+            return result;
+        }
+
+        /// <summary>
+        /// Удалить фон у AI-спрайта объекта через flood fill от углов.
+        /// AI-спрайты — RGB 1024×1024, фон = однотонный (обычно белый или чёрный).
+        /// Flood fill от 4 углов: все подключённые пиксели с цветом ≈ угловому → alpha=0.
+        /// Редактировано: 2026-04-15 16:53:48 UTC
+        /// </summary>
+        private static void RemoveBackground(Texture2D tex, float tolerance)
+        {
+            int w = tex.width;
+            int h = tex.height;
+            Color[] pixels = tex.GetPixels();
+
+            // Цвет фона = средний цвет угловых пикселей
+            Color bgSum = Color.clear;
+            int cornerCount = 0;
+            Color[] cornerColors = new Color[] {
+                pixels[0],                    // левый нижний
+                pixels[w - 1],                // правый нижний
+                pixels[(h - 1) * w],          // левый верхний
+                pixels[(h - 1) * w + w - 1]   // правый верхний
+            };
+            foreach (var c in cornerColors)
+            {
+                bgSum += c;
+                cornerCount++;
+            }
+            Color bgColor = bgSum / cornerCount;
+
+            // Flood fill от углов — BFS
+            bool[] visited = new bool[w * h];
+            Queue<int> queue = new Queue<int>();
+
+            // Стартовые точки — 4 угла + приграничные пиксели для надёжности
+            queue.Enqueue(0);
+            queue.Enqueue(w - 1);
+            queue.Enqueue((h - 1) * w);
+            queue.Enqueue((h - 1) * w + w - 1);
+
+            // Также добавляем пиксели по краям (для сложных фонов)
+            for (int x = 0; x < w; x += w / 16)
+            {
+                queue.Enqueue(x);                    // нижний край
+                queue.Enqueue((h - 1) * w + x);      // верхний край
+            }
+            for (int y = 0; y < h; y += h / 16)
+            {
+                queue.Enqueue(y * w);                 // левый край
+                queue.Enqueue(y * w + w - 1);         // правый край
+            }
+
+            float tolR = tolerance;
+            float tolG = tolerance;
+            float tolB = tolerance;
+
+            while (queue.Count > 0)
+            {
+                int idx = queue.Dequeue();
+                if (idx < 0 || idx >= pixels.Length) continue;
+                if (visited[idx]) continue;
+                visited[idx] = true;
+
+                Color c = pixels[idx];
+                // Проверяем, похож ли пиксель на фоновый цвет
+                if (Mathf.Abs(c.r - bgColor.r) <= tolR &&
+                    Mathf.Abs(c.g - bgColor.g) <= tolG &&
+                    Mathf.Abs(c.b - bgColor.b) <= tolB)
+                {
+                    // Делаем прозрачным, сохраняя RGB для антиалиасинга
+                    pixels[idx] = new Color(c.r, c.g, c.b, 0f);
+
+                    int x = idx % w;
+                    int y = idx / w;
+                    // Соседи: вверх, вниз, влево, вправо
+                    if (x > 0) queue.Enqueue(idx - 1);
+                    if (x < w - 1) queue.Enqueue(idx + 1);
+                    if (y > 0) queue.Enqueue(idx - w);
+                    if (y < h - 1) queue.Enqueue(idx + w);
+                }
+            }
+
+            tex.SetPixels(pixels);
+            tex.Apply();
+        }
+
+        /// <summary>
+        /// Сохранить Texture2D как PNG файл.
+        /// Редактировано: 2026-04-15 16:53:48 UTC
+        /// </summary>
+        private static void SaveTextureToPNG(Texture2D texture, string path)
+        {
+            byte[] bytes = texture.EncodeToPNG();
+            File.WriteAllBytes(path, bytes);
+        }
+
+        /// <summary>
+        /// Настроить импорт спрайта с правильным PPU и настройками.
+        /// Редактировано: 2026-04-15 16:53:48 UTC
+        /// </summary>
+        private static void SetupSpriteImport(string path, bool isObject)
+        {
+            AssetDatabase.ImportAsset(path);
+            var importer = AssetImporter.GetAtPath(path) as TextureImporter;
+            if (importer != null)
+            {
+                importer.textureType = TextureImporterType.Sprite;
+                importer.spriteImportMode = SpriteImportMode.Single;
+                importer.spritePixelsPerUnit = isObject ? OBJECT_PPU : TERRAIN_PPU;
+                importer.filterMode = FilterMode.Point;
+                importer.spriteBorder = Vector4.zero;
+                importer.wrapMode = TextureWrapMode.Clamp;
+                importer.alphaIsTransparency = true;
+                importer.textureCompression = TextureImporterCompression.Uncompressed;
+
+                AssetDatabase.ImportAsset(path, ImportAssetOptions.ForceUpdate);
+            }
+        }
+
+        // ====================================================================
+        //  ПРОГРАММНЫЕ СПРАЙТЫ (fallback если AI-спрайтов нет)
+        // ====================================================================
+
+        /// <summary>
+        /// Генерирует только те программные спрайты, которых не хватает в Tiles/.
+        /// Не перезаписывает существующие (обработанные AI-спрайты).
+        /// Редактировано: 2026-04-15 16:53:48 UTC
+        /// </summary>
+        private static void GenerateMissingProceduralSprites()
+        {
+            // Terrain sprites (64×64, PPU=32 → 2.0 units)
+            GenerateTerrainSpriteIfMissing("terrain_grass", new Color(0.4f, 0.7f, 0.3f));
+            GenerateTerrainSpriteIfMissing("terrain_dirt", new Color(0.6f, 0.4f, 0.2f));
+            GenerateTerrainSpriteIfMissing("terrain_stone", new Color(0.5f, 0.5f, 0.55f));
+            GenerateTerrainSpriteIfMissing("terrain_water_shallow", new Color(0.3f, 0.5f, 0.8f, 0.8f));
+            GenerateTerrainSpriteIfMissing("terrain_water_deep", new Color(0.2f, 0.3f, 0.7f, 0.9f));
+            GenerateTerrainSpriteIfMissing("terrain_sand", new Color(0.9f, 0.85f, 0.6f));
+            GenerateTerrainSpriteIfMissing("terrain_snow", new Color(0.95f, 0.95f, 1f));
+            GenerateTerrainSpriteIfMissing("terrain_ice", new Color(0.7f, 0.85f, 0.95f));
+            GenerateTerrainSpriteIfMissing("terrain_lava", new Color(0.9f, 0.3f, 0.05f));
+            GenerateTerrainSpriteIfMissing("terrain_void", new Color(0.1f, 0.1f, 0.1f));
+
+            // Object sprites (64×64, PPU=160 → 0.4 units)
+            GenerateObjectSpriteIfMissing("obj_tree", new Color(0.3f, 0.5f, 0.2f), ObjectShape.Tree);
+            GenerateObjectSpriteIfMissing("obj_rock_small", new Color(0.6f, 0.55f, 0.5f), ObjectShape.SmallRock);
+            GenerateObjectSpriteIfMissing("obj_rock_medium", new Color(0.5f, 0.45f, 0.4f), ObjectShape.MediumRock);
+            GenerateObjectSpriteIfMissing("obj_bush", new Color(0.35f, 0.55f, 0.25f), ObjectShape.Bush);
+            GenerateObjectSpriteIfMissing("obj_chest", new Color(0.6f, 0.4f, 0.2f), ObjectShape.Chest);
+            GenerateObjectSpriteIfMissing("obj_ore_vein", new Color(0.7f, 0.5f, 0.2f), ObjectShape.OreVein);
+            GenerateObjectSpriteIfMissing("obj_herb", new Color(0.2f, 0.6f, 0.3f), ObjectShape.Herb);
+        }
+
+        /// <summary>
+        /// Генерировать программный terrain-спрайт только если файл не существует.
+        /// Редактировано: 2026-04-15 16:53:48 UTC
+        /// </summary>
+        private static void GenerateTerrainSpriteIfMissing(string name, Color color)
+        {
+            string path = Path.Combine(OUTPUT_PATH, name + ".png");
+            if (File.Exists(path)) return; // Не перезаписываем AI-спрайты
+
+            GenerateTerrainSprite(name, color);
+        }
+
+        /// <summary>
+        /// Генерировать программный object-спрайт только если файл не существует.
+        /// Редактировано: 2026-04-15 16:53:48 UTC
+        /// </summary>
+        private static void GenerateObjectSpriteIfMissing(string name, Color color, ObjectShape shape)
+        {
+            string path = Path.Combine(OUTPUT_PATH, name + ".png");
+            if (File.Exists(path)) return; // Не перезаписываем AI-спрайты
+
+            GenerateObjectSprite(name, color, shape);
         }
 
         private static void GenerateTerrainSprite(string name, Color color)
         {
-            // Текстура 68×68 RGBA32. Pixel bleed: вся площадь залита цветом,
-            // крайние 2px — дублирование цвета соседних пикселей.
-            // PPU=32 → 68/32 = 2.125 юнита. Ячейка = 2.0 юнита.
-            // Перекрытие 0.0625 юнита с каждой стороны устраняет белую сетку.
+            // FIX 1A: Текстура 64×64 вместо 68×68 — точный размер ячейки при PPU=32.
+            // 64/32 = 2.0 юнита = ячейка 2.0 юнита → нет зазоров, нет белой сетки.
+            // Редактировано: 2026-04-15 16:53:48 UTC
             Texture2D texture = new Texture2D(TERRAIN_SIZE, TERRAIN_SIZE, TextureFormat.RGBA32, false);
             texture.filterMode = FilterMode.Point;
             texture.wrapMode = TextureWrapMode.Clamp;
@@ -80,12 +390,8 @@ namespace CultivationGame.TileSystem.Editor
             {
                 for (int y = 0; y < TERRAIN_SIZE; y++)
                 {
-                    // Координаты внутри видимой области (64×64 центр)
-                    int vx = Mathf.Clamp(x - 2, 0, 63);
-                    int vy = Mathf.Clamp(y - 2, 0, 63);
-
                     // Вариация цвета через Perlin noise
-                    float variation = Mathf.PerlinNoise(vx * 0.1f, vy * 0.1f) * 0.1f;
+                    float variation = Mathf.PerlinNoise(x * 0.1f, y * 0.1f) * 0.1f;
                     Color pixelColor = color * (1f + variation - 0.05f);
                     pixelColor.a = color.a;
                     texture.SetPixel(x, y, pixelColor);
@@ -132,7 +438,6 @@ namespace CultivationGame.TileSystem.Editor
         {
             // Текстура 64×64 RGBA32 с прозрачным фоном.
             // PPU=160 → 64/160 = 0.4 юнита (в 5 раз меньше ячейки 2.0).
-            // Объект рисуется в центре 64×64, фон — полностью прозрачный.
             Texture2D texture = new Texture2D(OBJECT_SIZE, OBJECT_SIZE, TextureFormat.RGBA32, false);
             texture.filterMode = FilterMode.Point;
             texture.wrapMode = TextureWrapMode.Clamp;
