@@ -438,6 +438,11 @@ namespace CultivationGame.TileSystem
             resourceTypes.Clear();
 
             // === Растительные ресурсы (лесная зона) ===
+            // NOTE: herb и berries остаются здесь (автоподбор).
+            // Крупные объекты (деревья, камни, руда) спавнит HarvestableSpawner.
+            // Чекпоинт: 04_15_harvest_system_plan.md §6.6
+            // Редактировано: 2026-04-16 — убраны stone, ore, iron_ore, wood
+
             resourceTypes.Add(new ResourceSpawnEntry
             {
                 resourceId = "herb",
@@ -486,42 +491,9 @@ namespace CultivationGame.TileSystem
                 autoPickup = true
             });
 
-            // === Минеральные ресурсы (каменные зоны) ===
-            resourceTypes.Add(new ResourceSpawnEntry
-            {
-                resourceId = "stone",
-                displayName = "Камень",
-                spriteColor = new Color(0.6f, 0.6f, 0.65f),
-                amount = 2,
-                minCount = 10,
-                maxCount = 20,
-                spawnTerrain = new[] { TerrainType.Stone, TerrainType.Dirt },
-                autoPickup = true
-            });
-
-            resourceTypes.Add(new ResourceSpawnEntry
-            {
-                resourceId = "ore",
-                displayName = "Руда",
-                spriteColor = new Color(0.8f, 0.5f, 0.2f),
-                amount = 1,
-                minCount = 6,
-                maxCount = 12,
-                spawnTerrain = new[] { TerrainType.Stone },
-                autoPickup = true
-            });
-
-            resourceTypes.Add(new ResourceSpawnEntry
-            {
-                resourceId = "iron_ore",
-                displayName = "Железная руда",
-                spriteColor = new Color(0.5f, 0.5f, 0.55f),
-                amount = 2,
-                minCount = 4,
-                maxCount = 10,
-                spawnTerrain = new[] { TerrainType.Stone },
-                autoPickup = true
-            });
+            // === Минеральные ресурсы ===
+            // NOTE: stone, ore, iron_ore — убраны, теперь спавнит HarvestableSpawner
+            // (как Harvestable GameObject вместо автоподбираемых ResourcePickup)
 
             // === Ци-ресурсы (редкие) ===
             resourceTypes.Add(new ResourceSpawnEntry
@@ -548,18 +520,7 @@ namespace CultivationGame.TileSystem
                 autoPickup = true
             });
 
-            // === Древесина ===
-            resourceTypes.Add(new ResourceSpawnEntry
-            {
-                resourceId = "wood",
-                displayName = "Древесина",
-                spriteColor = new Color(0.6f, 0.4f, 0.2f),
-                amount = 3,
-                minCount = 12,
-                maxCount = 25,
-                spawnTerrain = new[] { TerrainType.Grass, TerrainType.Dirt },
-                autoPickup = true
-            });
+            // NOTE: wood — убран, теперь спавнит HarvestableSpawner (деревья как GameObject)
 
             // === Пустынные ресурсы ===
             resourceTypes.Add(new ResourceSpawnEntry

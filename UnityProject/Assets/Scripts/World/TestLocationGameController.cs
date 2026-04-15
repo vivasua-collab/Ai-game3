@@ -51,6 +51,7 @@ namespace CultivationGame.World
         private QiController qiController;
         private BodyController bodyController;
         private ResourceSpawner resourceSpawner;
+        private HarvestableSpawner harvestableSpawner; // Шаг 8: HarvestableSpawner для спавна добычи
         
         // === Properties ===
         public GameObject SpawnedPlayer => spawnedPlayer;
@@ -142,6 +143,10 @@ namespace CultivationGame.World
             
             // Настроить спавнер ресурсов
             SetupResourceSpawner();
+            
+            // Шаг 8: Настроить спавнер harvestable-объектов
+            // Редактировано: 2026-04-16
+            SetupHarvestableSpawner();
         }
         
         private void OnDestroy()
@@ -521,6 +526,29 @@ namespace CultivationGame.World
             resourceSpawner.SetDefaultResourceTypes();
             
             Debug.Log("[TestLocationGameController] ResourceSpawner настроен");
+        }
+        
+        // === Harvestable Spawner ===
+        
+        /// <summary>
+        /// Настроить спавнер harvestable-объектов (деревья, руда, камни).
+        /// Подписывается на OnMapGenerated и создаёт GameObject для добычи.
+        /// Чекпоинт: 04_15_harvest_system_plan.md §8
+        /// Редактировано: 2026-04-16
+        /// </summary>
+        private void SetupHarvestableSpawner()
+        {
+            // Создать или найти HarvestableSpawner
+            harvestableSpawner = GetComponent<HarvestableSpawner>();
+            if (harvestableSpawner == null)
+            {
+                harvestableSpawner = gameObject.AddComponent<HarvestableSpawner>();
+            }
+            
+            // NOTE: tileMapController устанавливается автоматически в HarvestableSpawner.Start()
+            // через ServiceLocator.GetOrFind<TileMapController>(). Ручная настройка не требуется.
+            
+            Debug.Log("[TestLocationGameController] HarvestableSpawner настроен");
         }
         
         // === Context Menu ===

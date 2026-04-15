@@ -983,7 +983,14 @@ namespace CultivationGame.TileSystem
                     // Объекты
                     if (objectTilemap != null && tile.objects.Count > 0)
                     {
-                        TileBase objTile = GetObjectTile(tile.objects[0].objectType);
+                        // Пропускать harvestable-объекты — они спавнятся как GameObject через HarvestableSpawner
+                        // Чекпоинт: 04_15_harvest_system_plan.md §6.2
+                        // Редактировано: 2026-04-16
+                        var obj = tile.objects[0];
+                        if (obj.isHarvestable)
+                            continue;
+
+                        TileBase objTile = GetObjectTile(obj.objectType);
                         if (objTile != null)
                         {
                             objectTilemap.SetTile(new Vector3Int(x, y, 0), objTile);

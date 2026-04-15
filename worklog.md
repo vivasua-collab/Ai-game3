@@ -951,3 +951,27 @@ Stage Summary:
 - Чекпоинт обновлён до v3.1 (§3 расширен)
 - Создан docs_temp/tool_system_draft.md (ч черновик инструментов)
 - GitHub push pending
+
+---
+Task ID: harvest-step8
+Agent: Main Agent
+Task: Шаг 8 — Интеграция HarvestableSpawner в TestLocationGameController + FullSceneBuilder
+
+Work Log:
+- Проверено состояние проекта: шаги 1-7 выполнены (harvest_progress.md)
+- Прочитаны TestLocationGameController.cs, FullSceneBuilder.cs (Phase 15)
+- Добавлено поле harvestableSpawner в TestLocationGameController
+- Добавлен метод SetupHarvestableSpawner() — создаёт/находит HarvestableSpawner, TileMapController подключается автоматически через ServiceLocator
+- Вызов SetupHarvestableSpawner() добавлен в Start()
+- В FullSceneBuilder:
+  - Добавлен тег "Harvestable" в REQUIRED_TAGS
+  - Добавлен слой "Harvestable" (13) в REQUIRED_LAYERS
+  - В Phase 15 добавлено создание HarvestableSpawner на GameController объекте
+- Обновлён harvest_progress.md: все 9 шагов (0-8) отмечены как [x]
+- Обновлён чекпоинт: status → complete
+
+Stage Summary:
+- Шаг 8 выполнен — HarvestableSpawner интегрирован
+- Все 9 шагов (0-8) harvest system ЗАВЕРШЕНЫ
+- Изменённые файлы: TestLocationGameController.cs, FullSceneBuilder.cs, harvest_progress.md, 04_15_harvest_system_plan.md
+- Оставшиеся FIX-H01/H02/H03 — некритичные, не блокируют

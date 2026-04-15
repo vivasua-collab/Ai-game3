@@ -137,6 +137,7 @@ namespace CultivationGame.Editor
             "Item",
             "Enemy",
             "Resource",  // FIX: Добавлен тег "Resource" для ResourceSpawner. Редактировано: 2026-04-15 12:00:00 UTC
+            "Harvestable", // Шаг 7: Тег для harvestable-объектов. Редактировано: 2026-04-16
         };
 
         // Слои (имя → номер)
@@ -149,6 +150,7 @@ namespace CultivationGame.Editor
             new KeyValuePair<string, int>("Enemy", 10),
             new KeyValuePair<string, int>("UI", 11),
             new KeyValuePair<string, int>("Background", 12),
+            new KeyValuePair<string, int>("Harvestable", 13), // Шаг 7: Слой для harvestable-объектов (Physics2D). Редактировано: 2026-04-16
         };
 
         #endregion
@@ -2170,7 +2172,14 @@ namespace CultivationGame.Editor
                     dso.FindProperty("tileMapController").objectReferenceValue = controller;
                     dso.ApplyModifiedProperties();
 
-                    Debug.Log("[FullSceneBuilder] GameController + DestructibleObjectController созданы");
+                    // Шаг 8: HarvestableSpawner — спавнер harvestable-объектов как GameObject
+                    // Редактировано: 2026-04-16
+                    var hs = gcObj.AddComponent<HarvestableSpawner>();
+                    var hso = new SerializedObject(hs);
+                    hso.FindProperty("tileMapController").objectReferenceValue = controller;
+                    hso.ApplyModifiedProperties();
+
+                    Debug.Log("[FullSceneBuilder] GameController + DestructibleObjectController + HarvestableSpawner созданы");
                 }
             }
 

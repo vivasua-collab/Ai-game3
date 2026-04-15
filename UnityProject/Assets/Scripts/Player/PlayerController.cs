@@ -22,6 +22,7 @@ using CultivationGame.World;
 using CultivationGame.Save;
 using CultivationGame.TileSystem;
 using CultivationGame.UI;
+using CultivationGame.Inventory;
 using UnityEngine.InputSystem;
 
 namespace CultivationGame.Player
@@ -57,6 +58,8 @@ namespace CultivationGame.Player
         [SerializeField] private float harvestRange = 2.5f;
         [SerializeField] private int harvestDamage = 25;
         [SerializeField] private float harvestCooldown = 0.8f;
+        [SerializeField] private LayerMask harvestableLayerMask = -1; // Слой "Harvestable" для Physics2D
+        [SerializeField] private bool useNewHarvestSystem = true; // Переключатель: новая (Physics2D) / старая (TileMap) система
 
         // === State ===
         private PlayerState state = new PlayerState();
@@ -73,6 +76,8 @@ namespace CultivationGame.Player
         private float lastHarvestTime;
         private Vector2Int lastHarvestTile;
         private string lastHarvestResource = "";
+        private Harvestable nearestHarvestable; // Ближайший harvestable-объект (для подсказки)
+        private InventoryController inventoryController; // Ссылка на инвентарь
         
         // === Events ===
 #pragma warning disable CS0067
@@ -508,17 +513,231 @@ namespace CultivationGame.Player
 
         /// <summary>
         /// Попытка добычи ресурса ближайшего объекта (F-key).
+        /// Версия 2.0 — использует Physics2D для поиска Harvestable-компонентов.
+        /// Чекпоинт: 04_15_harvest_system_plan.md v3 §5.
+        /// Редактировано: 2026-04-16 — полная перепись на Physics2D.
         /// </summary>
         private void AttemptHarvest()
         {
-            EnsureHarvestComponents();
-
             // Проверить кулдаун
             if (Time.time - lastHarvestTime < harvestCooldown)
             {
                 harvestFeedback?.ShowHarvestFailed("Подождите...");
                 return;
             }
+
+            // Выбор системы: новая (Physics2D) или старая (TileMap)
+            if (useNewHarvestSystem)
+            {
+                AttemptHarvestPhysics();
+            }
+            else
+            {
+                AttemptHarvestLegacy();
+            }
+        }
+
+        /// <summary>
+        /// Новая система добычи — поиск через Physics2D по слою "Harvestable".
+        /// Чекпоинт §5: Поток добычи.
+        /// </summary>
+        private void AttemptHarvestPhysics()
+        {
+            Vector2 playerPos = transform.position;
+
+            // Поиск ближайшего Harvestable через Physics2D.OverlapCircleAll
+            Collider2D[] hits = Physics2D.OverlapCircleAll(playerPos, harvestRange, harvestableLayerMask);
+
+            if (hits.Length == 0)
+            {
+                harvestFeedback?.ShowHarvestFailed("Рядом нет ресурсов");
+                return;
+            }
+
+            // Найти ближайший Harvestable
+            Harvestable closest = null;
+            float closestDist = float.MaxValue;
+
+            foreach (var hit in hits)
+            {
+                var harvestable = hit.GetComponent<Harvestable>();
+                if (harvestable == null || !harvestable.CanHarvest()) continue;
+
+                float dist = Vector2.Distance(playerPos, hit.transform.position);
+                if (dist < closestDist)
+                {
+                    closestDist = dist;
+                    closest = harvestable;
+                }
+            }
+
+            if (closest == null)
+            {
+                harvestFeedback?.ShowHarvestFailed("Нельзя добыть");
+                return;
+            }
+
+            // === Тик добычи ===
+            // Множитель инструмента (пока 1.0 — без инструмента)
+            // TODO: Получать из EquipmentController, когда система инструментов будет реализована
+            float toolMultiplier = 1.0f;
+            int damage = harvestDamage;
+
+            // Нанести урон и получить лут
+            int yield = closest.HarvestHit(damage, toolMultiplier);
+
+            if (yield > 0)
+            {
+                lastHarvestTime = Time.time;
+                lastHarvestResource = closest.DisplayName;
+
+                // Добавить ресурс в инвентарь
+                AddResourceToInventory(closest.ResourceId, yield);
+
+                // Показать прогресс-бар
+                if (harvestFeedback == null)
+                {
+                    harvestFeedback = gameObject.AddComponent<HarvestFeedbackUI>();
+                }
+
+                harvestFeedback.ShowHarvestStarted(closest.transform, closest.DisplayName, 1f - closest.GetDurabilityProgress());
+                harvestFeedback.ShowHarvestComplete(closest.DisplayName, yield);
+
+                // Событие
+                OnHarvestComplete?.Invoke(closest.DisplayName, yield);
+
+                // Добавить опыт Strength
+                AddStatExperience(StatType.Strength, 0.5f);
+
+                Debug.Log($"[PlayerController] Harvest: {closest.DisplayName} (id={closest.ResourceId}), " +
+                    $"yield={yield}, durability={closest.CurrentDurability}/{closest.MaxDurability}, " +
+                    $"remaining={closest.GetRemainingResource()}");
+            }
+            else if (closest.IsDepleted)
+            {
+                harvestFeedback?.ShowHarvestFailed("Исчерпано");
+            }
+            else
+            {
+                harvestFeedback?.ShowHarvestFailed("Не удалось добыть");
+            }
+        }
+
+        /// <summary>
+        /// Добавить ресурс в инвентарь игрока.
+        /// </summary>
+        private void AddResourceToInventory(string resourceId, int amount)
+        {
+            if (amount <= 0) return;
+
+            // Получить InventoryController
+            if (inventoryController == null)
+            {
+                inventoryController = GetComponent<InventoryController>();
+                if (inventoryController == null)
+                    inventoryController = ServiceLocator.GetOrFind<InventoryController>();
+            }
+
+            if (inventoryController != null)
+            {
+                // Создать временный ItemData для ресурса
+                var itemData = CreateResourceItemData(resourceId);
+                if (itemData != null)
+                {
+                    inventoryController.AddItem(itemData, amount);
+                }
+                else
+                {
+                    Debug.LogWarning($"[PlayerController] Не удалось создать ItemData для ресурса: {resourceId}");
+                }
+            }
+            else
+            {
+                Debug.LogWarning("[PlayerController] InventoryController не найден — ресурс не добавлен");
+            }
+        }
+
+        /// <summary>
+        /// Создать временный ItemData для ресурса.
+        /// TODO: Заменить на загрузку из базы данных / Resources, когда будет реализована система предметов.
+        /// </summary>
+        private CultivationGame.Data.ScriptableObjects.ItemData CreateResourceItemData(string resourceId)
+        {
+            var itemData = ScriptableObject.CreateInstance<CultivationGame.Data.ScriptableObjects.ItemData>();
+
+            // Базовые настройки
+            itemData.name = $"res_{resourceId}";
+            // Используем reflection или прямую установку, т.к. поля могут быть [SerializeField]
+            // Для совместимости — устанавливаем через публичные свойства если есть
+
+            // Маппинг resourceId → параметры предмета
+            switch (resourceId)
+            {
+                case "wood":
+                    itemData.itemId = "wood";
+                    itemData.itemName = "Древесина";
+                    itemData.category = CultivationGame.Data.ScriptableObjects.ItemCategory.Material;
+                    itemData.rarity = CultivationGame.Data.ScriptableObjects.ItemRarity.Common;
+                    itemData.stackable = true;
+                    itemData.maxStack = 99;
+                    break;
+
+                case "stone":
+                    itemData.itemId = "stone";
+                    itemData.itemName = "Камень";
+                    itemData.category = CultivationGame.Data.ScriptableObjects.ItemCategory.Material;
+                    itemData.rarity = CultivationGame.Data.ScriptableObjects.ItemRarity.Common;
+                    itemData.stackable = true;
+                    itemData.maxStack = 99;
+                    break;
+
+                case "ore":
+                    itemData.itemId = "ore";
+                    itemData.itemName = "Руда";
+                    itemData.category = CultivationGame.Data.ScriptableObjects.ItemCategory.Material;
+                    itemData.rarity = CultivationGame.Data.ScriptableObjects.ItemRarity.Uncommon;
+                    itemData.stackable = true;
+                    itemData.maxStack = 50;
+                    break;
+
+                case "berries":
+                    itemData.itemId = "berries";
+                    itemData.itemName = "Ягоды";
+                    itemData.category = CultivationGame.Data.ScriptableObjects.ItemCategory.Consumable;
+                    itemData.rarity = CultivationGame.Data.ScriptableObjects.ItemRarity.Common;
+                    itemData.stackable = true;
+                    itemData.maxStack = 30;
+                    break;
+
+                case "herb":
+                    itemData.itemId = "herb";
+                    itemData.itemName = "Трава";
+                    itemData.category = CultivationGame.Data.ScriptableObjects.ItemCategory.Consumable;
+                    itemData.rarity = CultivationGame.Data.ScriptableObjects.ItemRarity.Common;
+                    itemData.stackable = true;
+                    itemData.maxStack = 50;
+                    break;
+
+                default:
+                    itemData.itemId = resourceId;
+                    itemData.itemName = resourceId;
+                    itemData.category = CultivationGame.Data.ScriptableObjects.ItemCategory.Material;
+                    itemData.rarity = CultivationGame.Data.ScriptableObjects.ItemRarity.Common;
+                    itemData.stackable = true;
+                    itemData.maxStack = 99;
+                    break;
+            }
+
+            return itemData;
+        }
+
+        /// <summary>
+        /// Старая система добычи — через TileMapController (для обратной совместимости).
+        /// Используется когда useNewHarvestSystem = false.
+        /// </summary>
+        private void AttemptHarvestLegacy()
+        {
+            EnsureHarvestComponents();
 
             // Найти ближайший разрушаемый объект
             var tileMapCtrl = ServiceLocator.GetOrFind<TileMapController>();

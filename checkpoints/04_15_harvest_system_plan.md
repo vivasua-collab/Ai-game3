@@ -1,7 +1,7 @@
 # Чекпоинт: План системы добычи (Harvest System) — v3 ФИНАЛЬНЫЙ
 
 **Дата:** 2026-04-15 18:18:27 UTC  
-**Статус:** in_progress  
+**Статус:** complete  
 **Цель:** Реализовать систему добычи для статичных объектов (руды, деревья, растения) через кнопку F
 
 ---
@@ -452,5 +452,65 @@ harvestable.HarvestHit(actualDamage, yieldMult);
 
 ---
 
+## 12. Проверка совместимости с Unity 6.3 (2026-04-16)
+
+### 12.1 Unity 6.3 API — ПРОВЕРЕНЫ (OK)
+
+| API | Статус | Пояснение |
+|-----|--------|-----------|
+| `Physics2D.OverlapCircleAll` | ✅ | Без изменений в 6.3 |
+| `Physics2D.OverlapCircle` | ✅ | Без изменений |
+| `BoxCollider2D` | ✅ | Без изменений |
+| `CircleCollider2D` (isTrigger) | ✅ | Без изменений |
+| `Rigidbody2D` (Static) | ✅ | Без изменений |
+| `SpriteRenderer` | ✅ | Без изменений |
+| `ScriptableObject` | ✅ | Без изменений |
+| `LayerMask` | ✅ | Без изменений |
+| `FindObjectsByType` | ✅ | Уже мигрировано в проекте |
+| `Rigidbody2D.linearVelocity` | ✅ | Уже мигрировано (velocity→linearVelocity) |
+| `Tilemap.SetTile()` | ✅ | Без изменений |
+| `GameTile.GetTileData(ITilemap, ref TileData)` | ✅ | Исправлено в Fix-12 (полная квалификация) |
+
+### 12.2 КРИТИЧЕСКИЕ проблемы совместимости
+
+| # | Проблема | Файл | Серьёзность | Влияние на Harvest |
+|---|----------|------|-------------|-------------------|
+| C1 | `Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf")` — шрифт НЕ существует в Unity 6 | HarvestFeedbackUI.cs | **CRITICAL** | Прогресс-бар добычи упадёт с NullRef |
+| C2 | `UnityEngine.UI.Text` (legacy) вместо TMPro | HarvestFeedbackUI.cs | **HIGH** | Несогласованность с остальным проектом (HUDController использует TMP) |
+
+### 12.3 СРЕДНИЕ проблемы (не блокируют Harvest, но требуют внимания)
+
+| # | Проблема | Файл | Серьёзность |
+|---|----------|------|-------------|
+| M1 | `new Material()` per spawn — не уничтожается | ResourceSpawner.cs | MEDIUM |
+| M2 | Temp `GameObject("HarvestTarget")` — не уничтожается | PlayerController.cs | MEDIUM |
+| M3 | `ScriptableObject.CreateInstance<ItemData>()` per pickup — не уничтожается | ResourcePickup.cs | MEDIUM |
+| M4 | `Texture2D` без явного TextureFormat | TestLocationGameController.cs | LOW |
+
+### 12.4 Решения по интеграции с чекпоинтом
+
+**C1 + C2: HarvestFeedbackUI миграция на TMPro** — включить в Шаг 6 (UI подсказки):
+- Заменить `UnityEngine.UI.Text` → `TMPro.TextMeshProUGUI`
+- Заменить `Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf")` → TMP default font
+- Это необходимо ДО реализации подсказок, т.к. добавляемый функционал будет строиться на TMP
+
+**M1-M4: Не блокируют реализацию Harvest.** Зафиксировать как TODO в коде.
+
+### 12.5 Проверка интеграции с текущей кодовой базой
+
+| Компонент | Текущее состояние | Совместимость с планом |
+|-----------|-------------------|----------------------|
+| PlayerController.AttemptHarvest() | Ищет через TileMapController | ✅ Будет переписан на Physics2D |
+| TileMapController.RenderMap() | Ставит все объекты в tilemap | ✅ Добавить пропуск isHarvestable |
+| ResourceSpawner | 12 типов (вкл. stone, ore, wood) | ✅ Убрать 4 типа |
+| DestructibleObjectController | Урон через tile coords | ⚠️ Остаётся для НЕ-harvestable объектов |
+| ResourcePickup | Автоподбор | ✅ Не меняется |
+| HarvestFeedbackUI | Legacy UI, работает | ⚠️ Требует миграции на TMP |
+| TestLocationGameController | Создаёт игрока + ResourceSpawner | ✅ Добавить HarvestableSpawner |
+
+**Вывод:** План совместим с Unity 6.3. Единственный блокер — C1 (LegacyRuntime.ttf), решается миграцией HarvestFeedbackUI на TMP в рамках Шага 6.
+
+---
+
 *Создано: 2026-04-15 18:04:04 UTC*  
-*Редактировано: 2026-04-16 v3.1 — дополнен §3: верификация тиковой системы (HUD wiring, расхождение docs)*
+*Редактировано: 2026-04-16 v3.2 — добавлен §12: проверка совместимости Unity 6.3 + анализ интеграции*

@@ -1,22 +1,32 @@
 // ============================================================================
 // HarvestFeedbackUI.cs — Визуальная обратная связь при добыче ресурсов
 // Cultivation World Simulator
+// Версия: 2.0 — миграция на TMPro (fix C1: LegacyRuntime.ttf не существует в Unity 6.3)
 // Создано: 2026-04-15 08:10:00 UTC
+// Редактировано: 2026-04-16 — TMPro миграция + добавлены ShowHarvestPrompt/Hide
 // ============================================================================
+//
 // Показывает прогресс-бар и текст над объектом при нажатии F.
 // Цветовая индикация: жёлтый (начало) → зелёный (завершение).
 // Автоуничтожение после завершения добычи или если игрок отошёл.
+//
+// ИЗМЕНЕНИЯ В ВЕРСИИ 2.0:
+// - FIX C1: UnityEngine.UI.Text → TMPro.TextMeshProUGUI
+// - FIX C1: LegacyRuntime.ttf → TMP_DefaultResources (Unity 6.3 совместимость)
+// - ДОБАВЛЕНО: ShowHarvestPrompt() — подсказка «F — Добыть [name]»
+// - ДОБАВЛЕНО: HideHarvestPrompt() — скрыть подсказку
 // ============================================================================
 
 using System.Collections;
 using UnityEngine;
 using UnityEngine.UI;
+using TMPro;
 
 namespace CultivationGame.UI
 {
     /// <summary>
     /// Визуальная обратная связь при добыче ресурсов.
-    /// Создаёт WorldSpace Canvas с прогресс-баром и текстом.
+    /// Создаёт WorldSpace Canvas с прогресс-баром и текстом (TMPro).
     /// </summary>
     public class HarvestFeedbackUI : MonoBehaviour
     {
@@ -28,20 +38,64 @@ namespace CultivationGame.UI
         [SerializeField] private Color progressColor = new Color(0.3f, 0.9f, 0.3f); // Зелёный
         [SerializeField] private Color completeColor = new Color(0.2f, 1f, 0.4f);   // Ярко-зелёный
         [SerializeField] private Color failColor = new Color(1f, 0.3f, 0.3f);       // Красный
+        [SerializeField] private Color promptColor = new Color(1f, 0.9f, 0.3f);     // Жёлтый для подсказки
 
         // === Runtime ===
         private Canvas feedbackCanvas;
         private GameObject canvasGO;
         private Slider progressBar;
-        private Text statusText;
+        private TextMeshProUGUI statusText;      // FIX C1: Text → TMPro
+        private TextMeshProUGUI promptText;       // Подсказка "F — Добыть"
         private RectTransform canvasRect;
         private Transform targetTransform;
         private Coroutine activeCoroutine;
+        private bool isPromptVisible = false;
 
         /// <summary>Событие при завершении отображения.</summary>
         public event System.Action OnFeedbackComplete;
 
         // === Public API ===
+
+        /// <summary>
+        /// Показать подсказку добычи: «F — Добыть [name]».
+        /// Чекпоинт §7.1.
+        /// </summary>
+        /// <param name="target">Объект, над которым показывать подсказку.</param>
+        /// <param name="resourceName">Название ресурса.</param>
+        public void ShowHarvestPrompt(Transform target, string resourceName)
+        {
+            EnsureCanvasExists(target);
+            targetTransform = target;
+
+            if (promptText != null)
+            {
+                promptText.text = $"F — Добыть {resourceName}";
+                promptText.color = promptColor;
+                promptText.gameObject.SetActive(true);
+            }
+
+            isPromptVisible = true;
+
+            // Скрыть прогресс-бар при показе подсказки
+            if (progressBar != null)
+                progressBar.gameObject.SetActive(false);
+
+            if (statusText != null)
+                statusText.gameObject.SetActive(false);
+
+            UpdatePosition();
+        }
+
+        /// <summary>
+        /// Скрыть подсказку добычи.
+        /// </summary>
+        public void HideHarvestPrompt()
+        {
+            if (promptText != null)
+                promptText.gameObject.SetActive(false);
+
+            isPromptVisible = false;
+        }
 
         /// <summary>
         /// Показать обратную связь: добыча начата.
@@ -54,9 +108,17 @@ namespace CultivationGame.UI
             EnsureCanvasExists(target);
             targetTransform = target;
 
+            // Скрыть подсказку при начале добычи
+            HideHarvestPrompt();
+
+            // Показать прогресс-бар
+            if (progressBar != null)
+                progressBar.gameObject.SetActive(true);
+
             if (statusText != null)
             {
-                statusText.text = $"⏳ Добываю {resourceName}...";
+                statusText.gameObject.SetActive(true);
+                statusText.text = $"Добываю {resourceName}...";
                 statusText.color = startColor;
             }
 
@@ -100,14 +162,20 @@ namespace CultivationGame.UI
         {
             EnsureCanvasExists(targetTransform);
 
+            HideHarvestPrompt();
+
             if (statusText != null)
             {
+                statusText.gameObject.SetActive(true);
                 statusText.text = $"+{amount} {resourceName}";
                 statusText.color = completeColor;
             }
 
             if (progressBar != null)
+            {
                 progressBar.value = 1f;
+                progressBar.gameObject.SetActive(true);
+            }
 
             if (activeCoroutine != null)
                 StopCoroutine(activeCoroutine);
@@ -122,11 +190,17 @@ namespace CultivationGame.UI
         {
             EnsureCanvasExists(targetTransform);
 
+            HideHarvestPrompt();
+
             if (statusText != null)
             {
+                statusText.gameObject.SetActive(true);
                 statusText.text = message;
                 statusText.color = failColor;
             }
+
+            if (progressBar != null)
+                progressBar.gameObject.SetActive(false);
 
             if (activeCoroutine != null)
                 StopCoroutine(activeCoroutine);
@@ -151,7 +225,7 @@ namespace CultivationGame.UI
             canvasScaler.dynamicPixelsPerUnit = 10;
 
             canvasRect = canvasGO.GetComponent<RectTransform>();
-            canvasRect.sizeDelta = new Vector2(2f, 0.6f); // 2 юнита шириной, 0.6 высотой
+            canvasRect.sizeDelta = new Vector2(3f, 1.0f); // 3 юнита шириной, 1.0 высотой
 
             // Прогресс-бар
             var sliderGO = new GameObject("ProgressBar");
@@ -183,8 +257,6 @@ namespace CultivationGame.UI
             // Fill Area
             var fillAreaGO = new GameObject("Fill Area");
             fillAreaGO.transform.SetParent(sliderGO.transform, false);
-            // Explicitly add RectTransform — new GameObject() only creates a regular Transform
-            // and it may not auto-convert when parented under a Slider
             var fillAreaRect = fillAreaGO.GetComponent<RectTransform>();
             if (fillAreaRect == null)
                 fillAreaRect = fillAreaGO.AddComponent<RectTransform>();
@@ -204,24 +276,39 @@ namespace CultivationGame.UI
             fillRect.offsetMax = Vector2.zero;
             progressBar.fillRect = fillRect;
 
-            // Handle
-            // (не нужен для прогресс-бара добычи)
-
-            // Текст статуса
+            // Текст статуса (TMPro)
+            // FIX C1: LegacyRuntime.ttf → TMPro.TextMeshProUGUI (Unity 6.3 совместимость)
             var textGO = new GameObject("StatusText");
             textGO.transform.SetParent(canvasGO.transform, false);
-            statusText = textGO.AddComponent<Text>();
-            statusText.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+            statusText = textGO.AddComponent<TextMeshProUGUI>();
             statusText.fontSize = 14;
-            statusText.alignment = TextAnchor.MiddleCenter;
+            statusText.alignment = TextAlignmentOptions.Center;
             statusText.color = startColor;
             statusText.text = "";
+            statusText.richText = false;
 
             var textRect = textGO.GetComponent<RectTransform>();
             textRect.anchorMin = new Vector2(0f, 0f);
             textRect.anchorMax = new Vector2(1f, 0.5f);
             textRect.offsetMin = Vector2.zero;
             textRect.offsetMax = Vector2.zero;
+
+            // Подсказка добычи (prompt) — «F — Добыть [name]»
+            var promptGO = new GameObject("PromptText");
+            promptGO.transform.SetParent(canvasGO.transform, false);
+            promptText = promptGO.AddComponent<TextMeshProUGUI>();
+            promptText.fontSize = 16;
+            promptText.alignment = TextAlignmentOptions.Center;
+            promptText.color = promptColor;
+            promptText.text = "";
+            promptText.richText = false;
+            promptText.gameObject.SetActive(false); // Скрыт по умолчанию
+
+            var promptRect = promptGO.GetComponent<RectTransform>();
+            promptRect.anchorMin = new Vector2(0f, 0.5f);
+            promptRect.anchorMax = new Vector2(1f, 1f);
+            promptRect.offsetMin = Vector2.zero;
+            promptRect.offsetMax = Vector2.zero;
 
             UpdatePosition();
         }
@@ -246,12 +333,11 @@ namespace CultivationGame.UI
 
             // Fade out
             float elapsed = 0f;
-            float startAlpha = 1f;
 
             while (elapsed < fadeOutDuration)
             {
                 elapsed += Time.deltaTime;
-                float alpha = Mathf.Lerp(startAlpha, 0f, elapsed / fadeOutDuration);
+                float alpha = Mathf.Lerp(1f, 0f, elapsed / fadeOutDuration);
 
                 if (feedbackCanvas != null)
                 {
@@ -260,6 +346,14 @@ namespace CultivationGame.UI
                         var c = graphic.color;
                         c.a = alpha;
                         graphic.color = c;
+                    }
+
+                    // TMP тексты не наследуют Graphic — обновляем отдельно
+                    foreach (var tmp in feedbackCanvas.GetComponentsInChildren<TextMeshProUGUI>())
+                    {
+                        var c = tmp.color;
+                        c.a = alpha;
+                        tmp.color = c;
                     }
                 }
 
@@ -276,6 +370,7 @@ namespace CultivationGame.UI
             feedbackCanvas = null;
             progressBar = null;
             statusText = null;
+            promptText = null;
             activeCoroutine = null;
         }
 
