@@ -3,7 +3,7 @@
 // Cultivation World Simulator
 // Версия: 1.0
 // Создано: 2026-03-30 14:00:00 UTC
-// Редактировано: 2026-04-15 17:31:49 UTC — FIX 1A: обработанный AI-спрайт (128×128 RGBA, без белого фона), PPU=64
+// Редактировано: 2026-04-15 17:51:32 UTC — FIX: EnsurePlayerSpritePPU проверяет alphaIsTransparency, принудительный реимпорт
 // ============================================================================
 
 using UnityEngine;
@@ -278,23 +278,42 @@ namespace CultivationGame.Player
 
         #if UNITY_EDITOR
         /// <summary>
-        /// Убедиться, что спрайт персонажа импортирован с PPU=64.
-        /// При первом запуске Unity может использовать дефолтный PPU=100.
-        // Редактировано: 2026-04-15 17:31:49 UTC
+        /// Убедиться, что спрайт персонажа импортирован с PPU=64 и alphaIsTransparency=true.
+        /// При первом запуске Unity может использовать дефолтный PPU=100 и отсутствующий alpha.
+        /// FIX: Принудительный реимпорт ВСЕГДА (не только при PPU!=64) — гарантирует
+        /// правильные настройки даже если только alphaIsTransparency был сброшен.
+        /// Редактировано: 2026-04-15 17:51:32 UTC
         /// </summary>
         private void EnsurePlayerSpritePPU(string assetPath)
         {
             var importer = UnityEditor.AssetImporter.GetAtPath(assetPath) as UnityEditor.TextureImporter;
-            if (importer != null && importer.spritePixelsPerUnit != 64)
+            if (importer == null) return;
+
+            // FIX: Проверяем ВСЕ настройки, не только PPU.
+            // alphaIsTransparency критичен для RGBA спрайтов — без него белый фон!
+            // Редактировано: 2026-04-15 17:51:32 UTC
+            bool needsReimport = importer.spritePixelsPerUnit != 64
+                || importer.alphaIsTransparency != true
+                || importer.textureType != UnityEditor.TextureImporterType.Sprite
+                || importer.spriteImportMode != UnityEditor.SpriteImportMode.Single;
+
+            if (needsReimport)
             {
                 importer.textureType = UnityEditor.TextureImporterType.Sprite;
                 importer.spriteImportMode = UnityEditor.SpriteImportMode.Single;
                 importer.spritePixelsPerUnit = 64;
                 importer.filterMode = FilterMode.Bilinear;
+                // FIX: alphaIsTransparency = true — КРИТИЧНО для RGBA спрайтов!
+                // Без этого Unity игнорирует альфа-канал → белый фон.
+                // Редактировано: 2026-04-15 17:51:32 UTC
                 importer.alphaIsTransparency = true;
                 importer.textureCompression = UnityEditor.TextureImporterCompression.Uncompressed;
-                UnityEditor.AssetDatabase.ImportAsset(assetPath, UnityEditor.ImportAssetOptions.ForceUpdate);
-                Debug.Log($"[PlayerVisual] PPU исправлен: {assetPath} → PPU=64");
+                importer.wrapMode = TextureWrapMode.Clamp;
+                UnityEditor.AssetDatabase.ImportAsset(assetPath, UnityEditor.ImportAssetOptions.ForceUpdate | UnityEditor.ImportAssetOptions.DontDownloadFromCacheServer);
+                // FIX: Refresh + задержка для корректной перезагрузки спрайта
+                // Редактировано: 2026-04-15 17:51:32 UTC
+                UnityEditor.AssetDatabase.Refresh(UnityEditor.ImportAssetOptions.ForceUpdate);
+                Debug.Log($"[PlayerVisual] Спрайт реимпортирован: {assetPath} → PPU=64, alphaIsTransparency=true");
             }
         }
         #endif

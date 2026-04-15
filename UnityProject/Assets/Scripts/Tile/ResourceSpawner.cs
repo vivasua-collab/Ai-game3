@@ -2,7 +2,7 @@
 // ResourceSpawner.cs — Спавнер ресурсных объектов на локации
 // Cultivation World Simulator
 // Создано: 2026-04-14 07:35:00 UTC
-// Редактировано: 2026-04-15 17:31:49 UTC — FIX 3A: spriteScale=2.0, ResourceLogger логирование, PPU для AI sprite
+// Редактировано: 2026-04-15 17:51:32 UTC — FIX 3: динамический scale по PPU спрайта (targetWorldSize), убран spriteScale
 // ============================================================================
 
 using System.Collections.Generic;
@@ -57,9 +57,11 @@ namespace CultivationGame.TileSystem
 
         [Header("Visuals")]
         [SerializeField] private int spriteSize = 64; // Размер текстуры (совпадает с объектами тайлов)
-        [SerializeField] private float spriteScale = 1.0f; // FIX 3A: 1.0 — при PPU=32: 64/32=2.0 юнита × 1.0 = 2.0 юнита (1 тайл)
-        // Ранее PPU=160 + scale=0.16 = 0.064 юнита (микроскопический)
-        // Редактировано: 2026-04-15 17:31:49 UTC
+        // FIX: Целевой размер ресурса в мировых единицах = 2.0 (1 тайл).
+        // Scale вычисляется автоматически по PPU загруженного спрайта.
+        // Ранее: spriteScale=1.0 при PPU=160 = 0.4 юнита (микроскопический).
+        // Редактировано: 2026-04-15 17:51:32 UTC
+        [SerializeField] private float targetWorldSize = 2.0f;
 
         // === Runtime ===
         private List<GameObject> spawnedResources = new List<GameObject>();
@@ -253,11 +255,18 @@ namespace CultivationGame.TileSystem
 
             string shaderName = spriteShader != null ? spriteShader.name : "null";
 
-            // Масштаб
-            go.transform.localScale = Vector3.one * spriteScale;
+            // Масштаб — ВЫЧИСЛЯЕТСЯ ниже после назначения спрайта
+            // Редактировано: 2026-04-15 17:51:32 UTC
 
-            // FIX 3A: Логирование деталей спавна через ResourceLogger
-            ResourceLogger.LogSpawn(entry.resourceId, go.transform.position, sr.sprite, spriteScale, shaderName);
+            // FIX: Вычисляем scale динамически по PPU загруженного спрайта.
+            // AI obj спрайты из Tiles/: PPU=160 → worldSize=0.4 → scale=5.0 → итог=2.0u
+            // Fallback процедурные: PPU=32 → worldSize=2.0 → scale=1.0 → итог=2.0u
+            // Редактировано: 2026-04-15 17:51:32 UTC
+            float actualScale = CalculateResourceScale(sr.sprite);
+            go.transform.localScale = Vector3.one * actualScale;
+
+            // Логирование деталей спавна через ResourceLogger
+            ResourceLogger.LogSpawn(entry.resourceId, go.transform.position, sr.sprite, actualScale, shaderName);
 
             // Коллайдер для подбора
             CircleCollider2D col = go.AddComponent<CircleCollider2D>();
@@ -633,6 +642,33 @@ namespace CultivationGame.TileSystem
             #endif
 
             return null;
+        }
+
+        /// <summary>
+        /// Вычислить масштаб ресурса на основе PPU загруженного спрайта.
+        /// Цель: все ресурсы имеют одинаковый размер в мире = targetWorldSize (2.0 юнита = 1 тайл).
+        /// AI obj спрайты из Tiles/: PPU=160 → worldSize=0.4 → scale=5.0 → итог=2.0u
+        /// Fallback процедурные: PPU=32 → worldSize=2.0 → scale=1.0 → итог=2.0u
+        /// Создано: 2026-04-15 17:51:32 UTC
+        /// </summary>
+        private float CalculateResourceScale(Sprite sprite)
+        {
+            if (sprite == null) return 1.0f;
+
+            // World size спрайта = размер текстуры / PPU
+            float spriteWorldSize = sprite.bounds.size.x; // Используем реальный world size спрайта
+            if (spriteWorldSize <= 0.001f) return 1.0f;
+
+            // Scale = целевой размер / текущий размер
+            float scale = targetWorldSize / spriteWorldSize;
+
+            // Защита от экстремальных значений
+            scale = Mathf.Clamp(scale, 0.1f, 20.0f);
+
+            ResourceLogger.LogDetail($"CalculateResourceScale: sprite='{sprite.name}', PPU={sprite.pixelsPerUnit}, " +
+                $"worldSize={spriteWorldSize:F3}, targetSize={targetWorldSize:F1}, scale={scale:F2}");
+
+            return scale;
         }
     }
 }
