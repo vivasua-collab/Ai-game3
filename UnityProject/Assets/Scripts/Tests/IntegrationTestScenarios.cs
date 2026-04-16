@@ -395,7 +395,8 @@ namespace CultivationGame.Tests
                     report += $"[INFO] L1 big breakthrough cost: {bigBreakthroughCost_L1:F0}\n";
 
                     // Проверка 6: Множители регенерации
-                    float[] expectedRegen = { 1.1f, 2.0f, 3.0f, 5.0f, 8.0f, 15.0f, 30.0f, 100.0f, 1000.0f, float.PositiveInfinity };
+                    // FIX CORE-C06: L10 использует float.MaxValue вместо PositiveInfinity
+                    float[] expectedRegen = { 1.1f, 2.0f, 3.0f, 5.0f, 8.0f, 15.0f, 30.0f, 100.0f, 1000.0f, float.MaxValue };
                     bool regenCorrect = true;
 
                     for (int i = 0; i < 10; i++)
@@ -403,8 +404,8 @@ namespace CultivationGame.Tests
                         float actual = GameConstants.RegenerationMultipliers[i];
                         float expected = expectedRegen[i];
                         
-                        // Special case for infinity
-                        if (float.IsInfinity(expected) && float.IsInfinity(actual))
+                        // Special case for MaxValue (L10 — мгновенное восстановление)
+                        if (expected == float.MaxValue && actual == float.MaxValue)
                         {
                             // OK
                         }

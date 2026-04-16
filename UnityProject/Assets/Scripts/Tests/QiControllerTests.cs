@@ -253,16 +253,16 @@ namespace CultivationGame.Tests
         // ====================================================================
 
         [Test]
-        public void SpendQi_ZeroAmount_ReturnsTrue()
+        public void SpendQi_ZeroAmount_ReturnsFalse()
         {
-            // Arrange
+            // Arrange — SpendQi отклоняет amount <= 0 (защита от эксплойта)
             long before = qi.CurrentQi;
 
             // Act
             bool result = qi.SpendQi(0);
 
-            // Assert
-            Assert.IsTrue(result, "SpendQi(0) должен вернуть true");
+            // Assert — нулевое/отрицательное количество не принимается
+            Assert.IsFalse(result, "SpendQi(0) должен вернуть false (защита от эксплойта QI-H03)");
             Assert.AreEqual(before, qi.CurrentQi, "Ци не должно измениться при 0");
         }
 
