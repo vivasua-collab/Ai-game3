@@ -19,6 +19,7 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using CultivationGame.Core; // FIX-V2-6: RenderPipelineLogger. Редактировано: 2026-04-16 11:37 UTC
 
 namespace CultivationGame.TileSystem
 {
@@ -179,6 +180,9 @@ namespace CultivationGame.TileSystem
             }
 
             Debug.Log($"[HarvestableSpawner] Спавн завершён: {spawnedCount} объектов, {skippedCount} пропущено");
+            // FIX-V2-6: Диагностика Harvestable спавна
+            // Редактировано: 2026-04-16 11:37 UTC
+            RenderPipelineLogger.LogHarvestableState(spawnedHarvestables, skippedCount);
         }
 
         /// <summary>

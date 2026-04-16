@@ -1065,6 +1065,24 @@ namespace CultivationGame.TileSystem
             // Обновить коллайдеры
             terrainTilemap.RefreshAllTiles();
             if (objectTilemap != null) objectTilemap.RefreshAllTiles();
+
+            // FIX-V2-6: Диагностика отрендеренных тайлов
+            // Редактировано: 2026-04-16 11:37 UTC
+            int terrainCount = 0, objectCount = 0;
+            BoundsInt bounds = terrainTilemap.cellBounds;
+            foreach (var pos in bounds.allPositionsWithin)
+            {
+                if (terrainTilemap.GetTile(pos) != null) terrainCount++;
+            }
+            if (objectTilemap != null)
+            {
+                bounds = objectTilemap.cellBounds;
+                foreach (var pos in bounds.allPositionsWithin)
+                {
+                    if (objectTilemap.GetTile(pos) != null) objectCount++;
+                }
+            }
+            CultivationGame.Core.RenderPipelineLogger.LogTileRendered(terrainCount, objectCount);
         }
 
         /// <summary>
