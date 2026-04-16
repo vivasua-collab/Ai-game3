@@ -61,7 +61,8 @@
 
 - [x] Чекпоинт 04_16: Аудит спрайтовой регрессии (04_16_sprite_regression_audit.md)
 - [x] Генерация 8 AI-спрайтов (4 подтипа деревьев + 4 depleted)
-- [ ] Шаг 1: Исправить GetSpritePath() — добавить префикс obj_
-- [ ] Шаг 2: Исправить GetDepletedSpritePath() — добавить префикс obj_
-- [ ] Шаг 3: Передать depletedSprite в Harvestable.Initialize()
-- [ ] Шаг 4: Обновить TileMapController — подтипы деревьев в EnsureTile/GetObjectTile
+- [x] Шаг 1: Исправить GetSpritePath() — добавить префикс obj_ (2026-04-16 08:03 UTC)
+- [x] Шаг 2: Исправить GetDepletedSpritePath() — добавить префикс obj_ (2026-04-16 08:03 UTC)
+- [x] Шаг 3: Передать depletedSprite в Harvestable.Initialize() (2026-04-16 08:03 UTC)
+- [x] Шаг 4: Обновить TileMapController — подтипы деревьев в EnsureTile/GetObjectTile (2026-04-16 08:03 UTC)
+- [ ] Шаг 5: Верификация в Unity Editor (ручная — пользователь)
