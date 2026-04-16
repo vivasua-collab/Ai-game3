@@ -663,6 +663,24 @@ Stage Summary:
 - Документация синхронизирована с кодом после миграции Qi int→long
 
 ---
+Task ID: render-pipeline-audit-v4
+Agent: Main Agent
+Task: Аудит и план фиксов рендер-пайплайна v4 — закрытие аудита 04-14, создание итогового плана
+
+Work Log:
+- Прочитаны ВСЕ ключевые файлы проекта: TileMapController.cs, HarvestableSpawner.cs, PlayerVisual.cs, Camera2DSetup.cs, FullSceneBuilder.cs, GameInitializer.cs, Harvestable.cs, ResourceSpawner.cs, TileMapData.cs, GameTile.cs, DestructibleObjectController.cs, TileSpriteGenerator.cs
+- Прочитаны ВСЕ предыдущие аудиты: 04_16_visual_regression_full_audit.md, 04_16_implementation_plan.md, 04_17_render_pipeline_audit.md
+- Аудит 04-14 ЗАКРЫТ как «принят к сведению, отложен» — его фиксы не являются причиной текущих багов
+- Подтверждена корневая причина из 04-17: BUG-A — Sorting Layer "Objects" НЕ СУЩЕСТВУЕТ
+- Создан итоговый план фиксов: checkpoints/04_18_fix_plan_render_pipeline.md
+
+Stage Summary:
+- 6 багов приоритизированы (P0-P5)
+- Корневая причина: FullSceneBuilder Phase 02 НЕ создаёт Sorting Layers — только Physics Layers
+- Все предыдущие фиксы (FIX-1..FIX-6) были технически корректны, но не решали главную проблему
+- План включает RenderPipelineLogger.cs для диагностики через Unity Console
+- Файл плана: checkpoints/04_18_fix_plan_render_pipeline.md
+- Статус: план утверждён, ожидает кодинга
 Task ID: checkpoint-sprite-index
 Agent: Main Agent
 Task: Обновление чекпоинтов + индексация всех спрайтов проекта
