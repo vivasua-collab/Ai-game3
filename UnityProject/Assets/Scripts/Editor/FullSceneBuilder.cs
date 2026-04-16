@@ -866,6 +866,11 @@ namespace CultivationGame.Editor
                 }
             }
 
+            // FIX-V2-6: Диагностика Camera и Light
+            // Редактировано: 2026-04-16 11:37 UTC
+            RenderPipelineLogger.LogCameraState();
+            RenderPipelineLogger.LogLightState();
+
             Debug.Log("[FullSceneBuilder] Camera & Light configured");
         }
 
@@ -1271,6 +1276,9 @@ namespace CultivationGame.Editor
             dso.ApplyModifiedProperties();
 
             Undo.RegisterCreatedObjectUndo(gridObj, "Create Tilemap System");
+            // FIX-V2-6: Диагностика Tilemap
+            // Редактировано: 2026-04-16 11:37 UTC
+            RenderPipelineLogger.LogTilemapState();
             Debug.Log("[FullSceneBuilder] Tilemap system created");
         }
 

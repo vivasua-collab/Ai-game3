@@ -411,6 +411,10 @@ namespace CultivationGame.TileSystem
                 importer.textureCompression = UnityEditor.TextureImporterCompression.Uncompressed;
                 importer.filterMode = isObject ? FilterMode.Point : FilterMode.Bilinear;
                 UnityEditor.AssetDatabase.ImportAsset(assetPath, UnityEditor.ImportAssetOptions.ForceUpdate);
+                // FIX-V2-4: Refresh после ImportAsset — спрайт может ещё не обновиться в кэше
+                // при следующем LoadAssetAtPath. Refresh гарантирует актуальность.
+                // Редактировано: 2026-04-16 11:37 UTC
+                UnityEditor.AssetDatabase.Refresh(UnityEditor.ImportAssetOptions.ForceUpdate);
                 Debug.Log($"[HarvestableSpawner] Спрайт реимпортирован: {assetPath} → PPU={targetPPU}, alphaIsTransparency=true");
             }
         }

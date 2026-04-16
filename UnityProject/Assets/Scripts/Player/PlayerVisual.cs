@@ -3,7 +3,7 @@
 // Cultivation World Simulator
 // Версия: 1.0
 // Создано: 2026-03-30 14:00:00 UTC
-// Редактировано: 2026-04-15 17:51:32 UTC — FIX: EnsurePlayerSpritePPU проверяет alphaIsTransparency, принудительный реимпорт
+// Редактировано: 2026-04-16 11:37 UTC — FIX-V2-5: sortingLayerName="Player" (было "Objects"), sortingOrder
 // ============================================================================
 
 using UnityEngine;
@@ -88,12 +88,12 @@ namespace CultivationGame.Player
                 mainSprite.sprite = CreateCircleSprite();
                 mainSprite.color = playerColor;
             }
-            mainSprite.sortingOrder = 10;
-            // КРИТ-2 FIX: Sorting layer "Objects" — чтобы игрок рендерился на том же слое,
-            // что и harvestable-объекты (деревья, камни). Иначе "Objects" > "Default" →
-            // игрок скрыт за деревьями, несмотря на sortingOrder=10.
-            // Редактировано: 2026-04-16
-            mainSprite.sortingLayerName = "Objects";
+            // FIX-V2-5: Sorting layer "Player" — игрок на собственном слое, выше всех объектов.
+            // При sortingLayerName="Objects" (когда слой не существовал) Unity 6+ игнорировал →
+            // спрайт НЕ рендерился. Теперь Sorting Layer "Player" создаётся в FullSceneBuilder.
+            // Редактировано: 2026-04-16 11:37 UTC
+            mainSprite.sortingLayerName = "Player";
+            mainSprite.sortingOrder = 0;
 
             // FIX 2A-alt: Сначала пробуем Unlit шейдер — рендерит БЕЗ Light2D (гарантированно виден).
             // Sprite-Lit-Default требует Light2D для видимости — без него спрайт чёрный.
@@ -120,14 +120,18 @@ namespace CultivationGame.Player
                 shadowSprite = shadowObj.AddComponent<SpriteRenderer>();
                 shadowSprite.sprite = CreateCircleSprite();
                 shadowSprite.color = shadowColor;
-                shadowSprite.sortingOrder = 9;
-                // КРИТ-2 FIX: Тень тоже на "Objects" слое, чуть ниже игрока (9 < 10)
-                // Редактировано: 2026-04-16
-                shadowSprite.sortingLayerName = "Objects";
+                // FIX-V2-5: Тень на слое "Player", ниже основного спрайта (order=-1 < 0)
+                // Редактировано: 2026-04-16 11:37 UTC
+                shadowSprite.sortingLayerName = "Player";
+                shadowSprite.sortingOrder = -1;
 
                 // Тот же материал
                 shadowSprite.material = mainSprite.material;
             }
+            
+            // FIX-V2-6: Диагностика Player Visual
+            // Редактировано: 2026-04-16 11:37 UTC
+            CultivationGame.Core.RenderPipelineLogger.LogPlayerVisualState(mainSprite, shadowSprite);
             
             Debug.Log($"Player visual created: Color={playerColor}, Size={size}");
         }
