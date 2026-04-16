@@ -72,6 +72,11 @@ namespace CultivationGame.TileSystem
         // Редактировано: 2026-04-15 UTC
         private bool _lastSpriteWasAI;
 
+        // FIX-H02: Кэш shared-материалов по шейдеру — один материал на шейдер,
+        // вместо new Material() на каждый спавн (утечка GPU-ресурсов).
+        // Редактировано: 2026-04-18
+        private static Dictionary<Shader, Material> sharedMaterialCache = new Dictionary<Shader, Material>();
+
         // === Unity Lifecycle ===
 
         private void Awake()
@@ -101,6 +106,15 @@ namespace CultivationGame.TileSystem
         {
             if (tileMapController != null)
                 tileMapController.OnMapGenerated -= OnMapGenerated;
+
+            // FIX-H02: Очистка кэша shared-материалов при уничтожении спавнера.
+            // Редактировано: 2026-04-18
+            foreach (var kvp in sharedMaterialCache)
+            {
+                if (kvp.Value != null)
+                    Destroy(kvp.Value);
+            }
+            sharedMaterialCache.Clear();
         }
 
         private void Update()
@@ -250,8 +264,11 @@ namespace CultivationGame.TileSystem
                 spriteShader = Shader.Find("Universal Render Pipeline/2D/Sprite-Lit-Default");
             if (spriteShader == null)
                 spriteShader = Shader.Find("Sprites/Default");
+            // FIX-H02: Используем кэшированный shared-материал вместо new Material() на каждый спавн.
+            // Один Material на Shader — нет утечки, все ресурсы с одним шейдером разделяют материал.
+            // Редактировано: 2026-04-18
             if (spriteShader != null)
-                sr.material = new Material(spriteShader);
+                sr.sharedMaterial = GetOrCreateSharedMaterial(spriteShader);
 
             string shaderName = spriteShader != null ? spriteShader.name : "null";
 
@@ -425,6 +442,24 @@ namespace CultivationGame.TileSystem
         private void CleanupPickedUp()
         {
             spawnedResources.RemoveAll(go => go == null);
+        }
+
+        /// <summary>
+        /// FIX-H02: Получить или создать кэшированный shared-материал для шейдера.
+        /// Один Material на Shader — предотвращает утечку GPU-ресурсов при спавне.
+        /// Редактировано: 2026-04-18
+        /// </summary>
+        private Material GetOrCreateSharedMaterial(Shader shader)
+        {
+            if (shader == null) return null;
+
+            if (!sharedMaterialCache.TryGetValue(shader, out Material mat))
+            {
+                mat = new Material(shader);
+                mat.name = $"Shared_{shader.name}";
+                sharedMaterialCache[shader] = mat;
+            }
+            return mat;
         }
 
         // === Default Config ===

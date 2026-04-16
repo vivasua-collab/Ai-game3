@@ -78,6 +78,9 @@ namespace CultivationGame.Player
         private string lastHarvestResource = "";
         private Harvestable nearestHarvestable; // Ближайший harvestable-объект (для подсказки)
         private InventoryController inventoryController; // Ссылка на инвентарь
+        // FIX-H03: Кэшированный GO для позиционирования фидбека (вместо new GameObject на каждый удар).
+        // Редактировано: 2026-04-18
+        private GameObject cachedFeedbackTarget;
         
         // === Events ===
 #pragma warning disable CS0067
@@ -836,11 +839,14 @@ namespace CultivationGame.Player
                         harvestFeedback = gameObject.AddComponent<HarvestFeedbackUI>();
                     }
 
-                    // Создать временный объект для позиционирования фидбека
-                    GameObject feedbackTarget = new GameObject("HarvestTarget");
-                    feedbackTarget.transform.position = tileMapCtrl.MapData.TileToWorld(tilePos.x, tilePos.y);
+                    // FIX-H03: Переиспользуем кэшированный GO вместо new GameObject на каждый удар.
+                    // Ранее: new GameObject("HarvestTarget") на каждый вызов — утечка GO.
+                    // Редактировано: 2026-04-18
+                    if (cachedFeedbackTarget == null)
+                        cachedFeedbackTarget = new GameObject("HarvestTarget");
+                    cachedFeedbackTarget.transform.position = tileMapCtrl.MapData.TileToWorld(tilePos.x, tilePos.y);
 
-                    harvestFeedback.ShowHarvestStarted(feedbackTarget.transform, resourceName, progress);
+                    harvestFeedback.ShowHarvestStarted(cachedFeedbackTarget.transform, resourceName, progress);
 
                     // Проверить, разрушен ли объект
                     if (obj.currentDurability <= 0 || obj.IsDestroyed())
