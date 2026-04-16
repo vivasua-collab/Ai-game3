@@ -2,9 +2,12 @@
 // FormationQiPoolTests.cs — Unit тесты пула Ци формации
 // Cultivation World Simulator
 // Создано: 2026-04-16 12:43 UTC
+// Редактировано: 2026-04-17 20:00:00 UTC — FIX: GetDrainInterval/GetDrainAmount
+//   перенесены в FormationDrainConstants; AddQi signature (long, float)
 // ============================================================================
 // Тестирует: FormationQiPool — AddQi, ConsumeQi, AcceptQi, ProcessDrain,
 // FillPercent, IsReadyForActivation, IsEmpty, IsFull
+// Тестирует: FormationDrainConstants — GetDrainInterval, GetDrainAmount
 // ============================================================================
 
 using NUnit.Framework;
@@ -150,14 +153,15 @@ namespace CultivationGame.Tests
         }
 
         // ====================================================================
-        //  Drain (интервалы)
+        //  FormationDrainConstants — статические методы
+        // Источник: FormationQiPool.cs — INTERVAL_BY_LEVEL, AMOUNT_BY_SIZE
         // ====================================================================
 
         [Test]
         public void GetDrainInterval_Level1_Returns60()
         {
             // Act
-            int interval = FormationQiPool.GetDrainInterval(1);
+            int interval = FormationDrainConstants.GetDrainInterval(1);
 
             // Assert
             Assert.AreEqual(60, interval, "Интервал стока L1 = 60 тиков");
@@ -167,17 +171,27 @@ namespace CultivationGame.Tests
         public void GetDrainInterval_Level5_Returns20()
         {
             // Act
-            int interval = FormationQiPool.GetDrainInterval(5);
+            int interval = FormationDrainConstants.GetDrainInterval(5);
 
             // Assert
             Assert.AreEqual(20, interval, "Интервал стока L5 = 20 тиков");
         }
 
         [Test]
+        public void GetDrainInterval_Level9_Returns5()
+        {
+            // Act
+            int interval = FormationDrainConstants.GetDrainInterval(9);
+
+            // Assert
+            Assert.AreEqual(5, interval, "Интервал стока L9 = 5 тиков");
+        }
+
+        [Test]
         public void GetDrainAmount_Size0_Returns1()
         {
             // Act
-            int amount = FormationQiPool.GetDrainAmount(0);
+            int amount = FormationDrainConstants.GetDrainAmount(0);
 
             // Assert
             Assert.AreEqual(1, amount, "Размер 0 = 1 единица стока");
@@ -187,7 +201,7 @@ namespace CultivationGame.Tests
         public void GetDrainAmount_Size4_Returns100()
         {
             // Act
-            int amount = FormationQiPool.GetDrainAmount(4);
+            int amount = FormationDrainConstants.GetDrainAmount(4);
 
             // Assert
             Assert.AreEqual(100, amount, "Размер 4 = 100 единиц стока");
@@ -202,7 +216,7 @@ namespace CultivationGame.Tests
         {
             // Arrange
             pool.AddQi(500);
-            int beforeQi = (int)pool.currentQi;
+            long beforeQi = pool.currentQi;
 
             // Act — первый тик (интервал = 60)
             int drained = pool.ProcessDrain(1);
@@ -255,6 +269,38 @@ namespace CultivationGame.Tests
         }
 
         // ====================================================================
+        //  AcceptQi
+        // ====================================================================
+
+        [Test]
+        public void AcceptQi_WhenNotFull_AcceptsQi()
+        {
+            // Arrange
+            float transferRate = 50f;
+
+            // Act
+            long accepted = pool.AcceptQi(500, transferRate);
+
+            // Assert
+            Assert.Greater(accepted, 0, "Пул должен принять Ци");
+            Assert.LessOrEqual(accepted, 500, "Нельзя принять больше предложенного");
+        }
+
+        [Test]
+        public void AcceptQi_WhenFull_AcceptsZero()
+        {
+            // Arrange
+            pool.Fill();
+            float transferRate = 50f;
+
+            // Act
+            long accepted = pool.AcceptQi(100, transferRate);
+
+            // Assert
+            Assert.AreEqual(0, accepted, "Полный пул не принимает Ци");
+        }
+
+        // ====================================================================
         //  Edge Cases
         // ====================================================================
 
@@ -268,7 +314,7 @@ namespace CultivationGame.Tests
             // Act
             pool.AddQi(0);
 
-            // Assert
+            // Assert — AddQi(0) может не менять или добавить 0
             Assert.AreEqual(before, pool.currentQi, "AddQi(0) не должно менять Ци");
         }
 
