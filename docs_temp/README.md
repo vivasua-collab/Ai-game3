@@ -1,28 +1,23 @@
-# docs/temp_docs/ — Временная документация
+# docs/examples/ — Примеры реализаций
 
-**Назначение:** Черновики, временные отчёты, аналитика
-
----
-
-## Правила
-
-1. Файлы в этой папке могут быть удалены без предупреждения
-2. После стабилизации — перенос в основную документацию `docs/`
-3. Устаревшие файлы — перенос в `docs_old/`
+**Назначение:** Примеры кода, паттерны, конкретные реализации
 
 ---
 
-## Текущие файлы
+## Содержимое
 
-| Файл | Описание | Статус |
-|------|----------|--------|
-| `CODE_AUDIT_Unity_6.3.md` | Аудит кода Unity 6.3 | Актуален |
-| `CODE_REVIEW_Local_Folder.md` | Ревью Local папки | Завершён |
-| `UNITY_63_RESEARCH.md` | Исследование Unity 6.3 | Актуален |
-| `UNITY_VERSION_COMPARISON.md` | Сравнение версий Unity | Актуален |
-| `GIT_WORKFLOW_TWO_PC.md` | Git workflow для 2 ПК | Актуален |
-| `!CONTRADICTIONS_REPORT.md` | Отчёт о противоречиях | Актуален |
-| `!DUPLICATION_REPORT.md` | Отчёт о дубликатах | Актуален |
+| Файл | Описание |
+|------|----------|
+| `COMPUTATIONAL_RESOURCES_CALCULATION.md` | Расчёт вычислительных ресурсов |
+| `TechniqueEffectsSystem.md` | Система эффектов техник |
+| `CharacterSpriteMirroring.md` | Отзеркаливание спрайтов персонажа |
+| `OrbitalWeaponSystem.md` | Система орбитального оружия |
+| `FormationSystem_Examples.md` | Примеры системы формаций |
+| `StatThresholdSystem_Examples.md` | Примеры порогов характеристик |
+| `RunningTests.md` | Запуск тестов |
+| `BuffSystem_Examples.md` | Примеры системы баффов |
+| `NameGenerator_Russian.md` | Генератор русских имён |
+| `NPC_L6_ASSEMBLY_EXAMPLE.md` | Пример сборки NPC L6 |
 
 ---
 
