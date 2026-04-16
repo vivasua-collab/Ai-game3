@@ -1,6 +1,6 @@
 # Чекпоинт: Race Condition — HarvestableSpawner пропускает OnMapGenerated
 
-**Дата:** 2026-04-17
+**Дата:** 2026-04-16
 **Статус:** complete
 **Цель:** Исправить Race Condition: HarvestableSpawner не спавнит объекты
 
@@ -44,4 +44,4 @@ Unity не гарантирует порядок выполнения `Start()`.
 
 ---
 
-*Создано: 2026-04-17*
+*Создано: 2026-04-16*
