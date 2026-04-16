@@ -256,12 +256,13 @@ namespace CultivationGame.TileSystem
 
             // 5. Harvestable — логика добычи
             Harvestable harvestable = go.AddComponent<Harvestable>();
-            harvestable.Initialize(objData);
 
-            // Установить спрайты
-            // normalSprite уже установлен через SpriteRenderer
+            // FIX-R4: Передаём depletedSprite в Initialize, чтобы Harvestable
+            // мог сменить спрайт при исчерпании (Deplete()).
+            // Ранее: depletedSprite загружался, но НЕ передавался — мёртвый код.
+            // Редактировано: 2026-04-16 07:55 UTC
             Sprite depletedSprite = LoadDepletedSprite(objData.objectType);
-            // depletedSprite устанавливается через Initialize если доступен
+            harvestable.Initialize(objData, depletedSprite);
 
             return go;
         }
@@ -295,19 +296,23 @@ namespace CultivationGame.TileSystem
         /// <summary>
         /// Получить путь к AI-спрайту для типа объекта.
         /// </summary>
+        // FIX-R1: Исправлены пути спрайтов — добавлен префикс obj_ и реальные имена файлов.
+        // Ранее: "tree_oak" → файла нет → процедурный fallback → уродливые спрайты.
+        // Теперь: "obj_tree_oak" → Assets/Sprites/Tiles/obj_tree_oak.png → AI-спрайт.
+        // Редактировано: 2026-04-16 07:55 UTC
         private string GetSpritePath(TileObjectType objectType)
         {
             return objectType switch
             {
-                TileObjectType.Tree_Oak => "Sprites/Tiles/tree_oak",
-                TileObjectType.Tree_Pine => "Sprites/Tiles/tree_pine",
-                TileObjectType.Tree_Birch => "Sprites/Tiles/tree_birch",
-                TileObjectType.Rock_Small => "Sprites/Tiles/rock_small",
-                TileObjectType.Rock_Medium => "Sprites/Tiles/rock_medium",
-                TileObjectType.OreVein => "Sprites/Tiles/ore_vein",
-                TileObjectType.Bush => "Sprites/Tiles/bush",
-                TileObjectType.Bush_Berry => "Sprites/Tiles/bush_berry",
-                TileObjectType.Herb => "Sprites/Tiles/herb",
+                TileObjectType.Tree_Oak => "Sprites/Tiles/obj_tree_oak",
+                TileObjectType.Tree_Pine => "Sprites/Tiles/obj_tree_pine",
+                TileObjectType.Tree_Birch => "Sprites/Tiles/obj_tree_birch",
+                TileObjectType.Rock_Small => "Sprites/Tiles/obj_rock_small",
+                TileObjectType.Rock_Medium => "Sprites/Tiles/obj_rock_medium",
+                TileObjectType.OreVein => "Sprites/Tiles/obj_ore_vein",
+                TileObjectType.Bush => "Sprites/Tiles/obj_bush",
+                TileObjectType.Bush_Berry => "Sprites/Tiles/obj_bush_berry",
+                TileObjectType.Herb => "Sprites/Tiles/obj_herb",
                 _ => null
             };
         }
@@ -315,18 +320,23 @@ namespace CultivationGame.TileSystem
         /// <summary>
         /// Получить путь к спрайту для исчерпанного состояния.
         /// </summary>
+        // FIX-R4: Исправлены пути depleted-спрайтов — добавлен префикс obj_.
+        // Ранее: "stump" → файла нет → depleted не отображался.
+        // Теперь: "obj_stump" → Assets/Sprites/Tiles/obj_stump.png → AI-спрайт пня.
+        // Редактировано: 2026-04-16 07:55 UTC
         private string GetDepletedSpritePath(TileObjectType objectType)
         {
             return objectType switch
             {
-                TileObjectType.Tree_Oak => "Sprites/Tiles/stump",
-                TileObjectType.Tree_Pine => "Sprites/Tiles/stump",
-                TileObjectType.Tree_Birch => "Sprites/Tiles/stump",
-                TileObjectType.Rock_Small => "Sprites/Tiles/rock_depleted",
-                TileObjectType.Rock_Medium => "Sprites/Tiles/rock_depleted",
-                TileObjectType.OreVein => "Sprites/Tiles/ore_depleted",
-                TileObjectType.Bush => "Sprites/Tiles/bush_depleted",
-                TileObjectType.Bush_Berry => "Sprites/Tiles/bush_depleted",
+                TileObjectType.Tree_Oak => "Sprites/Tiles/obj_stump",
+                TileObjectType.Tree_Pine => "Sprites/Tiles/obj_stump",
+                TileObjectType.Tree_Birch => "Sprites/Tiles/obj_stump",
+                TileObjectType.Rock_Small => "Sprites/Tiles/obj_rock_depleted",
+                TileObjectType.Rock_Medium => "Sprites/Tiles/obj_rock_depleted",
+                TileObjectType.OreVein => "Sprites/Tiles/obj_ore_depleted",
+                TileObjectType.Bush => "Sprites/Tiles/obj_bush_depleted",
+                TileObjectType.Bush_Berry => "Sprites/Tiles/obj_bush_depleted",
+                TileObjectType.Herb => "Sprites/Tiles/obj_herb",
                 _ => null
             };
         }

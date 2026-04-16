@@ -225,8 +225,11 @@ namespace CultivationGame.TileSystem
 
         /// <summary>
         /// Инициализация из TileObjectData (используется HarvestableSpawner).
+        /// FIX-R4: Добавлен параметр depletedSprite — теперь Harvestable получает
+        /// depleted-спрайт при инициализации, а не оставляет поле пустым.
+        /// Редактировано: 2026-04-16 07:55 UTC
         /// </summary>
-        public void Initialize(TileObjectData data)
+        public void Initialize(TileObjectData data, Sprite depletedSpriteParam = null)
         {
             if (data == null) return;
 
@@ -236,6 +239,11 @@ namespace CultivationGame.TileSystem
             totalResourceCount = data.resourceCount;
             isDepleted = false;
             harvestedSoFar = 0;
+
+            // FIX-R4: Сохранить depleted-спрайт для использования в Deplete()
+            // Редактировано: 2026-04-16 07:55 UTC
+            if (depletedSpriteParam != null)
+                depletedSprite = depletedSpriteParam;
 
             // Определить категорию и displayName из TileObjectType
             SetCategoryFromType(data.objectType);

@@ -56,3 +56,12 @@
 - [x] Чекпоинт 04_16: Исправление 18 ошибок компиляции (itemName→nameRu, namespace ItemCategory/ItemRarity)
 - [x] Чекпоинт 04_16: CS0414 warning — isPromptVisible подавлен #pragma
 - [x] Чекпоинт 04_16: Race Condition — HarvestableSpawner подписка в Awake + fallback в Start
+
+## Спрайтовая регрессия (обнаружено 2026-04-16)
+
+- [x] Чекпоинт 04_16: Аудит спрайтовой регрессии (04_16_sprite_regression_audit.md)
+- [x] Генерация 8 AI-спрайтов (4 подтипа деревьев + 4 depleted)
+- [ ] Шаг 1: Исправить GetSpritePath() — добавить префикс obj_
+- [ ] Шаг 2: Исправить GetDepletedSpritePath() — добавить префикс obj_
+- [ ] Шаг 3: Передать depletedSprite в Harvestable.Initialize()
+- [ ] Шаг 4: Обновить TileMapController — подтипы деревьев в EnsureTile/GetObjectTile

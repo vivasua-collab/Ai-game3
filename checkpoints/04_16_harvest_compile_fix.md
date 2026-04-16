@@ -1,6 +1,7 @@
 # Чекпоинт: Исправление ошибок компиляции Harvest System
 
-**Дата:** 2026-04-16
+**Дата:** 2026-04-16 05:12 UTC
+**Фаза:** 2 (Post-Harvest hotfix)
 **Статус:** complete
 **Цель:** Исправить 18 ошибок CS1061/CS0234 в PlayerController.cs
 
@@ -22,20 +23,30 @@
 
 Метод `CreateResourceItemData()` (добавленный в Шаге 3) использовал несуществующие имена полей и неправильный namespace для enum-ов.
 
-## Исправления
+## Выполненные задачи
 
-**PlayerController.cs (строки 678-725):**
-- `itemData.itemName` → `itemData.nameRu` (6 замен)
-- `CultivationGame.Data.ScriptableObjects.ItemCategory` → `CultivationGame.Core.ItemCategory` (6 замен)
-- `CultivationGame.Data.ScriptableObjects.ItemRarity` → `CultivationGame.Core.ItemRarity` (6 замен)
+- [x] Замена `itemData.itemName` → `itemData.nameRu` (6 замен)
+- [x] Замена namespace `CultivationGame.Data.ScriptableObjects.ItemCategory` → `CultivationGame.Core.ItemCategory` (6 замен)
+- [x] Замена namespace `CultivationGame.Data.ScriptableObjects.ItemRarity` → `CultivationGame.Core.ItemRarity` (6 замен)
+- [x] Подавление warning CS0414 в HarvestFeedbackUI через `#pragma`
 
-**Итого:** 18 исправлений в 1 файле.
+## Изменённые файлы
 
-## Источник данных
+| Файл | Изменение |
+|------|-----------|
+| `Assets/Scripts/Controllers/PlayerController.cs` | itemName→nameRu, namespace ItemCategory/ItemRarity |
+| `Assets/Scripts/UI/HarvestFeedbackUI.cs` | #pragma warning disable CS0414 |
 
-- `ItemData.cs` — поле `nameRu` (строка 33), `nameEn` (строка 36)
-- `Enums.cs` — `ItemCategory` (строка 338), `ItemRarity` (строка 353) — namespace `CultivationGame.Core`
+## Проблемы
+
+Исправление решило компиляцию, но НЕ решило визуальную проблему спрайтов — для этого требуется отдельный фикс (см. 04_16_sprite_regression_audit.md).
+
+## Следующие шаги
+
+- Исправить race condition в HarvestableSpawner (04_16_harvest_race_condition_fix.md)
+- Исправить маппинг спрайтов (04_16_sprite_regression_audit.md)
 
 ---
 
-*Создано: 2026-04-16*
+*Создано: 2026-04-16 05:12 UTC*
+*Редактировано: 2026-04-16 07:35 UTC*
