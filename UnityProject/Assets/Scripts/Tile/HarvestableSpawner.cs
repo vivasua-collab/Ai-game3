@@ -80,23 +80,47 @@ namespace CultivationGame.TileSystem
                 parentObj.transform.SetParent(transform);
                 spawnParent = parentObj.transform;
             }
-        }
 
-        private void Start()
-        {
-            // Получить TileMapController
+            // FIX Race Condition: подписываемся в Awake (до Start других объектов),
+            // чтобы не пропустить OnMapGenerated от TileMapController.Start().
+            // Если TileMapController уже сгенерировал карту — подписка всё равно нужна
+            // для повторных генераций.
+            // Редактировано: 2026-04-17
             if (tileMapController == null)
             {
                 tileMapController = CultivationGame.Core.ServiceLocator.GetOrFind<TileMapController>();
             }
+            SubscribeToMapEvents();
+        }
 
-            if (tileMapController != null)
+        private void Start()
+        {
+            // FIX Race Condition: проверяем, была ли карта уже сгенерирована
+            // до нашей подписки (TileMapController.Start мог выполниться раньше).
+            // Если MapData уже есть — спавним harvestable-объекты немедленно.
+            // Редактировано: 2026-04-17
+            if (tileMapController != null && tileMapController.MapData != null && spawnedHarvestables.Count == 0)
             {
-                SubscribeToMapEvents();
+                SpawnHarvestables(tileMapController.MapData);
+                Debug.Log("[HarvestableSpawner] Карта уже сгенерирована — спавн выполнен в Start()");
             }
-            else
+            else if (tileMapController == null)
             {
-                Debug.LogError("[HarvestableSpawner] TileMapController не найден! Спавн невозможен.");
+                // Пытаемся найти ещё раз (ServiceLocator мог ещё не быть инициализирован в Awake)
+                tileMapController = CultivationGame.Core.ServiceLocator.GetOrFind<TileMapController>();
+                if (tileMapController != null)
+                {
+                    SubscribeToMapEvents();
+                    if (tileMapController.MapData != null && spawnedHarvestables.Count == 0)
+                    {
+                        SpawnHarvestables(tileMapController.MapData);
+                        Debug.Log("[HarvestableSpawner] TileMapController найден в Start() — спавн выполнен");
+                    }
+                }
+                else
+                {
+                    Debug.LogError("[HarvestableSpawner] TileMapController не найден! Спавн невозможен.");
+                }
             }
         }
 
