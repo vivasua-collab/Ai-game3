@@ -79,8 +79,9 @@ namespace CultivationGame.TileSystem.Editor
             terrainObj.transform.SetParent(gridObj.transform);
             var terrainTilemap = terrainObj.AddComponent<Tilemap>();
             var terrainRenderer = terrainObj.AddComponent<TilemapRenderer>();
-            terrainRenderer.sortOrder = (TilemapRenderer.SortOrder)0; // FIX CS0266 (2026-04-11)
-            terrainRenderer.mode = TilemapRenderer.Mode.Individual; // FIX: устраняет белую сетку
+            terrainRenderer.sortingLayerName = "Terrain"; // FIX-V2-7: Без этого рендерится на "Default" → поверх игрока
+            terrainRenderer.sortingOrder = 0; // Порядок внутри слоя
+            terrainRenderer.mode = TilemapRenderer.Mode.Chunk; // Chunk — быстрее для больших карт
             terrainObj.AddComponent<TilemapCollider2D>();
 
             // Создать Tilemap для объектов
@@ -88,8 +89,9 @@ namespace CultivationGame.TileSystem.Editor
             objectsObj.transform.SetParent(gridObj.transform);
             var objectTilemap = objectsObj.AddComponent<Tilemap>();
             var objectRenderer = objectsObj.AddComponent<TilemapRenderer>();
-            objectRenderer.sortOrder = (TilemapRenderer.SortOrder)1; // FIX CS0266 (2026-04-11)
-            objectRenderer.mode = TilemapRenderer.Mode.Individual;
+            objectRenderer.sortingLayerName = "Objects"; // FIX-V2-7: Без этого рендерится на "Default" → поверх игрока
+            objectRenderer.sortingOrder = 0; // Порядок внутри слоя
+            objectRenderer.mode = TilemapRenderer.Mode.Chunk; // Chunk — быстрее для больших карт
 
             // Создать контроллер карты
             var controllerObj = new GameObject("TileMapController");

@@ -10,6 +10,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Tilemaps;
+using CultivationGame.Core;
 
 namespace CultivationGame.TileSystem
 {
@@ -92,6 +93,14 @@ namespace CultivationGame.TileSystem
             {
                 grid.cellGap = Vector3.zero;
             }
+
+            // FIX-V2-7: Runtime автофикс Sorting Layers для TilemapRenderer.
+            // TestLocationSetup НЕ назначал sortingLayerName → оба рендерера на "Default" слое.
+            // Это приводило к тому, что тайлы рендерились поверх игрока и ресурсов.
+            // Теперь: terrain → "Terrain", objects → "Objects" (всегда, независимо от создателя сцены).
+            // Редактировано: 2026-04-17 UTC
+            EnsureSortingLayersExist();
+            FixTilemapSortingLayers();
         }
 
         private void Start()
@@ -100,9 +109,131 @@ namespace CultivationGame.TileSystem
             // Редактировано: 2026-04-15 11:15:00 UTC
             EnsureTileAssets();
 
+            // FIX-V2-7: Runtime диагностика Sorting Layers и TilemapRenderer.
+            // L1/L2 логи НЕ вызывались в рантайме — только из Editor (FullSceneBuilder).
+            // Без них невозможно понять, на каком слое реально рендерится тайловая карта.
+            // Редактировано: 2026-04-17 UTC
+            RenderPipelineLogger.LogSortingLayers();
+            RenderPipelineLogger.LogTilemapState();
+
             if (generateOnStart)
             {
                 GenerateTestMap();
+            }
+        }
+
+        /// <summary>
+        /// FIX-V2-7: Убедиться, что Sorting Layers "Terrain" и "Objects" существуют.
+        /// Если их нет — создать через TagManager (Editor) или предупредить (Build).
+        /// Без этих слоёв TilemapRenderer'ы попадают на "Default" → рендер поверх всего.
+        /// Редактировано: 2026-04-17 UTC
+        /// </summary>
+        private void EnsureSortingLayersExist()
+        {
+            var layers = SortingLayer.layers;
+            bool hasTerrain = false;
+            bool hasObjects = false;
+            bool hasPlayer = false;
+
+            foreach (var layer in layers)
+            {
+                if (layer.name == "Terrain") hasTerrain = true;
+                if (layer.name == "Objects") hasObjects = true;
+                if (layer.name == "Player") hasPlayer = true;
+            }
+
+            if (hasTerrain && hasObjects && hasPlayer)
+                return; // Всё ОК
+
+            Debug.LogWarning($"[TileMapController] FIX-V2-7: Отсутствуют Sorting Layers! " +
+                $"Terrain={hasTerrain}, Objects={hasObjects}, Player={hasPlayer}. " +
+                $"Попытка создать...");
+
+#if UNITY_EDITOR
+            // Создаём недостающие Sorting Layers через TagManager
+            var tagManager = new UnityEditor.SerializedObject(
+                UnityEditor.AssetDatabase.LoadAllAssetsAtPath("ProjectSettings/TagManager.asset")[0]);
+            var sortingLayersProp = tagManager.FindProperty("m_SortingLayers");
+
+            if (sortingLayersProp != null)
+            {
+                string[] requiredLayers = { "Background", "Terrain", "Objects", "Player", "UI" };
+
+                foreach (var layerName in requiredLayers)
+                {
+                    bool exists = false;
+                    for (int i = 0; i < sortingLayersProp.arraySize; i++)
+                    {
+                        var nameProp = sortingLayersProp.GetArrayElementAtIndex(i).FindPropertyRelative("name");
+                        if (nameProp != null && nameProp.stringValue == layerName)
+                        {
+                            exists = true;
+                            break;
+                        }
+                    }
+
+                    if (!exists)
+                    {
+                        sortingLayersProp.InsertArrayElementAtIndex(sortingLayersProp.arraySize);
+                        var newLayer = sortingLayersProp.GetArrayElementAtIndex(sortingLayersProp.arraySize - 1);
+                        newLayer.FindPropertyRelative("name").stringValue = layerName;
+                        newLayer.FindPropertyRelative("uniqueID").intValue = System.Guid.NewGuid().GetHashCode();
+                        newLayer.FindPropertyRelative("locked").boolValue = false;
+                        Debug.Log($"[TileMapController] FIX-V2-7: Создан Sorting Layer \"{layerName}\"");
+                    }
+                }
+
+                tagManager.ApplyModifiedProperties();
+                UnityEditor.AssetDatabase.SaveAssets();
+                Debug.Log("[TileMapController] FIX-V2-7: Sorting Layers созданы и сохранены");
+            }
+#else
+            Debug.LogError("[TileMapController] Sorting Layers отсутствуют! В build версии их нужно создать заранее в Editor.");
+#endif
+        }
+
+        /// <summary>
+        /// FIX-V2-7: Принудительно назначить правильные Sorting Layers для TilemapRenderer'ов.
+        /// TestLocationSetup НЕ назначал sortingLayerName → "Default" → рендер поверх игрока.
+        /// Редактировано: 2026-04-17 UTC
+        /// </summary>
+        private void FixTilemapSortingLayers()
+        {
+            // Фиксим terrain tilemap
+            if (terrainTilemap != null)
+            {
+                var renderer = terrainTilemap.GetComponent<TilemapRenderer>();
+                if (renderer != null && renderer.sortingLayerName != "Terrain")
+                {
+                    Debug.LogWarning($"[TileMapController] FIX-V2-7: Terrain TilemapRenderer был на слое " +
+                        $"\"{renderer.sortingLayerName}\" → исправлено на \"Terrain\"");
+                    renderer.sortingLayerName = "Terrain";
+                    renderer.sortingOrder = 0;
+                }
+            }
+
+            // Фиксим objects tilemap
+            if (objectTilemap != null)
+            {
+                var renderer = objectTilemap.GetComponent<TilemapRenderer>();
+                if (renderer != null && renderer.sortingLayerName != "Objects")
+                {
+                    Debug.LogWarning($"[TileMapController] FIX-V2-7: Objects TilemapRenderer был на слое " +
+                        $"\"{renderer.sortingLayerName}\" → исправлено на \"Objects\"");
+                    renderer.sortingLayerName = "Objects";
+                    renderer.sortingOrder = 0;
+                }
+            }
+
+            // Фиксим overlay tilemap (если есть)
+            if (overlayTilemap != null)
+            {
+                var renderer = overlayTilemap.GetComponent<TilemapRenderer>();
+                if (renderer != null && renderer.sortingLayerName != "Objects")
+                {
+                    renderer.sortingLayerName = "Objects";
+                    renderer.sortingOrder = 10;
+                }
             }
         }
 

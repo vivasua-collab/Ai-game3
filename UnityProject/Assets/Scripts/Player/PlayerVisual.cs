@@ -7,6 +7,7 @@
 // ============================================================================
 
 using UnityEngine;
+using CultivationGame.Core;
 
 namespace CultivationGame.Player
 {
@@ -416,6 +417,11 @@ namespace CultivationGame.Player
             // FIX PLR-L03: Cache camera on first access (2026-04-11)
             cachedCamera = Camera.main;
             EnsureCamera2DSetup();
+
+            // FIX-V2-7: Runtime диагностика Camera и Light.
+            // Без L7/L8 логов невозможно понять, правильно ли настроены камера и свет.
+            RenderPipelineLogger.LogCameraState();
+            RenderPipelineLogger.LogLightState();
         }
         
         // FIX PLR-L01: Destroy created Material and Texture2D to prevent memory leaks (2026-04-11)
