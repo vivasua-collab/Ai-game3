@@ -226,6 +226,11 @@ namespace CultivationGame.Player
                 qiController.OnQiChanged -= OnQiChangedHandler;
                 qiController.OnCultivationLevelChanged -= OnCultivationLevelChangedHandler;
             }
+
+            // FIX-H03: Уничтожение кэшированного GO фидбека.
+            // Редактировано: 2026-04-18
+            if (cachedFeedbackTarget != null)
+                Destroy(cachedFeedbackTarget);
         }
         
         // === Initialization ===
