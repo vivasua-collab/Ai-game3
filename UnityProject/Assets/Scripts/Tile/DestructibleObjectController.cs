@@ -314,7 +314,16 @@ namespace CultivationGame.TileSystem
             SpriteRenderer sr = dropGO.AddComponent<SpriteRenderer>();
             sr.sprite = CreateDropSprite(drop.ResourceId);
             sr.sortingOrder = 5;
+            sr.sortingLayerName = "Objects";
             sr.color = GetResourceColor(drop.ResourceId);
+            
+            // КРИТ-1 FIX: Unlit шейдер — рендерит БЕЗ Light2D (как в PlayerVisual, ResourceSpawner).
+            // Без этого дроп-объекты будут невидимыми в URP 2D без Light2D.
+            // Редактировано: 2026-04-16
+            Shader dropShader = Shader.Find("Universal Render Pipeline/2D/Sprite-Unlit-Default");
+            if (dropShader == null) dropShader = Shader.Find("Universal Render Pipeline/2D/Sprite-Lit-Default");
+            if (dropShader == null) dropShader = Shader.Find("Sprites/Default");
+            if (dropShader != null) sr.material = new Material(dropShader);
             
             // Добавить коллайдер для подбора
             CircleCollider2D col = dropGO.AddComponent<CircleCollider2D>();

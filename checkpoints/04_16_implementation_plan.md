@@ -247,4 +247,38 @@ FIX-6 (Terrain import PPU=31)→ дополняет FIX-3
 
 ---
 
+## Дополнительный аудит (после реализации основных фиксов)
+
+**Дата:** 2026-04-16
+**Найдено:** 3 дополнительные проблемы, которые могли вызвать визуальные баги
+
+| # | Проблема | Файл | Исправление |
+|---|----------|------|-------------|
+| FIX-7 | FullSceneBuilder PPU=32 для terrain (конфликт с FIX-3 PPU=31) | FullSceneBuilder.cs:1806 | PPU=32→31 |
+| FIX-8 | TileSpriteGenerator TERRAIN_PPU=32 (конфликт с FIX-3) | TileSpriteGenerator.cs:39 | TERRAIN_PPU=31 |
+| FIX-9 | ResourceSpawner sortingLayerName не установлен ("Default") | ResourceSpawner.cs:253 | +sortingLayerName="Objects" |
+| FIX-10 | DestructibleObjectController: нет Unlit шейдера и sortingLayer | DestructibleObjectController.cs:314 | +Unlit shader +sortingLayerName="Objects" |
+
+### PPU-конфликт (критический!)
+
+Если FullSceneBuilder или TileSpriteGenerator используют PPU=32 для terrain, а TileMapController.EnsureTileSpriteImportSettings
+и HarvestableSpawner.EnsureSpriteImportSettings исправляют на PPU=31 — системы конфликтуют.
+Полная синхронизация PPU=31 во всех 4 местах:
+- ✅ TileMapController.CreateProceduralTileSprite() — PPU=31
+- ✅ TileMapController.EnsureTileSpriteImportSettings() — PPU=31
+- ✅ HarvestableSpawner.EnsureSpriteImportSettings() — PPU=31
+- ✅ FullSceneBuilder.ReimportTileSprites() — PPU=31 (FIX-7)
+- ✅ TileSpriteGenerator.TERRAIN_PPU — 31 (FIX-8)
+
+### Sorting Layer консистентность
+
+Все SpriteRenderer, создающие игровые объекты, теперь используют sortingLayerName="Objects":
+- ✅ PlayerVisual — mainSprite + shadowSprite (FIX-2)
+- ✅ HarvestableSpawner — harvestable objects (уже было)
+- ✅ ResourceSpawner — resource pickups (FIX-9)
+- ✅ DestructibleObjectController — drop visuals (FIX-10)
+
+---
+
 *Создано: 2026-04-16 11:00 UTC*
+*Обновлено: 2026-04-16 — дополнительный аудит, FIX-7..FIX-10*
