@@ -3,7 +3,7 @@
 // Cultivation World Simulator
 // Версия: 1.1
 // Создано: 2026-04-16
-// Редактировано: 2026-04-16 — КРИТ-1 FIX: Unlit шейдер, СРЕД-1 FIX: EnsureSpriteImportSettings
+// Редактировано: 2026-04-16 11:37 UTC — FIX-V2-3: terrain PPU=30 (64/30=2.133u, 6.7% bleed), FIX-V2-4: Refresh
 // Чекпоинт: 04_15_harvest_system_plan.md v3 §6
 // ============================================================================
 //
@@ -388,16 +388,16 @@ namespace CultivationGame.TileSystem
         /// СРЕД-1 FIX: Убедиться, что спрайт импортирован с правильными настройками.
         /// Без .meta в Git Unity использует дефолтные: TextureType=Default (НЕ Sprite), PPU=100.
         /// LoadAssetAtPath<Sprite>() возвращает null при TextureType≠Sprite.
-        /// КРИТ-3 FIX: Terrain PPU=31 (64/31=2.065u — pixel bleed). Objects PPU=160.
-        /// Редактировано: 2026-04-16
+        /// FIX-V2-3: Terrain PPU=30 (64/30=2.133u — 6.7% pixel bleed). Objects PPU=160.
+        /// Редактировано: 2026-04-16 11:37 UTC
         /// </summary>
         private void EnsureSpriteImportSettings(string assetPath, bool isObject)
         {
             var importer = UnityEditor.AssetImporter.GetAtPath(assetPath) as UnityEditor.TextureImporter;
             if (importer == null) return;
 
-            // КРИТ-3 FIX: Terrain PPU=31 (64/31=2.065u — pixel bleed). Objects PPU=160.
-            int targetPPU = isObject ? 160 : 31;
+            // FIX-V2-3: Terrain PPU=30 (64/30=2.133u — 6.7% pixel bleed). Objects PPU=160.
+            int targetPPU = isObject ? 160 : 30;
             bool needsReimport = importer.textureType != UnityEditor.TextureImporterType.Sprite
                 || importer.spritePixelsPerUnit != targetPPU
                 || importer.alphaIsTransparency != true;

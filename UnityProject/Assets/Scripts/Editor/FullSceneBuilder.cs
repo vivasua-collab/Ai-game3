@@ -4,7 +4,7 @@
 // Версия: 1.2
 // ============================================================================
 // Создано: 2026-04-13 08:00:00 UTC
-// Редактировано: 2026-04-15 17:51:32 UTC — FIX: ReimportTileSprites PPU=32 Bilinear для terrain (не 31 Point), без Tiles_AI/
+// Редактировано: 2026-04-16 11:37 UTC — FIX-V2-1: Создание Sorting Layers, FIX-V2-2: sortOrder→sortingOrder, FIX-V2-3: PPU=30
 //
 // АРХИТЕКТУРА:
 //   15 фаз, каждая идемпотентна (повторный запуск безопасен).
@@ -492,6 +492,26 @@ namespace CultivationGame.Editor
                 if (!found) return true;
             }
 
+            // FIX-V2-1: Проверяем Sorting Layers
+            // Если слой "Objects" не существует — нужна фаза для его создания
+            // Редактировано: 2026-04-16 11:37 UTC
+            SerializedObject tagManager = new SerializedObject(
+                AssetDatabase.LoadAllAssetsAtPath("ProjectSettings/TagManager.asset")[0]);
+            var sortingLayersProp = tagManager.FindProperty("m_SortingLayers");
+            if (sortingLayersProp != null)
+            {
+                HashSet<string> existingSortingLayers = new HashSet<string>();
+                for (int i = 0; i < sortingLayersProp.arraySize; i++)
+                {
+                    var nameProp = sortingLayersProp.GetArrayElementAtIndex(i).FindPropertyRelative("name");
+                    if (nameProp != null && !string.IsNullOrEmpty(nameProp.stringValue))
+                        existingSortingLayers.Add(nameProp.stringValue);
+                }
+                // "Objects" — критический слой, без него спрайты невидимы
+                if (!existingSortingLayers.Contains("Objects"))
+                    return true;
+            }
+
             return false;
         }
 
@@ -556,9 +576,128 @@ namespace CultivationGame.Editor
                 }
             }
 
+            // --- Sorting Layers (FIX-V2-1) ---
+            // КОРНЕВАЯ ПРИЧИНА всех визуальных багов: Sorting Layer "Objects" НЕ существовал!
+            // Без него SpriteRenderer.sortingLayerName = "Objects" игнорируется в Unity 6+ →
+            // спрайты НЕ рендерятся (игрок, harvestable, ресурсы — все невидимы).
+            // Sorting Layers настраиваются в TagManager.asset → m_SortingLayers.
+            // Редактировано: 2026-04-16 11:37 UTC
+            EnsureSortingLayers();
+
             if (!tagsChanged && !layersChanged)
             {
                 Debug.Log("[FullSceneBuilder] Tags & Layers already configured");
+            }
+        }
+
+        /// <summary>
+        /// FIX-V2-1: Создание Sorting Layers для 2D рендеринга.
+        /// Unity имеет ДВЕ системы слоёв:
+        ///   - Physics Layers (layers[]) — для коллизий (создаются выше)
+        ///   - Sorting Layers (m_SortingLayers) — для порядка рендеринга 2D (создаются тут)
+        /// Без Sorting Layer "Objects" все SpriteRenderer с sortingLayerName="Objects"
+        /// игнорируются в Unity 6+ → спрайты невидимы!
+        /// Редактировано: 2026-04-16 11:37 UTC
+        /// </summary>
+        private static void EnsureSortingLayers()
+        {
+            // Требуемые Sorting Layers (порядок важен — снизу вверх):
+            // 0. "Default"     — уже существует (дефолтный)
+            // 1. "Background"  — фоновые элементы
+            // 2. "Terrain"     — terrain TilemapRenderer
+            // 3. "Objects"     — объекты TilemapRenderer, SpriteRenderer объектов
+            // 4. "Player"      — игрок и его тень
+            // 5. "UI"          — UI элементы в мировом пространстве
+            string[] requiredSortingLayers = new string[]
+            {
+                "Default",     // ID=0, всегда существует
+                "Background",  // ID=1
+                "Terrain",     // ID=2
+                "Objects",     // ID=3 ← КРИТИЧЕСКИЙ! Используется PlayerVisual, HarvestableSpawner
+                "Player",      // ID=4 ← Используется PlayerVisual (FIX-V2-5)
+                "UI"           // ID=5
+            };
+
+            SerializedObject tagManager = new SerializedObject(
+                AssetDatabase.LoadAllAssetsAtPath("ProjectSettings/TagManager.asset")[0]);
+
+            var sortingLayersProp = tagManager.FindProperty("m_SortingLayers");
+            if (sortingLayersProp == null)
+            {
+                Debug.LogError("[FullSceneBuilder] FIX-V2-1: m_SortingLayers не найден в TagManager!");
+                return;
+            }
+
+            // Собираем существующие слои
+            HashSet<string> existingLayers = new HashSet<string>();
+            for (int i = 0; i < sortingLayersProp.arraySize; i++)
+            {
+                var nameProp = sortingLayersProp.GetArrayElementAtIndex(i).FindPropertyRelative("name");
+                if (nameProp != null && !string.IsNullOrEmpty(nameProp.stringValue))
+                    existingLayers.Add(nameProp.stringValue);
+            }
+
+            // Добавляем недостающие слои
+            bool changed = false;
+            int nextId = sortingLayersProp.arraySize; // Unity назначает ID автоматически
+
+            foreach (string layerName in requiredSortingLayers)
+            {
+                if (existingLayers.Contains(layerName))
+                    continue;
+
+                // "Default" — особый случай, он всегда существует, но может не быть в массиве
+                if (layerName == "Default" && sortingLayersProp.arraySize > 0)
+                {
+                    var first = sortingLayersProp.GetArrayElementAtIndex(0).FindPropertyRelative("name");
+                    if (first != null && first.stringValue == "Default")
+                        continue;
+                }
+
+                int insertIndex = sortingLayersProp.arraySize;
+                sortingLayersProp.InsertArrayElementAtIndex(insertIndex);
+
+                var newElement = sortingLayersProp.GetArrayElementAtIndex(insertIndex);
+
+                // Устанавливаем имя
+                var nameProp = newElement.FindPropertyRelative("name");
+                if (nameProp != null)
+                    nameProp.stringValue = layerName;
+
+                // Устанавливаем uniqueID (Unity использует инкрементальные ID)
+                var idProp = newElement.FindPropertyRelative("uniqueID");
+                if (idProp != null)
+                    idProp.intValue = nextId;
+
+                // locked = false
+                var lockedProp = newElement.FindPropertyRelative("locked");
+                if (lockedProp != null)
+                    lockedProp.boolValue = false;
+
+                changed = true;
+                Debug.Log($"[FullSceneBuilder] FIX-V2-1: Sorting Layer \"{layerName}\" создан (ID={nextId})");
+                nextId++;
+            }
+
+            if (changed)
+            {
+                tagManager.ApplyModifiedProperties();
+                AssetDatabase.SaveAssets();
+
+                // Логируем итоговое состояние
+                Debug.Log("[FullSceneBuilder] FIX-V2-1: Sorting Layers созданы:");
+                for (int i = 0; i < sortingLayersProp.arraySize; i++)
+                {
+                    var elem = sortingLayersProp.GetArrayElementAtIndex(i);
+                    var n = elem.FindPropertyRelative("name");
+                    var id = elem.FindPropertyRelative("uniqueID");
+                    Debug.Log($"  [{i}] \"{n?.stringValue ?? "?"}\" (id={id?.intValue ?? -1})");
+                }
+                Debug.Log("[FullSceneBuilder] ✅ Sorting layer \"Objects\" существует — спрайты будут видимы!");
+            }
+            else
+            {
+                Debug.Log("[FullSceneBuilder] Sorting Layers уже настроены");
             }
         }
 
@@ -1071,7 +1210,13 @@ namespace CultivationGame.Editor
             terrainObj.transform.SetParent(gridObj.transform);
             var terrainTilemap = terrainObj.AddComponent<Tilemap>();
             var terrainRenderer = terrainObj.AddComponent<TilemapRenderer>();
-            terrainRenderer.sortOrder = (TilemapRenderer.SortOrder)0;
+            // FIX-V2-2: sortOrder — это enum НАПРАВЛЕНИЯ сортировки (BottomLeft, TopRight и т.д.),
+            // НЕ приоритет рендеринга! Приоритет — это Renderer.sortingOrder.
+            // Раньше: terrainRenderer.sortOrder = (TilemapRenderer.SortOrder)0; — это SortOrder.BottomLeft, НЕ sortingOrder=0!
+            // Теперь используем sortingLayerName + sortingOrder для правильного порядка:
+            terrainRenderer.sortingLayerName = "Terrain";
+            terrainRenderer.sortingOrder = 0;
+            // Редактировано: 2026-04-16 11:37 UTC
             // FIX 2A: TilemapRenderer.mode = Chunk — рендерит чанк целиком,
             // нет субпиксельных зазоров между тайлами (устраняет белую сетку).
             // Individual режим создавал отдельный draw call для каждого тайла → зазоры.
@@ -1088,7 +1233,10 @@ namespace CultivationGame.Editor
             objectsObj.transform.SetParent(gridObj.transform);
             var objectTilemap = objectsObj.AddComponent<Tilemap>();
             var objectRenderer = objectsObj.AddComponent<TilemapRenderer>();
-            objectRenderer.sortOrder = (TilemapRenderer.SortOrder)1;
+            // FIX-V2-2: То же исправление — sortOrder → sortingLayerName + sortingOrder
+            objectRenderer.sortingLayerName = "Objects";
+            objectRenderer.sortingOrder = 0;
+            // Редактировано: 2026-04-16 11:37 UTC
             // FIX 2A: Chunk mode для объектов тоже (консистентность с terrain)
             // Редактировано: 2026-04-15 17:31:49 UTC
             objectRenderer.mode = TilemapRenderer.Mode.Chunk;
@@ -1799,14 +1947,12 @@ namespace CultivationGame.Editor
 
                     importer.textureType = TextureImporterType.Sprite;
                     importer.spriteImportMode = SpriteImportMode.Single;
-                    // КРИТ-3 FIX: Terrain PPU=31 (было 32) — 64/31=2.065u (перекрытие 0.032u).
-                    // Устраняет белые зазоры между тайлами при использовании AI-спрайтов 64×64.
-                    // 68×68 при PPU=31 = 68/31=2.194u — тоже с bleed, без зазоров.
-                    // При PPU=32: 64/32=2.0u = ровно ячейка → нет bleed → белая сетка.
-                    // Должно совпадать с TileMapController.EnsureTileSpriteImportSettings и
-                    // HarvestableSpawner.EnsureSpriteImportSettings (PPU=31 для terrain).
-                    // Редактировано: 2026-04-16
-                    importer.spritePixelsPerUnit = isObject ? 160 : 31;
+                    // FIX-V2-3: Terrain PPU=30 (было 31) — 64/30=2.133u (6.7% перекрытие).
+                    // При PPU=31: 64/31=2.065u — только 1.6% перекрытия, недостаточно для Bilinear.
+                    // 68×68 при PPU=30 = 68/30=2.267u — тоже с bleed, без зазоров.
+                    // Должно совпадать с TileMapController и HarvestableSpawner (PPU=30 для terrain).
+                    // Редактировано: 2026-04-16 11:37 UTC
+                    importer.spritePixelsPerUnit = isObject ? 160 : 30;
                     // FIX: Terrain Bilinear (не Point!) — совпадает с TileSpriteGenerator.
                     // Bilinear сглаживает субпиксельные границы между тайлами → нет белой сетки.
                     // Point фильтрация оставляет зазоры при субпиксельном рендеринге.

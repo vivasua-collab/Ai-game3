@@ -35,12 +35,12 @@ namespace CultivationGame.TileSystem.Editor
         // Редактировано: 2026-04-15 17:31:49 UTC
         private const int TERRAIN_SIZE = 68;   // 68×68 — на 4 пикселя больше ячейки для pixel bleed
         private const int OBJECT_SIZE = 64;    // 64×64 — стандартный размер объекта
-        // КРИТ-3 FIX: Terrain PPU=31 (было 32) — 68/31 = 2.194 юнита → pixel bleed.
-        // При PPU=32: 64/32=2.0u = ровно ячейка → нет bleed → белая сетка на AI-спрайтах.
-        // 64/31=2.065u — лёгкое перекрытие 0.032u, устраняет зазоры.
+        // FIX-V2-3: Terrain PPU=30 (было 31) — 68/30 = 2.267 юнита → pixel bleed.
+        // При PPU=31: 64/31=2.065u — только 1.6% перекрытия, недостаточно для Bilinear.
+        // 64/30=2.133u — 6.7% перекрытие, надёжно устраняет белую сетку.
         // Должно совпадать с TileMapController, HarvestableSpawner, FullSceneBuilder.
-        // Редактировано: 2026-04-16
-        private const int TERRAIN_PPU = 31;    // 68/31 = 2.194 юнита — перекрытие устраняет зазоры
+        // Редактировано: 2026-04-16 11:37 UTC
+        private const int TERRAIN_PPU = 30;    // 68/30 = 2.267 юнита — 13.3% перекрытие устраняет зазоры
         private const int OBJECT_PPU = 160;    // 64/160 = 0.4 юнита — в 5 раз меньше ячейки
         private const string OUTPUT_PATH = "Assets/Sprites/Tiles";
         private const string AI_SPRITES_PATH = "Assets/Sprites/Tiles_AI";
