@@ -1799,11 +1799,14 @@ namespace CultivationGame.Editor
 
                     importer.textureType = TextureImporterType.Sprite;
                     importer.spriteImportMode = SpriteImportMode.Single;
-                    // FIX: Terrain PPU=32 (не 31!) — совпадает с TileSpriteGenerator.TERRAIN_PPU.
-                    // 68×68 при PPU=32 = 2.125u → pixel bleed устраняет белую сетку.
-                    // При PPU=31: 68/31 = 2.194u — перекрытие слишком большое + не совпадает с TileSpriteGenerator.
-                    // Редактировано: 2026-04-15 17:51:32 UTC
-                    importer.spritePixelsPerUnit = isObject ? 160 : 32;
+                    // КРИТ-3 FIX: Terrain PPU=31 (было 32) — 64/31=2.065u (перекрытие 0.032u).
+                    // Устраняет белые зазоры между тайлами при использовании AI-спрайтов 64×64.
+                    // 68×68 при PPU=31 = 68/31=2.194u — тоже с bleed, без зазоров.
+                    // При PPU=32: 64/32=2.0u = ровно ячейка → нет bleed → белая сетка.
+                    // Должно совпадать с TileMapController.EnsureTileSpriteImportSettings и
+                    // HarvestableSpawner.EnsureSpriteImportSettings (PPU=31 для terrain).
+                    // Редактировано: 2026-04-16
+                    importer.spritePixelsPerUnit = isObject ? 160 : 31;
                     // FIX: Terrain Bilinear (не Point!) — совпадает с TileSpriteGenerator.
                     // Bilinear сглаживает субпиксельные границы между тайлами → нет белой сетки.
                     // Point фильтрация оставляет зазоры при субпиксельном рендеринге.
@@ -1822,7 +1825,7 @@ namespace CultivationGame.Editor
             if (reimportCount > 0)
             {
                 AssetDatabase.Refresh();
-                Debug.Log($"[FullSceneBuilder] ReimportTileSprites: переимпортировано {reimportCount} спрайтов (terrain PPU=32 Bilinear, objects PPU=160 Point)");
+                Debug.Log($"[FullSceneBuilder] ReimportTileSprites: переимпортировано {reimportCount} спрайтов (terrain PPU=31 Bilinear, objects PPU=160 Point)");
             }
             else
             {

@@ -89,7 +89,12 @@ namespace CultivationGame.Player
                 mainSprite.color = playerColor;
             }
             mainSprite.sortingOrder = 10;
-            
+            // КРИТ-2 FIX: Sorting layer "Objects" — чтобы игрок рендерился на том же слое,
+            // что и harvestable-объекты (деревья, камни). Иначе "Objects" > "Default" →
+            // игрок скрыт за деревьями, несмотря на sortingOrder=10.
+            // Редактировано: 2026-04-16
+            mainSprite.sortingLayerName = "Objects";
+
             // FIX 2A-alt: Сначала пробуем Unlit шейдер — рендерит БЕЗ Light2D (гарантированно виден).
             // Sprite-Lit-Default требует Light2D для видимости — без него спрайт чёрный.
             // Sprite-Unlit-Default рендерит без освещения — всегда виден.
@@ -116,7 +121,10 @@ namespace CultivationGame.Player
                 shadowSprite.sprite = CreateCircleSprite();
                 shadowSprite.color = shadowColor;
                 shadowSprite.sortingOrder = 9;
-                
+                // КРИТ-2 FIX: Тень тоже на "Objects" слое, чуть ниже игрока (9 < 10)
+                // Редактировано: 2026-04-16
+                shadowSprite.sortingLayerName = "Objects";
+
                 // Тот же материал
                 shadowSprite.material = mainSprite.material;
             }

@@ -251,6 +251,11 @@ namespace CultivationGame.TileSystem
             SpriteRenderer sr = go.AddComponent<SpriteRenderer>();
             sr.sprite = CreateResourceSprite(entry);
             sr.sortingOrder = 5;
+            // КРИТ-2 FIX: Sorting layer "Objects" — чтобы ресурсы рендерились на том же слое,
+            // что и harvestable-объекты и игрок. Иначе "Objects" > "Default" →
+            // ресурсы скрыты за деревьями, несмотря на sortingOrder.
+            // Редактировано: 2026-04-16
+            sr.sortingLayerName = "Objects";
             // FIX: AI-спрайты не тонируем (используем оригинальные цвета),
             // программные fallback-спрайты — тонируем entry.spriteColor
             // Редактировано: 2026-04-15 UTC

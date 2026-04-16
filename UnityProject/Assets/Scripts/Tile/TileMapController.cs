@@ -2,6 +2,7 @@
 // TileMapController.cs — Контроллер карты тайлов
 // Cultivation World Simulator
 // Создано: 2026-04-07 14:24:05 UTC
+// Редактировано: 2026-04-16 — КРИТ-3 FIX: terrain PPU=31 (64/31=2.065u), СРЕД-1 FIX: EnsureTileSpriteImportSettings
 // Редактировано: 2026-04-15 17:31:49 UTC — FIX 2A: terrain 68×68 PPU=32 Bilinear для pixel bleed (устраняет белую сетку)
 // ============================================================================
 
@@ -221,7 +222,8 @@ namespace CultivationGame.TileSystem
 
         /// <summary>
         /// Загрузить спрайт из Assets/Sprites/.
-        /// Редактировано: 2026-04-15 11:15:00 UTC
+        /// СРЕД-1 FIX: Перед загрузкой — принудительный реимпорт с правильными настройками.
+        /// Редактировано: 2026-04-16
         /// </summary>
         private Sprite LoadTileSprite(string spriteName)
         {
@@ -235,6 +237,10 @@ namespace CultivationGame.TileSystem
             };
             foreach (var path in searchPaths)
             {
+                // СРЕД-1 FIX: Убедиться, что спрайт импортирован корректно перед загрузкой
+                // Редактировано: 2026-04-16
+                bool isObject = spriteName.StartsWith("obj_");
+                EnsureTileSpriteImportSettings(path, isObject);
                 var sprite = UnityEditor.AssetDatabase.LoadAssetAtPath<Sprite>(path);
                 if (sprite != null) return sprite;
             }
@@ -246,6 +252,37 @@ namespace CultivationGame.TileSystem
             return null;
         }
 
+#if UNITY_EDITOR
+        /// <summary>
+        /// КРИТ-3 FIX: Убедиться, что terrain-спрайт импортирован с PPU=31.
+        /// 64/31=2.065u — лёгкое перекрытие, устраняет белые зазоры.
+        /// Objects PPU=160.
+        /// Редактировано: 2026-04-16
+        /// </summary>
+        private void EnsureTileSpriteImportSettings(string assetPath, bool isObject)
+        {
+            var importer = UnityEditor.AssetImporter.GetAtPath(assetPath) as UnityEditor.TextureImporter;
+            if (importer == null) return;
+
+            int targetPPU = isObject ? 160 : 31;
+            bool needsReimport = importer.textureType != UnityEditor.TextureImporterType.Sprite
+                || importer.spritePixelsPerUnit != targetPPU
+                || importer.alphaIsTransparency != true;
+
+            if (needsReimport)
+            {
+                importer.textureType = UnityEditor.TextureImporterType.Sprite;
+                importer.spritePixelsPerUnit = targetPPU;
+                importer.alphaIsTransparency = true;
+                importer.spriteImportMode = UnityEditor.SpriteImportMode.Single;
+                importer.textureCompression = UnityEditor.TextureImporterCompression.Uncompressed;
+                importer.filterMode = isObject ? FilterMode.Point : FilterMode.Bilinear;
+                UnityEditor.AssetDatabase.ImportAsset(assetPath, UnityEditor.ImportAssetOptions.ForceUpdate);
+                Debug.Log($"[TileMapController] Спрайт реимпортирован: {assetPath} → PPU={targetPPU}");
+            }
+        }
+#endif
+
         /// <summary>
         /// Создать процедурный спрайт тайла (fallback при отсутствии файла).
         /// FIX 2A: Terrain 68×68 PPU=32 Bilinear → 2.125 юнита — pixel bleed устраняет белую сетку.
@@ -256,12 +293,14 @@ namespace CultivationGame.TileSystem
         {
             bool isObject = spriteName.StartsWith("obj_");
 
-            // Terrain: 68×68, PPU=32 → 2.125 юнита (pixel bleed устраняет белую сетку)
+            // Terrain: 68×68, PPU=31 → 68/31=2.194u (pixel bleed устраняет белую сетку)
             // Objects: 64×64, PPU=160 → 0.4 юнита (в 5 раз меньше ячейки)
-            // FIX 2A: 68×68 вместо 64×64 для terrain — перекрытие 0.0625 юнита с каждой стороны
-            // Редактировано: 2026-04-15 17:31:49 UTC
+            // КРИТ-3 FIX: PPU=31 вместо 32 для terrain — 64/31=2.065u (перекрытие 0.032u).
+            // Устраняет белые зазоры между тайлами при использовании AI-спрайтов 64×64.
+            // Процедурные 68×68 при PPU=31 = 68/31=2.194u — тоже с bleed, без зазоров.
+            // Редактировано: 2026-04-16
             int texSize = isObject ? 64 : 68;
-            int ppu = isObject ? 160 : 32;
+            int ppu = isObject ? 160 : 31;
 
             Texture2D texture = new Texture2D(texSize, texSize, TextureFormat.RGBA32, false);
             texture.filterMode = isObject ? FilterMode.Point : FilterMode.Bilinear; // FIX 2A: Bilinear для terrain

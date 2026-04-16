@@ -1,8 +1,9 @@
 // ============================================================================
 // HarvestableSpawner.cs — Спавнер harvestable-объектов как GameObject
 // Cultivation World Simulator
-// Версия: 1.0
+// Версия: 1.1
 // Создано: 2026-04-16
+// Редактировано: 2026-04-16 — КРИТ-1 FIX: Unlit шейдер, СРЕД-1 FIX: EnsureSpriteImportSettings
 // Чекпоинт: 04_15_harvest_system_plan.md v3 §6
 // ============================================================================
 //
@@ -234,6 +235,15 @@ namespace CultivationGame.TileSystem
             sr.sortingLayerName = "Objects";
             sr.sortingOrder = GetSortingOrder(objData.objectType);
 
+            // КРИТ-1 FIX: Unlit шейдер — рендерит БЕЗ Light2D (как в PlayerVisual и ResourceSpawner).
+            // Sprite-Lit-Default без Light2D → чёрные/невидимые спрайты.
+            // Sprite-Unlit-Default рендерит без освещения — всегда виден.
+            // Редактировано: 2026-04-16
+            Shader spriteShader = Shader.Find("Universal Render Pipeline/2D/Sprite-Unlit-Default");
+            if (spriteShader == null) spriteShader = Shader.Find("Universal Render Pipeline/2D/Sprite-Lit-Default");
+            if (spriteShader == null) spriteShader = Shader.Find("Sprites/Default");
+            sr.material = new Material(spriteShader);
+
             // 2. Rigidbody2D (Static) — для корректной работы физики
             Rigidbody2D rb = go.AddComponent<Rigidbody2D>();
             rb.bodyType = RigidbodyType2D.Static;
@@ -343,6 +353,10 @@ namespace CultivationGame.TileSystem
 
         /// <summary>
         /// Загрузить спрайт из Assets/Sprites/ или Resources/.
+        /// СРЕД-1 FIX: Перед загрузкой — принудительный реимпорт с правильными настройками.
+        /// Без .meta в Git Unity использует дефолтные: TextureType=Default (НЕ Sprite), PPU=100.
+        /// LoadAssetAtPath<Sprite>() возвращает null при TextureType≠Sprite.
+        /// Редактировано: 2026-04-16
         /// </summary>
         private Sprite LoadSpriteFromAssets(string relativePath)
         {
@@ -351,6 +365,12 @@ namespace CultivationGame.TileSystem
 #if UNITY_EDITOR
             // В Editor — загрузить через AssetDatabase
             string fullPath = $"Assets/{relativePath}.png";
+
+            // СРЕД-1 FIX: Убедиться, что спрайт импортирован корректно
+            // Редактировано: 2026-04-16
+            bool isObject = relativePath.Contains("obj_");
+            EnsureSpriteImportSettings(fullPath, isObject);
+            // Перезагружаем после возможного реимпорта
             var sprite = UnityEditor.AssetDatabase.LoadAssetAtPath<Sprite>(fullPath);
             if (sprite != null) return sprite;
 #endif
@@ -362,6 +382,39 @@ namespace CultivationGame.TileSystem
 
             return Resources.Load<Sprite>(resourcesPath);
         }
+
+#if UNITY_EDITOR
+        /// <summary>
+        /// СРЕД-1 FIX: Убедиться, что спрайт импортирован с правильными настройками.
+        /// Без .meta в Git Unity использует дефолтные: TextureType=Default (НЕ Sprite), PPU=100.
+        /// LoadAssetAtPath<Sprite>() возвращает null при TextureType≠Sprite.
+        /// КРИТ-3 FIX: Terrain PPU=31 (64/31=2.065u — pixel bleed). Objects PPU=160.
+        /// Редактировано: 2026-04-16
+        /// </summary>
+        private void EnsureSpriteImportSettings(string assetPath, bool isObject)
+        {
+            var importer = UnityEditor.AssetImporter.GetAtPath(assetPath) as UnityEditor.TextureImporter;
+            if (importer == null) return;
+
+            // КРИТ-3 FIX: Terrain PPU=31 (64/31=2.065u — pixel bleed). Objects PPU=160.
+            int targetPPU = isObject ? 160 : 31;
+            bool needsReimport = importer.textureType != UnityEditor.TextureImporterType.Sprite
+                || importer.spritePixelsPerUnit != targetPPU
+                || importer.alphaIsTransparency != true;
+
+            if (needsReimport)
+            {
+                importer.textureType = UnityEditor.TextureImporterType.Sprite;
+                importer.spritePixelsPerUnit = targetPPU;
+                importer.alphaIsTransparency = true;
+                importer.spriteImportMode = UnityEditor.SpriteImportMode.Single;
+                importer.textureCompression = UnityEditor.TextureImporterCompression.Uncompressed;
+                importer.filterMode = isObject ? FilterMode.Point : FilterMode.Bilinear;
+                UnityEditor.AssetDatabase.ImportAsset(assetPath, UnityEditor.ImportAssetOptions.ForceUpdate);
+                Debug.Log($"[HarvestableSpawner] Спрайт реимпортирован: {assetPath} → PPU={targetPPU}, alphaIsTransparency=true");
+            }
+        }
+#endif
 
         /// <summary>
         /// Создать программный (procedural) спрайт для типа объекта.
