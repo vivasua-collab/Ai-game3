@@ -48,11 +48,11 @@
 ## Дополнительные исправления (найдены при проверке)
 
 - [x] FIX-H01: LegacyRuntime.ttf → TMPro в HarvestFeedbackUI (миграция завершена в Шаге 6)
-- [x] FIX-H02: Material leak в ResourceSpawner — sharedMaterialCache + GetOrCreateSharedMaterial (2026-04-18)
-- [x] FIX-H03: HarvestTarget GO leak в PlayerController — cachedFeedbackTarget + Destroy в OnDestroy (2026-04-18)
+- [x] FIX-H02: Material leak в ResourceSpawner — sharedMaterialCache + GetOrCreateSharedMaterial (2026-04-16)
+- [x] FIX-H03: HarvestTarget GO leak в PlayerController — cachedFeedbackTarget + Destroy в OnDestroy (2026-04-16)
 
 ## Дополнительные исправления (после основного чекпоинта)
 
 - [x] Чекпоинт 04_16: Исправление 18 ошибок компиляции (itemName→nameRu, namespace ItemCategory/ItemRarity)
 - [x] Чекпоинт 04_16: CS0414 warning — isPromptVisible подавлен #pragma
-- [x] Чекпоинт 04_17: Race Condition — HarvestableSpawner подписка в Awake + fallback в Start
+- [x] Чекпоинт 04_16: Race Condition — HarvestableSpawner подписка в Awake + fallback в Start

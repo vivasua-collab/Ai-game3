@@ -85,7 +85,7 @@ namespace CultivationGame.TileSystem
             // чтобы не пропустить OnMapGenerated от TileMapController.Start().
             // Если TileMapController уже сгенерировал карту — подписка всё равно нужна
             // для повторных генераций.
-            // Редактировано: 2026-04-17
+            // Редактировано: 2026-04-16
             if (tileMapController == null)
             {
                 tileMapController = CultivationGame.Core.ServiceLocator.GetOrFind<TileMapController>();
@@ -98,7 +98,7 @@ namespace CultivationGame.TileSystem
             // FIX Race Condition: проверяем, была ли карта уже сгенерирована
             // до нашей подписки (TileMapController.Start мог выполниться раньше).
             // Если MapData уже есть — спавним harvestable-объекты немедленно.
-            // Редактировано: 2026-04-17
+            // Редактировано: 2026-04-16
             if (tileMapController != null && tileMapController.MapData != null && spawnedHarvestables.Count == 0)
             {
                 SpawnHarvestables(tileMapController.MapData);

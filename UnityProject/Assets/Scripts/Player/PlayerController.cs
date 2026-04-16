@@ -79,7 +79,7 @@ namespace CultivationGame.Player
         private Harvestable nearestHarvestable; // Ближайший harvestable-объект (для подсказки)
         private InventoryController inventoryController; // Ссылка на инвентарь
         // FIX-H03: Кэшированный GO для позиционирования фидбека (вместо new GameObject на каждый удар).
-        // Редактировано: 2026-04-18
+        // Редактировано: 2026-04-16
         private GameObject cachedFeedbackTarget;
         
         // === Events ===
@@ -228,7 +228,7 @@ namespace CultivationGame.Player
             }
 
             // FIX-H03: Уничтожение кэшированного GO фидбека.
-            // Редактировано: 2026-04-18
+            // Редактировано: 2026-04-16
             if (cachedFeedbackTarget != null)
                 Destroy(cachedFeedbackTarget);
         }
@@ -846,7 +846,7 @@ namespace CultivationGame.Player
 
                     // FIX-H03: Переиспользуем кэшированный GO вместо new GameObject на каждый удар.
                     // Ранее: new GameObject("HarvestTarget") на каждый вызов — утечка GO.
-                    // Редактировано: 2026-04-18
+                    // Редактировано: 2026-04-16
                     if (cachedFeedbackTarget == null)
                         cachedFeedbackTarget = new GameObject("HarvestTarget");
                     cachedFeedbackTarget.transform.position = tileMapCtrl.MapData.TileToWorld(tilePos.x, tilePos.y);

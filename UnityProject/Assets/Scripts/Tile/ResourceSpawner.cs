@@ -74,7 +74,7 @@ namespace CultivationGame.TileSystem
 
         // FIX-H02: Кэш shared-материалов по шейдеру — один материал на шейдер,
         // вместо new Material() на каждый спавн (утечка GPU-ресурсов).
-        // Редактировано: 2026-04-18
+        // Редактировано: 2026-04-16
         private static Dictionary<Shader, Material> sharedMaterialCache = new Dictionary<Shader, Material>();
 
         // === Unity Lifecycle ===
@@ -108,7 +108,7 @@ namespace CultivationGame.TileSystem
                 tileMapController.OnMapGenerated -= OnMapGenerated;
 
             // FIX-H02: Очистка кэша shared-материалов при уничтожении спавнера.
-            // Редактировано: 2026-04-18
+            // Редактировано: 2026-04-16
             foreach (var kvp in sharedMaterialCache)
             {
                 if (kvp.Value != null)
@@ -266,7 +266,7 @@ namespace CultivationGame.TileSystem
                 spriteShader = Shader.Find("Sprites/Default");
             // FIX-H02: Используем кэшированный shared-материал вместо new Material() на каждый спавн.
             // Один Material на Shader — нет утечки, все ресурсы с одним шейдером разделяют материал.
-            // Редактировано: 2026-04-18
+            // Редактировано: 2026-04-16
             if (spriteShader != null)
                 sr.sharedMaterial = GetOrCreateSharedMaterial(spriteShader);
 
@@ -447,7 +447,7 @@ namespace CultivationGame.TileSystem
         /// <summary>
         /// FIX-H02: Получить или создать кэшированный shared-материал для шейдера.
         /// Один Material на Shader — предотвращает утечку GPU-ресурсов при спавне.
-        /// Редактировано: 2026-04-18
+        /// Редактировано: 2026-04-16
         /// </summary>
         private Material GetOrCreateSharedMaterial(Shader shader)
         {
