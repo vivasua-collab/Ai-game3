@@ -39,9 +39,16 @@ namespace CultivationGame.TileSystem
 
         [Header("Object Tiles")]
         [SerializeField] private TileBase treeTile;
+        // FIX-R2: Добавлены подтипы деревьев для корректного отображения каждого вида.
+        // Ранее: все деревья → один treeTile. Теперь: каждое дерево → свой tile.
+        // Редактировано: 2026-04-16 08:03 UTC
+        [SerializeField] private TileBase treeOakTile;
+        [SerializeField] private TileBase treePineTile;
+        [SerializeField] private TileBase treeBirchTile;
         [SerializeField] private TileBase rockSmallTile;
         [SerializeField] private TileBase rockMediumTile;
         [SerializeField] private TileBase bushTile;
+        [SerializeField] private TileBase bushBerryTile;
         [SerializeField] private TileBase chestTile;
         // FIX: Добавлены недостающие типы объектов
         [SerializeField] private TileBase oreVeinTile;
@@ -125,12 +132,18 @@ namespace CultivationGame.TileSystem
             };
 
             // Object tile mappings
+            // FIX-R2: Добавлены подтипы деревьев и ягодный куст
+            // Редактировано: 2026-04-16 08:03 UTC
             var objectMappings = new (TileBase field, string spriteName, bool passable)[]
             {
                 (treeTile, "obj_tree", false),
+                (treeOakTile, "obj_tree_oak", false),
+                (treePineTile, "obj_tree_pine", false),
+                (treeBirchTile, "obj_tree_birch", false),
                 (rockSmallTile, "obj_rock_small", false),
                 (rockMediumTile, "obj_rock_medium", false),
                 (bushTile, "obj_bush", true),
+                (bushBerryTile, "obj_bush_berry", true),
                 (chestTile, "obj_chest", true),
                 (oreVeinTile, "obj_ore_vein", false),
                 (herbTile, "obj_herb", true),
@@ -150,9 +163,15 @@ namespace CultivationGame.TileSystem
 
             // Обработка object тайлов
             treeTile = EnsureTile(treeTile, "obj_tree", false, TerrainType.Grass);
+            // FIX-R2: Подтипы деревьев — каждый вид имеет уникальный AI-спрайт
+            // Редактировано: 2026-04-16 08:03 UTC
+            treeOakTile = EnsureTile(treeOakTile, "obj_tree_oak", false, TerrainType.Grass);
+            treePineTile = EnsureTile(treePineTile, "obj_tree_pine", false, TerrainType.Grass);
+            treeBirchTile = EnsureTile(treeBirchTile, "obj_tree_birch", false, TerrainType.Grass);
             rockSmallTile = EnsureTile(rockSmallTile, "obj_rock_small", false, TerrainType.Grass);
             rockMediumTile = EnsureTile(rockMediumTile, "obj_rock_medium", false, TerrainType.Grass);
             bushTile = EnsureTile(bushTile, "obj_bush", true, TerrainType.Grass);
+            bushBerryTile = EnsureTile(bushBerryTile, "obj_bush_berry", true, TerrainType.Grass);
             chestTile = EnsureTile(chestTile, "obj_chest", true, TerrainType.Grass);
             oreVeinTile = EnsureTile(oreVeinTile, "obj_ore_vein", false, TerrainType.Stone);
             herbTile = EnsureTile(herbTile, "obj_herb", true, TerrainType.Grass);
@@ -1031,18 +1050,22 @@ namespace CultivationGame.TileSystem
         /// Получить Tile для типа объекта.
         /// Редактировано: 2026-04-13 13:35:27 UTC — добавлены OreVein, Herb, Bush_Berry, Grass_Tall
         /// </summary>
+        // FIX-R2: Подтипы деревьев возвращают свои tile, с fallback на универсальный.
+        // Ранее: все Tree_Oak/Pine/Birch → treeTile (одинаковые).
+        // Теперь: Tree_Oak → treeOakTile ?? treeTile (уникальный с fallback).
+        // Редактировано: 2026-04-16 08:03 UTC
         private TileBase GetObjectTile(TileObjectType type)
         {
             return type switch
             {
-                TileObjectType.Tree_Oak => treeTile,
-                TileObjectType.Tree_Pine => treeTile,
-                TileObjectType.Tree_Birch => treeTile,
+                TileObjectType.Tree_Oak => treeOakTile ?? treeTile,
+                TileObjectType.Tree_Pine => treePineTile ?? treeTile,
+                TileObjectType.Tree_Birch => treeBirchTile ?? treeTile,
                 TileObjectType.Rock_Small => rockSmallTile,
                 TileObjectType.Rock_Medium => rockMediumTile,
                 TileObjectType.Rock_Large => rockMediumTile,
                 TileObjectType.Bush => bushTile,
-                TileObjectType.Bush_Berry => bushTile,
+                TileObjectType.Bush_Berry => bushBerryTile ?? bushTile,
                 TileObjectType.Chest => chestTile,
                 // FIX: OreVein и Herb теперь используют собственные tile поля
                 // Редактировано: 2026-04-14 06:38:00 UTC

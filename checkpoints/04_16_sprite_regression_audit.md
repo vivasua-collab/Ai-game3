@@ -2,7 +2,7 @@
 
 **Дата:** 2026-04-16 06:36:40 UTC
 **Фаза:** 2 (Post-Harvest hotfix — sprite regression)
-**Статус:** in_progress
+**Статус:** complete
 **Цель:** Выяснить, почему качественные AI-спрайты деревьев/камней/руды перестали использоваться после внедрения Harvest System (чекпоинт 04_15)
 
 ---
@@ -242,5 +242,30 @@ TileObjectType.Bush_Berry => bushBerryTile ?? bushTile,
 
 ---
 
+## Результаты внедрения (2026-04-16 08:03 UTC)
+
+Все 4 шага внедрены:
+
+| Шаг | Статус | Изменённый файл |
+|-----|--------|-----------------|
+| Шаг 1: GetSpritePath() — префикс obj_ | ✅ | `HarvestableSpawner.cs` строки 302-317 |
+| Шаг 2: GetDepletedSpritePath() — префикс obj_ | ✅ | `HarvestableSpawner.cs` строки 326-341 |
+| Шаг 3: depletedSprite → Harvestable.Initialize() | ✅ | `Harvestable.cs` строка 232, `HarvestableSpawner.cs` строка 265 |
+| Шаг 4: TileMapController подтипы деревьев | ✅ | `TileMapController.cs` поля 45-51, EnsureTile 168-174, GetObjectTile 1057-1078 |
+
+### Изменённые файлы
+
+| Файл | Изменение |
+|------|-----------|
+| `Assets/Scripts/Tile/HarvestableSpawner.cs` | FIX-R1: GetSpritePath + FIX-R4: GetDepletedSpritePath + depletedSprite→Initialize |
+| `Assets/Scripts/Tile/Harvestable.cs` | Initialize(data, depletedSprite) — принимает depleted-спрайт |
+| `Assets/Scripts/Tile/TileMapController.cs` | FIX-R2: treeOakTile/PineTile/BirchTile/bushBerryTile + EnsureTile + GetObjectTile fallback |
+
+### Оставшиеся шаги
+
+- Шаг 5: Ручная верификация в Unity Editor (пользователь)
+
+---
+
 *Создано: 2026-04-16 06:26:27 UTC*
-*Редактировано: 2026-04-16 07:07:00 UTC*
+*Редактировано: 2026-04-16 08:40 UTC*
