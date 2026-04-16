@@ -49,7 +49,9 @@ namespace CultivationGame.UI
         private RectTransform canvasRect;
         private Transform targetTransform;
         private Coroutine activeCoroutine;
+#pragma warning disable CS0414 // Поле планируется для использования в будущих проверках видимости подсказки
         private bool isPromptVisible = false;
+#pragma warning restore CS0414
 
         /// <summary>Событие при завершении отображения.</summary>
         public event System.Action OnFeedbackComplete;
