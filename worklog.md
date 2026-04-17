@@ -1042,3 +1042,25 @@ Stage Summary:
 - Object-тайлы продолжают использовать PNG (нет проблемы на стыках)
 - Graphical polish terrain отложен до следующего этапа
 - Важное наблюдение из логов: GlobalLight2D НЕ НАЙДЕН — Sprite-Lit-Default = чёрные спрайты
+
+---
+Task ID: fix-sort-scene-builder
+Agent: Main Agent
+Task: FIX-SORT — Исправление проверки порядка Sorting Layers в FullSceneBuilder.cs
+
+Work Log:
+- 2026-04-17 13:07 UTC: Прочитан START_PROMPT.md — правила работы
+- Прочитан FullSceneBuilder.cs (скрипт генерации сцены) — фаза 02 Tags & Layers
+- ОБНАРУЖЕНЫ 2 критических бага в EnsureSortingLayers():
+  1. IsTagsLayersNeeded() проверял ТОЛЬКО существование слоя "Objects", но НЕ его ПОРЯДОК. При неправильном порядке (Player ниже Terrain) фаза ПРОПУСКАЛАСЬ → terrain поверх player.
+  2. EnsureSortingLayers() только ДОБАВЛЯЛ недостающие слои в КОНЕЦ массива m_SortingLayers, но НЕ переставлял существующие. Если слои были созданы ранее в неправильном порядке, баг НЕ исправлялся.
+- Исправлен IsTagsLayersNeeded(): теперь также проверяет ПОРЯДОК ключевых слоёв (Terrain < Objects < Player)
+- Исправлен EnsureSortingLayers(): добавлен ШАГ 3 — перестановка ВСЕХ слоёв в правильный порядок (Default < Background < Terrain < Objects < Player < UI)
+- Проверены все остальные скрипты, использующие sortingLayerName: HarvestableSpawner, ResourceSpawner, DestructibleObjectController, TestLocationSetup — все корректны
+- Обновлена отметка редактирования файла
+
+Stage Summary:
+- 1 файл изменён: FullSceneBuilder.cs (+149 строк, -32 строки)
+- IsTagsLayersNeeded(): добавлена проверка ПОРЯДКА слоёв
+- EnsureSortingLayers(): добавлена полная перестановка слоёв через ClearArray + InsertArrayElementAtIndex
+- КОРНЕВАЯ ПРИЧИНА: при повторной генерации сцены (сцена уже существует, слои уже созданы) порядок слоёв не проверялся и не исправлялся

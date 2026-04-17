@@ -4,7 +4,7 @@
 // Версия: 1.2
 // ============================================================================
 // Создано: 2026-04-13 08:00:00 UTC
-// Редактировано: 2026-04-17 11:31 UTC — FIX: Добавлены .asset для TreeOak/Pine/Birch + BushBerry в Phase 14, назначены в AssignTileBasesToController. PPU=32 (14 апреля).
+// Редактировано: 2026-04-17 13:07 UTC — FIX-SORT: IsTagsLayersNeeded() теперь проверяет ПОРЯДОК слоёв + EnsureSortingLayers() переставляет слои в правильный порядок.
 //
 // АРХИТЕКТУРА:
 //   15 фаз, каждая идемпотентна (повторный запуск безопасен).
@@ -492,24 +492,60 @@ namespace CultivationGame.Editor
                 if (!found) return true;
             }
 
-            // FIX-V2-1: Проверяем Sorting Layers
-            // Если слой "Objects" не существует — нужна фаза для его создания
-            // Редактировано: 2026-04-16 11:37 UTC
+            // FIX-V2-1 + FIX-SORT: Проверяем Sorting Layers — существование И порядок.
+            // Раньше: проверялось только существование "Objects" → фаза пропускалась
+            // при неправильном порядке (Player ниже Terrain → игрок позади terrain!).
+            // Теперь: также проверяем порядок Default < Background < Terrain < Objects < Player < UI.
+            // Редактировано: 2026-04-17 13:07 UTC
+            string[] requiredSortingOrder = new string[]
+            {
+                "Default", "Background", "Terrain", "Objects", "Player", "UI"
+            };
+
             SerializedObject tagManager = new SerializedObject(
                 AssetDatabase.LoadAllAssetsAtPath("ProjectSettings/TagManager.asset")[0]);
             var sortingLayersProp = tagManager.FindProperty("m_SortingLayers");
             if (sortingLayersProp != null)
             {
-                HashSet<string> existingSortingLayers = new HashSet<string>();
+                // Собираем существующие слои в порядке массива
+                List<string> existingSortingLayers = new List<string>();
                 for (int i = 0; i < sortingLayersProp.arraySize; i++)
                 {
                     var nameProp = sortingLayersProp.GetArrayElementAtIndex(i).FindPropertyRelative("name");
                     if (nameProp != null && !string.IsNullOrEmpty(nameProp.stringValue))
                         existingSortingLayers.Add(nameProp.stringValue);
                 }
-                // "Objects" — критический слой, без него спрайты невидимы
-                if (!existingSortingLayers.Contains("Objects"))
+
+                // Проверяем: все требуемые слои существуют?
+                HashSet<string> existingSet = new HashSet<string>(existingSortingLayers);
+                foreach (var required in requiredSortingOrder)
+                {
+                    if (!existingSet.Contains(required))
+                    {
+                        Debug.Log($"[FullSceneBuilder] FIX-SORT: Sorting Layer \"{required}\" отсутствует → нужна фаза");
+                        return true;
+                    }
+                }
+
+                // FIX-SORT: Проверяем ПОРЯДОК слоёв.
+                // Если порядок неправильный — terrain рендерится поверх player.
+                // Проверяем: позиции ключевых слоёв совпадают с требуемым порядком.
+                int terrainIdx = System.Array.IndexOf(existingSortingLayers.ToArray(), "Terrain");
+                int objectsIdx = System.Array.IndexOf(existingSortingLayers.ToArray(), "Objects");
+                int playerIdx = System.Array.IndexOf(existingSortingLayers.ToArray(), "Player");
+
+                if (terrainIdx < 0 || objectsIdx < 0 || playerIdx < 0)
+                {
+                    return true; // Критические слои отсутствуют
+                }
+
+                if (!(terrainIdx < objectsIdx && objectsIdx < playerIdx))
+                {
+                    Debug.LogWarning($"[FullSceneBuilder] FIX-SORT: ПОРЯДОК Sorting Layers НЕПРАВИЛЬНЫЙ! " +
+                        $"Terrain={terrainIdx}, Objects={objectsIdx}, Player={playerIdx}. " +
+                        $"Terrain будет рендериться ПОВЕРХ Player → нужна фаза для перестановки");
                     return true;
+                }
             }
 
             return false;
@@ -591,13 +627,19 @@ namespace CultivationGame.Editor
         }
 
         /// <summary>
-        /// FIX-V2-1: Создание Sorting Layers для 2D рендеринга.
+        /// FIX-V2-1 + FIX-SORT: Создание Sorting Layers для 2D рендеринга
+        /// И перестановка в правильный порядок.
         /// Unity имеет ДВЕ системы слоёв:
         ///   - Physics Layers (layers[]) — для коллизий (создаются выше)
         ///   - Sorting Layers (m_SortingLayers) — для порядка рендеринга 2D (создаются тут)
         /// Без Sorting Layer "Objects" все SpriteRenderer с sortingLayerName="Objects"
         /// игнорируются в Unity 6+ → спрайты невидимы!
-        /// Редактировано: 2026-04-16 11:37 UTC
+        ///
+        /// FIX-SORT: Раньше метод только ДОБАВЛЯЛ недостающие слои в КОНЕЦ массива.
+        /// Если слои существовали в неправильном порядке (Player ниже Terrain),
+        /// порядок НЕ исправлялся → terrain рендерился поверх player.
+        /// Теперь: после добавления недостающих, переставляет ВСЕ слои в правильный порядок.
+        /// Редактировано: 2026-04-17 13:07 UTC
         /// </summary>
         private static void EnsureSortingLayers()
         {
@@ -624,11 +666,11 @@ namespace CultivationGame.Editor
             var sortingLayersProp = tagManager.FindProperty("m_SortingLayers");
             if (sortingLayersProp == null)
             {
-                Debug.LogError("[FullSceneBuilder] FIX-V2-1: m_SortingLayers не найден в TagManager!");
+                Debug.LogError("[FullSceneBuilder] FIX-SORT: m_SortingLayers не найден в TagManager!");
                 return;
             }
 
-            // Собираем существующие слои
+            // ===== ШАГ 1: Собираем существующие слои =====
             HashSet<string> existingLayers = new HashSet<string>();
             for (int i = 0; i < sortingLayersProp.arraySize; i++)
             {
@@ -637,16 +679,16 @@ namespace CultivationGame.Editor
                     existingLayers.Add(nameProp.stringValue);
             }
 
-            // Добавляем недостающие слои
-            bool changed = false;
-            int nextId = sortingLayersProp.arraySize; // Unity назначает ID автоматически
+            // ===== ШАГ 2: Добавляем недостающие слои =====
+            bool addedNew = false;
+            int nextId = sortingLayersProp.arraySize;
 
             foreach (string layerName in requiredSortingLayers)
             {
                 if (existingLayers.Contains(layerName))
                     continue;
 
-                // "Default" — особый случай, он всегда существует, но может не быть в массиве
+                // "Default" — особый случай, он всегда существует
                 if (layerName == "Default" && sortingLayersProp.arraySize > 0)
                 {
                     var first = sortingLayersProp.GetArrayElementAtIndex(0).FindPropertyRelative("name");
@@ -659,46 +701,121 @@ namespace CultivationGame.Editor
 
                 var newElement = sortingLayersProp.GetArrayElementAtIndex(insertIndex);
 
-                // Устанавливаем имя
                 var nameProp = newElement.FindPropertyRelative("name");
                 if (nameProp != null)
                     nameProp.stringValue = layerName;
 
-                // Устанавливаем uniqueID (Unity использует инкрементальные ID)
                 var idProp = newElement.FindPropertyRelative("uniqueID");
                 if (idProp != null)
                     idProp.intValue = nextId;
 
-                // locked = false
                 var lockedProp = newElement.FindPropertyRelative("locked");
                 if (lockedProp != null)
                     lockedProp.boolValue = false;
 
-                changed = true;
-                Debug.Log($"[FullSceneBuilder] FIX-V2-1: Sorting Layer \"{layerName}\" создан (ID={nextId})");
+                addedNew = true;
+                Debug.Log($"[FullSceneBuilder] FIX-SORT: Sorting Layer \"{layerName}\" создан (ID={nextId})");
                 nextId++;
             }
 
-            if (changed)
+            if (addedNew)
             {
                 tagManager.ApplyModifiedProperties();
-                AssetDatabase.SaveAssets();
+            }
 
-                // Логируем итоговое состояние
-                Debug.Log("[FullSceneBuilder] FIX-V2-1: Sorting Layers созданы:");
-                for (int i = 0; i < sortingLayersProp.arraySize; i++)
-                {
-                    var elem = sortingLayersProp.GetArrayElementAtIndex(i);
-                    var n = elem.FindPropertyRelative("name");
-                    var id = elem.FindPropertyRelative("uniqueID");
-                    Debug.Log($"  [{i}] \"{n?.stringValue ?? "?"}\" (id={id?.intValue ?? -1})");
-                }
-                Debug.Log("[FullSceneBuilder] ✅ Sorting layer \"Objects\" существует — спрайты будут видимы!");
-            }
-            else
+            // ===== ШАГ 3 (FIX-SORT): Переставляем слои в правильный порядок =====
+            // После добавления недостающих, слои могут быть в неправильном порядке.
+            // Например: Default, Player, Terrain, Objects (Player ПЕРЕД Terrain — баг!).
+            // Метод: читаем все элементы → очищаем массив → вставляем в правильном порядке.
+            // Редактировано: 2026-04-17 13:07 UTC
+
+            // Сохраняем данные всех текущих слоёв
+            var layerData = new List<Dictionary<string, object>>();
+            for (int i = 0; i < sortingLayersProp.arraySize; i++)
             {
-                Debug.Log("[FullSceneBuilder] Sorting Layers уже настроены");
+                var elem = sortingLayersProp.GetArrayElementAtIndex(i);
+                var data = new Dictionary<string, object>();
+                var nProp = elem.FindPropertyRelative("name");
+                var idProp2 = elem.FindPropertyRelative("uniqueID");
+                var lProp = elem.FindPropertyRelative("locked");
+                if (nProp != null) data["name"] = nProp.stringValue;
+                if (idProp2 != null) data["uniqueID"] = idProp2.intValue;
+                if (lProp != null) data["locked"] = lProp.boolValue;
+                layerData.Add(data);
             }
+
+            // Строим новый порядок: сначала requiredSortingLayers, потом остальные
+            var newOrder = new List<Dictionary<string, object>>();
+            var usedNames = new HashSet<string>();
+
+            // Добавляем требуемые слои в правильном порядке
+            foreach (var expectedName in requiredSortingLayers)
+            {
+                var found = layerData.Find(d => d.ContainsKey("name") && (string)d["name"] == expectedName);
+                if (found != null)
+                {
+                    newOrder.Add(found);
+                    usedNames.Add(expectedName);
+                }
+            }
+
+            // Добавляем остальные слои (не из requiredSortingLayers) в конец
+            foreach (var data in layerData)
+            {
+                if (data.ContainsKey("name") && !usedNames.Contains((string)data["name"]))
+                    newOrder.Add(data);
+            }
+
+            // Проверяем: нужно ли переставлять?
+            bool needsReorder = false;
+            for (int i = 0; i < layerData.Count && i < newOrder.Count; i++)
+            {
+                string oldName = layerData[i].ContainsKey("name") ? (string)layerData[i]["name"] : "";
+                string newName = newOrder[i].ContainsKey("name") ? (string)newOrder[i]["name"] : "";
+                if (oldName != newName)
+                {
+                    needsReorder = true;
+                    break;
+                }
+            }
+
+            if (!needsReorder && !addedNew)
+            {
+                Debug.Log("[FullSceneBuilder] FIX-SORT: Sorting Layers уже в правильном порядке");
+                return;
+            }
+
+            // Очищаем массив и заполняем в новом порядке
+            sortingLayersProp.ClearArray();
+            foreach (var data in newOrder)
+            {
+                sortingLayersProp.InsertArrayElementAtIndex(sortingLayersProp.arraySize);
+                var elem = sortingLayersProp.GetArrayElementAtIndex(sortingLayersProp.arraySize - 1);
+                if (data.ContainsKey("name"))
+                    elem.FindPropertyRelative("name").stringValue = (string)data["name"];
+                if (data.ContainsKey("uniqueID"))
+                    elem.FindPropertyRelative("uniqueID").intValue = (int)data["uniqueID"];
+                if (data.ContainsKey("locked"))
+                    elem.FindPropertyRelative("locked").boolValue = (bool)data["locked"];
+            }
+
+            tagManager.ApplyModifiedProperties();
+            AssetDatabase.SaveAssets();
+
+            // Логируем итоговое состояние
+            Debug.Log("[FullSceneBuilder] FIX-SORT: Sorting Layers итоговое состояние:");
+            for (int i = 0; i < sortingLayersProp.arraySize; i++)
+            {
+                var elem = sortingLayersProp.GetArrayElementAtIndex(i);
+                var n = elem.FindPropertyRelative("name");
+                var id = elem.FindPropertyRelative("uniqueID");
+                Debug.Log($"  [{i}] \"{n?.stringValue ?? "?"}\" (id={id?.intValue ?? -1})");
+            }
+
+            if (needsReorder)
+                Debug.Log("[FullSceneBuilder] FIX-SORT: ✅ Порядок Sorting Layers ИСПРАВЛЕН! Terrain < Objects < Player");
+            else
+                Debug.Log("[FullSceneBuilder] FIX-SORT: ✅ Sorting Layers созданы в правильном порядке");
         }
 
         // ====================================================================
