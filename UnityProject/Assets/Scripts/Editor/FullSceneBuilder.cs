@@ -4,7 +4,7 @@
 // Версия: 1.2
 // ============================================================================
 // Создано: 2026-04-13 08:00:00 UTC
-// Редактировано: 2026-04-17 11:12 UTC — FIX: HarvestableSpawner добавлен в Phase 08 + Phase 15 idempotent check. PPU=32 (14 апреля).
+// Редактировано: 2026-04-17 11:31 UTC — FIX: Добавлены .asset для TreeOak/Pine/Birch + BushBerry в Phase 14, назначены в AssignTileBasesToController. PPU=32 (14 апреля).
 //
 // АРХИТЕКТУРА:
 //   15 фаз, каждая идемпотентна (повторный запуск безопасен).
@@ -2056,6 +2056,14 @@ namespace CultivationGame.Editor
             // Редактировано: 2026-04-14 06:41:00 UTC
             CreateObjectTileAsset("Tile_OreVein", "obj_ore_vein", TileObjectType.OreVein, 250, true, true, true);
             CreateObjectTileAsset("Tile_Herb", "obj_herb", TileObjectType.Herb, 30, false, false, false);
+            // FIX: Добавлены подтипы деревьев и ягодный куст для полного соответствия TileMapController полям.
+            // Без этих .asset файлов AssignTileBasesToController() не может назначить treeOakTile, treePineTile и т.д.
+            // При удалении assets/ и полной пересборке — без них поля null → EnsureTileAssets() fallback.
+            // Редактировано: 2026-04-17 11:31 UTC
+            CreateObjectTileAsset("Tile_TreeOak", "obj_tree_oak", TileObjectType.Tree_Oak, 200, true, true, true);
+            CreateObjectTileAsset("Tile_TreePine", "obj_tree_pine", TileObjectType.Tree_Pine, 200, true, true, true);
+            CreateObjectTileAsset("Tile_TreeBirch", "obj_tree_birch", TileObjectType.Tree_Birch, 180, true, true, true);
+            CreateObjectTileAsset("Tile_BushBerry", "obj_bush_berry", TileObjectType.Bush_Berry, 40, false, false, true);
 
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
@@ -2178,6 +2186,12 @@ namespace CultivationGame.Editor
             // FIX: Добавлены OreVein и Herb tile назначения
             AssignTileProperty(so, "oreVeinTile", "Assets/Tiles/Objects/Tile_OreVein.asset");
             AssignTileProperty(so, "herbTile", "Assets/Tiles/Objects/Tile_Herb.asset");
+            // FIX: Добавлены подтипы деревьев и ягодный куст — без них TileMapController.treeOakTile и т.д. = null.
+            // Редактировано: 2026-04-17 11:31 UTC
+            AssignTileProperty(so, "treeOakTile", "Assets/Tiles/Objects/Tile_TreeOak.asset");
+            AssignTileProperty(so, "treePineTile", "Assets/Tiles/Objects/Tile_TreePine.asset");
+            AssignTileProperty(so, "treeBirchTile", "Assets/Tiles/Objects/Tile_TreeBirch.asset");
+            AssignTileProperty(so, "bushBerryTile", "Assets/Tiles/Objects/Tile_BushBerry.asset");
 
             so.ApplyModifiedProperties();
             Debug.Log("[FullSceneBuilder] TileBase ссылки назначены в TileMapController");
