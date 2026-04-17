@@ -1064,3 +1064,28 @@ Stage Summary:
 - IsTagsLayersNeeded(): добавлена проверка ПОРЯДКА слоёв
 - EnsureSortingLayers(): добавлена полная перестановка слоёв через ClearArray + InsertArrayElementAtIndex
 - КОРНЕВАЯ ПРИЧИНА: при повторной генерации сцены (сцена уже существует, слои уже созданы) порядок слоёв не проверялся и не исправлялся
+
+---
+Task ID: start-prompt-update
+Agent: Main Agent
+Task: Обновление START_PROMPT.md — закрепление двухскриптовой архитектуры сцены (FullSceneBuilder FROZEN + ScenePatchBuilder ACTIVE)
+
+Work Log:
+- 2026-04-17 13:42 UTC: Прочитан START_PROMPT.md — пустой КОНТЕКСТ ПРОЕКТА, нет информации о замороженных скриптах
+- Прочитан FullSceneBuilder.cs (2517 строк, версия 1.2 FROZEN) — подтверждён статус заморозки
+- Прочитан ScenePatchBuilder.cs (1019 строк, версия 1.0) — 8 патчей (PATCH-001..PATCH-008)
+- Обновлён START_PROMPT.md:
+  - Заполнен КОНТЕКСТ ПРОЕКТА (жанр, движок, карта, шейдер, системы)
+  - Добавлена секция 🧊 ЗАМОРОЖЕННЫЕ СКРИПТЫ — ДВУХСКРИПТОВАЯ АРХИТЕКТУРА СЦЕНЫ
+  - Описан FullSceneBuilder: 15 фаз, FROZEN, причина заморозки, исключение для критических багфиксов
+  - Описан ScenePatchBuilder: архитектура патча (IsApplied/Apply/Validate), текущий реестр 8 патчей
+  - Добавлена инструкция как добавить новый патч
+  - Добавлено ⛔ ПРАВИЛО: НЕ РЕДАКТИРОВАТЬ FullSceneBuilder.cs
+  - Обновлён ЗАПРЕЩЕНО: добавлена строка о запрете редактирования FullSceneBuilder
+  - Обновлена дата редактирования: 2026-04-17 13:42:54 UTC
+
+Stage Summary:
+- START_PROMPT.md обновлён: добавлена полная документация двухскриптовой архитектуры
+- Следующий агент будет видеть: FullSceneBuilder = ЗАМОРОЖЕН, ScenePatchBuilder = АКТИВНЫЙ
+- 1 файл изменён: START_PROMPT.md
+- Git commit + push pending
