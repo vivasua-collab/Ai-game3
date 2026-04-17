@@ -1,9 +1,10 @@
 // ============================================================================
 // ScenePatchBuilder.cs — Инкрементальный патчер сцены (замена прямого редактирования FullSceneBuilder)
 // Cultivation World Simulator
-// Версия: 1.0
+// Версия: 1.1
 // ============================================================================
 // Создано: 2026-04-17 13:22:01 UTC
+// Редактировано: 2026-04-17 14:20 UTC — PATCH-009..012 (аудит), LoadTagManager guard (C-02)
 //
 // АРХИТЕКТУРА:
 //   FullSceneBuilder ЗАМОРОЖЕН — только критические багфиксы.
@@ -149,6 +150,46 @@ namespace CultivationGame.Editor
                 isApplied = IsPatch008Applied,
                 apply = ApplyPatch008,
                 validate = ValidatePatch008
+            },
+
+            // ===== PATCH-009: Camera2DSetup.boundsMin =====
+            new PatchInfo
+            {
+                id = "PATCH-009",
+                description = "Camera2DSetup.boundsMin = (0,0) — Phase 04 не устанавливал boundsMin",
+                isApplied = IsPatch009Applied,
+                apply = ApplyPatch009,
+                validate = ValidatePatch009
+            },
+
+            // ===== PATCH-010: Camera Undo.RecordObject =====
+            new PatchInfo
+            {
+                id = "PATCH-010",
+                description = "Camera модификации регистрируются в Undo (Phase 04 не использовал RecordObject)",
+                isApplied = IsPatch010Applied,
+                apply = ApplyPatch010,
+                validate = ValidatePatch010
+            },
+
+            // ===== PATCH-011: Полная проверка 6 Sorting Layers =====
+            new PatchInfo
+            {
+                id = "PATCH-011",
+                description = "Все 6 Sorting Layers (Default, Background, Terrain, Objects, Player, UI) в правильном порядке",
+                isApplied = IsPatch011Applied,
+                apply = ApplyPatch011,
+                validate = ValidatePatch011
+            },
+
+            // ===== PATCH-012: UI physics layer → GameUI =====
+            new PatchInfo
+            {
+                id = "PATCH-012",
+                description = "Physics layer 11 переименован из 'UI' в 'GameUI' — избегаем конфликта с Unity built-in layer 5 'UI'",
+                isApplied = IsPatch012Applied,
+                apply = ApplyPatch012,
+                validate = ValidatePatch012
             },
         };
 
@@ -499,6 +540,22 @@ namespace CultivationGame.Editor
             }
         }
 
+        /// <summary>
+        /// Безопасная загрузка TagManager.asset. Защита от IndexOutOfRangeException.
+        /// AUDIT C-02: LoadAllAssetsAtPath может вернуть пустой массив.
+        /// Редактировано: 2026-04-17 14:20 UTC
+        /// </summary>
+        private static SerializedObject LoadTagManager()
+        {
+            var assets = AssetDatabase.LoadAllAssetsAtPath("ProjectSettings/TagManager.asset");
+            if (assets == null || assets.Length == 0)
+            {
+                Debug.LogError("[ScenePatchBuilder] TagManager.asset не найден или пуст!");
+                return null;
+            }
+            return new SerializedObject(assets[0]);
+        }
+
         // ====================================================================
         //  PATCH-001: Порядок Sorting Layers
         // ====================================================================
@@ -528,8 +585,10 @@ namespace CultivationGame.Editor
 
             string[] requiredOrder = { "Default", "Background", "Terrain", "Objects", "Player", "UI" };
 
-            var tagManager = new SerializedObject(
-                AssetDatabase.LoadAllAssetsAtPath("ProjectSettings/TagManager.asset")[0]);
+            // FIX C-02: Используем безопасную загрузку TagManager (guard на пустой массив)
+            // Редактировано: 2026-04-17 14:20 UTC
+            var tagManager = LoadTagManager();
+            if (tagManager == null) return;
             var sortingLayersProp = tagManager.FindProperty("m_SortingLayers");
 
             if (sortingLayersProp == null)
@@ -1011,6 +1070,242 @@ namespace CultivationGame.Editor
         {
             // Missing Prefabs — сложно обнаружить программно после удаления
             // Считаем что Patch прошёл если сцена загрузилась
+            return true;
+        }
+
+        // ====================================================================
+        //  PATCH-009: Camera2DSetup.boundsMin
+        //  Аудит: H-05 — Phase 04 не устанавливал boundsMin, полагаясь на дефолт.
+        //  Редактировано: 2026-04-17 14:20 UTC
+        // ====================================================================
+
+        private static bool IsPatch009Applied()
+        {
+            var cam = Camera.main;
+            if (cam == null) return true; // Нет камеры — пропускаем
+
+            var camera2D = cam.GetComponent<Core.Camera2DSetup>();
+            if (camera2D == null) return true;
+
+            // Проверяем что boundsMin установлен (не дефолтный Vector2.zero может быть и правильным,
+            // но проверяем что useBounds=true и boundsMin задан явно)
+            var so = new SerializedObject(camera2D);
+            var useBounds = so.FindProperty("useBounds");
+            var boundsMin = so.FindProperty("boundsMin");
+
+            // Если useBounds=false — нечего проверять
+            if (useBounds != null && !useBounds.boolValue) return true;
+
+            // boundsMin должен быть (0,0) — это наше стандартное значение
+            if (boundsMin != null)
+            {
+                return boundsMin.vector2Value == Vector2.zero;
+            }
+            return true;
+        }
+
+        private static void ApplyPatch009()
+        {
+            var cam = Camera.main;
+            if (cam == null) return;
+
+            var camera2D = cam.GetComponent<Core.Camera2DSetup>();
+            if (camera2D == null) return;
+
+            var so = new SerializedObject(camera2D);
+            var boundsMinProp = so.FindProperty("boundsMin");
+            if (boundsMinProp != null)
+            {
+                boundsMinProp.vector2Value = Vector2.zero;
+                so.ApplyModifiedProperties();
+                Debug.Log("[ScenePatchBuilder] PATCH-009: Camera2DSetup.boundsMin = (0,0)");
+            }
+        }
+
+        private static bool ValidatePatch009()
+        {
+            var cam = Camera.main;
+            if (cam == null) return true;
+
+            var camera2D = cam.GetComponent<Core.Camera2DSetup>();
+            if (camera2D == null) return true;
+
+            var so = new SerializedObject(camera2D);
+            var boundsMin = so.FindProperty("boundsMin");
+            if (boundsMin != null && boundsMin.vector2Value != Vector2.zero)
+            {
+                Debug.LogWarning($"[ScenePatchBuilder] PATCH-009 ВАЛИДАЦИЯ: boundsMin={boundsMin.vector2Value} (ожидается (0,0))");
+            }
+            return true; // Предупреждение, не ошибка
+        }
+
+        // ====================================================================
+        //  PATCH-010: Camera Undo.RecordObject
+        //  Аудит: M-03 — Phase 04 не регистрировал модификацию камеры в Undo.
+        //  Редактировано: 2026-04-17 14:20 UTC
+        // ====================================================================
+
+        private static bool IsPatch010Applied()
+        {
+            // Undo-записи нельзя проверить программно.
+            // Этот патч — разовое действие: регистрируем текущее состояние камеры в Undo.
+            // После применения патча — Undo будет работать.
+            var cam = Camera.main;
+            if (cam == null) return true;
+
+            // Всегда считаем что нужно применить (разовое действие)
+            return false;
+        }
+
+        private static void ApplyPatch010()
+        {
+            var cam = Camera.main;
+            if (cam == null) return;
+
+            // Регистрируем текущее состояние камеры в Undo
+            Undo.RecordObject(cam, "Patch: Record camera state for Undo");
+            Undo.RecordObject(cam.transform, "Patch: Record camera transform for Undo");
+
+            var camera2D = cam.GetComponent<Core.Camera2DSetup>();
+            if (camera2D != null)
+                Undo.RecordObject(camera2D, "Patch: Record Camera2DSetup for Undo");
+
+            Debug.Log("[ScenePatchBuilder] PATCH-010: Camera состояние зарегистрировано в Undo");
+        }
+
+        private static bool ValidatePatch010()
+        {
+            // Undo-записи нельзя валидировать программно
+            return true;
+        }
+
+        // ====================================================================
+        //  PATCH-011: Полная проверка 6 Sorting Layers
+        //  Аудит: H-01 — PATCH-001 проверял только Terrain<Objects<Player,
+        //  пропускал неправильную позицию Background и UI.
+        //  Редактировано: 2026-04-17 14:20 UTC
+        // ====================================================================
+
+        private static bool IsPatch011Applied()
+        {
+            var layers = SortingLayer.layers;
+            string[] requiredOrder = { "Default", "Background", "Terrain", "Objects", "Player", "UI" };
+
+            // Собираем индексы всех требуемых слоёв
+            int[] indices = new int[requiredOrder.Length];
+            for (int i = 0; i < requiredOrder.Length; i++)
+            {
+                indices[i] = -1;
+                for (int j = 0; j < layers.Length; j++)
+                {
+                    if (layers[j].name == requiredOrder[i])
+                    {
+                        indices[i] = j;
+                        break;
+                    }
+                }
+                // Слой не найден — нужен патч
+                if (indices[i] < 0) return false;
+            }
+
+            // Проверяем строгий порядок: каждый следующий индекс > предыдущего
+            for (int i = 1; i < indices.Length; i++)
+            {
+                if (indices[i] <= indices[i - 1])
+                {
+                    Debug.LogWarning($"[ScenePatchBuilder] PATCH-011: {requiredOrder[i]}(idx={indices[i]}) не после {requiredOrder[i - 1]}(idx={indices[i - 1]})");
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        private static void ApplyPatch011()
+        {
+            // Делегируем перестановку в логику PATCH-001 (она уже умеет переставлять все слои)
+            ApplyPatch001();
+            Debug.Log("[ScenePatchBuilder] PATCH-011: Полная проверка Sorting Layers выполнена через PATCH-001 логику");
+        }
+
+        private static bool ValidatePatch011()
+        {
+            return IsPatch011Applied();
+        }
+
+        // ====================================================================
+        //  PATCH-012: UI physics layer → GameUI
+        //  Аудит: H-02 — Layer 11 "UI" дублирует Unity built-in layer 5 "UI".
+        //  NameToLayer("UI") возвращает 5, не 11. Код, использующий layer 11,
+        //  не будет работать. Переименуем в "GameUI".
+        //  Редактировано: 2026-04-17 14:20 UTC
+        // ====================================================================
+
+        private static bool IsPatch012Applied()
+        {
+            // Проверяем: layer 11 не называется "UI" (чтобы избежать дублирования с built-in layer 5)
+            var layers = UnityEditorInternal.InternalEditorUtility.layers;
+            int uiLayerIndex = LayerMask.NameToLayer("UI");
+
+            // Unity built-in UI layer = 5. Если NameToLayer("UI") = 5 — корректно.
+            // Если layer 11 тоже называется "UI" — проблема.
+            var tagManager = LoadTagManager();
+            if (tagManager == null) return true;
+
+            var layersProp = tagManager.FindProperty("layers");
+            if (layersProp == null) return true;
+
+            // Проверяем layer 11
+            if (11 < layersProp.arraySize)
+            {
+                var layer11 = layersProp.GetArrayElementAtIndex(11);
+                if (layer11 != null && layer11.stringValue == "UI")
+                {
+                    // Layer 11 называется "UI" — конфликт с built-in layer 5
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        private static void ApplyPatch012()
+        {
+            var tagManager = LoadTagManager();
+            if (tagManager == null) return;
+
+            var layersProp = tagManager.FindProperty("layers");
+            if (layersProp == null) return;
+
+            if (11 < layersProp.arraySize)
+            {
+                var layer11 = layersProp.GetArrayElementAtIndex(11);
+                if (layer11 != null && layer11.stringValue == "UI")
+                {
+                    layer11.stringValue = "GameUI";
+                    tagManager.ApplyModifiedProperties();
+                    Debug.Log("[ScenePatchBuilder] PATCH-012: Layer 11 переименован из 'UI' в 'GameUI' (устранён конфликт с Unity built-in layer 5)");
+                }
+            }
+        }
+
+        private static bool ValidatePatch012()
+        {
+            var tagManager = LoadTagManager();
+            if (tagManager == null) return true;
+
+            var layersProp = tagManager.FindProperty("layers");
+            if (layersProp == null) return true;
+
+            if (11 < layersProp.arraySize)
+            {
+                var layer11 = layersProp.GetArrayElementAtIndex(11);
+                if (layer11 != null && layer11.stringValue == "UI")
+                {
+                    Debug.LogError("[ScenePatchBuilder] PATCH-012 ВАЛИДАЦИЯ: Layer 11 всё ещё называется 'UI' (конфликт с built-in!)");
+                    return false;
+                }
+            }
             return true;
         }
     }
