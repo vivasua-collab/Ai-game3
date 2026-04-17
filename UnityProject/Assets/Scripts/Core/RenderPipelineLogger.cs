@@ -2,6 +2,7 @@
 // RenderPipelineLogger.cs — Диагностика рендер-пайплайна
 // Cultivation World Simulator
 // Создано: 2026-04-16 11:37 UTC
+// Редактировано: 2026-04-17 12:50 UTC — FIX-SORT: Добавлен LogAllRendererState() + диагностика порядка слоёв
 // ============================================================================
 // FIX-V2-6: Статический класс для логирования состояния каждого этапа
 // рендер-пайплайна. Выводит в Unity Console, видно пользователю.
@@ -19,6 +20,7 @@ namespace CultivationGame.Core
     /// Логирует состояние Sorting Layers, Tilemap, SpriteRenderer, Camera, Light2D.
     /// Вызывается из ключевых точек: FullSceneBuilder, TileMapController, PlayerVisual и т.д.
     /// Создано: 2026-04-16 11:37 UTC
+    /// Редактировано: 2026-04-17 12:50 UTC
     /// </summary>
     public static class RenderPipelineLogger
     {
@@ -336,6 +338,103 @@ namespace CultivationGame.Core
             Debug.Log($"{PREFIX} ========================================");
             Debug.Log($"{PREFIX} === ДИАГНОСТИКА ЗАВЕРШЕНА ===");
             Debug.Log($"{PREFIX} ========================================");
+        }
+
+        // ====================================================================
+        //  L9: ALL RENDERER STATE (FIX-SORT)
+        // ====================================================================
+
+        /// <summary>
+        /// FIX-SORT: Логирует ВСЕ рендереры на сцене (TilemapRenderer + SpriteRenderer)
+        /// с их sorting-параметрами. Позволяет быстро найти рендереры на "Default" слое
+        /// или с неправильным порядком.
+        /// Вызывается из TileMapController.Start() после FixAllTilemapRenderers().
+        /// Редактировано: 2026-04-17 12:50 UTC
+        /// </summary>
+        public static void LogAllRendererState()
+        {
+            Debug.Log($"{PREFIX}-L9 ====== ALL RENDERER STATE ======");
+
+            // Проверяем порядок Sorting Layers
+            var layers = SortingLayer.layers;
+            int terrainIdx = -1, objectsIdx = -1, playerIdx = -1;
+            for (int i = 0; i < layers.Length; i++)
+            {
+                if (layers[i].name == "Terrain") terrainIdx = i;
+                if (layers[i].name == "Objects") objectsIdx = i;
+                if (layers[i].name == "Player") playerIdx = i;
+            }
+
+            bool orderCorrect = terrainIdx >= 0 && objectsIdx >= 0 && playerIdx >= 0 &&
+                terrainIdx < objectsIdx && objectsIdx < playerIdx;
+
+            Debug.Log($"{PREFIX}-L9 Порядок слоёв: Terrain={terrainIdx}, Objects={objectsIdx}, Player={playerIdx}");
+            Debug.Log($"{PREFIX}-L9 {(orderCorrect ? "✅" : "❌")} Порядок {(!orderCorrect ? "НЕПРАВИЛЬНЫЙ — terrain будет поверх player!" : "корректный")}");
+
+            // TilemapRenderer'ы
+            var tilemapRenderers = Object.FindObjectsByType<TilemapRenderer>(FindObjectsSortMode.None);
+            Debug.Log($"{PREFIX}-L9 TilemapRenderer'ы: {tilemapRenderers.Length}");
+            foreach (var r in tilemapRenderers)
+            {
+                bool onDefault = r.sortingLayerName == "Default";
+                Debug.Log($"{PREFIX}-L9   {(onDefault ? "❌" : "✅")} {r.name}: " +
+                    $"layer=\"{r.sortingLayerName}\"(id={r.sortingLayerID}), " +
+                    $"order={r.sortingOrder}" +
+                    (onDefault ? " — НА DEFAULT СЛОЕ! Будет поверх Player!" : ""));
+            }
+
+            // SpriteRenderer'ы — подсчёт по слоям
+            var spriteRenderers = Object.FindObjectsByType<SpriteRenderer>(FindObjectsSortMode.None);
+            int onDefaultCount = 0;
+            int onPlayerCount = 0;
+            int onObjectsCount = 0;
+            int onTerrainCount = 0;
+            int onOtherCount = 0;
+
+            foreach (var sr in spriteRenderers)
+            {
+                if (sr.sortingLayerName == "Default") onDefaultCount++;
+                else if (sr.sortingLayerName == "Player") onPlayerCount++;
+                else if (sr.sortingLayerName == "Objects") onObjectsCount++;
+                else if (sr.sortingLayerName == "Terrain") onTerrainCount++;
+                else onOtherCount++;
+            }
+
+            Debug.Log($"{PREFIX}-L9 SpriteRenderer'ы: {spriteRenderers.Length} всего");
+            Debug.Log($"{PREFIX}-L9   Default={onDefaultCount}, Terrain={onTerrainCount}, " +
+                $"Objects={onObjectsCount}, Player={onPlayerCount}, Прочие={onOtherCount}");
+
+            if (onDefaultCount > 0)
+            {
+                Debug.LogWarning($"{PREFIX}-L9 ❌ {onDefaultCount} SpriteRenderer'ов на DEFAULT слое! " +
+                    "Они будут рендериться поверх Player и Objects!");
+                // Логируем первые 5 проблемных
+                int logged = 0;
+                foreach (var sr in spriteRenderers)
+                {
+                    if (sr.sortingLayerName == "Default" && logged < 5)
+                    {
+                        Debug.LogWarning($"{PREFIX}-L9   ❌ \"{sr.gameObject.name}\": order={sr.sortingOrder}");
+                        logged++;
+                    }
+                }
+            }
+
+            // Логируем Player sprite отдельно
+            var playerObj = GameObject.Find("Player");
+            if (playerObj != null)
+            {
+                var playerSR = playerObj.GetComponentInChildren<SpriteRenderer>();
+                if (playerSR != null)
+                {
+                    Debug.Log($"{PREFIX}-L9 Player: layer=\"{playerSR.sortingLayerName}\"(id={playerSR.sortingLayerID}), " +
+                        $"order={playerSR.sortingOrder}, visible={playerSR.isVisible}");
+                }
+            }
+            else
+            {
+                Debug.LogWarning($"{PREFIX}-L9 ❌ GameObject \"Player\" НЕ НАЙДЕН на сцене!");
+            }
         }
     }
 }

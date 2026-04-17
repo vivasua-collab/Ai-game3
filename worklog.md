@@ -663,6 +663,34 @@ Stage Summary:
 - Документация синхронизирована с кодом после миграции Qi int→long
 
 ---
+Task ID: fix-sort-04-17
+Agent: Main Agent
+Task: FIX-SORT — Исправление порядка Sorting Layers (terrain поверх player)
+
+Work Log:
+- 2026-04-17 12:38 UTC: Прочитаны START_PROMPT.md, UNITY_DOCS_LINKS.md, worklog.md
+- Прочитаны текущие версии 3 файлов: PlayerVisual.cs, TileMapController.cs, RenderPipelineLogger.cs
+- Проведён полный аудит sortingLayerName/sortingOrder во всём проекте через Explore-агента
+- ОБНАРУЖЕНЫ корневые причины:
+  1. EnsureSortingLayersExist() создаёт слои, но НЕ проверяет/НЕ исправляет их ПОРЯДОК
+  2. FixTilemapSortingLayers() работает только с 3 [SerializeField] ссылками — другие TilemapRenderer на "Default"
+  3. PlayerVisual.EnsureCorrectSortingLayer() проверяет существование, но НЕ порядок слоёв
+- TileMapController.cs: Добавлен EnsureSortingLayerOrder() — проверяет и перестраивает порядок слоёв через TagManager
+- TileMapController.cs: Добавлен FixAllTilemapRenderers() — поиск ВСЕХ TilemapRenderer на сцене по типу
+- TileMapController.cs: Добавлен DetermineSortingLayerForRenderer() — определяет слой по имени GO
+- PlayerVisual.cs: Переписан EnsureCorrectSortingLayer() — проверяет ПОРЯДОК слоёв, fallback на "Objects" order=100
+- RenderPipelineLogger.cs: Добавлен LogAllRendererState() (L9) — полная диагностика всех рендереров
+- 2026-04-17 12:50 UTC: Создан docs/SORTING_LAYERS.md — полная документация порядка слоёв
+- 2026-04-17 12:50 UTC: Обновлён docs/!LISTING.md — версия 2.5, +4 документа
+- 2026-04-17 12:50 UTC: Создан чекпоинт checkpoints/04_17_sorting_layers_fix.md
+
+Stage Summary:
+- 3 C# файла изменены (TileMapController, PlayerVisual, RenderPipelineLogger)
+- 2 docs файла изменены (SORTING_LAYERS.md создан, !LISTING.md обновлён)
+- Ключевой фикс: EnsureSortingLayerOrder() + FixAllTilemapRenderers() + порядок слоёв в PlayerVisual
+- Известные проблемы: HarvestableSpawner сортирует по типу, не по Y-позиции
+
+---
 Task ID: render-pipeline-audit-v4
 Agent: Main Agent
 Task: Аудит и план фиксов рендер-пайплайна v4 — закрытие аудита 04-14, создание итогового плана

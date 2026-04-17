@@ -1,7 +1,7 @@
 # 📂 Unity Documentation Listing
 
-**Версия:** 2.4  
-**Дата:** 2026-04-09  
+**Версия:** 2.5  
+**Дата:** 2026-04-17  
 **Проект:** Cultivation World Simulator → Unity Migration
 
 ---
@@ -78,11 +78,25 @@
 | [LORE_SYSTEM.md](./LORE_SYSTEM.md) | Лор, истории, миростроение | ~2000 |
 | [ENTITY_TYPES.md](./ENTITY_TYPES.md) | Иерархия типов сущностей | ~2000 |
 
+### Рендеринг и графика
+
+| Файл | Описание | Токенов |
+|------|----------|---------|
+| [SORTING_LAYERS.md](./SORTING_LAYERS.md) | Порядок Sorting Layers, что где рендерится, диагностика | ~3500 |
+| [SPRITE_INDEX.md](./SPRITE_INDEX.md) | Индекс спрайтов проекта: размеры, PPU, формат | ~2000 |
+
 ### Специальные системы
 
 | Файл | Описание | Токенов |
 |------|----------|---------|
 | [SAVE_SYSTEM.md](./SAVE_SYSTEM.md) | Сохранения, JSON, сериализация | ~2500 |
+| [WORLD_SAVE_SYSTEM.md](./WORLD_SAVE_SYSTEM.md) | Сохранение мира, chunk-based persistence | ~2000 |
+
+### Установка и настройка
+
+| Файл | Описание | Токенов |
+|------|----------|---------|
+| [SETUP_GUIDE.md](./SETUP_GUIDE.md) | Руководство по установке и настройке проекта | ~2000 |
 
 ### Развитие персонажа
 
@@ -105,8 +119,8 @@
 
 | Метрика | Значение |
 |---------|----------|
-| Основных документов | 40 |
-| Общий объём | ~100,000 токенов |
+| Основных документов | 44 |
+| Общий объём | ~110,000 токенов |
 
 ---
 
@@ -136,6 +150,7 @@ ARCHITECTURE.md (корневой документ)
     │   ├── WORLD_MAP_SYSTEM.md
     │   ├── LOCATION_MAP_SYSTEM.md
     │   ├── TILE_SYSTEM.md
+    │   ├── SORTING_LAYERS.md
     │   ├── TRANSITION_SYSTEM.md
     │   ├── TIME_SYSTEM.md
     │   ├── FACTION_SYSTEM.md
@@ -200,6 +215,6 @@ ARCHITECTURE.md (корневой документ)
 
 ---
 
-*Документ обновлён: 2026-04-09*  
-*Изменения: Реструктуризация — вынос asset_setup, examples, temp_docs, implementation_plans в корень*  
+*Документ обновлён: 2026-04-17*  
+*Изменения: Добавлены SORTING_LAYERS.md, SPRITE_INDEX.md, SETUP_GUIDE.md, WORLD_SAVE_SYSTEM.md*  
 *Проект: Cultivation World Simulator Unity Migration*
