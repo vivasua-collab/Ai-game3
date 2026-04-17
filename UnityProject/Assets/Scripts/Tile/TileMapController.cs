@@ -2,7 +2,7 @@
 // TileMapController.cs — Контроллер карты тайлов
 // Cultivation World Simulator
 // Создано: 2026-04-07 14:24:05 UTC
-// Редактировано: 2026-04-17 10:53 UTC — REVERT: PPU=32 для terrain и objects (рабочее значение 14 апреля). 64×64 PPU=32 Point = 2.0u = точно в ячейку.
+// Редактировано: 2026-04-17 11:44 UTC — Terrain ВСЕГДА процедурный (Sprite.Create), без PNG → нет белой сетки. Object-тайлы из PNG.
 // ============================================================================
 
 using System;
@@ -247,55 +247,32 @@ namespace CultivationGame.TileSystem
         /// </summary>
         private void EnsureTileAssets()
         {
-            // Terrain tile mappings: field → sprite name → passable flag
-            var terrainMappings = new (TileBase field, string spriteName, bool passable, TerrainType terrain)[]
-            {
-                (grassTile, "terrain_grass", true, TerrainType.Grass),
-                (dirtTile, "terrain_dirt", true, TerrainType.Dirt),
-                (stoneTile, "terrain_stone", true, TerrainType.Stone),
-                (waterShallowTile, "terrain_water_shallow", false, TerrainType.Water_Shallow),
-                (waterDeepTile, "terrain_water_deep", false, TerrainType.Water_Deep),
-                (sandTile, "terrain_sand", true, TerrainType.Sand),
-                (voidTile, "terrain_void", false, TerrainType.Void),
-                (snowTile, "terrain_snow", true, TerrainType.Snow),
-                (iceTile, "terrain_ice", false, TerrainType.Ice),
-                (lavaTile, "terrain_lava", false, TerrainType.Lava),
-            };
+            // ==================================================================
+            // TERRAIN: ВСЕГДА процедурные спрайты (Sprite.Create в рантайме).
+            // PNG-спрайты через Unity Import Pipeline вызывают белую сетку
+            // между тайлами (субпиксельные зазоры). Процедурные спрайты,
+            // созданные через Sprite.Create(), не проходят Import Pipeline
+            // и не имеют этой проблемы. Это рабочий подход из 14 апреля.
+            // Графическая полировка terrain — на следующем этапе.
+            // Редактировано: 2026-04-17 11:44 UTC
+            // ==================================================================
+            grassTile = ForceProceduralTerrainTile("terrain_grass", true, TerrainType.Grass);
+            dirtTile = ForceProceduralTerrainTile("terrain_dirt", true, TerrainType.Dirt);
+            stoneTile = ForceProceduralTerrainTile("terrain_stone", true, TerrainType.Stone);
+            waterShallowTile = ForceProceduralTerrainTile("terrain_water_shallow", false, TerrainType.Water_Shallow);
+            waterDeepTile = ForceProceduralTerrainTile("terrain_water_deep", false, TerrainType.Water_Deep);
+            sandTile = ForceProceduralTerrainTile("terrain_sand", true, TerrainType.Sand);
+            voidTile = ForceProceduralTerrainTile("terrain_void", false, TerrainType.Void);
+            snowTile = ForceProceduralTerrainTile("terrain_snow", true, TerrainType.Snow);
+            iceTile = ForceProceduralTerrainTile("terrain_ice", false, TerrainType.Ice);
+            lavaTile = ForceProceduralTerrainTile("terrain_lava", false, TerrainType.Lava);
 
-            // Object tile mappings
-            // FIX-R2: Добавлены подтипы деревьев и ягодный куст
+            // ==================================================================
+            // OBJECTS: Загрузка из PNG (объекты не имеют проблемы на стыках).
+            // Fallback на процедурные спрайты если PNG не найден.
             // Редактировано: 2026-04-16 08:03 UTC
-            var objectMappings = new (TileBase field, string spriteName, bool passable)[]
-            {
-                (treeTile, "obj_tree", false),
-                (treeOakTile, "obj_tree_oak", false),
-                (treePineTile, "obj_tree_pine", false),
-                (treeBirchTile, "obj_tree_birch", false),
-                (rockSmallTile, "obj_rock_small", false),
-                (rockMediumTile, "obj_rock_medium", false),
-                (bushTile, "obj_bush", true),
-                (bushBerryTile, "obj_bush_berry", true),
-                (chestTile, "obj_chest", true),
-                (oreVeinTile, "obj_ore_vein", false),
-                (herbTile, "obj_herb", true),
-            };
-
-            // Обработка terrain тайлов
-            grassTile = EnsureTile(grassTile, "terrain_grass", true, TerrainType.Grass);
-            dirtTile = EnsureTile(dirtTile, "terrain_dirt", true, TerrainType.Dirt);
-            stoneTile = EnsureTile(stoneTile, "terrain_stone", true, TerrainType.Stone);
-            waterShallowTile = EnsureTile(waterShallowTile, "terrain_water_shallow", false, TerrainType.Water_Shallow);
-            waterDeepTile = EnsureTile(waterDeepTile, "terrain_water_deep", false, TerrainType.Water_Deep);
-            sandTile = EnsureTile(sandTile, "terrain_sand", true, TerrainType.Sand);
-            voidTile = EnsureTile(voidTile, "terrain_void", false, TerrainType.Void);
-            snowTile = EnsureTile(snowTile, "terrain_snow", true, TerrainType.Snow);
-            iceTile = EnsureTile(iceTile, "terrain_ice", false, TerrainType.Ice);
-            lavaTile = EnsureTile(lavaTile, "terrain_lava", false, TerrainType.Lava);
-
-            // Обработка object тайлов
+            // ==================================================================
             treeTile = EnsureTile(treeTile, "obj_tree", false, TerrainType.Grass);
-            // FIX-R2: Подтипы деревьев — каждый вид имеет уникальный AI-спрайт
-            // Редактировано: 2026-04-16 08:03 UTC
             treeOakTile = EnsureTile(treeOakTile, "obj_tree_oak", false, TerrainType.Grass);
             treePineTile = EnsureTile(treePineTile, "obj_tree_pine", false, TerrainType.Grass);
             treeBirchTile = EnsureTile(treeBirchTile, "obj_tree_birch", false, TerrainType.Grass);
@@ -317,10 +294,39 @@ namespace CultivationGame.TileSystem
         }
 
         /// <summary>
+        /// ВСЕГДА создаёт terrain GameTile с процедурным спрайтом (Sprite.Create).
+        /// PNG-спрайты через Unity Import Pipeline вызывают белую сетку между
+        /// terrain-тайлами (субпиксельные зазоры на стыках). Sprite.Create()
+        /// обходит Import Pipeline → нет зазоров. Это рабочий подход 14 апреля.
+        /// Вызывается для terrain-тайлов в EnsureTileAssets() вместо EnsureTile().
+        /// Редактировано: 2026-04-17 11:44 UTC
+        /// </summary>
+        private TileBase ForceProceduralTerrainTile(string spriteName, bool passable, TerrainType terrain)
+        {
+            Sprite sprite = CreateProceduralTileSprite(spriteName, terrain);
+            if (sprite == null)
+            {
+                Debug.LogWarning($"[TileMapController] Не удалось создать процедурный terrain-тайл: {spriteName}");
+                return null;
+            }
+
+            var tile = ScriptableObject.CreateInstance<GameTile>();
+            tile.sprite = sprite;
+            tile.color = Color.white;
+            tile.terrainType = terrain;
+            tile.isPassable = passable;
+            tile.moveCost = passable ? 1f : 0f;
+            tile.flags = passable ? GameTileFlags.Passable : GameTileFlags.None;
+            Debug.Log($"[TileMapController] Процедурный terrain-тайл: {spriteName} (Sprite.Create, passable={passable})");
+            return tile;
+        }
+
+        /// <summary>
         /// Создать GameTile из спрайта, если поле не назначено.
-        /// Загружает спрайт из Assets/Sprites/Tiles_AI/ или Assets/Sprites/Tiles/.
+        /// Загружает спрайт из Assets/Sprites/Tiles/.
         /// Fallback: создаёт процедурный спрайт.
-        /// Редактировано: 2026-04-15 11:15:00 UTC
+        /// Используется ТОЛЬКО для object-тайлов (terrain — через ForceProceduralTerrainTile).
+        /// Редактировано: 2026-04-17 11:44 UTC
         /// </summary>
         private TileBase EnsureTile(TileBase currentTile, string spriteName, bool passable, TerrainType terrain)
         {
@@ -416,9 +422,12 @@ namespace CultivationGame.TileSystem
 #endif
 
         /// <summary>
-        /// Создать процедурный спрайт тайла (fallback при отсутствии файла).
-        /// Все спрайты: 64×64 PPU=32 Point → 2.0 юнита = точно в ячейку.
-        /// Редактировано: 2026-04-17 10:53 UTC — REVERT к рабочему значению 14 апреля.
+        /// Создать процедурный спрайт тайла (Sprite.Create — без PNG-файла).
+        /// ИСПОЛЬЗУЕТСЯ КАК ОСНОВНОЙ МЕТОД для terrain-тайлов.
+        /// PNG-спрайты через Import Pipeline вызывают белую сетку —
+        /// Sprite.Create() обходит pipeline → нет зазоров.
+        /// Для terrain: 64×64 PPU=32 Point → 2.0 юнита = точно в ячейку.
+        /// Редактировано: 2026-04-17 11:44 UTC — terrain-спрайты ВСЕГДА процедурные.
         /// </summary>
         private Sprite CreateProceduralTileSprite(string spriteName, TerrainType terrain)
         {
