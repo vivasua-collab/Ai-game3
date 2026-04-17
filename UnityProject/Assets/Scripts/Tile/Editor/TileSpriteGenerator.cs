@@ -3,12 +3,8 @@
 // Cultivation World Simulator
 // Версия: 3.0
 // Создано: 2026-04-07 14:24:05 UTC
-// Редактировано: 2026-04-17 10:53 UTC — REVERT к рабочему состоянию 14 апреля:
-//   ТОЛЬКО процедурные спрайты (без AI пайплайна).
-//   Terrain: 64×64 PPU=32 Point → 64/32 = 2.0 юнита = ТОЧНО в ячейку Grid(2,2,1).
-//   Objects: 64×64 PPU=32 Point → 2.0 юнита = размер тайла.
-//   При PPU=32 размер спрайта ровно = размер ячейки → нет белой сетки.
-//   AI-спрайты УБРАНЫ — графическая полировка на следующих этапах.
+// Редактировано: 2026-04-17 11:12 UTC — добавлены depleted-спрайты для HarvestableSpawner
+//   (obj_stump, obj_rock_depleted, obj_ore_depleted, obj_bush_depleted).
 // ============================================================================
 
 #if UNITY_EDITOR
@@ -103,6 +99,15 @@ namespace CultivationGame.TileSystem.Editor
             GenerateObjectSprite("obj_chest", new Color(0.6f, 0.4f, 0.2f), ObjectShape.Chest);
             GenerateObjectSprite("obj_ore_vein", new Color(0.7f, 0.5f, 0.2f), ObjectShape.OreVein);
             GenerateObjectSprite("obj_herb", new Color(0.2f, 0.6f, 0.3f), ObjectShape.Herb);
+
+            // Depleted-спрайты — для HarvestableSpawner (исчерпанное состояние объектов)
+            // Без этих спрайтов HarvestableSpawner.LoadDepletedSprite() возвращает null →
+            // при исчерпании объекта спрайт не меняется (визуальный баг).
+            // Редактировано: 2026-04-17 11:12 UTC
+            GenerateObjectSprite("obj_stump", new Color(0.4f, 0.25f, 0.15f), ObjectShape.Stump);
+            GenerateObjectSprite("obj_rock_depleted", new Color(0.35f, 0.35f, 0.35f), ObjectShape.SmallRock);
+            GenerateObjectSprite("obj_ore_depleted", new Color(0.4f, 0.4f, 0.4f), ObjectShape.OreVeinDepleted);
+            GenerateObjectSprite("obj_bush_depleted", new Color(0.3f, 0.35f, 0.2f), ObjectShape.BushDepleted);
         }
 
         private static void GenerateTerrainSprite(string name, Color color)
@@ -235,6 +240,34 @@ namespace CultivationGame.TileSystem.Editor
                     DrawEllipse(texture, cx, cy + 7, 5, 4, color * 1.15f);
                     DrawEllipse(texture, cx, cy + 14, 3, 3, new Color(0.9f, 0.9f, 0.3f));
                     break;
+
+                // Depleted-формы — для HarvestableSpawner (исчерпанное состояние).
+                // Редактировано: 2026-04-17 11:12 UTC
+                case ObjectShape.Stump:
+                    // Пень — короткий обрубок ствола
+                    DrawRect(texture, cx - 5, 8, 10, 12, new Color(0.4f, 0.25f, 0.15f));
+                    // Верхний срез (светлее)
+                    DrawRect(texture, cx - 5, 18, 10, 3, new Color(0.55f, 0.35f, 0.2f));
+                    // Кольца на срезе
+                    DrawEllipse(texture, cx, 20, 3, 2, new Color(0.45f, 0.28f, 0.17f));
+                    break;
+
+                case ObjectShape.OreVeinDepleted:
+                    // Исчерпанная руда — камень без ярких вкраплений
+                    DrawEllipse(texture, cx, cy - 3, 10, 8, new Color(0.4f, 0.38f, 0.35f));
+                    // Тусклые остатки
+                    DrawEllipse(texture, cx - 3, cy - 2, 3, 2, new Color(0.5f, 0.45f, 0.35f));
+                    DrawEllipse(texture, cx + 3, cy - 4, 2, 2, new Color(0.48f, 0.42f, 0.33f));
+                    break;
+
+                case ObjectShape.BushDepleted:
+                    // Исчерпанный куст — сухие ветки без листвы
+                    DrawRect(texture, cx - 1, 10, 2, 15, new Color(0.35f, 0.25f, 0.15f));
+                    DrawRect(texture, cx - 6, 18, 2, 8, new Color(0.3f, 0.22f, 0.12f));
+                    DrawRect(texture, cx + 5, 20, 2, 6, new Color(0.3f, 0.22f, 0.12f));
+                    // Сухие остатки (тусклый цвет)
+                    DrawEllipse(texture, cx, cy + 2, 6, 4, color * 0.6f);
+                    break;
             }
 
             texture.Apply();
@@ -306,7 +339,10 @@ namespace CultivationGame.TileSystem.Editor
             Bush,
             Chest,
             OreVein,
-            Herb
+            Herb,
+            Stump,           // Пень (depleted дерево). Редактировано: 2026-04-17 11:12 UTC
+            OreVeinDepleted,  // Исчерпанная руда. Редактировано: 2026-04-17 11:12 UTC
+            BushDepleted      // Исчерпанный куст. Редактировано: 2026-04-17 11:12 UTC
         }
     }
 }

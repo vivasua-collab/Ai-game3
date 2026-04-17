@@ -4,7 +4,7 @@
 // Версия: 1.2
 // ============================================================================
 // Создано: 2026-04-13 08:00:00 UTC
-// Редактировано: 2026-04-17 10:53 UTC — REVERT: PPU=32 для terrain и objects (рабочее значение 14 апреля). Убран AI sprite pipeline.
+// Редактировано: 2026-04-17 11:12 UTC — FIX: HarvestableSpawner добавлен в Phase 08 + Phase 15 idempotent check. PPU=32 (14 апреля).
 //
 // АРХИТЕКТУРА:
 //   15 фаз, каждая идемпотентна (повторный запуск безопасен).
@@ -1275,6 +1275,16 @@ namespace CultivationGame.Editor
             dso.FindProperty("tileMapController").objectReferenceValue = controller;
             dso.ApplyModifiedProperties();
 
+            // HarvestableSpawner — спавнер harvestable-объектов как отдельных GameObject
+            // Раньше добавлялся ТОЛЬКО в Phase 15 условно — если Phase 08 уже создала
+            // TestLocationGameController, Phase 15 пропускала → HarvestableSpawner не создавался.
+            // Теперь добавляется сразу в Phase 08 — гарантирует наличие при полной пересборке.
+            // Редактировано: 2026-04-17 11:12 UTC
+            var harvestableSpawner = gameControllerObj.AddComponent<HarvestableSpawner>();
+            var hso = new SerializedObject(harvestableSpawner);
+            hso.FindProperty("tileMapController").objectReferenceValue = controller;
+            hso.ApplyModifiedProperties();
+
             Undo.RegisterCreatedObjectUndo(gridObj, "Create Tilemap System");
             // FIX-V2-6: Диагностика Tilemap
             // Редактировано: 2026-04-16 11:37 UTC
@@ -2302,6 +2312,8 @@ namespace CultivationGame.Editor
             }
 
             // --- Убедиться что TestLocationGameController назначен ---
+            // Редактировано: 2026-04-17 11:12 UTC — добавлена проверка HarvestableSpawner
+            // даже если TestLocationGameController уже существует (из Phase 08).
             var gameController = UnityEngine.Object.FindFirstObjectByType<TestLocationGameController>();
             if (gameController == null)
             {
@@ -2322,14 +2334,48 @@ namespace CultivationGame.Editor
                     dso.FindProperty("tileMapController").objectReferenceValue = controller;
                     dso.ApplyModifiedProperties();
 
-                    // Шаг 8: HarvestableSpawner — спавнер harvestable-объектов как GameObject
-                    // Редактировано: 2026-04-16
+                    // HarvestableSpawner
                     var hs = gcObj.AddComponent<HarvestableSpawner>();
                     var hso = new SerializedObject(hs);
                     hso.FindProperty("tileMapController").objectReferenceValue = controller;
                     hso.ApplyModifiedProperties();
 
                     Debug.Log("[FullSceneBuilder] GameController + DestructibleObjectController + HarvestableSpawner созданы");
+                }
+            }
+            else
+            {
+                // TestLocationGameController существует (создан Phase 08),
+                // но HarvestableSpawner мог НЕ добавиться в старых версиях Phase 08.
+                // Проверяем и добавляем если отсутствует.
+                // Редактировано: 2026-04-17 11:12 UTC
+                var existingHS = gameController.GetComponent<HarvestableSpawner>();
+                if (existingHS == null)
+                {
+                    var controller = UnityEngine.Object.FindFirstObjectByType<TileMapController>();
+                    if (controller != null)
+                    {
+                        var hs = gameController.gameObject.AddComponent<HarvestableSpawner>();
+                        var hso = new SerializedObject(hs);
+                        hso.FindProperty("tileMapController").objectReferenceValue = controller;
+                        hso.ApplyModifiedProperties();
+                        Debug.Log("[FullSceneBuilder] HarvestableSpawner добавлен к существующему GameController");
+                    }
+                }
+
+                // Также проверить DestructibleObjectController
+                var existingDC = gameController.GetComponent<DestructibleObjectController>();
+                if (existingDC == null)
+                {
+                    var controller = UnityEngine.Object.FindFirstObjectByType<TileMapController>();
+                    if (controller != null)
+                    {
+                        var dc = gameController.gameObject.AddComponent<DestructibleObjectController>();
+                        var dso = new SerializedObject(dc);
+                        dso.FindProperty("tileMapController").objectReferenceValue = controller;
+                        dso.ApplyModifiedProperties();
+                        Debug.Log("[FullSceneBuilder] DestructibleObjectController добавлен к существующему GameController");
+                    }
                 }
             }
 
