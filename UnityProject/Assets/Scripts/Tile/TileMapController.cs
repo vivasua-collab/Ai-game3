@@ -2,8 +2,7 @@
 // TileMapController.cs — Контроллер карты тайлов
 // Cultivation World Simulator
 // Создано: 2026-04-07 14:24:05 UTC
-// Редактировано: 2026-04-16 11:37 UTC — FIX-V2-3: terrain PPU=30 (64/30=2.133u, 6.7% bleed), FIX-V2-4: AssetDatabase.Refresh
-// Редактировано: 2026-04-15 17:31:49 UTC — FIX 2A: terrain 68×68 PPU=32 Bilinear для pixel bleed (устраняет белую сетку)
+// Редактировано: 2026-04-17 10:53 UTC — REVERT: PPU=32 для terrain и objects (рабочее значение 14 апреля). 64×64 PPU=32 Point = 2.0u = точно в ячейку.
 // ============================================================================
 
 using System;
@@ -385,18 +384,18 @@ namespace CultivationGame.TileSystem
 
 #if UNITY_EDITOR
         /// <summary>
-        /// FIX-V2-3: Убедиться, что terrain-спрайт импортирован с PPU=30.
-        /// 64/30=2.133u — 6.7% перекрытие, надёжно устраняет белые зазоры.
-        /// При PPU=31: 64/31=2.065u — только 1.6% перекрытия, недостаточно для Bilinear.
-        /// Objects PPU=160.
-        /// Редактировано: 2026-04-16 11:37 UTC
+        /// PPU=32 для ВСЕХ спрайтов — единое рабочее значение из 14 апреля.
+        /// 64/32 = 2.0 юнита = ТОЧНО в ячейку Grid(2,2,1) → нет зазоров.
+        /// Редактировано: 2026-04-17 10:53 UTC
         /// </summary>
         private void EnsureTileSpriteImportSettings(string assetPath, bool isObject)
         {
             var importer = UnityEditor.AssetImporter.GetAtPath(assetPath) as UnityEditor.TextureImporter;
             if (importer == null) return;
 
-            int targetPPU = isObject ? 160 : 30; // FIX-V2-3: PPU=30 (было 31). 64/30=2.133u (6.7% bleed)
+            // PPU=32 для terrain и objects — единое рабочее значение
+            // Редактировано: 2026-04-17 10:53 UTC
+            int targetPPU = 32;
             bool needsReimport = importer.textureType != UnityEditor.TextureImporterType.Sprite
                 || importer.spritePixelsPerUnit != targetPPU
                 || importer.alphaIsTransparency != true;
@@ -408,11 +407,8 @@ namespace CultivationGame.TileSystem
                 importer.alphaIsTransparency = true;
                 importer.spriteImportMode = UnityEditor.SpriteImportMode.Single;
                 importer.textureCompression = UnityEditor.TextureImporterCompression.Uncompressed;
-                importer.filterMode = isObject ? FilterMode.Point : FilterMode.Bilinear;
+                importer.filterMode = FilterMode.Point; // Point — чёткие края
                 UnityEditor.AssetDatabase.ImportAsset(assetPath, UnityEditor.ImportAssetOptions.ForceUpdate);
-                // FIX-V2-4: Refresh после ImportAsset — спрайт может ещё не обновиться в кэше
-                // при следующем LoadAssetAtPath. Refresh гарантирует актуальность.
-                // Редактировано: 2026-04-16 11:37 UTC
                 UnityEditor.AssetDatabase.Refresh(UnityEditor.ImportAssetOptions.ForceUpdate);
                 Debug.Log($"[TileMapController] Спрайт реимпортирован: {assetPath} → PPU={targetPPU}");
             }
@@ -421,25 +417,22 @@ namespace CultivationGame.TileSystem
 
         /// <summary>
         /// Создать процедурный спрайт тайла (fallback при отсутствии файла).
-        /// FIX 2A: Terrain 68×68 PPU=32 Bilinear → 2.125 юнита — pixel bleed устраняет белую сетку.
-        /// Objects: 64×64 PPU=160 → 0.4 юнита.
-        /// Редактировано: 2026-04-15 17:31:49 UTC
+        /// Все спрайты: 64×64 PPU=32 Point → 2.0 юнита = точно в ячейку.
+        /// Редактировано: 2026-04-17 10:53 UTC — REVERT к рабочему значению 14 апреля.
         /// </summary>
         private Sprite CreateProceduralTileSprite(string spriteName, TerrainType terrain)
         {
             bool isObject = spriteName.StartsWith("obj_");
 
-            // Terrain: 68×68, PPU=30 → 68/30=2.267u (pixel bleed устраняет белую сетку)
-            // Objects: 64×64, PPU=160 → 0.4 юнита (в 5 раз меньше ячейки)
-            // FIX-V2-3: PPU=30 вместо 31 для terrain — 64/30=2.133u (6.7% перекрытие).
-            // При PPU=31: 64/31=2.065u — только 1.6% перекрытия, недостаточно.
-            // Процедурные 68×68 при PPU=30 = 68/30=2.267u — тоже с bleed, без зазоров.
-            // Редактировано: 2026-04-16 11:37 UTC
-            int texSize = isObject ? 64 : 68;
-            int ppu = isObject ? 160 : 30;
+            // PPU=32 для terrain и objects — единое рабочее значение из 14 апреля.
+            // 64×64 при PPU=32 → 64/32 = 2.0 юнита = ТОЧНО в ячейку Grid(2,2,1).
+            // При PPU=32 нет зазоров между тайлами (проверено 14 апреля).
+            // Редактировано: 2026-04-17 10:53 UTC
+            int texSize = 64;
+            int ppu = 32;
 
             Texture2D texture = new Texture2D(texSize, texSize, TextureFormat.RGBA32, false);
-            texture.filterMode = isObject ? FilterMode.Point : FilterMode.Bilinear; // FIX 2A: Bilinear для terrain
+            texture.filterMode = FilterMode.Point; // Point — чёткие края
             texture.wrapMode = TextureWrapMode.Clamp;
 
             Color color = GetTerrainColor(terrain);
@@ -508,8 +501,8 @@ namespace CultivationGame.TileSystem
 
             texture.Apply();
 
-            // Terrain: полный rect (0,0,68,68) при PPU=32 → 2.125u (перекрытие ячейки 2.0u)
-            // Objects: полный rect (0,0,64,64) при PPU=160 → 0.4u (в 5 раз меньше ячейки)
+            // Все спрайты: rect (0,0,64,64) при PPU=32 → 2.0u = точно в ячейку Grid(2,2,1)
+            // Редактировано: 2026-04-17 10:53 UTC
             return Sprite.Create(texture, new Rect(0, 0, texSize, texSize), new Vector2(0.5f, 0.5f), ppu);
         }
 

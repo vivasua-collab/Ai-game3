@@ -3,7 +3,7 @@
 // Cultivation World Simulator
 // Версия: 1.1
 // Создано: 2026-04-16
-// Редактировано: 2026-04-16 11:37 UTC — FIX-V2-3: terrain PPU=30 (64/30=2.133u, 6.7% bleed), FIX-V2-4: Refresh
+// Редактировано: 2026-04-17 10:53 UTC — REVERT: PPU=32 для terrain и objects (рабочее значение 14 апреля)
 // Чекпоинт: 04_15_harvest_system_plan.md v3 §6
 // ============================================================================
 //
@@ -389,19 +389,18 @@ namespace CultivationGame.TileSystem
 
 #if UNITY_EDITOR
         /// <summary>
-        /// СРЕД-1 FIX: Убедиться, что спрайт импортирован с правильными настройками.
-        /// Без .meta в Git Unity использует дефолтные: TextureType=Default (НЕ Sprite), PPU=100.
-        /// LoadAssetAtPath<Sprite>() возвращает null при TextureType≠Sprite.
-        /// FIX-V2-3: Terrain PPU=30 (64/30=2.133u — 6.7% pixel bleed). Objects PPU=160.
-        /// Редактировано: 2026-04-16 11:37 UTC
+        /// PPU=32 для ВСЕХ спрайтов — единое рабочее значение из 14 апреля.
+        /// 64/32 = 2.0 юнита = ТОЧНО в ячейку Grid(2,2,1) → нет зазоров.
+        /// Редактировано: 2026-04-17 10:53 UTC
         /// </summary>
         private void EnsureSpriteImportSettings(string assetPath, bool isObject)
         {
             var importer = UnityEditor.AssetImporter.GetAtPath(assetPath) as UnityEditor.TextureImporter;
             if (importer == null) return;
 
-            // FIX-V2-3: Terrain PPU=30 (64/30=2.133u — 6.7% pixel bleed). Objects PPU=160.
-            int targetPPU = isObject ? 160 : 30;
+            // PPU=32 для terrain и objects — единое рабочее значение
+            // Редактировано: 2026-04-17 10:53 UTC
+            int targetPPU = 32;
             bool needsReimport = importer.textureType != UnityEditor.TextureImporterType.Sprite
                 || importer.spritePixelsPerUnit != targetPPU
                 || importer.alphaIsTransparency != true;
@@ -413,11 +412,8 @@ namespace CultivationGame.TileSystem
                 importer.alphaIsTransparency = true;
                 importer.spriteImportMode = UnityEditor.SpriteImportMode.Single;
                 importer.textureCompression = UnityEditor.TextureImporterCompression.Uncompressed;
-                importer.filterMode = isObject ? FilterMode.Point : FilterMode.Bilinear;
+                importer.filterMode = FilterMode.Point; // Point — чёткие края
                 UnityEditor.AssetDatabase.ImportAsset(assetPath, UnityEditor.ImportAssetOptions.ForceUpdate);
-                // FIX-V2-4: Refresh после ImportAsset — спрайт может ещё не обновиться в кэше
-                // при следующем LoadAssetAtPath. Refresh гарантирует актуальность.
-                // Редактировано: 2026-04-16 11:37 UTC
                 UnityEditor.AssetDatabase.Refresh(UnityEditor.ImportAssetOptions.ForceUpdate);
                 Debug.Log($"[HarvestableSpawner] Спрайт реимпортирован: {assetPath} → PPU={targetPPU}, alphaIsTransparency=true");
             }

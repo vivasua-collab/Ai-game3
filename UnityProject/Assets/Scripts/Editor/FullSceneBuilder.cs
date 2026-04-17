@@ -4,7 +4,7 @@
 // Версия: 1.2
 // ============================================================================
 // Создано: 2026-04-13 08:00:00 UTC
-// Редактировано: 2026-04-16 11:37 UTC — FIX-V2-1: Создание Sorting Layers, FIX-V2-2: sortOrder→sortingOrder, FIX-V2-3: PPU=30
+// Редактировано: 2026-04-17 10:53 UTC — REVERT: PPU=32 для terrain и objects (рабочее значение 14 апреля). Убран AI sprite pipeline.
 //
 // АРХИТЕКТУРА:
 //   15 фаз, каждая идемпотентна (повторный запуск безопасен).
@@ -1926,17 +1926,15 @@ namespace CultivationGame.Editor
 
         /// <summary>
         /// Реимпорт спрайтов тайлов с правильными PPU и прозрачностью.
-        /// Terrain: PPU=32 Bilinear (pixel bleed 68×68 → 2.125u, устраняет белую сетку).
-        /// Objects: PPU=160 Point (0.4u, в 5 раз меньше ячейки).
-        /// Сканирует ТОЛЬКО Assets/Sprites/Tiles/ (НЕ Tiles_AI/ — там 1024×1024 RGB).
-        /// Редактировано: 2026-04-15 17:51:32 UTC — FIX: PPU=32 вместо 31, Bilinear вместо Point для terrain,
-        /// убран Tiles_AI/ из сканирования (заменял правильные настройки на неверные)
+        /// Все спрайты: PPU=32 Point (2.0u = точно в ячейку Grid(2,2,1)).
+        /// Сканирует ТОЛЬКО Assets/Sprites/Tiles/.
+        /// Редактировано: 2026-04-17 10:53 UTC — REVERT: PPU=32 Point для terrain и objects
+        /// (рабочее значение 14 апреля). Убран Bilinear и PPU=30/160.
         /// </summary>
         private static void ReimportTileSprites()
         {
-            // FIX: Сканируем ТОЛЬКО Tiles/ — обработанные AI-спрайты с прозрачностью.
-            // Tiles_AI/ содержит 1024×1024 RGB без alpha — реимпорт там ломает всё.
-            // Редактировано: 2026-04-15 17:51:32 UTC
+            // Сканируем ТОЛЬКО Tiles/ — процедурные спрайты.
+            // Редактировано: 2026-04-17 10:53 UTC
             string[] spriteDirs = new string[] { "Assets/Sprites/Tiles" };
             int reimportCount = 0;
 
@@ -1950,22 +1948,17 @@ namespace CultivationGame.Editor
                     var importer = AssetImporter.GetAtPath(pngPath) as TextureImporter;
                     if (importer == null) continue;
 
-                    string fileName = Path.GetFileNameWithoutExtension(pngPath);
-                    bool isObject = fileName.StartsWith("obj_");
-
                     importer.textureType = TextureImporterType.Sprite;
                     importer.spriteImportMode = SpriteImportMode.Single;
-                    // FIX-V2-3: Terrain PPU=30 (было 31) — 64/30=2.133u (6.7% перекрытие).
-                    // При PPU=31: 64/31=2.065u — только 1.6% перекрытия, недостаточно для Bilinear.
-                    // 68×68 при PPU=30 = 68/30=2.267u — тоже с bleed, без зазоров.
-                    // Должно совпадать с TileMapController и HarvestableSpawner (PPU=30 для terrain).
-                    // Редактировано: 2026-04-16 11:37 UTC
-                    importer.spritePixelsPerUnit = isObject ? 160 : 30;
-                    // FIX: Terrain Bilinear (не Point!) — совпадает с TileSpriteGenerator.
-                    // Bilinear сглаживает субпиксельные границы между тайлами → нет белой сетки.
-                    // Point фильтрация оставляет зазоры при субпиксельном рендеринге.
-                    // Редактировано: 2026-04-15 17:51:32 UTC
-                    importer.filterMode = isObject ? FilterMode.Point : FilterMode.Bilinear;
+                    // PPU=32 для ВСЕХ спрайтов — единое рабочее значение из 14 апреля.
+                    // 64/32 = 2.0 юнита = ТОЧНО в ячейку Grid(2,2,1) → нет зазоров.
+                    // Должно совпадать с TileSpriteGenerator (PPU=32).
+                    // Редактировано: 2026-04-17 10:53 UTC
+                    importer.spritePixelsPerUnit = 32;
+                    // Point для ВСЕХ спрайтов — чёткие края, нет размытия.
+                    // При PPU=32 и размере 64×64 спрайт = 2.0u = точно ячейка → зазоров нет.
+                    // Редактировано: 2026-04-17 10:53 UTC
+                    importer.filterMode = FilterMode.Point;
                     importer.wrapMode = TextureWrapMode.Clamp;
                     importer.spriteBorder = Vector4.zero;
                     importer.alphaIsTransparency = true;
@@ -1979,7 +1972,7 @@ namespace CultivationGame.Editor
             if (reimportCount > 0)
             {
                 AssetDatabase.Refresh();
-                Debug.Log($"[FullSceneBuilder] ReimportTileSprites: переимпортировано {reimportCount} спрайтов (terrain PPU=31 Bilinear, objects PPU=160 Point)");
+                Debug.Log($"[FullSceneBuilder] ReimportTileSprites: переимпортировано {reimportCount} спрайтов (PPU=32 Point)");
             }
             else
             {
@@ -2021,8 +2014,8 @@ namespace CultivationGame.Editor
             }
 
             // Шаг 1.5: Реимпорт всех спрайтов тайлов с правильными настройками
-            // FIX: AI-спрайты имеют дефолтный PPU=100, нужно PPU=32 + spriteBorder для устранения зазоров
-            // Редактировано: 2026-04-15 08:05:00 UTC
+            // PPU=32 Point для всех — рабочее значение 14 апреля
+            // Редактировано: 2026-04-17 10:53 UTC
             ReimportTileSprites();
 
             // Шаг 2: Создать папки для тайлов
