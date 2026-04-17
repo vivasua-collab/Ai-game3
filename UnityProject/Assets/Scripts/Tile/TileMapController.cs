@@ -2,7 +2,7 @@
 // TileMapController.cs — Контроллер карты тайлов
 // Cultivation World Simulator
 // Создано: 2026-04-07 14:24:05 UTC
-// Редактировано: 2026-04-17 11:44 UTC — Terrain ВСЕГДА процедурный (Sprite.Create), без PNG → нет белой сетки. Object-тайлы из PNG.
+// Редактировано: 2026-04-17 12:38 UTC — FIX-SORT: FixAllTilemapRenderers() ищет ВСЕ TilemapRenderer по типу + EnsureSortingLayerOrder() проверяет ПОРЯДОК слоёв.
 // ============================================================================
 
 using System;
@@ -100,6 +100,12 @@ namespace CultivationGame.TileSystem
             // Редактировано: 2026-04-17 UTC
             EnsureSortingLayersExist();
             FixTilemapSortingLayers();
+
+            // FIX-SORT: Проверить ПОРЯДОК Sorting Layers — если Player ниже Terrain,
+            // игрок рендерится ПОЗАДИ тайлов → невидим. EnsureSortingLayersExist()
+            // только создаёт недостающие, но НЕ проверяет порядок.
+            // Редактировано: 2026-04-17 12:38 UTC
+            EnsureSortingLayerOrder();
         }
 
         private void Start()
@@ -114,6 +120,14 @@ namespace CultivationGame.TileSystem
             // Редактировано: 2026-04-17 UTC
             RenderPipelineLogger.LogSortingLayers();
             RenderPipelineLogger.LogTilemapState();
+
+            // FIX-SORT: Поиск ВСЕХ TilemapRenderer на сцене по типу.
+            // FixTilemapSortingLayers() фиксит только 3 конкретных [SerializeField] ссылки.
+            // Если FullSceneBuilder создал дополнительные TilemapRenderer'ы,
+            // они остаются на "Default" слое → рендерятся поверх игрока.
+            // Редактировано: 2026-04-17 12:38 UTC
+            FixAllTilemapRenderers();
+            RenderPipelineLogger.LogAllRendererState();
 
             if (generateOnStart)
             {
@@ -189,6 +203,226 @@ namespace CultivationGame.TileSystem
 #else
             Debug.LogError("[TileMapController] Sorting Layers отсутствуют! В build версии их нужно создать заранее в Editor.");
 #endif
+        }
+
+        /// <summary>
+        /// FIX-SORT: Проверить ПОРЯДОК Sorting Layers и исправить если неправильный.
+        /// EnsureSortingLayersExist() только создаёт недостающие слои, но НЕ проверяет
+        /// их порядок. Если слои были созданы ранее вручную или другим скриптом
+        /// в неправильном порядке (например, Player перед Terrain), то Player
+        /// рендерится ПОЗАДИ Terrain → спрайт поверхности поверх игрока.
+        /// Правильный порядок: Default(0) < Background(1) < Terrain(2) < Objects(3) < Player(4) < UI(5)
+        /// Редактировано: 2026-04-17 12:38 UTC
+        /// </summary>
+        private void EnsureSortingLayerOrder()
+        {
+            // Правильный порядок слоёв (индекс = порядок рендеринга, меньше = позади)
+            string[] correctOrder = { "Default", "Background", "Terrain", "Objects", "Player", "UI" };
+
+            var layers = SortingLayer.layers;
+
+            // Проверяем порядок: каждый требуемый слой должен быть на правильной позиции
+            bool orderIsCorrect = true;
+            for (int i = 0; i < layers.Length && i < correctOrder.Length; i++)
+            {
+                if (layers[i].name != correctOrder[i])
+                {
+                    orderIsCorrect = false;
+                    break;
+                }
+            }
+
+            // Также проверяем, что нет лишних слоёв между нашими
+            if (layers.Length < correctOrder.Length) orderIsCorrect = false;
+
+            if (orderIsCorrect)
+            {
+                Debug.Log("[TileMapController] FIX-SORT: Порядок Sorting Layers корректный");
+                return;
+            }
+
+            // Порядок неправильный — логируем проблему
+            Debug.LogWarning("[TileMapController] FIX-SORT: Порядок Sorting Layers НЕПРАВИЛЬНЫЙ! " +
+                "Это может приводить к тому, что terrain рендерится поверх игрока.");
+            for (int i = 0; i < layers.Length; i++)
+            {
+                Debug.LogWarning($"  [{i}] \"{layers[i].name}\" (id={layers[i].id})");
+            }
+            Debug.LogWarning($"Ожидаемый порядок: {string.Join(" < ", correctOrder)}");
+
+#if UNITY_EDITOR
+            // Перестраиваем порядок слоёв через TagManager
+            var tagManager = new UnityEditor.SerializedObject(
+                UnityEditor.AssetDatabase.LoadAllAssetsAtPath("ProjectSettings/TagManager.asset")[0]);
+            var sortingLayersProp = tagManager.FindProperty("m_SortingLayers");
+
+            if (sortingLayersProp == null)
+            {
+                Debug.LogError("[TileMapController] FIX-SORT: m_SortingLayers не найден!");
+                return;
+            }
+
+            // Собираем существующие слои в словарь (имя → свойства)
+            var existingLayers = new Dictionary<string, UnityEditor.SerializedProperty>();
+            for (int i = 0; i < sortingLayersProp.arraySize; i++)
+            {
+                var elem = sortingLayersProp.GetArrayElementAtIndex(i);
+                var nameProp = elem.FindPropertyRelative("name");
+                if (nameProp != null && !string.IsNullOrEmpty(nameProp.stringValue))
+                    existingLayers[nameProp.stringValue] = elem;
+            }
+
+            // Создаём недостающие слои перед перестановкой
+            foreach (var layerName in correctOrder)
+            {
+                if (!existingLayers.ContainsKey(layerName) && layerName != "Default")
+                {
+                    sortingLayersProp.InsertArrayElementAtIndex(sortingLayersProp.arraySize);
+                    var newLayer = sortingLayersProp.GetArrayElementAtIndex(sortingLayersProp.arraySize - 1);
+                    newLayer.FindPropertyRelative("name").stringValue = layerName;
+                    newLayer.FindPropertyRelative("uniqueID").intValue = System.Guid.NewGuid().GetHashCode();
+                    newLayer.FindPropertyRelative("locked").boolValue = false;
+                    Debug.Log($"[TileMapController] FIX-SORT: Создан недостающий слой \"{layerName}\"");
+                }
+            }
+
+            // Перестраиваем массив в правильном порядке.
+            // Способ: читаем все элементы, очищаем массив, вставляем в правильном порядке.
+            // Сначала сохраняем данные всех слоёв
+            var layerData = new List<Dictionary<string, object>>();
+            for (int i = 0; i < sortingLayersProp.arraySize; i++)
+            {
+                var elem = sortingLayersProp.GetArrayElementAtIndex(i);
+                var data = new Dictionary<string, object>();
+                var nameProp = elem.FindPropertyRelative("name");
+                var idProp = elem.FindPropertyRelative("uniqueID");
+                var lockedProp = elem.FindPropertyRelative("locked");
+                if (nameProp != null) data["name"] = nameProp.stringValue;
+                if (idProp != null) data["uniqueID"] = idProp.intValue;
+                if (lockedProp != null) data["locked"] = lockedProp.boolValue;
+                layerData.Add(data);
+            }
+
+            // Строим новый порядок: сначала correctOrder, потом остальные
+            var newOrder = new List<Dictionary<string, object>>();
+            var usedNames = new HashSet<string>();
+
+            // Добавляем в правильном порядке
+            foreach (var expectedName in correctOrder)
+            {
+                var found = layerData.Find(d => d.ContainsKey("name") && (string)d["name"] == expectedName);
+                if (found != null)
+                {
+                    newOrder.Add(found);
+                    usedNames.Add(expectedName);
+                }
+            }
+
+            // Добавляем остальные слои (не из correctOrder) в конец
+            foreach (var data in layerData)
+            {
+                if (data.ContainsKey("name") && !usedNames.Contains((string)data["name"]))
+                    newOrder.Add(data);
+            }
+
+            // Очищаем массив и заполняем в новом порядке
+            sortingLayersProp.ClearArray();
+            foreach (var data in newOrder)
+            {
+                sortingLayersProp.InsertArrayElementAtIndex(sortingLayersProp.arraySize);
+                var elem = sortingLayersProp.GetArrayElementAtIndex(sortingLayersProp.arraySize - 1);
+                if (data.ContainsKey("name"))
+                    elem.FindPropertyRelative("name").stringValue = (string)data["name"];
+                if (data.ContainsKey("uniqueID"))
+                    elem.FindPropertyRelative("uniqueID").intValue = (int)data["uniqueID"];
+                if (data.ContainsKey("locked"))
+                    elem.FindPropertyRelative("locked").boolValue = (bool)data["locked"];
+            }
+
+            tagManager.ApplyModifiedProperties();
+            UnityEditor.AssetDatabase.SaveAssets();
+
+            Debug.Log("[TileMapController] FIX-SORT: Порядок Sorting Layers исправлен:");
+            for (int i = 0; i < sortingLayersProp.arraySize; i++)
+            {
+                var elem = sortingLayersProp.GetArrayElementAtIndex(i);
+                var n = elem.FindPropertyRelative("name");
+                Debug.Log($"  [{i}] \"{n?.stringValue ?? "?"}\"");
+            }
+#else
+            Debug.LogError("[TileMapController] FIX-SORT: Порядок Sorting Layers неправильный! " +
+                "В build версии порядок должен быть настроен заранее в Editor.");
+#endif
+        }
+
+        /// <summary>
+        /// FIX-SORT: Найти ВСЕ TilemapRenderer на сцене и установить правильные Sorting Layers.
+        /// FixTilemapSortingLayers() работает только с [SerializeField] ссылками.
+        /// Если на сцене есть TilemapRenderer'ы, не привязанные к этому контроллеру
+        /// (например, созданные FullSceneBuilder или вручную), они остаются на "Default"
+        /// слое → рендерятся поверх Player и Objects.
+        /// Этот метод ищет ВСЕ TilemapRenderer по типу и назначает правильные слои
+        /// по имени GameObject (terrain → "Terrain", остальные → "Objects").
+        /// Редактировано: 2026-04-17 12:38 UTC
+        /// </summary>
+        private void FixAllTilemapRenderers()
+        {
+            var allRenderers = FindObjectsByType<TilemapRenderer>(FindObjectsSortMode.None);
+            int fixedCount = 0;
+
+            foreach (var renderer in allRenderers)
+            {
+                string currentLayer = renderer.sortingLayerName;
+                string targetLayer = DetermineSortingLayerForRenderer(renderer);
+
+                if (currentLayer != targetLayer)
+                {
+                    Debug.LogWarning($"[TileMapController] FIX-SORT: TilemapRenderer \"{renderer.name}\" " +
+                        $"был на слое \"{currentLayer}\" → исправлено на \"{targetLayer}\"");
+                    renderer.sortingLayerName = targetLayer;
+
+                    // Terrain tilemap — order=0, Objects tilemap — order=0, overlay — order=10
+                    renderer.sortingOrder = (targetLayer == "Objects" && renderer.name.Contains("Overlay")) ? 10 : 0;
+                    fixedCount++;
+                }
+            }
+
+            if (fixedCount > 0)
+                Debug.Log($"[TileMapController] FIX-SORT: Исправлено {fixedCount} TilemapRenderer'ов");
+            else
+                Debug.Log("[TileMapController] FIX-SORT: Все TilemapRenderer'ы на правильных слоях");
+        }
+
+        /// <summary>
+        /// FIX-SORT: Определить правильный Sorting Layer для TilemapRenderer по его имени.
+        /// Имя GameObject содержит подстроку "Terrain" → слой "Terrain".
+        /// Имя содержит "Object" или другое → слой "Objects".
+        /// Редактировано: 2026-04-17 12:38 UTC
+        /// </summary>
+        private string DetermineSortingLayerForRenderer(TilemapRenderer renderer)
+        {
+            string name = renderer.gameObject.name;
+
+            // По имени GameObject определяем тип
+            if (name.Contains("Terrain") || name.Contains("terrain"))
+                return "Terrain";
+            if (name.Contains("Object") || name.Contains("object"))
+                return "Objects";
+            if (name.Contains("Overlay") || name.Contains("overlay"))
+                return "Objects";
+
+            // Fallback: проверяем, является ли этот рендерер одним из наших
+            if (terrainTilemap != null && renderer.GetComponent<Tilemap>() == terrainTilemap)
+                return "Terrain";
+            if (objectTilemap != null && renderer.GetComponent<Tilemap>() == objectTilemap)
+                return "Objects";
+            if (overlayTilemap != null && renderer.GetComponent<Tilemap>() == overlayTilemap)
+                return "Objects";
+
+            // Если не можем определить — ставим на Objects (безопаснее, чем Default)
+            Debug.LogWarning($"[TileMapController] FIX-SORT: Неизвестный TilemapRenderer \"{name}\" " +
+                $"→ fallback на \"Objects\"");
+            return "Objects";
         }
 
         /// <summary>

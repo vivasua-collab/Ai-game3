@@ -3,7 +3,7 @@
 // Cultivation World Simulator
 // Версия: 1.0
 // Создано: 2026-03-30 14:00:00 UTC
-// Редактировано: 2026-04-16 11:37 UTC — FIX-V2-5: sortingLayerName="Player" (было "Objects"), sortingOrder
+// Редактировано: 2026-04-17 12:38 UTC — FIX-SORT: EnsureCorrectSortingLayer() теперь проверяет ПОРЯДОК слоёв + fallback на Y-сортировку
 // ============================================================================
 
 using UnityEngine;
@@ -434,14 +434,13 @@ namespace CultivationGame.Player
         }
 
         /// <summary>
-        /// FIX-SORT-RECHECK: Гарантировать, что спрайт игрока на правильном Sorting Layer.
-        /// Корневая причина: PlayerVisual.Awake() может выполниться ДО
-        /// TileMapController.Awake() (создающего Sorting Layers через EnsureSortingLayersExist).
-        /// Если слой "Player" не существует в момент установки sortingLayerName,
-        /// Unity 6+ молча игнорирует → спрайт остаётся на "Default" → рендерится
-        /// ПОЗАДИ terrain и objects.
-        /// Этот метод вызывается в Start() — после всех Awake() — слои уже существуют.
-        /// Редактировано: 2026-04-18 UTC
+        /// FIX-SORT: Гарантировать, что спрайт игрока рендерится ПОВЕРХ terrain и objects.
+        /// Проверяет: (1) существование слоя "Player", (2) ПОРЯДОК слоёв (Player > Objects > Terrain),
+        /// (3) fallback на "Objects" с высоким sortingOrder если Player-слой отсутствует.
+        /// Корневая причина бага: если слой "Player" не существует в момент Awake(),
+        /// или если порядок слоёв неправильный (Player ниже Terrain),
+        /// игрок рендерится ПОЗАДИ terrain → спрайт поверхности поверх персонажа.
+        /// Редактировано: 2026-04-17 12:38 UTC
         /// </summary>
         private void EnsureCorrectSortingLayer()
         {
@@ -451,39 +450,56 @@ namespace CultivationGame.Player
                 int currentLayerId = mainSprite.sortingLayerID;
 
                 // Проверяем, существует ли слой "Player"
-                int playerLayerId = SortingLayer.NameToID("Player");
                 bool playerLayerExists = false;
-                foreach (var layer in SortingLayer.layers)
+                int playerLayerIndex = -1;
+                int terrainLayerIndex = -1;
+                int objectsLayerIndex = -1;
+                var layers = SortingLayer.layers;
+
+                for (int i = 0; i < layers.Length; i++)
                 {
-                    if (layer.name == "Player")
-                    {
-                        playerLayerExists = true;
-                        break;
-                    }
+                    if (layers[i].name == "Player") { playerLayerExists = true; playerLayerIndex = i; }
+                    if (layers[i].name == "Terrain") terrainLayerIndex = i;
+                    if (layers[i].name == "Objects") objectsLayerIndex = i;
                 }
 
-                if (playerLayerExists)
+                // FIX-SORT: Проверяем ПОРЯДОК слоёв — Player должен быть ВЫШЕ Terrain и Objects
+                // Если порядок неправильный, используем fallback на "Objects" с высоким order
+                bool playerLayerOrderCorrect = playerLayerExists &&
+                    playerLayerIndex > terrainLayerIndex &&
+                    playerLayerIndex > objectsLayerIndex;
+
+                if (playerLayerExists && playerLayerOrderCorrect)
                 {
-                    // Слой существует — устанавливаем принудительно
+                    // Слой существует И в правильном порядке — устанавливаем принудительно
                     mainSprite.sortingLayerName = "Player";
                     mainSprite.sortingOrder = 0;
-                    Debug.Log($"[PlayerVisual] FIX-SORT-RECHECK: mainSprite → layer=\"Player\" " +
+                    Debug.Log($"[PlayerVisual] FIX-SORT: mainSprite → layer=\"Player\" " +
                         $"(было: \"{currentLayer}\" id={currentLayerId}) → сейчас: id={mainSprite.sortingLayerID}");
+                }
+                else if (playerLayerExists && !playerLayerOrderCorrect)
+                {
+                    // Слой существует, но в НЕПРАВИЛЬНОМ порядке (Player ниже Terrain/Objects)
+                    // Это критический баг — Terrain рендерится поверх игрока!
+                    Debug.LogError($"[PlayerVisual] FIX-SORT: Слой \"Player\" (индекс={playerLayerIndex}) " +
+                        $"НИЖЕ чем Terrain({terrainLayerIndex}) или Objects({objectsLayerIndex})! " +
+                        $"Terrain будет рендериться ПОВЕРХ игрока! Fallback на \"Objects\" с order=100");
+                    mainSprite.sortingLayerName = "Objects";
+                    mainSprite.sortingOrder = 100; // Выше деревьев(5), камней(3), ресурсов(5)
                 }
                 else
                 {
                     // Слой НЕ существует — fallback на "Objects" с высоким sortingOrder
-                    // Это гарантирует, что игрок рендерится ПОВЕРХ terrain и объектов
-                    Debug.LogWarning($"[PlayerVisual] FIX-SORT-RECHECK: Слой \"Player\" НЕ найден! " +
+                    Debug.LogWarning($"[PlayerVisual] FIX-SORT: Слой \"Player\" НЕ найден! " +
                         $"Fallback: sortingLayerName=\"Objects\", sortingOrder=100");
                     mainSprite.sortingLayerName = "Objects";
-                    mainSprite.sortingOrder = 100; // Выше деревьев(5), камней(3), ресурсов(5)
+                    mainSprite.sortingOrder = 100;
                 }
 
                 // Также проверяем тень
                 if (shadowSprite != null)
                 {
-                    if (playerLayerExists)
+                    if (playerLayerExists && playerLayerOrderCorrect)
                     {
                         shadowSprite.sortingLayerName = "Player";
                         shadowSprite.sortingOrder = -1;
@@ -500,6 +516,11 @@ namespace CultivationGame.Player
                     $"order={mainSprite.sortingOrder}, " +
                     $"shadow=\"{(shadowSprite != null ? shadowSprite.sortingLayerName : "null")}\" " +
                     $"order={shadowSprite?.sortingOrder ?? 0}");
+
+                // Логируем порядок слоёв для диагностики
+                Debug.Log($"[PlayerVisual] Sorting Layers: Terrain={terrainLayerIndex}, " +
+                    $"Objects={objectsLayerIndex}, Player={playerLayerIndex} " +
+                    $"(правильный порядок: Terrain < Objects < Player)");
             }
         }
         
