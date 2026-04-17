@@ -993,3 +993,24 @@ Stage Summary:
 - Все 9 шагов (0-8) harvest system ЗАВЕРШЕНЫ
 - Изменённые файлы: TestLocationGameController.cs, FullSceneBuilder.cs, harvest_progress.md, 04_15_harvest_system_plan.md
 - Оставшиеся FIX-H01/H02/H03 — некритичные, не блокируют
+
+---
+Task ID: 32
+Agent: Main Agent
+Task: Исправление белой сетки между terrain-тайлами — переход на процедурные спрайты
+
+Work Log:
+- Получена системная дата: 2026-04-17 11:44 UTC
+- Прочитан START_PROMPT.md, docs_asset_setup/, чекпоинты 14-15 апреля
+- Установлена корневая причина: PNG-спрайты через Unity Import Pipeline создают субпиксельные зазоры (белая сетка)
+- Рабочий подход из 14 апреля: Sprite.Create() в рантайме (CreateProceduralTileSprite) — без PNG → без зазоров
+- Добавлен метод ForceProceduralTerrainTile() — ВСЕГДА создаёт terrain GameTile через Sprite.Create()
+- EnsureTileAssets() переписан: terrain → ForceProceduralTerrainTile, objects → EnsureTile (PNG + fallback)
+- EnsureTile() теперь документирован как метод только для object-тайлов
+- Изменения запушены: commit 6f3ae36
+
+Stage Summary:
+- Terrain-тайлы больше не используют PNG — Sprite.Create() в рантайме
+- Object-тайлы продолжают использовать PNG (нет проблемы на стыках)
+- Graphical polish terrain отложен до следующего этапа
+- Важное наблюдение из логов: GlobalLight2D НЕ НАЙДЕН — Sprite-Lit-Default = чёрные спрайты
