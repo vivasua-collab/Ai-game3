@@ -44,6 +44,12 @@ using CultivationGame.Core;
 // Tile
 using CultivationGame.TileSystem;
 
+// Managers
+using CultivationGame.Managers;
+
+// World
+using CultivationGame.World;
+
 namespace CultivationGame.Editor
 {
     /// <summary>
