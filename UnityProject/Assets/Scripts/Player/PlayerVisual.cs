@@ -418,10 +418,89 @@ namespace CultivationGame.Player
             cachedCamera = Camera.main;
             EnsureCamera2DSetup();
 
+            // FIX-SORT-RECHECK: Повторная проверка и установка Sorting Layer.
+            // Awake() вызывает CreateVisual(), которая устанавливает sortingLayerName="Player".
+            // Но если PlayerVisual.Awake() выполнился ДО TileMapController.Awake(),
+            // слой "Player" ещё не существовал → Unity 6+ молча игнорирует невалидное имя →
+            // спрайт остаётся на "Default" (id=0), который НИЖЕ "Terrain" (id=2) и "Objects" (id=3).
+            // Start() выполняется ПОСЛЕ всех Awake() → сортировочные слои уже созданы.
+            // Редактировано: 2026-04-18 UTC
+            EnsureCorrectSortingLayer();
+
             // FIX-V2-7: Runtime диагностика Camera и Light.
             // Без L7/L8 логов невозможно понять, правильно ли настроены камера и свет.
             RenderPipelineLogger.LogCameraState();
             RenderPipelineLogger.LogLightState();
+        }
+
+        /// <summary>
+        /// FIX-SORT-RECHECK: Гарантировать, что спрайт игрока на правильном Sorting Layer.
+        /// Корневая причина: PlayerVisual.Awake() может выполниться ДО
+        /// TileMapController.Awake() (создающего Sorting Layers через EnsureSortingLayersExist).
+        /// Если слой "Player" не существует в момент установки sortingLayerName,
+        /// Unity 6+ молча игнорирует → спрайт остаётся на "Default" → рендерится
+        /// ПОЗАДИ terrain и objects.
+        /// Этот метод вызывается в Start() — после всех Awake() — слои уже существуют.
+        /// Редактировано: 2026-04-18 UTC
+        /// </summary>
+        private void EnsureCorrectSortingLayer()
+        {
+            if (mainSprite != null)
+            {
+                string currentLayer = mainSprite.sortingLayerName;
+                int currentLayerId = mainSprite.sortingLayerID;
+
+                // Проверяем, существует ли слой "Player"
+                int playerLayerId = SortingLayer.NameToID("Player");
+                bool playerLayerExists = false;
+                foreach (var layer in SortingLayer.layers)
+                {
+                    if (layer.name == "Player")
+                    {
+                        playerLayerExists = true;
+                        break;
+                    }
+                }
+
+                if (playerLayerExists)
+                {
+                    // Слой существует — устанавливаем принудительно
+                    mainSprite.sortingLayerName = "Player";
+                    mainSprite.sortingOrder = 0;
+                    Debug.Log($"[PlayerVisual] FIX-SORT-RECHECK: mainSprite → layer=\"Player\" " +
+                        $"(было: \"{currentLayer}\" id={currentLayerId}) → сейчас: id={mainSprite.sortingLayerID}");
+                }
+                else
+                {
+                    // Слой НЕ существует — fallback на "Objects" с высоким sortingOrder
+                    // Это гарантирует, что игрок рендерится ПОВЕРХ terrain и объектов
+                    Debug.LogWarning($"[PlayerVisual] FIX-SORT-RECHECK: Слой \"Player\" НЕ найден! " +
+                        $"Fallback: sortingLayerName=\"Objects\", sortingOrder=100");
+                    mainSprite.sortingLayerName = "Objects";
+                    mainSprite.sortingOrder = 100; // Выше деревьев(5), камней(3), ресурсов(5)
+                }
+
+                // Также проверяем тень
+                if (shadowSprite != null)
+                {
+                    if (playerLayerExists)
+                    {
+                        shadowSprite.sortingLayerName = "Player";
+                        shadowSprite.sortingOrder = -1;
+                    }
+                    else
+                    {
+                        shadowSprite.sortingLayerName = "Objects";
+                        shadowSprite.sortingOrder = 99;
+                    }
+                }
+
+                // Логируем итоговое состояние
+                Debug.Log($"[PlayerVisual] Sorting: main=\"{mainSprite.sortingLayerName}\"(id={mainSprite.sortingLayerID}) " +
+                    $"order={mainSprite.sortingOrder}, " +
+                    $"shadow=\"{(shadowSprite != null ? shadowSprite.sortingLayerName : "null")}\" " +
+                    $"order={shadowSprite?.sortingOrder ?? 0}");
+            }
         }
         
         // FIX PLR-L01: Destroy created Material and Texture2D to prevent memory leaks (2026-04-11)
