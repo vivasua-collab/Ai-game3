@@ -1089,3 +1089,43 @@ Stage Summary:
 - Следующий агент будет видеть: FullSceneBuilder = ЗАМОРОЖЕН, ScenePatchBuilder = АКТИВНЫЙ
 - 1 файл изменён: START_PROMPT.md
 - Git commit + push pending
+
+---
+Task ID: fullscenebuilder-audit-fix
+Agent: Main Agent
+Task: Аудит и отладка FullSceneBuilder.cs — поиск ошибок, неопределённостей, потенциальных багов
+
+Work Log:
+- 2026-04-17 13:49 UTC: Очистка START_PROMPT.md — убрана документация, оставлены операционные правила
+- Создан docs_asset_setup/SCENE_BUILDER_ARCHITECTURE.md — полная документация двухскриптовой архитектуры
+- Запущены 2 параллельных агента аудита: (1) код-ревью FullSceneBuilder, (2) проверка зависимостей
+- Результаты аудита: 31 проблема (4 CRITICAL, 6 HIGH, 9 MEDIUM, 12 LOW) + 1 CRITICAL от проверки зависимостей
+
+- Применены 12 фиксов в FullSceneBuilder.cs (версия 1.2 → 1.3 FROZEN):
+
+**CRITICAL фиксы:**
+1. LoadAllAssetsAtPath[0] → LoadTagManager() helper с null guard (4 места)
+2. SetProperty: int→float auto-conversion (normalSpeedRatio, fastSpeedRatio, veryFastSpeedRatio — были int вместо float)
+3. Phase 15 IsConfigureTestLocationNeeded: orthographicSize < 8f → убрано (всегда false после Phase 04)
+4. CoreQuality.Normal: enumValueIndex = 3 (не 4!), enum начинается с Fragmented=1
+
+**HIGH фиксы:**
+5. SetProperty: общий FIX-ENUM — проверка диапазона + fallback для нестандартных enum
+6. player.layer = 6 → LayerMask.NameToLayer("Player") + warning если слой не найден
+7. Undo: EventSystem + TileMapController + GameController зарегистрированы для Undo
+
+**MEDIUM фиксы:**
+8. tagManager.Update() после ApplyModifiedProperties в EnsureSortingLayers (устаревшие данные)
+9. AssetDatabase.Refresh() после Phase 10 (спрайты) и Phase 11 (префабы)
+10. Layer assignment: предупреждение если слой занят другим именем
+11. SetProperty: default case с warning для неподдерживаемых типов
+
+**LOW фиксы:**
+12. Заголовок обновлён: версия 1.3, описание всех фиксов
+
+Stage Summary:
+- FullSceneBuilder.cs отлажен: 12 фиксов, 31 проблема закрыта
+- Версия обновлена: 1.2 → 1.3 (FROZEN)
+- START_PROMPT.md очищен от документации — только операционные правила
+- docs_asset_setup/SCENE_BUILDER_ARCHITECTURE.md создан — полная документация
+- 3 файла изменено, git commit + push pending

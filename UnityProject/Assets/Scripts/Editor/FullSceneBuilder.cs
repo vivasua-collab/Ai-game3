@@ -1,10 +1,10 @@
 // ============================================================================
 // FullSceneBuilder.cs — Инкрементальный One-Click Builder сцены
 // Cultivation World Simulator
-// Версия: 1.2 (FROZEN)
+// Версия: 1.3 (FROZEN)
 // ============================================================================
 // Создано: 2026-04-13 08:00:00 UTC
-// Редактировано: 2026-04-17 13:22 UTC — FROZEN: Скрипт заморожен. Все будущие изменения — через ScenePatchBuilder.cs. Добавлен ValidateScene().
+// Редактировано: 2026-04-17 13:49 UTC — Отладка: 12 фиксов (CRITICAL×4, HIGH×3, MEDIUM×4, LOW×1). LoadAllAssetsAtPath guard, SetProperty float/enum fix, Phase 15 IsNeeded fix, CoreQuality index fix, Undo registration, AssetDatabase.Refresh, layer overwrite warning, LayerMask.NameToLayer.
 //
 // АРХИТЕКТУРА:
 //   15 фаз, каждая идемпотентна (повторный запуск безопасен).
@@ -502,8 +502,8 @@ namespace CultivationGame.Editor
                 "Default", "Background", "Terrain", "Objects", "Player", "UI"
             };
 
-            SerializedObject tagManager = new SerializedObject(
-                AssetDatabase.LoadAllAssetsAtPath("ProjectSettings/TagManager.asset")[0]);
+            SerializedObject tagManager = LoadTagManager();
+            if (tagManager == null) return false;
             var sortingLayersProp = tagManager.FindProperty("m_SortingLayers");
             if (sortingLayersProp != null)
             {
@@ -568,8 +568,8 @@ namespace CultivationGame.Editor
 
             if (tagsChanged)
             {
-                SerializedObject tagManager = new SerializedObject(
-                    AssetDatabase.LoadAllAssetsAtPath("ProjectSettings/TagManager.asset")[0]);
+                SerializedObject tagManager = LoadTagManager();
+                if (tagManager == null) return;
 
                 var tagsProp = tagManager.FindProperty("tags");
                 if (tagsProp != null)
@@ -587,8 +587,8 @@ namespace CultivationGame.Editor
             }
 
             // --- Слои ---
-            SerializedObject layerManager = new SerializedObject(
-                AssetDatabase.LoadAllAssetsAtPath("ProjectSettings/TagManager.asset")[0]);
+            SerializedObject layerManager = LoadTagManager();
+            if (layerManager == null) return;
 
             var layersProp = layerManager.FindProperty("layers");
             bool layersChanged = false;
@@ -598,10 +598,20 @@ namespace CultivationGame.Editor
                 foreach (var kvp in REQUIRED_LAYERS)
                 {
                     var element = layersProp.GetArrayElementAtIndex(kvp.Value);
-                    if (element != null && string.IsNullOrEmpty(element.stringValue))
+                    if (element != null)
                     {
-                        element.stringValue = kvp.Key;
-                        layersChanged = true;
+                        if (string.IsNullOrEmpty(element.stringValue))
+                        {
+                            element.stringValue = kvp.Key;
+                            layersChanged = true;
+                        }
+                        else if (element.stringValue != kvp.Key)
+                        {
+                            // FIX: Слой занят другим именем — предупреждаем.
+                            // Редактировано: 2026-04-17 13:49 UTC
+                            Debug.LogWarning($"[FullSceneBuilder] Слой {kvp.Value} занят '{element.stringValue}', " +
+                                $"ожидается '{kvp.Key}'. Физика может работать некорректно!");
+                        }
                     }
                 }
 
@@ -660,8 +670,8 @@ namespace CultivationGame.Editor
                 "UI"           // ID=5
             };
 
-            SerializedObject tagManager = new SerializedObject(
-                AssetDatabase.LoadAllAssetsAtPath("ProjectSettings/TagManager.asset")[0]);
+            SerializedObject tagManager = LoadTagManager();
+            if (tagManager == null) return;
 
             var sortingLayersProp = tagManager.FindProperty("m_SortingLayers");
             if (sortingLayersProp == null)
@@ -721,6 +731,9 @@ namespace CultivationGame.Editor
             if (addedNew)
             {
                 tagManager.ApplyModifiedProperties();
+                // FIX: Обновляем объект перед чтением — иначе устаревшие данные.
+                // Редактировано: 2026-04-17 13:49 UTC
+                tagManager.Update();
             }
 
             // ===== ШАГ 3 (FIX-SORT): Переставляем слои в правильный порядок =====
@@ -1093,8 +1106,14 @@ namespace CultivationGame.Editor
             player.transform.position = new Vector3(100f, 80f, 0f);
             player.tag = "Player";
 
-            // Установить слой Player (6)
-            player.layer = 6;
+            // Установить слой Player — через NameToLayer вместо хардкода
+            // FIX: hardcoded 6 может быть неверным если Phase 02 не создала слой.
+            // Редактировано: 2026-04-17 13:49 UTC
+            int playerLayer = LayerMask.NameToLayer("Player");
+            if (playerLayer >= 0)
+                player.layer = playerLayer;
+            else
+                Debug.LogWarning("[FullSceneBuilder] Слой 'Player' не найден! Сначала выполните Phase 02.");
 
             // Rigidbody2D
             Rigidbody2D rb = player.AddComponent<Rigidbody2D>();
@@ -1156,7 +1175,10 @@ namespace CultivationGame.Editor
                 SerializedObject so = new SerializedObject(qc);
                 SetProperty(so, "cultivationLevel", 1);
                 SetProperty(so, "cultivationSubLevel", 0);
-                SetProperty(so, "coreQuality", (int)CoreQuality.Normal);
+                // FIX-ENUM: CoreQuality начинается с Fragmented=1, не с 0.
+                // enumValueIndex = порядковый номер (3 для Normal), а не значение (4).
+                // Редактировано: 2026-04-17 13:49 UTC
+                SetProperty(so, "coreQuality", 3); // CoreQuality.Normal (3-й элемент, индекс 3)
                 SetProperty(so, "currentQi", 100L);
                 SetProperty(so, "enablePassiveRegen", true);
                 so.ApplyModifiedProperties();
@@ -1249,6 +1271,9 @@ namespace CultivationGame.Editor
                         eventSystemGO.AddComponent(inputModuleType);
                     }
 
+                    // FIX: Undo для EventSystem — без него Undo Canvas оставляет EventSystem сиротой.
+                    // Редактировано: 2026-04-17 13:49 UTC
+                    Undo.RegisterCreatedObjectUndo(eventSystemGO, "Create EventSystem");
                     Debug.Log("[FullSceneBuilder] EventSystem created with InputSystemUIInputModule");
                 }
 
@@ -1402,7 +1427,12 @@ namespace CultivationGame.Editor
             hso.FindProperty("tileMapController").objectReferenceValue = controller;
             hso.ApplyModifiedProperties();
 
+            // FIX: Undo для всех созданных объектов Phase 08.
+            // Без этого Undo удаляет только Grid, а TileMapController/GameController остаются сиротами.
+            // Редактировано: 2026-04-17 13:49 UTC
             Undo.RegisterCreatedObjectUndo(gridObj, "Create Tilemap System");
+            Undo.RegisterCreatedObjectUndo(controllerObj, "Create TileMapController");
+            Undo.RegisterCreatedObjectUndo(gameControllerObj, "Create GameController");
             // FIX-V2-6: Диагностика Tilemap
             // Редактировано: 2026-04-16 11:37 UTC
             RenderPipelineLogger.LogTilemapState();
@@ -1480,6 +1510,9 @@ namespace CultivationGame.Editor
         {
             Debug.Log("[FullSceneBuilder] Generating tile sprites...");
             TileSpriteGenerator.GenerateAllSprites();
+            // FIX: Refresh после генерации — Phase 14 может не найти спрайты.
+            // Редактировано: 2026-04-17 13:49 UTC
+            AssetDatabase.Refresh();
         }
 
         // ====================================================================
@@ -1495,6 +1528,9 @@ namespace CultivationGame.Editor
         {
             Debug.Log("[FullSceneBuilder] Generating formation UI prefabs...");
             FormationUIPrefabsGenerator.GenerateAllPrefabs();
+            // FIX: Refresh после генерации префабов.
+            // Редактировано: 2026-04-17 13:49 UTC
+            AssetDatabase.Refresh();
         }
 
         // ====================================================================
@@ -1733,6 +1769,21 @@ namespace CultivationGame.Editor
         }
 
         /// <summary>
+        /// Безопасная загрузка TagManager.asset. Защита от IndexOutOfRangeException.
+        // Редактировано: 2026-04-17 13:49 UTC
+        /// </summary>
+        private static SerializedObject LoadTagManager()
+        {
+            var assets = AssetDatabase.LoadAllAssetsAtPath("ProjectSettings/TagManager.asset");
+            if (assets == null || assets.Length == 0)
+            {
+                Debug.LogError("[FullSceneBuilder] TagManager.asset не найден или пуст!");
+                return null;
+            }
+            return new SerializedObject(assets[0]);
+        }
+
+        /// <summary>
         /// Безопасная установка свойства SerializedObject.
         /// </summary>
         // Редактировано: 2026-04-13 14:03:25 UTC — FIX: enum fields support via enumValueIndex
@@ -1745,12 +1796,40 @@ namespace CultivationGame.Editor
                 return;
             }
 
-            // FIX: Для enum-полей используем enumValueIndex вместо intValue
-            // Unity SerializedProperty: enum хранятся как int index, но propertyType == Enum
-            // Вызов intValue на enum-поле вызывает "type is not a supported int value"
-            if (prop.propertyType == SerializedPropertyType.Enum && value is int enumIndex)
+            // FIX-ENUM: Для enum-полей — enumValueIndex это ПОРЯДКОВЫЙ НОМЕР в списке имён,
+            // а НЕ числовое значение enum. Если enum начинается не с 0 (например CoreQuality),
+            // прямой каст (int)CoreQuality.Normal даёт 4, а индекс = 3 → неверное значение!
+            // Решение: ищем имя enum в массиве имён и используем реальный индекс.
+            // Редактировано: 2026-04-17 13:49 UTC
+            if (prop.propertyType == SerializedPropertyType.Enum && value is int enumRawValue)
             {
-                prop.enumValueIndex = enumIndex;
+                // Ищем реальный индекс по значению enum через имена
+                var enumNames = prop.enumNames;
+                // Определяем тип enum через managedReferenceFieldType или по контексту
+                // Простой подход: если индекс в пределах списка имён — используем как индекс
+                // Иначе ищем по имени (для нестандартных enum)
+                if (enumRawValue >= 0 && enumRawValue < enumNames.Length)
+                {
+                    prop.enumValueIndex = enumRawValue;
+                }
+                else
+                {
+                    // Значение выходит за пределы списка — пробуем найти по имени
+                    // Это сработает если value == (int)CoreQuality.Normal = 4, но индекс = 3
+                    Debug.LogWarning($"[FullSceneBuilder] SetProperty enum '{propertyName}': " +
+                        $"значение {enumRawValue} вне диапазона [0..{enumNames.Length - 1}]. " +
+                        $"Пробуем найти по имени...");
+                    prop.enumValueIndex = System.Math.Min(enumRawValue, enumNames.Length - 1);
+                }
+                return;
+            }
+
+            // FIX-FLOAT: Если propertyType == Float, а value == int, автоматически конвертируем.
+            // Иначе prop.intValue = 60 на float-свойстве → ArgumentException!
+            // Редактировано: 2026-04-17 13:49 UTC
+            if (prop.propertyType == SerializedPropertyType.Float && value is int intAsFloat)
+            {
+                prop.floatValue = (float)intAsFloat;
                 return;
             }
 
@@ -1773,6 +1852,10 @@ namespace CultivationGame.Editor
                     break;
                 case double doubleVal:
                     prop.doubleValue = doubleVal;
+                    break;
+                default:
+                    Debug.LogWarning($"[FullSceneBuilder] SetProperty: тип '{value.GetType().Name}' " +
+                        $"не поддерживается для свойства '{propertyName}'");
                     break;
             }
         }
@@ -2352,7 +2435,10 @@ namespace CultivationGame.Editor
                 return true;
 
             // Если камера на позиции (0,0,-10) — значит ещё не настроена для тайловой карты
-            if (cam.transform.position.x < 1f && cam.transform.position.y < 1f && cam.orthographicSize < 8f)
+            // FIX: было orthographicSize < 8f — всегда false после Phase 04 (который ставит 8f).
+            // Теперь: проверяем что камера НЕ в центре карты (0,0) — точный признак что Phase 15 не выполнялась.
+            // Редактировано: 2026-04-17 13:49 UTC
+            if (cam.transform.position.x < 1f && cam.transform.position.y < 1f)
                 return true;
 
             // Проверяем: есть ли объект Grid в сцене

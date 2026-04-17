@@ -18,9 +18,7 @@
 
 ## КОНТЕКСТ ПРОЕКТА
 
-Cultivation World Simulator — 2D игра в жанре сянься (китайское фэнтези/культивация) на Unity 6.3 URP 2D.
-Карта: 100×80 тайлов, cellSize=(2,2,1). Спрайты — процедурные (Sprite.Create), шейдер — Sprite-Unlit-Default.
-Система Ци (long), бои, формации, NPC AI, культивация, крафт, сохранения.
+Unity 6.3 URP 2D, C#. Карта 100×80, cellSize=(2,2,1). Ци=long. Подробности → `docs/ARCHITECTURE.md`
 
 ---
 
@@ -35,15 +33,9 @@ Cultivation World Simulator — 2D игра в жанре сянься (кита
 │   └── Assets/Data/           # ScriptableObjects, JSON
 ├── checkpoints/               # Чекпоинты работы (ММ_ДД_цель.md)
 ├── docs/                      # Документация проекта
-│   ├── !LISTING.md            # Полный список документации
-│   ├── !Ai_Skills.md          # AI Skills
-│   ├── ARCHITECTURE.md        # Корневой документ архитектуры
-│   └── UNITY_DOCS_LINKS.md    # Ссылки на Unity 6.3 docs
 ├── docs_asset_setup/          # Инструкции внедрения через Unity Editor
 ├── docs_examples/             # Примеры реализаций
 ├── docs_temp/                 # Временная документация, черновики
-├── docs_implementation_plans/ # Планы внедрения
-├── docs_old/                  # Старая документация (архив)
 ├── Caveman.md                 # Режим коммуникации
 └── START_PROMPT.md            # Этот файл
 ```
@@ -105,6 +97,10 @@ git add -A && git commit -m "описание" && git push
 ### 6. GitHub токен
 Если нет в контексте — ПРЕРЫВАТЬ работу, ЗАПРАШИВАТЬ у пользователя.
 
+### 7. Замороженные скрипты ⚠️
+Некоторые скрипты ЗАМОРОЖЕНЫ — редактирование запрещено. Список и подробности → `docs_asset_setup/SCENE_BUILDER_ARCHITECTURE.md`.
+**Правило:** Если скрипт в списке замороженных — НЕ редактировать. Создать патч в ScenePatchBuilder.cs. Исключение: критический багфикс с подтверждением пользователя.
+
 ---
 
 ## КЛЮЧЕВЫЕ ФАЙЛЫ
@@ -112,95 +108,9 @@ git add -A && git commit -m "описание" && git push
 | Файл | Назначение |
 |------|------------|
 | `docs/!LISTING.md` | Список всей документации |
-| `docs/!Ai_Skills.md` | AI Skills (Web-Search, VLM, LLM...) |
 | `docs/ARCHITECTURE.md` | Корневой документ архитектуры |
-| `checkpoints/README.md` | Инструкция по чекпоинтам |
+| `docs_asset_setup/SCENE_BUILDER_ARCHITECTURE.md` | Архитектура генерации сцены (замороженные скрипты) |
 | `Caveman.md` | Режим коммуникации |
-
----
-
-## 🧊 ЗАМОРОЖЕННЫЕ СКРИПТЫ — ДВУХСКРИПТОВАЯ АРХИТЕКТУРА СЦЕНЫ
-
-### Принцип
-
-Генерация сцены разделена на **ДВА скрипта**. Это предотвращает регрессионные баги при модификации базового генератора.
-
-### Скрипт 1: FullSceneBuilder.cs — ЗАМОРОЖЕН 🧊
-
-**Путь:** `Assets/Scripts/Editor/FullSceneBuilder.cs`
-**Версия:** 1.2 (FROZEN)
-**Статус:** ЗАМОРОЖЕН — редактирование ЗАПРЕЩЕНО
-
-**Что делает:**
-- 15 идемпотентных фаз (папки → теги/слои → сцена → камера/свет → GameManager → Player → UI → Tilemap → ассеты → спрайты → формации → TMP → сохранение → тайлы → тестовая локация)
-- Создаёт сцену с нуля до полностью рабочего состояния
-- Проверки IsNeeded() → пропуск уже выполненных фаз
-
-**⚠️ ПОЧЕМУ ЗАМОРОЖЕН:**
-- Многократные баги от прямого редактирования: Sorting Layer порядок, Missing Prefabs, дубликаты компонентов
-- Каждый баг требовал отката и повторной сборки
-- Скрипт сложный (2517 строк) — любое изменение может сломать 15 фаз
-
-**Исключение — критические багфиксы:**
-- Только если баг ломает компиляцию или делает сцену неработоспособной
-- Перед фиксом — ОБЯЗАТЕЛЬНО запросить подтверждение у пользователя
-- После фикса — обновить версию (1.2 → 1.3) и дату в заголовке файла
-
-### Скрипт 2: ScenePatchBuilder.cs — АКТИВНЫЙ 📝
-
-**Путь:** `Assets/Scripts/Editor/ScenePatchBuilder.cs`
-**Версия:** 1.0
-**Статус:** АКТИВЕН — сюда вносятся ВСЕ будущие изменения сцены
-
-**Что делает:**
-- Инкрементальные патчи поверх сцены, созданной FullSceneBuilder
-- Каждый патч = атомарное изменение с верификацией
-- Патчи идемпотентны — повторный запуск безопасен
-
-**Архитектура патча:**
-```
-PATCH-NNN:
-  1. IsApplied()  — проверка, применён ли уже (по состоянию сцены)
-  2. Apply()      — применение патча
-  3. Validate()   — пост-проверка корректности
-  4. Описание     — для логирования
-```
-
-**Реестр применённых патчей:** EditorPrefs ключ `CultivationGame_AppliedPatches`
-
-**Текущие патчи:**
-| ID | Описание |
-|----|----------|
-| PATCH-001 | Порядок Sorting Layers (Default < Background < Terrain < Objects < Player < UI) |
-| PATCH-002 | TilemapRenderer на правильных Sorting Layers |
-| PATCH-003 | PlayerVisual SpriteRenderer на слое 'Player' |
-| PATCH-004 | GlobalLight2D существует и настроен |
-| PATCH-005 | HarvestableSpawner назначен на GameController |
-| PATCH-006 | Grid cellSize=(2,2,1), cellGap=(0,0,0) |
-| PATCH-007 | Terrain НЕ имеет TilemapCollider2D |
-| PATCH-008 | Missing Scripts и Prefabs — очистка |
-
-**Меню Unity:**
-- `Tools → Scene Patch Builder → Apply All Pending Patches`
-- `Tools → Scene Patch Builder → Validate Current Scene`
-- `Tools → Scene Patch Builder → Show Applied Patches`
-- `Tools → Scene Patch Builder → Reset Patch History (Dangerous!)`
-
-**Как добавить новый патч:**
-1. Определить следующий ID (PATCH-009, PATCH-010...)
-2. Добавить `PatchInfo` в массив `PATCHES` в ScenePatchBuilder.cs
-3. Реализовать три метода: `IsPatchNNNApplied()`, `ApplyPatchNNN()`, `ValidatePatchNNN()`
-4. Проверить: `Validate Current Scene` должен показывать новый патч
-5. Закоммитить с пометкой `PATCH-NNN: описание`
-
-### ⛔ ПРАВИЛО: НЕ РЕДАКТИРОВАТЬ FullSceneBuilder.cs
-
-**Если агент собирается редактировать FullSceneBuilder.cs — ОСТАНОВИТЬСЯ и:**
-1. Проверить: это критический багфикс? Если НЕТ → создать патч в ScenePatchBuilder.cs
-2. Если ДА → запросить подтверждение у пользователя перед редактированием
-3. После любого редактирования FullSceneBuilder → обновить версию и дату в заголовке
-
-**Нарушение этого правила = регрессионный баг и потеря времени.**
 
 ---
 
@@ -211,7 +121,7 @@ PATCH-NNN:
 - .md файлы в UnityProject (без исключений)
 - Создавать чекпоинты вне `checkpoints/`
 - Создавать временную документацию вне `docs_temp/`
-- **Редактировать `FullSceneBuilder.cs`** — ЗАМОРОЖЕН. Все изменения сцены → `ScenePatchBuilder.cs` (патчи). Исключение: критический багфикс с подтверждением пользователя
+- Редактировать замороженные скрипты без подтверждения пользователя (см. `docs_asset_setup/SCENE_BUILDER_ARCHITECTURE.md`)
 
 ---
 
@@ -228,4 +138,4 @@ PATCH-NNN:
 ---
 
 *Создано: 2026-04-02 06:37:09 UTC*
-*Редактировано: 2026-04-17 13:42:54 UTC*
+*Редактировано: 2026-04-17 13:49:14 UTC*
