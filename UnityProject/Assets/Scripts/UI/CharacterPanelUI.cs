@@ -779,18 +779,24 @@ namespace CultivationGame.UI
 
         private string GetSlotName()
         {
-            // FIX CORE-M02: EquipmentSlot обновлён по INVENTORY_SYSTEM.md
+            // Редактировано: 2026-04-18 18:43:19 UTC — обновлено под новый EquipmentSlot enum
             return slotType switch
             {
-                EquipmentSlot.WeaponMain => "Основное оружие",
-                EquipmentSlot.WeaponOff => "Вторичное оружие",
-                EquipmentSlot.Armor => "Броня",
-                EquipmentSlot.Clothing => "Одежда",
+                EquipmentSlot.Head => "Голова",
+                EquipmentSlot.Torso => "Торс",
+                EquipmentSlot.Belt => "Пояс",
+                EquipmentSlot.Legs => "Ноги",
+                EquipmentSlot.Feet => "Ступни",
+                EquipmentSlot.WeaponMain => "Основная рука",
+                EquipmentSlot.WeaponOff => "Вторая рука",
+                EquipmentSlot.Amulet => "Амулет",
+                EquipmentSlot.RingLeft1 => "Кольцо (лев.1)",
+                EquipmentSlot.RingLeft2 => "Кольцо (лев.2)",
+                EquipmentSlot.RingRight1 => "Кольцо (прав.1)",
+                EquipmentSlot.RingRight2 => "Кольцо (прав.2)",
                 EquipmentSlot.Charger => "Зарядник",
-                EquipmentSlot.RingLeft => "Кольцо (левое)",
-                EquipmentSlot.RingRight => "Кольцо (правое)",
-                EquipmentSlot.Accessory => "Аксессуар",
-                EquipmentSlot.Backpack => "Рюкзак",
+                EquipmentSlot.Hands => "Перчатки",
+                EquipmentSlot.Back => "Плащ",
                 _ => slotType.ToString()
             };
         }

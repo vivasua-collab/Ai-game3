@@ -564,7 +564,7 @@ namespace CultivationGame.Inventory
         // Properties
         public string ItemId => equipmentData?.itemId ?? "";
         public string Name => equipmentData?.nameRu ?? "Unknown";
-        public EquipmentSlot Slot => equipmentData?.slot ?? EquipmentSlot.Backpack;
+        public EquipmentSlot Slot => equipmentData?.slot ?? EquipmentSlot.None;
         public int MaxDurability => equipmentData?.maxDurability ?? 100;
         public float DurabilityPercent => MaxDurability > 0 ? (float)durability / MaxDurability : 1f;
         public DurabilityCondition Condition => GetCondition();

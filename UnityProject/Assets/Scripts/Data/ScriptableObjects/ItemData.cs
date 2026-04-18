@@ -3,7 +3,7 @@
 // Cultivation World Simulator
 // Версия: 1.1
 // Создано: 2026-03-30 14:00:00 UTC
-// Редактировано: 2026-04-13 14:03:25 UTC — EquipmentData/MaterialData вынесены в отдельные файлы
+// Редактировано: 2026-04-18 18:43:19 UTC — +volume, +allowNesting, fix sizeHeight Range(1,2)
 // ============================================================================
 //
 // РЕДАКТИРОВАНИЕ 2026-04-13: EquipmentData и MaterialData вынесены в отдельные файлы
@@ -66,7 +66,7 @@ namespace CultivationGame.Data.ScriptableObjects
         public int sizeWidth = 1;
         
         [Tooltip("Высота в сетке инвентаря")]
-        [Range(1, 3)]
+        [Range(1, 2)]
         public int sizeHeight = 1;
         
         [Header("Physical")]
@@ -94,6 +94,13 @@ namespace CultivationGame.Data.ScriptableObjects
         
         [Tooltip("Требования к характеристикам")]
         public List<StatRequirement> statRequirements = new List<StatRequirement>();
+        
+        [Header("Storage")]
+        [Tooltip("Объём предмета (для колец хранения)")]
+        public float volume = 1.0f;
+        
+        [Tooltip("Куда можно поместить предмет (флаг вложения)")]
+        public NestingFlag allowNesting = NestingFlag.Any;
     }
     
     // === Helper Classes ===

@@ -315,21 +315,35 @@ namespace CultivationGame.Core
     #region Equipment
     
     /// <summary>
-    /// Слот экипировки
-    /// FIX CORE-M02: Обновлено по INVENTORY_SYSTEM.md
+    /// Слот экипировки (переработан по INVENTORY_UI_DRAFT.md v2.0)
+    /// 
+    /// Видимые слоты куклы (7): Head, Torso, Belt, Legs, Feet, WeaponMain, WeaponOff
+    /// Скрытые слоты (заглушки на будущее): Amulet, RingLeft1/2, RingRight1/2,
+    ///   Charger, Hands, Back
+    /// 
+    /// Редактировано: 2026-04-18 18:43:19 UTC — полная замена по драфту v2.0
+    /// Старые значения Armor/Clothing/Accessory/Backpack/RingLeft/RingRight УДАЛЕНЫ
     /// </summary>
     public enum EquipmentSlot
     {
         None,
-        WeaponMain,     // Основное оружие
-        WeaponOff,      // Вторичное оружие
-        Armor,          // Броня
-        Clothing,       // Одежда
-        Charger,        // Зарядник
-        RingLeft,       // Кольцо (левое)
-        RingRight,      // Кольцо (правое)
-        Accessory,      // Аксессуар
-        Backpack        // Рюкзак
+        // === Видимые слоты куклы ===
+        Head,           // Голова — шлем, шапка, корона
+        Torso,          // Торс — нагрудник, рубашка, роба
+        Belt,           // Пояс — ремень, пояс зелий, зарядник-пояс
+        Legs,           // Ноги — поножи, штаны
+        Feet,           // Ступни — сабатоны, сапоги
+        WeaponMain,     // Основная рука — одноручное или щит
+        WeaponOff,      // Вторичная рука — одноручное, щит или инструмент
+        // === Скрытые слоты (заглушки) ===
+        Amulet,         // Амулет — будет с ювелирной системой
+        RingLeft1,      // Кольцо левое 1 — будет с системой хранения
+        RingLeft2,      // Кольцо левое 2
+        RingRight1,     // Кольцо правое 1
+        RingRight2,     // Кольцо правое 2
+        Charger,        // Зарядник Ци — будет с системой зарядников
+        Hands,          // Перчатки — будет с расширением экипировки
+        Back            // Плащ/спина — будет с расширением экипировки
     }
     
     /// <summary>
@@ -394,7 +408,31 @@ namespace CultivationGame.Core
         Damaged,        // 20-39% — Повреждённое
         Broken          // <20% — Сломанное
     }
-    
+
+    /// <summary>
+    /// Флаг вложения — куда можно поместить предмет.
+    /// Источник: INVENTORY_UI_DRAFT.md §3.6.3
+    /// 
+    /// Создано: 2026-04-18 18:43:19 UTC
+    /// </summary>
+    public enum NestingFlag
+    {
+        None,       // Нельзя поместить ни в какое хранилище (живые существа, квестовые)
+        Spirit,     // Можно ТОЛЬКО в духовное хранилище
+        Ring,       // Можно ТОЛЬКО в кольцо хранения
+        Any         // Можно в любое хранилище (по умолчанию)
+    }
+
+    /// <summary>
+    /// Тип хвата оружия — определяет, сколько слотов рук занимает.
+    /// Создано: 2026-04-18 18:43:19 UTC
+    /// </summary>
+    public enum WeaponHandType
+    {
+        OneHand,        // Одноручное — занимает 1 слот
+        TwoHand         // Двуручное — занимает оба слота (WeaponMain + WeaponOff)
+    }
+
     #endregion
     
     #region Materials

@@ -2,6 +2,7 @@
 // EquipmentData.cs — Данные экипировки (оружие, броня, аксессуары)
 // Cultivation World Simulator
 // Создано: 2026-04-13 14:03:25 UTC
+// Редактировано: 2026-04-18 18:43:19 UTC — +handType (WeaponHandType)
 // ============================================================================
 //
 // ВЫНЕСЕН ИЗ ItemData.cs — Unity требует совпадение имени файла и класса
@@ -24,6 +25,9 @@ namespace CultivationGame.Data.ScriptableObjects
         [Header("Equipment")]
         [Tooltip("Слот экипировки")]
         public EquipmentSlot slot;
+        
+        [Tooltip("Тип хвата (одноручное/двуручное)")]
+        public WeaponHandType handType = WeaponHandType.OneHand;
         
         [Tooltip("Слои (для принципа матрёшка)")]
         public List<EquipmentLayer> layers = new List<EquipmentLayer>();

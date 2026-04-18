@@ -4,7 +4,7 @@
 // Версия: 1.1 — Добавлена валидация данных
 // ============================================================================
 // Создан: 2026-04-02
-// Редактировано: 2026-04-02 14:35:00 UTC
+// Редактировано: 2026-04-18 18:43:19 UTC — EquipmentSlot переписан по v2.0, +handType, +volume, +allowNesting
 // Добавляет генерацию: Techniques, NPCPresets, Equipment, Items, Materials
 // ============================================================================
 
@@ -316,8 +316,13 @@ namespace CultivationGame.Editor
             asset.value = data.value;
 
             asset.slot = ParseEquipmentSlot(data.slot);
+            asset.handType = data.isTwoHanded ? WeaponHandType.TwoHand : ParseWeaponHandType(data.slot, data.weaponType);
             asset.damage = Mathf.RoundToInt((data.damageRange.min + data.damageRange.max) / 2f);
             asset.defense = 0;
+
+            // Новые поля из ItemData
+            asset.volume = CalculateVolume(ItemCategory.Weapon, data.weight);
+            asset.allowNesting = NestingFlag.Any;
         }
 
         private static void ApplyArmorData(EquipmentData asset, ArmorJson data)
@@ -334,10 +339,15 @@ namespace CultivationGame.Editor
             asset.value = data.value;
 
             asset.slot = ParseEquipmentSlot(data.slot);
+            asset.handType = WeaponHandType.OneHand; // Броня никогда не двуручная
             asset.damage = 0;
             asset.defense = data.armorValue;
             asset.coverage = data.coverage;
             asset.damageReduction = data.damageReduction;
+
+            // Новые поля из ItemData
+            asset.volume = CalculateVolume(ItemCategory.Armor, data.weight);
+            asset.allowNesting = NestingFlag.Any;
         }
 
         #endregion
@@ -426,6 +436,10 @@ namespace CultivationGame.Editor
             asset.maxDurability = data.maxDurability;
 
             asset.requiredCultivationLevel = data.requiredCultivationLevel;
+
+            // Новые поля хранилища
+            asset.volume = CalculateVolume(ParseItemCategory(data.category), data.weight);
+            asset.allowNesting = CalculateNestingFlag(ParseItemCategory(data.category));
 
             if (data.effects != null)
             {
@@ -517,6 +531,10 @@ namespace CultivationGame.Editor
             asset.source = data.sources != null ? string.Join(", ", data.sources) : "";
             asset.dropChance = data.dropChance;
             asset.requiredLevel = data.requiredLevel > 0 ? data.requiredLevel : tier;
+
+            // Новые поля хранилища
+            asset.volume = CalculateVolume(ItemCategory.Material, data.durability * 0.01f);
+            asset.allowNesting = NestingFlag.Any;
         }
 
         #endregion
@@ -613,41 +631,110 @@ namespace CultivationGame.Editor
             }
         }
 
+        /// <summary>
+        /// Парсинг слота экипировки из JSON.
+        /// Редактировано: 2026-04-18 18:43:19 UTC — переписан под новый EquipmentSlot enum (v2.0)
+        /// </summary>
         private static EquipmentSlot ParseEquipmentSlot(object value)
         {
-            // FIX CORE-M02: EquipmentSlot обновлён по INVENTORY_SYSTEM.md
             if (value == null) return EquipmentSlot.WeaponMain;
 
             string slotStr = value.ToString().ToLower();
 
             switch (slotStr)
             {
-                // Weapons
+                // Видимые слоты куклы (7)
+                case "head":
+                case "head_armor":
+                case "head_clothing": return EquipmentSlot.Head;
+                case "torso":
+                case "torso_armor":
+                case "torso_clothing": return EquipmentSlot.Torso;
+                case "belt": return EquipmentSlot.Belt;
+                case "legs":
+                case "legs_armor":
+                case "legs_clothing": return EquipmentSlot.Legs;
+                case "feet":
+                case "feet_armor":
+                case "feet_clothing": return EquipmentSlot.Feet;
+                // Оружие
                 case "weapon_main": return EquipmentSlot.WeaponMain;
                 case "weapon_off": return EquipmentSlot.WeaponOff;
-                case "weapon_twohanded": return EquipmentSlot.WeaponMain;
-                // Armor
-                case "head_armor":
-                case "head_clothing": return EquipmentSlot.Armor;
-                case "torso_armor":
-                case "torso_clothing": return EquipmentSlot.Clothing;
-                case "hands":
-                case "hands_armor": return EquipmentSlot.WeaponOff;  // Перчатки → WeaponOff
-                case "legs_armor":
-                case "legs_clothing": return EquipmentSlot.Armor;
-                case "feet_armor":
-                case "feet_clothing": return EquipmentSlot.Armor;
-                // Charger
+                case "weapon_twohanded": return EquipmentSlot.WeaponMain; // handType определит двуручность
+                // Скрытые слоты
+                case "amulet": return EquipmentSlot.Amulet;
+                case "ring_left":
+                case "ring_left_1": return EquipmentSlot.RingLeft1;
+                case "ring_left_2": return EquipmentSlot.RingLeft2;
+                case "ring_right":
+                case "ring_right_1": return EquipmentSlot.RingRight1;
+                case "ring_right_2": return EquipmentSlot.RingRight2;
                 case "charger": return EquipmentSlot.Charger;
-                // Rings
-                case "ring_left": return EquipmentSlot.RingLeft;
-                case "ring_right": return EquipmentSlot.RingRight;
-                // Accessory
-                case "accessory": return EquipmentSlot.Accessory;
-                // Backpack
-                case "backpack": return EquipmentSlot.Backpack;
+                case "hands":
+                case "hands_armor":
+                case "hands_clothing": return EquipmentSlot.Hands;
+                case "back":
+                case "back_armor": return EquipmentSlot.Back;
                 default: return EquipmentSlot.WeaponMain;
             }
+        }
+
+        /// <summary>
+        /// Определяет тип хвата оружия по подтипу из JSON.
+        /// Создано: 2026-04-18 18:43:19 UTC
+        /// </summary>
+        private static WeaponHandType ParseWeaponHandType(string slot, string itemType)
+        {
+            string slotLower = (slot ?? "").ToLower();
+            string typeLower = (itemType ?? "").ToLower();
+
+            // Явно двуручные слоты
+            if (slotLower == "weapon_twohanded") return WeaponHandType.TwoHand;
+
+            // Двуручные подтипы оружия
+            if (typeLower.Contains("twohand") || typeLower.Contains("two_hand") ||
+                typeLower.Contains("greatsword") || typeLower.Contains("great_sword") ||
+                typeLower.Contains("spear") || typeLower.Contains("staff") ||
+                typeLower.Contains("bow") || typeLower.Contains("greataxe"))
+            {
+                return WeaponHandType.TwoHand;
+            }
+
+            return WeaponHandType.OneHand;
+        }
+
+        /// <summary>
+        /// Вычисляет объём предмета по категории.
+        /// Создано: 2026-04-18 18:43:19 UTC
+        /// Источник: INVENTORY_UI_DRAFT.md §4
+        /// </summary>
+        private static float CalculateVolume(ItemCategory category, float weight)
+        {
+            return category switch
+            {
+                ItemCategory.Consumable => 0.1f,
+                ItemCategory.Material => Mathf.Max(0.5f, weight * 0.5f),
+                ItemCategory.Technique => 0.1f,
+                ItemCategory.Quest => 1.0f,
+                ItemCategory.Weapon => Mathf.Clamp(weight, 1f, 4f),
+                ItemCategory.Armor => Mathf.Clamp(weight, 1f, 4f),
+                ItemCategory.Accessory => 0.2f,
+                _ => 1.0f
+            };
+        }
+
+        /// <summary>
+        /// Определяет флаг вложения по категории.
+        /// Создано: 2026-04-18 18:43:19 UTC
+        /// </summary>
+        private static NestingFlag CalculateNestingFlag(ItemCategory category)
+        {
+            return category switch
+            {
+                ItemCategory.Quest => NestingFlag.None,
+                ItemCategory.Technique => NestingFlag.Spirit,
+                _ => NestingFlag.Any
+            };
         }
 
         private static ItemCategory ParseItemCategory(string value)
