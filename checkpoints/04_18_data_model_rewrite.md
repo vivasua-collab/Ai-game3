@@ -1,7 +1,8 @@
 # Чекпоинт: Переделка моделей данных инвентаря
 
 **Дата:** 2026-04-18 18:39:26 UTC
-**Статус:** ⬜ pending
+**Редактировано:** 2026-04-18 18:47:58 UTC
+**Статус:** ✅ complete
 **Родительский чекпоинт:** `04_18_inventory_rewrite.md` (Этап 0)
 **Обоснование:** `docs_temp/INVENTORY_FLAGS_AUDIT.md` v2.0
 
@@ -15,7 +16,7 @@
 
 ## Задачи
 
-### 0.1 Переписать EquipmentSlot enum ⬜
+### 0.1 Переписать EquipmentSlot enum ✅
 
 **Файл:** `Scripts/Core/Enums.cs`
 
@@ -73,7 +74,7 @@ public enum EquipmentSlot
 
 ---
 
-### 0.2 Добавить NestingFlag enum ⬜
+### 0.2 Добавить NestingFlag enum ✅
 
 **Файл:** `Scripts/Core/Enums.cs` (секция #region Equipment)
 
@@ -93,7 +94,7 @@ public enum NestingFlag
 
 ---
 
-### 0.3 Добавить volume + allowNesting в ItemData ⬜
+### 0.3 Добавить volume + allowNesting в ItemData ✅
 
 **Файл:** `Scripts/Data/ScriptableObjects/ItemData.cs`
 
@@ -126,7 +127,7 @@ public NestingFlag allowNesting = NestingFlag.Any;
 
 ---
 
-### 0.4 Создать BackpackData.cs ⬜
+### 0.4 Создать BackpackData.cs ✅
 
 **Файл:** `Scripts/Data/ScriptableObjects/BackpackData.cs` (НОВЫЙ)
 
@@ -182,7 +183,7 @@ namespace CultivationGame.Data.ScriptableObjects
 
 ---
 
-### 0.5 Создать StorageRingData.cs ⬜
+### 0.5 Создать StorageRingData.cs ✅
 
 **Файл:** `Scripts/Data/ScriptableObjects/StorageRingData.cs` (НОВЫЙ)
 
@@ -230,7 +231,7 @@ namespace CultivationGame.Data.ScriptableObjects
 
 ---
 
-### 0.6 Добавить WeaponHandType enum + handType в EquipmentData ⬜
+### 0.6 Добавить WeaponHandType enum + handType в EquipmentData ✅
 
 **Файл 1:** `Scripts/Core/Enums.cs` (секция #region Equipment)
 
@@ -261,7 +262,7 @@ public WeaponHandType handType = WeaponHandType.OneHand;
 
 ---
 
-### 0.7 Обновить AssetGeneratorExtended.cs ⬜
+### 0.7 Обновить AssetGeneratorExtended.cs ✅
 
 **Файл:** `Scripts/Generators/AssetGeneratorExtended.cs`
 
@@ -289,7 +290,7 @@ public WeaponHandType handType = WeaponHandType.OneHand;
 
 ---
 
-### 0.8 Обновить файлы со ссылками на EquipmentSlot ⬜
+### 0.8 Обновить файлы со ссылками на EquipmentSlot ✅
 
 **Файлы для проверки/обновления:**
 
@@ -305,7 +306,7 @@ public WeaponHandType handType = WeaponHandType.OneHand;
 
 ---
 
-### 0.9 Проверить компиляцию ⬜
+### 0.9 Проверить компиляцию + git push ✅
 
 После всех изменений — убедиться, что проект компилируется без ошибок.
 
