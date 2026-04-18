@@ -32,6 +32,7 @@ using CultivationGame.TileSystem;
 using CultivationGame.Charger;
 using CultivationGame.Quest;
 using CultivationGame.Player;
+using CultivationGame.Inventory;
 
 namespace CultivationGame.Save
 {
@@ -65,6 +66,9 @@ namespace CultivationGame.Save
         private NPCController npcController;
         private QuestController questController;
         private PlayerController playerController;
+        
+        // SpiritStorage reference (added 2026-04-19)
+        private SpiritStorageController spiritStorageController;
         
         // === State ===
         private string currentSaveSlot = "";
@@ -147,6 +151,9 @@ namespace CultivationGame.Save
             npcController = FindFirstObjectByType<NPCController>();
             questController = FindFirstObjectByType<QuestController>();
             playerController = FindFirstObjectByType<PlayerController>();
+            
+            // SpiritStorage (added 2026-04-19)
+            spiritStorageController = FindFirstObjectByType<SpiritStorageController>();
         }
         
         private void EnsureSaveDirectory()
@@ -347,6 +354,12 @@ namespace CultivationGame.Save
             {
                 data.QuestData = questController.GetSaveData();
             }
+            
+            // SpiritStorage (added 2026-04-19)
+            if (spiritStorageController != null)
+            {
+                data.SpiritStorageData = spiritStorageController.GetSaveData();
+            }
             return data;
         }
         
@@ -479,6 +492,15 @@ namespace CultivationGame.Save
             // Note: Formation, Buff, Tile, Charger restore requires additional
             // LoadSaveData methods on those controllers. For now, data is saved
             // and will be restored when those methods are implemented.
+            
+            // SpiritStorage (added 2026-04-19)
+            if (spiritStorageController != null && data.SpiritStorageData != null)
+            {
+                // Note: itemDatabase must be built from loaded ItemData assets
+                // For now, pass empty dict — real implementation needs asset loading
+                var itemDatabase = new Dictionary<string, Data.ScriptableObjects.ItemData>();
+                spiritStorageController.LoadSaveData(data.SpiritStorageData, itemDatabase);
+            }
         }
         
         // === Validation ===
@@ -776,6 +798,9 @@ namespace CultivationGame.Save
         public TileSaveData TileData;
         public ChargerSaveData ChargerData;
         public QuestSystemSaveData QuestData;
+        
+        // SpiritStorage (added 2026-04-19)
+        public SpiritStorageSaveData SpiritStorageData;
     }
     
     /// <summary>

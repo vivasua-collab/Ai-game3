@@ -1,8 +1,8 @@
 # Чекпоинт: Полная переделка инвентаря
 
 **Дата:** 2026-04-18 18:20:58 UTC
-**Редактировано:** 2026-04-18 20:30:00 UTC
-**Статус:** in_progress — Этап 0 ✅, Этап 1 ✅, Этап 2 ✅, Этап 3 ✅
+**Редактировано:** 2026-04-19 12:30:00 UTC
+**Статус:** in_progress — Этап 0 ✅, Этап 1 ✅, Этап 2 ✅, Этап 3 ✅, Этап 4 ✅
 
 ## Контекст
 
@@ -119,8 +119,46 @@
 - BodyDollPanel поддерживает блокировку WeaponOff двуручным оружием
 - InventoryScreen интегрирован с UIManager через InventoryScreen component reference
 
+### Этап 4: Духовное хранилище ✅
+
+- [x] 4.1 Создать SpiritStorageController.cs ✅
+- [x] 4.2 Каталогизатор: фильтры по категории, редкости, весу, текстовый поиск ✅
+- [x] 4.3 Группировка по категории ✅
+- [x] 4.4 Стоимость Qi: baseQiCost + weight × qiCostPerKg ✅
+- [x] 4.5 Проверка NestingFlag: Any/Spirit → ✅, Ring/None → ❌ ✅
+- [x] 4.6 Запрет StorageRingData (пространственная нестабильность) ✅
+- [x] 4.7 Разблокировка на уровне культивации AwakenedCore (1) ✅
+- [x] 4.8 Save/Load: SpiritStorageSaveData + интеграция в GameSaveData ✅
+- [x] 4.9 Проверить компиляцию + git push ✅
+
+**Новый файл:**
+| Файл | Назначение |
+|------|-----------|
+| `Scripts/Inventory/SpiritStorageController.cs` | Духовное хранилище (Межмировая складка) |
+
+**Ключевые классы:**
+| Класс | Назначение |
+|-------|-----------|
+| `SpiritStorageController` | Безлимитное хранилище с каталогизатором |
+| `SpiritStorageEntry` | Запись в хранилище (itemId, count, durability, grade) |
+| `SpiritStorageSaveData` | Данные для сохранения |
+| `SpiritStorageEntrySaveData` | Запись для сохранения |
+
+**API:**
+- `StoreFromInventory(slotId, count)` — из инвентаря в складку (списывает Qi)
+- `RetrieveToInventory(entryId, count)` — из складки в инвентарь (списывает Qi)
+- `StoreDirect(itemData, count, ...)` — напрямую в складку (для загрузки/событий)
+- `CanStore(itemData)` — проверка NestingFlag
+- `CanStoreWithQi(itemData, count)` — проверка NestingFlag + Qi
+- `GetStorageCost(weight)` / `GetRetrievalCost(weight)` — расчёт Qi
+- `FilterByCategory()`, `FilterByRarity()`, `FilterByWeight()`, `Search(query)` — каталогизатор
+- `GetGroupedByCategory()` — группировка по категориям
+- `GetSaveData()` / `LoadSaveData()` — сохранение/загрузка
+
+**Изменённые файлы:**
+- `Scripts/Save/SaveManager.cs` — +SpiritStorageController reference, +SpiritStorageData в GameSaveData
+
 ### Отложено (не в текущей сессии):
-- Этап 4: Духовное хранилище (SpiritStorageController + каталогизатор)
 - Этап 5: Кольца хранения (StorageRingController + объём)
 - Этап 6: Пояс + контекстное меню + анимации
 
@@ -166,9 +204,9 @@
 
 ## Следующий шаг
 
-Начать Этап 4 — Духовное хранилище (SpiritStorageController + каталогизатор).
+Начать Этап 5 — Кольца хранения (StorageRingController + объём).
 
 ---
 
 *Чекпоинт создан: 2026-04-18 18:20:58 UTC*
-*Редактировано: 2026-04-18 19:25:00 UTC*
+*Редактировано: 2026-04-19 12:30:00 UTC*
