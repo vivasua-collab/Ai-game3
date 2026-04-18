@@ -214,7 +214,9 @@ namespace CultivationGame.Inventory
             }
             else
             {
-                result.failReason = "Crafting failed";
+                // FIX CRA-BUG-01: Уведомление о потере материалов при провале крафта
+                result.failReason = "Crafting failed — материалы потеряны";
+                result.materialsLost = true; // Флаг потери материалов
                 AddSkillExperience(recipe.craftingType, recipe.experienceGain * count / 2);
                 OnCraftFailure?.Invoke(result);
             }
@@ -331,7 +333,7 @@ namespace CultivationGame.Inventory
             }
 
             // Проверяем место в инвентаре
-            int freeSlots = playerInventory.FreeSlots;
+            int freeSlots = playerInventory.FreeCells;
             if (freeSlots < recipe.resultItem.sizeWidth * recipe.resultItem.sizeHeight)
             {
                 validation.canCraft = false;
@@ -501,15 +503,47 @@ namespace CultivationGame.Inventory
         }
 
         /// <summary>
-        /// Получает все доступные рецепты
+        /// Получает все доступные рецепты (FIX CRA-BUG-03: оптимизировано, O(N) вместо O(N²))
         /// </summary>
         public List<CraftingRecipe> GetAvailableRecipes()
         {
             var available = new List<CraftingRecipe>();
 
+            if (recipes == null) return available;
+
+            // Предвычисляем доступные предметы для быстрой проверки
+            var availableItems = new Dictionary<string, int>();
+            foreach (var slot in playerInventory.Slots)
+            {
+                if (slot.ItemData != null)
+                {
+                    if (!availableItems.ContainsKey(slot.ItemData.itemId))
+                        availableItems[slot.ItemData.itemId] = 0;
+                    availableItems[slot.ItemData.itemId] += slot.Count;
+                }
+            }
+
             foreach (var recipe in recipes)
             {
-                if (CanCraft(recipe))
+                if (recipe == null || recipe.resultItem == null) continue;
+
+                // Быстрая проверка: есть ли нужные материалы?
+                bool canCraft = true;
+                if (recipe.ingredients != null)
+                {
+                    foreach (var ingredient in recipe.ingredients)
+                    {
+                        if (ingredient == null) continue;
+                        availableItems.TryGetValue(ingredient.materialId, out int have);
+                        if (have < ingredient.amount)
+                        {
+                            canCraft = false;
+                            break;
+                        }
+                    }
+                }
+
+                if (canCraft)
                 {
                     available.Add(recipe);
                 }
@@ -636,6 +670,8 @@ namespace CultivationGame.Inventory
         public EquipmentGrade grade;
         public bool isCritical;
         public string failReason;
+        /// <summary>FIX CRA-BUG-01: Флаг потери материалов при провале</summary>
+        public bool materialsLost;
 
         public int TotalValue => itemsCreated * (recipe?.resultItem?.value ?? 0);
     }

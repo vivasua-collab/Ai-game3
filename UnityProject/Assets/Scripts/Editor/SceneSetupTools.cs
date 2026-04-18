@@ -403,10 +403,12 @@ public class SceneSetupTools : EditorWindow
         var ic = player.GetComponent<InventoryController>();
         if (ic == null) return;
         
+        // v2.0: gridWidth/gridHeight заменены на defaultGridWidth/defaultGridHeight
+        // размер сетки теперь определяется рюкзаком (BackpackData)
         SerializedObject so = new SerializedObject(ic);
-        SetProperty(so, "gridWidth", 8);
-        SetProperty(so, "gridHeight", 6);
-        SetProperty(so, "maxWeight", 100f);
+        SetProperty(so, "defaultGridWidth", 3);
+        SetProperty(so, "defaultGridHeight", 4);
+        SetProperty(so, "baseMaxWeight", 30f);
         SetProperty(so, "useWeightLimit", true);
         so.ApplyModifiedProperties();
     }

@@ -139,10 +139,12 @@ namespace CultivationGame.Editor.SceneBuilder
         {
             SceneBuilderUtils.SetupComponent<InventoryController>(player, ic =>
             {
+                // v2.0: gridWidth/gridHeight заменены на defaultGridWidth/defaultGridHeight
+                // размер сетки теперь определяется рюкзаком (BackpackData)
                 SerializedObject so = new SerializedObject(ic);
-                SceneBuilderUtils.SetProperty(so, "gridWidth", 8);
-                SceneBuilderUtils.SetProperty(so, "gridHeight", 6);
-                SceneBuilderUtils.SetProperty(so, "maxWeight", 100f);
+                SceneBuilderUtils.SetProperty(so, "defaultGridWidth", 3);
+                SceneBuilderUtils.SetProperty(so, "defaultGridHeight", 4);
+                SceneBuilderUtils.SetProperty(so, "baseMaxWeight", 30f);
                 SceneBuilderUtils.SetProperty(so, "useWeightLimit", true);
                 so.ApplyModifiedProperties();
             });

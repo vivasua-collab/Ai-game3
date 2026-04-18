@@ -171,7 +171,7 @@ namespace CultivationGame.UI
             }
 
             // Обновляем вес
-            UpdateWeightDisplay(inventoryController.CurrentWeight, inventoryController.maxWeight);
+            UpdateWeightDisplay(inventoryController.EffectiveWeight, inventoryController.MaxWeight);
         }
 
         private void CreateSlotUI(InventorySlot slot)

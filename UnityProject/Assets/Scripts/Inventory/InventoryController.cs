@@ -1,57 +1,90 @@
 // ============================================================================
-// InventoryController.cs — Система инвентаря
+// InventoryController.cs — Система инвентаря (v2.0 — рюкзак + багфиксы)
 // Cultivation World Simulator
-// Версия: 1.0
+// ============================================================================
+// Создано: 2026-04-03
+// Редактировано: 2026-04-18 19:15:00 UTC — ПОЛНАЯ ПЕРЕРАБОТКА по INVENTORY_UI_DRAFT.md v2.0
+// ============================================================================
+// Изменения v2.0:
+// - Динамическая сетка от BackpackData (не фиксированная 8×6)
+// - SetBackpack() + effectiveWeight с учётом weightReduction
+// - Мост EquipFromInventory / UnequipToInventory
+// - FIX INV-BUG-01: Рекурсивный AddItem → итеративный (вес корректен)
+// - FIX INV-BUG-02: RemoveFromSlot — вес до удаления из списка
+// - FIX INV-BUG-03: Resize — полная перестройка occupancy
+// - FIX INV-BUG-04: FreeGrid — перестройка вместо побитового сброса
+// - FIX INV-BUG-05: HasDurability при durability=0 → true
+// - FIX INV-BUG-06: LoadSaveData durability=0 → загружается
+// - FIX INV-BUG-07: FreeSlots считает ячейки, а не предметы
 // ============================================================================
 
 using System;
 using System.Collections.Generic;
 using UnityEngine;
 using CultivationGame.Core;
+using CultivationGame.Data.ScriptableObjects;
 
 namespace CultivationGame.Inventory
 {
     /// <summary>
-    /// Контроллер инвентаря (Diablo-style сетка).
-    /// Управляет слотами, стаками и операциями с предметами.
+    /// Контроллер инвентаря (v2.0 — Diablo-style сетка + рюкзак).
+    /// 
+    /// Размер сетки определяется надетым рюкзаком (BackpackData).
+    /// Стартовый: 3×4 (12 ячеек). При смене рюкзака — пересоздаётся.
+    /// 
+    /// Механики:
+    /// - Вес: effectiveWeight = totalWeight × (1 − backpack.weightReduction)
+    /// - Максимальный вес: maxWeight + backpack.maxWeightBonus
+    /// - Предметы 1×1, 2×1, 1×2, 2×2
+    /// - Стак стекируемых предметов (maxStack)
     /// </summary>
     public class InventoryController : MonoBehaviour
     {
         #region Configuration
 
-        [Header("Inventory Settings")]
-        [Tooltip("Ширина сетки инвентаря")]
-        [Range(4, 16)]
-        public int gridWidth = 8;
-
-        [Tooltip("Высота сетки инвентаря")]
-        [Range(4, 12)]
-        public int gridHeight = 6;
-
-        [Tooltip("Максимальный вес")]
-        public float maxWeight = 100f;
+        [Header("Base Settings (overridden by backpack)")]
+        [Tooltip("Базовый максимальный вес (без рюкзака)")]
+        public float baseMaxWeight = 30f;
 
         [Tooltip("Включить ограничение веса")]
         public bool useWeightLimit = true;
 
+        [Header("Default Grid (no backpack)")]
+        [Tooltip("Ширина сетки по умолчанию (без рюкзака)")]
+        [Range(3, 10)]
+        public int defaultGridWidth = 3;
+
+        [Tooltip("Высота сетки по умолчанию (без рюкзака)")]
+        [Range(3, 8)]
+        public int defaultGridHeight = 4;
+
         [Header("References")]
-        [Tooltip("Владелец инвентаря")]
-        public MonoBehaviour owner;
+        [Tooltip("Контроллер экипировки (для моста)")]
+        public EquipmentController equipmentController;
 
         #endregion
 
         #region Runtime Data
 
-        // Сетка занятости (true = занято)
-        private bool[,] gridOccupancy;
+        /// <summary>Текущий рюкзак (null = стартовая сумка)</summary>
+        private BackpackData currentBackpack;
 
-        // Список всех слотов
+        /// <summary>Ширина сетки (определяется рюкзаком)</summary>
+        private int gridWidth;
+
+        /// <summary>Высота сетки (определяется рюкзаком)</summary>
+        private int gridHeight;
+
+        /// <summary>Сетка занятости: slotId → true (ячейка занята)</summary>
+        private int[,] gridSlotIds;
+
+        /// <summary>Список всех слотов</summary>
         private List<InventorySlot> slots = new List<InventorySlot>();
 
-        // Текущий вес
-        private float currentWeight = 0f;
+        /// <summary>Сырой вес (без снижения от рюкзака)</summary>
+        private float rawWeight = 0f;
 
-        // Счётчик ID для слотов
+        /// <summary>Счётчик ID для слотов</summary>
         private int nextSlotId = 0;
 
         #endregion
@@ -63,17 +96,70 @@ namespace CultivationGame.Inventory
         public event Action<InventorySlot, int> OnItemStackChanged;
         public event Action<float, float> OnWeightChanged;
         public event Action OnInventoryFull;
+        /// <summary>Рюкзак изменён (сменился или снялся)</summary>
+        public event Action<BackpackData> OnBackpackChanged;
 
         #endregion
 
         #region Properties
 
+        public int GridWidth => gridWidth;
+        public int GridHeight => gridHeight;
         public int TotalSlots => gridWidth * gridHeight;
+
+        /// <summary>Количество занятых ячеек (FIX INV-BUG-07)</summary>
+        public int UsedCells
+        {
+            get
+            {
+                int count = 0;
+                for (int x = 0; x < gridWidth; x++)
+                    for (int y = 0; y < gridHeight; y++)
+                        if (gridSlotIds[x, y] >= 0)
+                            count++;
+                return count;
+            }
+        }
+
+        /// <summary>Количество свободных ячеек (FIX INV-BUG-07)</summary>
+        public int FreeCells => TotalSlots - UsedCells;
+
+        /// <summary>Количество предметов (для совместимости)</summary>
         public int UsedSlots => slots.Count;
-        public int FreeSlots => TotalSlots - UsedSlots;
-        public float CurrentWeight => currentWeight;
-        public float WeightPercent => maxWeight > 0 ? currentWeight / maxWeight : 0f;
-        public bool IsOverencumbered => useWeightLimit && currentWeight > maxWeight;
+
+        /// <summary>Эффективный вес с учётом снижения от рюкзака</summary>
+        public float EffectiveWeight
+        {
+            get
+            {
+                float reduction = currentBackpack != null ? currentBackpack.weightReduction / 100f : 0f;
+                return rawWeight * (1f - reduction);
+            }
+        }
+
+        /// <summary>Сырой вес (без снижения)</summary>
+        public float RawWeight => rawWeight;
+
+        /// <summary>Максимальный вес с учётом бонуса рюкзака</summary>
+        public float MaxWeight
+        {
+            get
+            {
+                float bonus = currentBackpack != null ? currentBackpack.maxWeightBonus : 0f;
+                return baseMaxWeight + bonus;
+            }
+        }
+
+        /// <summary>Процент веса</summary>
+        public float WeightPercent => MaxWeight > 0 ? EffectiveWeight / MaxWeight : 0f;
+
+        /// <summary>Перегруз</summary>
+        public bool IsOverencumbered => useWeightLimit && EffectiveWeight > MaxWeight;
+
+        /// <summary>Текущий рюкзак</summary>
+        public BackpackData CurrentBackpack => currentBackpack;
+
+        /// <summary>Доступ к слотам (только чтение)</summary>
         public IReadOnlyList<InventorySlot> Slots => slots.AsReadOnly();
 
         #endregion
@@ -82,59 +168,96 @@ namespace CultivationGame.Inventory
 
         private void Awake()
         {
-            InitializeGrid();
+            ApplyGridSize(defaultGridWidth, defaultGridHeight);
         }
 
         #endregion
 
-        #region Initialization
+        #region Backpack Management
 
         /// <summary>
-        /// Инициализирует сетку инвентаря
+        /// Устанавливает рюкзак. Изменяет размер сетки.
+        /// Если старый рюкзак не пуст — предметы сохраняются (если помещаются).
         /// </summary>
-        public void InitializeGrid()
+        /// <returns>true если рюкзак успешно установлен</returns>
+        public bool SetBackpack(BackpackData backpackData)
         {
-            gridOccupancy = new bool[gridWidth, gridHeight];
-            slots.Clear();
-            currentWeight = 0f;
-            nextSlotId = 0;
-        }
+            int newWidth = backpackData != null ? backpackData.gridWidth : defaultGridWidth;
+            int newHeight = backpackData != null ? backpackData.gridHeight : defaultGridHeight;
 
-        /// <summary>
-        /// Изменяет размер инвентаря
-        /// </summary>
-        public bool Resize(int newWidth, int newHeight)
-        {
-            if (newWidth < gridWidth || newHeight < gridHeight)
+            // Проверяем, помещаются ли предметы в новую сетку
+            foreach (var slot in slots)
             {
-                // Проверяем, не выходят ли предметы за новые границы
-                foreach (var slot in slots)
+                if (slot.GridX + slot.ItemWidth > newWidth ||
+                    slot.GridY + slot.ItemHeight > newHeight)
                 {
-                    if (slot.GridX + slot.ItemWidth > newWidth ||
-                        slot.GridY + slot.ItemHeight > newHeight)
-                    {
-                        return false; // Нельзя уменьшить — предметы не влезут
-                    }
-            }
-            }
-
-            // Создаём новую сетку
-            var newGrid = new bool[newWidth, newHeight];
-
-            // Копируем занятые ячейки
-            for (int x = 0; x < Mathf.Min(gridWidth, newWidth); x++)
-            {
-                for (int y = 0; y < Mathf.Min(gridHeight, newHeight); y++)
-                {
-                    newGrid[x, y] = gridOccupancy[x, y];
+                    // Предмет не помещается — нельзя сменить рюкзак
+                    Debug.LogWarning($"[InventoryController] Нельзя сменить рюкзак: предмет {slot.ItemData?.nameRu} не помещается");
+                    return false;
                 }
             }
 
-            gridOccupancy = newGrid;
-            gridWidth = newWidth;
-            gridHeight = newHeight;
+            currentBackpack = backpackData;
+
+            // Пересоздаём сетку, сохраняя предметы
+            ApplyGridSize(newWidth, newHeight);
+
+            OnBackpackChanged?.Invoke(currentBackpack);
+            OnWeightChanged?.Invoke(EffectiveWeight, MaxWeight);
 
             return true;
+        }
+
+        /// <summary>
+        /// Снимает рюкзак. Возвращает false если в новой сетке не помещаются предметы.
+        /// </summary>
+        public bool RemoveBackpack()
+        {
+            return SetBackpack(null);
+        }
+
+        #endregion
+
+        #region Grid Initialization
+
+        private void ApplyGridSize(int width, int height)
+        {
+            gridWidth = width;
+            gridHeight = height;
+
+            // Создаём пустую сетку (-1 = свободно)
+            gridSlotIds = new int[width, height];
+            for (int x = 0; x < width; x++)
+                for (int y = 0; y < height; y++)
+                    gridSlotIds[x, y] = -1;
+
+            // Восстанавливаем занятые ячейки из существующих слотов
+            foreach (var slot in slots)
+            {
+                if (slot.GridX + slot.ItemWidth <= width &&
+                    slot.GridY + slot.ItemHeight <= height)
+                {
+                    OccupyGrid(slot.SlotId, slot.GridX, slot.GridY, slot.ItemWidth, slot.ItemHeight);
+                }
+            }
+
+            nextSlotId = slots.Count > 0 ? Mathf.Max(nextSlotId, slots[slots.Count - 1].SlotId + 1) : 0;
+        }
+
+        /// <summary>
+        /// Перестраивает сетку занятости из слотов (FIX INV-BUG-04).
+        /// Используется вместо побитового FreeGrid для предотвращения пересечений.
+        /// </summary>
+        private void RebuildGridFromSlots()
+        {
+            for (int x = 0; x < gridWidth; x++)
+                for (int y = 0; y < gridHeight; y++)
+                    gridSlotIds[x, y] = -1;
+
+            foreach (var slot in slots)
+            {
+                OccupyGrid(slot.SlotId, slot.GridX, slot.GridY, slot.ItemWidth, slot.ItemHeight);
+            }
         }
 
         #endregion
@@ -142,107 +265,124 @@ namespace CultivationGame.Inventory
         #region Add Item
 
         /// <summary>
-        /// Добавляет предмет в инвентарь
+        /// Добавляет предмет в инвентарь (итеративно, FIX INV-BUG-01).
+        /// Сначала заполняет существующие стакы, затем — новые слоты.
         /// </summary>
-        public InventorySlot AddItem(Data.ScriptableObjects.ItemData itemData, int count = 1)
+        public InventorySlot AddItem(ItemData itemData, int count = 1)
         {
             if (itemData == null || count <= 0)
                 return null;
 
-            // Проверяем вес
-            if (useWeightLimit)
-            {
-                float addedWeight = itemData.weight * count;
-                if (currentWeight + addedWeight > maxWeight)
-                {
-                    OnInventoryFull?.Invoke();
-                    return null;
-                }
-            }
+            int remaining = count;
+            InventorySlot lastSlot = null;
 
-            // Если предмет стакается, ищем существующий слот
+            // Шаг 1: Заполняем существующие стаки (если предмет стакается)
             if (itemData.stackable)
             {
-                var existingSlot = FindSlotWithItem(itemData.itemId);
-                if (existingSlot != null)
+                foreach (var slot in slots)
                 {
-                    int spaceLeft = itemData.maxStack - existingSlot.Count;
-                    int toAdd = Mathf.Min(count, spaceLeft);
+                    if (remaining <= 0) break;
+                    if (slot.ItemData.itemId != itemData.itemId) continue;
+                    if (slot.Count >= itemData.maxStack) continue;
 
-                    existingSlot.AddCount(toAdd);
-                    UpdateWeight(itemData.weight * toAdd);
+                    int spaceLeft = itemData.maxStack - slot.Count;
+                    int toAdd = Mathf.Min(remaining, spaceLeft);
 
-                    if (toAdd < count)
+                    // Проверяем вес
+                    if (useWeightLimit && EffectiveWeight + itemData.weight * toAdd > MaxWeight)
                     {
-                        // Остаток добавляем в новый слот
-                        AddItem(itemData, count - toAdd);
+                        // Пробуем добавить сколько помещается по весу
+                        float availableWeight = MaxWeight - EffectiveWeight;
+                        int canAfford = availableWeight > 0 ? Mathf.FloorToInt(availableWeight / itemData.weight) : 0;
+                        toAdd = Mathf.Min(toAdd, canAfford);
+                        if (toAdd <= 0)
+                        {
+                            OnInventoryFull?.Invoke();
+                            return lastSlot;
+                        }
                     }
 
-                    OnItemStackChanged?.Invoke(existingSlot, existingSlot.Count);
-                    return existingSlot;
+                    slot.AddCount(toAdd);
+                    rawWeight += itemData.weight * toAdd;
+                    remaining -= toAdd;
+
+                    OnItemStackChanged?.Invoke(slot, slot.Count);
+                    lastSlot = slot;
                 }
             }
 
-            // Ищем свободное место для нового слота
-            var position = FindFreePosition(itemData.sizeWidth, itemData.sizeHeight);
-            if (!position.HasValue)
+            // Шаг 2: Создаём новые слоты для оставшихся предметов
+            while (remaining > 0)
             {
-                OnInventoryFull?.Invoke();
-                return null;
+                var position = FindFreePosition(itemData.sizeWidth, itemData.sizeHeight);
+                if (!position.HasValue)
+                {
+                    OnInventoryFull?.Invoke();
+                    return lastSlot;
+                }
+
+                int toPlace = Mathf.Min(remaining, itemData.maxStack);
+
+                // Проверяем вес
+                if (useWeightLimit && EffectiveWeight + itemData.weight * toPlace > MaxWeight)
+                {
+                    float availableWeight = MaxWeight - EffectiveWeight;
+                    int canAfford = availableWeight > 0 ? Mathf.FloorToInt(availableWeight / itemData.weight) : 0;
+                    toPlace = Mathf.Min(toPlace, canAfford);
+                    if (toPlace <= 0)
+                    {
+                        OnInventoryFull?.Invoke();
+                        return lastSlot;
+                    }
+                }
+
+                var newSlot = CreateSlot(itemData, position.Value.x, position.Value.y, toPlace);
+                slots.Add(newSlot);
+                OccupyGrid(newSlot.SlotId, position.Value.x, position.Value.y, itemData.sizeWidth, itemData.sizeHeight);
+
+                rawWeight += itemData.weight * toPlace;
+                remaining -= toPlace;
+
+                OnItemAdded?.Invoke(newSlot);
+                lastSlot = newSlot;
             }
 
-            // Создаём новый слот
-            var newSlot = CreateSlot(itemData, position.Value.x, position.Value.y, count);
-            slots.Add(newSlot);
-
-            // Занимаем ячейки
-            OccupyGrid(position.Value.x, position.Value.y, itemData.sizeWidth, itemData.sizeHeight);
-
-            // Обновляем вес
-            UpdateWeight(itemData.weight * count);
-
-            OnItemAdded?.Invoke(newSlot);
-            return newSlot;
+            OnWeightChanged?.Invoke(EffectiveWeight, MaxWeight);
+            return lastSlot;
         }
 
         /// <summary>
         /// Добавляет предмет в конкретную позицию
         /// </summary>
-        public InventorySlot AddItemAt(Data.ScriptableObjects.ItemData itemData, int gridX, int gridY, int count = 1)
+        public InventorySlot AddItemAt(ItemData itemData, int gridX, int gridY, int count = 1)
         {
             if (itemData == null || count <= 0)
                 return null;
 
-            // Проверяем границы
             if (!IsValidPosition(gridX, gridY, itemData.sizeWidth, itemData.sizeHeight))
                 return null;
 
-            // Проверяем, свободно ли место
             if (!IsAreaFree(gridX, gridY, itemData.sizeWidth, itemData.sizeHeight))
                 return null;
 
-            // Проверяем вес
             if (useWeightLimit)
             {
                 float addedWeight = itemData.weight * count;
-                if (currentWeight + addedWeight > maxWeight)
+                if (EffectiveWeight + addedWeight > MaxWeight)
                 {
                     OnInventoryFull?.Invoke();
                     return null;
                 }
             }
 
-            // Создаём слот
             var newSlot = CreateSlot(itemData, gridX, gridY, count);
             slots.Add(newSlot);
+            OccupyGrid(newSlot.SlotId, gridX, gridY, itemData.sizeWidth, itemData.sizeHeight);
 
-            // Занимаем ячейки
-            OccupyGrid(gridX, gridY, itemData.sizeWidth, itemData.sizeHeight);
-
-            // Обновляем вес
-            UpdateWeight(itemData.weight * count);
+            rawWeight += itemData.weight * count;
 
             OnItemAdded?.Invoke(newSlot);
+            OnWeightChanged?.Invoke(EffectiveWeight, MaxWeight);
             return newSlot;
         }
 
@@ -303,24 +443,36 @@ namespace CultivationGame.Inventory
         public void Clear()
         {
             slots.Clear();
-            InitializeGrid();
-            currentWeight = 0f;
-            OnWeightChanged?.Invoke(0f, maxWeight);
+            ApplyGridSize(gridWidth, gridHeight);
+            rawWeight = 0f;
+            OnWeightChanged?.Invoke(0f, MaxWeight);
         }
 
+        /// <summary>
+        /// Удаляет предметы из слота (FIX INV-BUG-02: вес вычисляется до модификации).
+        /// </summary>
         private bool RemoveFromSlot(InventorySlot slot, int count)
         {
+            if (count <= 0) return false;
             if (count > slot.Count)
                 count = slot.Count;
 
+            // Вычисляем вес ДО модификации слота
+            float weightDelta = -slot.ItemData.weight * count;
+
+            // Обновляем слот
             slot.RemoveCount(count);
-            UpdateWeight(-slot.ItemData.weight * count);
+
+            // Обновляем вес
+            rawWeight += weightDelta;
+            rawWeight = Mathf.Max(0f, rawWeight);
 
             // Если слот пуст, удаляем его
             if (slot.Count <= 0)
             {
-                FreeGrid(slot.GridX, slot.GridY, slot.ItemWidth, slot.ItemHeight);
+                // FIX INV-BUG-04: перестраиваем сетку вместо побитового FreeGrid
                 slots.Remove(slot);
+                RebuildGridFromSlots();
                 OnItemRemoved?.Invoke(slot);
             }
             else
@@ -328,6 +480,7 @@ namespace CultivationGame.Inventory
                 OnItemStackChanged?.Invoke(slot, slot.Count);
             }
 
+            OnWeightChanged?.Invoke(EffectiveWeight, MaxWeight);
             return true;
         }
 
@@ -344,25 +497,21 @@ namespace CultivationGame.Inventory
             if (slot == null)
                 return false;
 
-            // Проверяем границы
             if (!IsValidPosition(newGridX, newGridY, slot.ItemWidth, slot.ItemHeight))
                 return false;
 
-            // Освобождаем старое место
-            FreeGrid(slot.GridX, slot.GridY, slot.ItemWidth, slot.ItemHeight);
+            // Освобождаем старое место и проверяем новое
+            ClearSlotFromGrid(slot.SlotId);
 
-            // Проверяем, свободно ли новое место
             if (!IsAreaFree(newGridX, newGridY, slot.ItemWidth, slot.ItemHeight))
             {
                 // Возвращаем старое место
-                OccupyGrid(slot.GridX, slot.GridY, slot.ItemWidth, slot.ItemHeight);
+                OccupyGrid(slot.SlotId, slot.GridX, slot.GridY, slot.ItemWidth, slot.ItemHeight);
                 return false;
             }
 
             // Занимаем новое место
-            OccupyGrid(newGridX, newGridY, slot.ItemWidth, slot.ItemHeight);
-
-            // Обновляем позицию
+            OccupyGrid(slot.SlotId, newGridX, newGridY, slot.ItemWidth, slot.ItemHeight);
             slot.SetPosition(newGridX, newGridY);
 
             return true;
@@ -386,8 +535,8 @@ namespace CultivationGame.Inventory
                 return false;
 
             // Освобождаем оба места
-            FreeGrid(slot1.GridX, slot1.GridY, slot1.ItemWidth, slot1.ItemHeight);
-            FreeGrid(slot2.GridX, slot2.GridY, slot2.ItemWidth, slot2.ItemHeight);
+            ClearSlotFromGrid(slot1.SlotId);
+            ClearSlotFromGrid(slot2.SlotId);
 
             // Меняем позиции
             int tempX = slot1.GridX;
@@ -397,43 +546,93 @@ namespace CultivationGame.Inventory
             slot2.SetPosition(tempX, tempY);
 
             // Занимаем новые места
-            OccupyGrid(slot1.GridX, slot1.GridY, slot1.ItemWidth, slot1.ItemHeight);
-            OccupyGrid(slot2.GridX, slot2.GridY, slot2.ItemWidth, slot2.ItemHeight);
+            OccupyGrid(slot1.SlotId, slot1.GridX, slot1.GridY, slot1.ItemWidth, slot1.ItemHeight);
+            OccupyGrid(slot2.SlotId, slot2.GridX, slot2.GridY, slot2.ItemWidth, slot2.ItemHeight);
 
             return true;
         }
 
         #endregion
 
-        #region Query
+        #region Equipment Bridge
 
         /// <summary>
-        /// Находит слот по ID
+        /// Экипирует предмет из инвентаря на куклу.
+        /// Удаляет из инвентаря и надевает на EquipmentController.
         /// </summary>
+        /// <returns>Экземпляр экипировки или null</returns>
+        public EquipmentInstance EquipFromInventory(int slotId)
+        {
+            var slot = FindSlotById(slotId);
+            if (slot == null)
+                return null;
+
+            if (!(slot.ItemData is EquipmentData equipData))
+                return null;
+
+            if (equipmentController == null)
+                return null;
+
+            // Пробуем экипировать
+            var instance = equipmentController.Equip(equipData, slot.grade, slot.Durability);
+            if (instance != null)
+            {
+                // Удаляем из инвентаря
+                RemoveFromSlot(slot, 1);
+            }
+
+            return instance;
+        }
+
+        /// <summary>
+        /// Снимает предмет с куклы и помещает в инвентарь.
+        /// </summary>
+        /// <returns>Слот инвентаря или null (нет места)</returns>
+        public InventorySlot UnequipToInventory(EquipmentSlot equipSlot)
+        {
+            if (equipmentController == null)
+                return null;
+
+            var instance = equipmentController.Unequip(equipSlot);
+            if (instance == null)
+                return null;
+
+            // Добавляем в инвентарь
+            var inventorySlot = AddItem(instance.equipmentData, 1);
+            if (inventorySlot != null)
+            {
+                // Переносим прочность и грейд
+                inventorySlot.durability = instance.durability;
+                inventorySlot.grade = instance.grade;
+            }
+            else
+            {
+                // Нет места — возвращаем обратно
+                equipmentController.Equip(instance.equipmentData, instance.grade, instance.durability);
+            }
+
+            return inventorySlot;
+        }
+
+        #endregion
+
+        #region Query
+
         public InventorySlot FindSlotById(int slotId)
         {
             return slots.Find(s => s.SlotId == slotId);
         }
 
-        /// <summary>
-        /// Находит слот с указанным предметом
-        /// </summary>
         public InventorySlot FindSlotWithItem(string itemId)
         {
             return slots.Find(s => s.ItemData.itemId == itemId && s.Count < s.ItemData.maxStack);
         }
 
-        /// <summary>
-        /// Находит все слоты с указанным предметом
-        /// </summary>
         public List<InventorySlot> FindAllSlotsWithItem(string itemId)
         {
             return slots.FindAll(s => s.ItemData.itemId == itemId);
         }
 
-        /// <summary>
-        /// Подсчитывает количество предмета
-        /// </summary>
         public int CountItem(string itemId)
         {
             int total = 0;
@@ -445,45 +644,68 @@ namespace CultivationGame.Inventory
             return total;
         }
 
-        /// <summary>
-        /// Проверяет наличие предмета
-        /// </summary>
         public bool HasItem(string itemId, int count = 1)
         {
             return CountItem(itemId) >= count;
         }
 
-        /// <summary>
-        /// Проверяет наличие свободного места
-        /// </summary>
         public bool HasFreeSpace(int width = 1, int height = 1)
         {
             return FindFreePosition(width, height).HasValue;
         }
 
-        /// <summary>
-        /// Получает слот по позиции в сетке
-        /// </summary>
         public InventorySlot GetSlotAtPosition(int gridX, int gridY)
         {
+            if (gridX < 0 || gridX >= gridWidth || gridY < 0 || gridY >= gridHeight)
+                return null;
+
+            int slotId = gridSlotIds[gridX, gridY];
+            if (slotId < 0) return null;
+
+            return FindSlotById(slotId);
+        }
+
+        /// <summary>
+        /// Сортирует инвентарь по категории → имени → редкости
+        /// </summary>
+        public void SortInventory()
+        {
+            slots.Sort((a, b) =>
+            {
+                int catCompare = ((int)a.ItemData.category).CompareTo((int)b.ItemData.category);
+                if (catCompare != 0) return catCompare;
+
+                int nameCompare = string.Compare(a.ItemData.nameRu, b.ItemData.nameRu, StringComparison.Ordinal);
+                if (nameCompare != 0) return nameCompare;
+
+                return ((int)a.ItemData.rarity).CompareTo((int)b.ItemData.rarity);
+            });
+
+            // Пересчитываем позиции
+            int x = 0, y = 0;
             foreach (var slot in slots)
             {
-                if (gridX >= slot.GridX && gridX < slot.GridX + slot.ItemWidth &&
-                    gridY >= slot.GridY && gridY < slot.GridY + slot.ItemHeight)
+                // Пробуем разместить начиная с текущей позиции
+                var pos = FindFreePositionFrom(x, y, slot.ItemWidth, slot.ItemHeight);
+                if (pos.HasValue)
                 {
-                    return slot;
+                    slot.SetPosition(pos.Value.x, pos.Value.y);
+                }
+                else
+                {
+                    var fallback = FindFreePosition(slot.ItemWidth, slot.ItemHeight);
+                    if (fallback.HasValue)
+                        slot.SetPosition(fallback.Value.x, fallback.Value.y);
                 }
             }
-            return null;
+
+            RebuildGridFromSlots();
         }
 
         #endregion
 
         #region Grid Operations
 
-        /// <summary>
-        /// Проверяет валидность позиции
-        /// </summary>
         private bool IsValidPosition(int gridX, int gridY, int width, int height)
         {
             return gridX >= 0 && gridY >= 0 &&
@@ -491,53 +713,45 @@ namespace CultivationGame.Inventory
                    gridY + height <= gridHeight;
         }
 
-        /// <summary>
-        /// Проверяет, свободна ли область
-        /// </summary>
         private bool IsAreaFree(int gridX, int gridY, int width, int height)
         {
             for (int x = gridX; x < gridX + width; x++)
             {
                 for (int y = gridY; y < gridY + height; y++)
                 {
-                    if (gridOccupancy[x, y])
+                    if (gridSlotIds[x, y] >= 0)
                         return false;
                 }
             }
             return true;
         }
 
-        /// <summary>
-        /// Занимает область сетки
-        /// </summary>
-        private void OccupyGrid(int gridX, int gridY, int width, int height)
+        private void OccupyGrid(int slotId, int gridX, int gridY, int width, int height)
         {
             for (int x = gridX; x < gridX + width; x++)
             {
                 for (int y = gridY; y < gridY + height; y++)
                 {
-                    gridOccupancy[x, y] = true;
+                    gridSlotIds[x, y] = slotId;
                 }
             }
         }
 
         /// <summary>
-        /// Освобождает область сетки
+        /// Освобождает ячейки, занятые указанным slotId
         /// </summary>
-        private void FreeGrid(int gridX, int gridY, int width, int height)
+        private void ClearSlotFromGrid(int slotId)
         {
-            for (int x = gridX; x < gridX + width; x++)
+            for (int x = 0; x < gridWidth; x++)
             {
-                for (int y = gridY; y < gridY + height; y++)
+                for (int y = 0; y < gridHeight; y++)
                 {
-                    gridOccupancy[x, y] = false;
+                    if (gridSlotIds[x, y] == slotId)
+                        gridSlotIds[x, y] = -1;
                 }
             }
         }
 
-        /// <summary>
-        /// Находит свободную позицию для предмета
-        /// </summary>
         private Vector2Int? FindFreePosition(int width, int height)
         {
             for (int y = 0; y <= gridHeight - height; y++)
@@ -551,11 +765,28 @@ namespace CultivationGame.Inventory
             return null;
         }
 
+        /// <summary>
+        /// Ищет свободную позицию начиная с указанной точки
+        /// </summary>
+        private Vector2Int? FindFreePositionFrom(int startX, int startY, int width, int height)
+        {
+            for (int y = startY; y <= gridHeight - height; y++)
+            {
+                int xStart = (y == startY) ? startX : 0;
+                for (int x = xStart; x <= gridWidth - width; x++)
+                {
+                    if (IsAreaFree(x, y, width, height))
+                        return new Vector2Int(x, y);
+                }
+            }
+            return null;
+        }
+
         #endregion
 
         #region Helpers
 
-        private InventorySlot CreateSlot(Data.ScriptableObjects.ItemData itemData, int gridX, int gridY, int count)
+        private InventorySlot CreateSlot(ItemData itemData, int gridX, int gridY, int count)
         {
             return new InventorySlot
             {
@@ -568,20 +799,34 @@ namespace CultivationGame.Inventory
             };
         }
 
-        private void UpdateWeight(float delta)
+        #endregion
+
+        #region Resize (for backpack change with items already placed)
+
+        /// <summary>
+        /// Изменяет размер инвентаря (FIX INV-BUG-03: полная перестройка).
+        /// Возвращает false если предметы не помещаются.
+        /// </summary>
+        public bool Resize(int newWidth, int newHeight)
         {
-            currentWeight += delta;
-            currentWeight = Mathf.Max(0f, currentWeight);
-            OnWeightChanged?.Invoke(currentWeight, maxWeight);
+            // Проверяем, помещаются ли все предметы
+            foreach (var slot in slots)
+            {
+                if (slot.GridX + slot.ItemWidth > newWidth ||
+                    slot.GridY + slot.ItemHeight > newHeight)
+                {
+                    return false;
+                }
+            }
+
+            ApplyGridSize(newWidth, newHeight);
+            return true;
         }
 
         #endregion
 
         #region Save/Load Support
 
-        /// <summary>
-        /// Получает данные для сохранения
-        /// </summary>
         public List<InventorySlotSaveData> GetSaveData()
         {
             var data = new List<InventorySlotSaveData>();
@@ -593,16 +838,14 @@ namespace CultivationGame.Inventory
                     count = slot.Count,
                     gridX = slot.GridX,
                     gridY = slot.GridY,
-                    durability = slot.Durability
+                    durability = slot.Durability,
+                    grade = slot.grade
                 });
             }
             return data;
         }
 
-        /// <summary>
-        /// Загружает данные
-        /// </summary>
-        public void LoadSaveData(List<InventorySlotSaveData> data, Dictionary<string, Data.ScriptableObjects.ItemData> itemDatabase)
+        public void LoadSaveData(List<InventorySlotSaveData> data, Dictionary<string, ItemData> itemDatabase)
         {
             Clear();
 
@@ -613,9 +856,14 @@ namespace CultivationGame.Inventory
                 if (itemDatabase.TryGetValue(slotData.itemId, out var itemData))
                 {
                     var slot = AddItemAt(itemData, slotData.gridX, slotData.gridY, slotData.count);
-                    if (slot != null && slotData.durability > 0)
+                    if (slot != null)
                     {
-                        slot.durability = slotData.durability;
+                        // FIX INV-BUG-06: durability >= 0 (0 = сломанный предмет тоже загружается)
+                        if (slotData.durability >= 0)
+                        {
+                            slot.durability = slotData.durability;
+                        }
+                        slot.grade = slotData.grade;
                     }
                 }
             }
@@ -625,14 +873,14 @@ namespace CultivationGame.Inventory
     }
 
     // ============================================================================
-    // InventorySlot — Слот инвентаря
+    // InventorySlot — Слот инвентаря (v2.0)
     // ============================================================================
 
     [Serializable]
     public class InventorySlot
     {
         public int SlotId;
-        public Data.ScriptableObjects.ItemData ItemData;
+        public ItemData ItemData;
         public int Count;
         public int GridX;
         public int GridY;
@@ -640,7 +888,7 @@ namespace CultivationGame.Inventory
         [SerializeField]
         internal int durability;
 
-        // FIX INV-H01: Grade for crafted items — applied by CraftingController (2026-04-11)
+        // Грейд для крафтовых предметов
         public EquipmentGrade grade = EquipmentGrade.Common;
 
         // Properties
@@ -649,7 +897,14 @@ namespace CultivationGame.Inventory
         public int Durability => durability;
         public int MaxDurability => ItemData?.maxDurability ?? 100;
         public float DurabilityPercent => MaxDurability > 0 ? (float)durability / MaxDurability : 1f;
-        public bool HasDurability => durability > 0;
+
+        /// <summary>
+        /// Предмет использует систему прочности (FIX INV-BUG-05: durability=0 → true)
+        /// durability >= 0 = система прочности используется
+        /// durability < 0 (обычно -1) = система прочности НЕ используется
+        /// </summary>
+        public bool HasDurability => durability >= 0;
+
         public DurabilityCondition Condition => GetCondition();
 
         public void AddCount(int amount) => Count += amount;
@@ -658,7 +913,7 @@ namespace CultivationGame.Inventory
 
         public void Damage(int amount)
         {
-            if (durability > 0)
+            if (durability >= 0)
             {
                 durability = Mathf.Max(0, durability - amount);
             }
@@ -666,7 +921,7 @@ namespace CultivationGame.Inventory
 
         public void Repair(int amount)
         {
-            if (durability > 0)
+            if (durability >= 0)
             {
                 durability = Mathf.Min(MaxDurability, durability + amount);
             }
@@ -674,9 +929,6 @@ namespace CultivationGame.Inventory
 
         private DurabilityCondition GetCondition()
         {
-            // FIX INV-C01: durability=0 → Broken, durability<0 → Pristine (no durability system) (2026-04-11)
-            // -1 means item doesn't use durability system → Pristine
-            // 0 means item is fully damaged → Broken
             if (durability < 0) return DurabilityCondition.Pristine;
             if (durability == 0) return DurabilityCondition.Broken;
 
@@ -735,7 +987,7 @@ namespace CultivationGame.Inventory
     }
 
     // ============================================================================
-    // Save Data
+    // Save Data (v2.0 — +grade field)
     // ============================================================================
 
     [Serializable]
@@ -746,5 +998,6 @@ namespace CultivationGame.Inventory
         public int gridX;
         public int gridY;
         public int durability;
+        public EquipmentGrade grade;
     }
 }
