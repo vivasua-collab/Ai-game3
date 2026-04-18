@@ -1,0 +1,594 @@
+// ============================================================================
+// DragDropHandler.cs — Централизованная система перетаскивания
+// Cultivation World Simulator
+// ============================================================================
+// Создано: 2026-04-18 20:00:00 UTC
+// ============================================================================
+// Обрабатывает перетаскивание предметов между:
+// - BackpackPanel (сетка рюкзака) ↔ BackpackPanel (перемещение)
+// - BackpackPanel → BodyDollPanel (экипировка)
+// - BodyDollPanel → BackpackPanel (снятие экипировки)
+// - Предмет → пустое пространство (выброс)
+// ============================================================================
+
+using System;
+using System.Collections.Generic;
+using UnityEngine;
+using UnityEngine.EventSystems;
+using UnityEngine.InputSystem;
+using CultivationGame.Core;
+using CultivationGame.Inventory;
+using CultivationGame.Data.ScriptableObjects;
+
+namespace CultivationGame.UI.Inventory
+{
+    /// <summary>
+    /// Централизованный обработчик перетаскивания предметов.
+    /// Координирует все операции drag & drop между панелями инвентаря.
+    /// </summary>
+    public class DragDropHandler : MonoBehaviour
+    {
+        #region Configuration
+
+        [Header("Drag Visual")]
+        [SerializeField] private UnityEngine.UI.Image dragIcon;
+        [SerializeField] private RectTransform dragTransform;
+        [SerializeField] private float dragScale = 1.1f;
+
+        [Header("Context Menu")]
+        [SerializeField] private GameObject contextMenuPrefab;
+        [SerializeField] private Transform contextMenuContainer;
+
+        [Header("Tooltip")]
+        [SerializeField] private TooltipPanel tooltipPanel;
+
+        #endregion
+
+        #region Runtime Data
+
+        private InventoryController inventoryController;
+        private EquipmentController equipmentController;
+        private BackpackPanel backpackPanel;
+        private BodyDollPanel bodyDollPanel;
+
+        /// <summary>Текущий перетаскиваемый слот</summary>
+        private InventorySlotUI draggedSlotUI;
+
+        /// <summary>Источник перетаскивания</summary>
+        private DragSource dragSource = DragSource.None;
+
+        /// <summary>Активное контекстное меню</summary>
+        private GameObject activeContextMenu;
+
+        #endregion
+
+        #region Enums
+
+        private enum DragSource
+        {
+            None,
+            Backpack,
+            DollSlot
+        }
+
+        #endregion
+
+        #region Initialization
+
+        /// <summary>
+        /// Инициализирует обработчик.
+        /// </summary>
+        public void Initialize(
+            InventoryController invController,
+            EquipmentController equipController,
+            BackpackPanel backpack,
+            BodyDollPanel doll)
+        {
+            inventoryController = invController;
+            equipmentController = equipController;
+            backpackPanel = backpack;
+            bodyDollPanel = doll;
+
+            // Скрываем иконку перетаскивания
+            if (dragIcon != null)
+                dragIcon.enabled = false;
+        }
+
+        #endregion
+
+        #region Drag Operations — Backpack
+
+        /// <summary>
+        /// Начало перетаскивания из рюкзака.
+        /// </summary>
+        public void BeginDrag(InventorySlotUI slotUI, PointerEventData eventData)
+        {
+            if (slotUI == null || slotUI.Slot == null) return;
+
+            draggedSlotUI = slotUI;
+            dragSource = DragSource.Backpack;
+
+            // Настраиваем визуал перетаскивания
+            SetupDragVisual(slotUI.Slot.ItemData);
+
+            // Подсвечиваем валидные позиции в сетке
+            if (backpackPanel != null)
+            {
+                backpackPanel.HighlightValidDrop(
+                    slotUI.Slot.ItemWidth, slotUI.Slot.ItemHeight,
+                    slotUI.Slot.SlotId);
+            }
+
+            // Подсвечиваем слот экипировки, если предмет — экипировка
+            if (bodyDollPanel != null && slotUI.Slot.ItemData is EquipmentData equipData)
+            {
+                bodyDollPanel.HighlightValidSlots(equipData);
+            }
+
+            HideTooltip();
+        }
+
+        /// <summary>
+        /// Обновление позиции перетаскивания.
+        /// </summary>
+        public void UpdateDrag(InventorySlotUI slotUI, PointerEventData eventData)
+        {
+            if (dragIcon == null || !dragIcon.enabled) return;
+
+            // Двигаем иконку за курсором
+            if (dragTransform != null)
+            {
+                dragTransform.position = eventData.position;
+            }
+        }
+
+        /// <summary>
+        /// Конец перетаскивания из рюкзака.
+        /// </summary>
+        public void EndDrag(InventorySlotUI slotUI, PointerEventData eventData)
+        {
+            if (draggedSlotUI == null) return;
+
+            // Скрываем визуал
+            if (dragIcon != null)
+                dragIcon.enabled = false;
+
+            // Сбрасываем подсветку
+            if (backpackPanel != null)
+                backpackPanel.ClearAllHighlights();
+            if (bodyDollPanel != null)
+                bodyDollPanel.ClearAllHighlights();
+
+            // Определяем цель дропа
+            var dropTarget = DetermineDropTarget(eventData.position);
+
+            switch (dropTarget)
+            {
+                case DropTarget.BackpackGrid:
+                    HandleDropOnBackpack(eventData.position);
+                    break;
+
+                case DropTarget.DollSlot:
+                    HandleDropOnDoll(eventData.position);
+                    break;
+
+                case DropTarget.Outside:
+                    // Пока не реализуем выброс — возвращаем на место
+                    break;
+            }
+
+            draggedSlotUI = null;
+            dragSource = DragSource.None;
+        }
+
+        #endregion
+
+        #region Drop Target Detection
+
+        private enum DropTarget
+        {
+            None,
+            BackpackGrid,
+            DollSlot,
+            Outside
+        }
+
+        private DropTarget DetermineDropTarget(Vector2 screenPosition)
+        {
+            // Проверяем, попал ли на куклу
+            if (bodyDollPanel != null)
+            {
+                var rect = bodyDollPanel.GetComponent<RectTransform>();
+                if (rect != null && RectTransformUtility.RectangleContainsScreenPoint(rect, screenPosition))
+                {
+                    return DropTarget.DollSlot;
+                }
+            }
+
+            // Проверяем, попал ли на рюкзак
+            if (backpackPanel != null)
+            {
+                var rect = backpackPanel.GetComponent<RectTransform>();
+                if (rect != null && RectTransformUtility.RectangleContainsScreenPoint(rect, screenPosition))
+                {
+                    return DropTarget.BackpackGrid;
+                }
+            }
+
+            return DropTarget.Outside;
+        }
+
+        #endregion
+
+        #region Drop Handling
+
+        private void HandleDropOnBackpack(Vector2 screenPosition)
+        {
+            if (draggedSlotUI == null || inventoryController == null) return;
+
+            var gridPos = backpackPanel.ScreenToGridPosition(screenPosition);
+            if (!gridPos.HasValue) return;
+
+            int slotId = draggedSlotUI.Slot.SlotId;
+            int newX = gridPos.Value.x;
+            int newY = gridPos.Value.y;
+
+            // Проверяем, свободно ли место
+            if (dragSource == DragSource.Backpack)
+            {
+                // Сначала освобождаем старое место
+                var slot = inventoryController.FindSlotById(slotId);
+                if (slot == null) return;
+
+                // Проверяем, есть ли предмет на целевой позиции
+                var existingSlot = inventoryController.GetSlotAtPosition(newX, newY);
+                if (existingSlot != null && existingSlot.SlotId != slotId)
+                {
+                    // Swap
+                    inventoryController.SwapSlots(slotId, existingSlot.SlotId);
+                }
+                else
+                {
+                    // Move
+                    inventoryController.MoveItem(slotId, newX, newY);
+                }
+            }
+            else if (dragSource == DragSource.DollSlot)
+            {
+                // Снятие экипировки в конкретную позицию
+                // Пока используем стандартный UnequipToInventory
+                if (bodyDollPanel != null)
+                {
+                    // Определяем слот экипировки
+                    // TODO: Определить конкретный слот куклы по drag source
+                }
+            }
+        }
+
+        private void HandleDropOnDoll(Vector2 screenPosition)
+        {
+            if (draggedSlotUI == null || dragSource != DragSource.Backpack) return;
+
+            var equipData = draggedSlotUI.Slot.ItemData as EquipmentData;
+            if (equipData == null) return;
+
+            // Экипируем предмет
+            if (bodyDollPanel != null)
+            {
+                bodyDollPanel.EquipFromInventory(draggedSlotUI.Slot.SlotId);
+            }
+        }
+
+        /// <summary>
+        /// Обработка дропа на слот куклы (через IDropHandler).
+        /// </summary>
+        public void DropOnDollSlot(DollSlotUI dollSlot)
+        {
+            if (draggedSlotUI == null || dragSource != DragSource.Backpack) return;
+
+            var equipData = draggedSlotUI.Slot.ItemData as EquipmentData;
+            if (equipData == null) return;
+
+            // Проверяем, совпадает ли слот
+            if (equipData.slot != dollSlot.SlotType)
+            {
+                Debug.Log($"[DragDropHandler] Предмет {equipData.nameRu} не подходит для слота {dollSlot.SlotType}");
+                return;
+            }
+
+            // Экипируем
+            if (bodyDollPanel != null)
+            {
+                bodyDollPanel.EquipFromInventory(draggedSlotUI.Slot.SlotId);
+            }
+
+            // Сбрасываем визуал
+            if (dragIcon != null)
+                dragIcon.enabled = false;
+
+            if (backpackPanel != null)
+                backpackPanel.ClearAllHighlights();
+            if (bodyDollPanel != null)
+                bodyDollPanel.ClearAllHighlights();
+
+            draggedSlotUI = null;
+            dragSource = DragSource.None;
+        }
+
+        #endregion
+
+        #region Cell Hover (Backpack Grid)
+
+        /// <summary>
+        /// Наведение на ячейку сетки рюкзака.
+        /// </summary>
+        public void OnCellHover(InventorySlotUI cellUI)
+        {
+            // Если перетаскиваем — показываем подсветку валидности
+            if (draggedSlotUI != null && dragSource == DragSource.Backpack)
+            {
+                // Подсветка уже включена через HighlightValidDrop
+            }
+        }
+
+        /// <summary>
+        /// Уход мыши с ячейки.
+        /// </summary>
+        public void OnCellExit(InventorySlotUI cellUI)
+        {
+            // Сброс локальной подсветки
+        }
+
+        #endregion
+
+        #region Drag Visual
+
+        private void SetupDragVisual(ItemData itemData)
+        {
+            if (dragIcon == null) return;
+
+            dragIcon.sprite = itemData.icon;
+            dragIcon.enabled = itemData.icon != null;
+            dragIcon.color = Color.white;
+
+            if (dragTransform != null)
+            {
+                dragTransform.localScale = Vector3.one * dragScale;
+            }
+        }
+
+        #endregion
+
+        #region Tooltip
+
+        /// <summary>
+        /// Показывает tooltip для слота инвентаря.
+        /// </summary>
+        public void ShowTooltip(InventorySlotUI slotUI)
+        {
+            if (tooltipPanel == null || slotUI == null || slotUI.Slot == null) return;
+
+            Vector2 cursorPos = Mouse.current != null
+                ? Mouse.current.position.value
+                : (Vector2)Input.mousePosition;
+
+            tooltipPanel.ShowForInventorySlot(slotUI.Slot, cursorPos);
+        }
+
+        /// <summary>
+        /// Показывает tooltip для слота куклы.
+        /// </summary>
+        public void ShowTooltipForDollSlot(DollSlotUI dollSlot)
+        {
+            if (tooltipPanel == null || dollSlot == null || dollSlot.Equipment == null) return;
+
+            Vector2 cursorPos = Mouse.current != null
+                ? Mouse.current.position.value
+                : (Vector2)Input.mousePosition;
+
+            tooltipPanel.ShowForEquipment(dollSlot.Equipment, cursorPos);
+        }
+
+        /// <summary>
+        /// Скрывает tooltip.
+        /// </summary>
+        public void HideTooltip()
+        {
+            if (tooltipPanel != null)
+                tooltipPanel.Hide();
+        }
+
+        #endregion
+
+        #region Context Menu
+
+        /// <summary>
+        /// Показывает контекстное меню для предмета в инвентаре.
+        /// </summary>
+        public void ShowContextMenu(InventorySlotUI slotUI)
+        {
+            if (slotUI == null || slotUI.Slot == null || slotUI.Slot.ItemData == null) return;
+
+            HideContextMenu();
+
+            var options = GetInventoryContextMenuOptions(slotUI.Slot);
+            CreateContextMenu(options, Mouse.current != null ? Mouse.current.position.value : (Vector2)Input.mousePosition);
+        }
+
+        /// <summary>
+        /// Показывает контекстное меню для слота куклы.
+        /// </summary>
+        public void ShowContextMenuForDollSlot(DollSlotUI dollSlot)
+        {
+            if (dollSlot == null || !dollSlot.HasItem) return;
+
+            HideContextMenu();
+
+            var options = GetDollContextMenuOptions(dollSlot);
+            CreateContextMenu(options, Mouse.current != null ? Mouse.current.position.value : (Vector2)Input.mousePosition);
+        }
+
+        private List<ContextMenuOption> GetInventoryContextMenuOptions(InventorySlot slot)
+        {
+            var options = new List<ContextMenuOption>();
+            var itemData = slot.ItemData;
+
+            // Использовать (расходники)
+            if (itemData.category == ItemCategory.Consumable)
+            {
+                options.Add(new ContextMenuOption
+                {
+                    label = "Использовать",
+                    action = () => UseItem(slot)
+                });
+            }
+
+            // Экипировать
+            if (itemData is EquipmentData equipData)
+            {
+                options.Add(new ContextMenuOption
+                {
+                    label = "Экипировать",
+                    action = () => EquipItem(slot, equipData)
+                });
+            }
+
+            // Разделить стек
+            if (itemData.stackable && slot.Count > 1)
+            {
+                options.Add(new ContextMenuOption
+                {
+                    label = "Разделить",
+                    action = () => SplitStack(slot)
+                });
+            }
+
+            // Выбросить
+            options.Add(new ContextMenuOption
+            {
+                label = "Выбросить",
+                action = () => DropItem(slot)
+            });
+
+            return options;
+        }
+
+        private List<ContextMenuOption> GetDollContextMenuOptions(DollSlotUI dollSlot)
+        {
+            var options = new List<ContextMenuOption>();
+
+            // Снять
+            options.Add(new ContextMenuOption
+            {
+                label = "Снять",
+                action = () => bodyDollPanel?.UnequipSlot(dollSlot.SlotType)
+            });
+
+            // Разобрать (TODO)
+            // options.Add(new ContextMenuOption { label = "Разобрать", action = () => {} });
+
+            return options;
+        }
+
+        private void CreateContextMenu(List<ContextMenuOption> options, Vector2 position)
+        {
+            if (contextMenuPrefab == null || contextMenuContainer == null) return;
+
+            activeContextMenu = Instantiate(contextMenuPrefab, contextMenuContainer);
+
+            // Используем ContextMenuUI из InventoryUI.cs (совместимость)
+            var menuUI = activeContextMenu.GetComponent<CultivationGame.UI.ContextMenuUI>();
+            if (menuUI != null)
+            {
+                // Конвертируем из Inventory.ContextMenuOption → UI.ContextMenuOption
+                var uiOptions = new List<CultivationGame.UI.ContextMenuOption>();
+                foreach (var opt in options)
+                {
+                    uiOptions.Add(new CultivationGame.UI.ContextMenuOption
+                    {
+                        label = opt.label,
+                        action = opt.action
+                    });
+                }
+                menuUI.SetOptions(uiOptions);
+                activeContextMenu.transform.position = position;
+            }
+        }
+
+        /// <summary>
+        /// Скрывает контекстное меню.
+        /// </summary>
+        public void HideContextMenu()
+        {
+            if (activeContextMenu != null)
+            {
+                Destroy(activeContextMenu);
+                activeContextMenu = null;
+            }
+        }
+
+        #endregion
+
+        #region Item Actions
+
+        private void UseItem(InventorySlot slot)
+        {
+            if (inventoryController == null) return;
+            inventoryController.RemoveItem(slot.SlotId, 1);
+            HideContextMenu();
+        }
+
+        private void EquipItem(InventorySlot slot, EquipmentData equipData)
+        {
+            if (inventoryController == null) return;
+            inventoryController.EquipFromInventory(slot.SlotId);
+            HideContextMenu();
+        }
+
+        private void SplitStack(InventorySlot slot)
+        {
+            if (inventoryController == null || !slot.ItemData.stackable || slot.Count <= 1) return;
+
+            int splitAmount = slot.Count / 2;
+            inventoryController.RemoveItem(slot.SlotId, splitAmount);
+            inventoryController.AddItem(slot.ItemData, splitAmount);
+            HideContextMenu();
+        }
+
+        private void DropItem(InventorySlot slot)
+        {
+            if (inventoryController == null) return;
+            inventoryController.RemoveSlot(slot.SlotId);
+            HideContextMenu();
+        }
+
+        #endregion
+
+        #region Update
+
+        private void Update()
+        {
+            // Закрытие контекстного меню по клику вне
+            if (Mouse.current != null && Mouse.current.leftButton.wasPressedThisFrame && activeContextMenu != null)
+            {
+                if (!EventSystem.current.IsPointerOverGameObject())
+                {
+                    HideContextMenu();
+                }
+            }
+        }
+
+        #endregion
+    }
+
+    // ============================================================================
+    // ContextMenuOption — опция контекстного меню (повторяет InventoryUI версию
+    //   для избежания зависимости от старого кода)
+    // ============================================================================
+
+    public class ContextMenuOption
+    {
+        public string label;
+        public Action action;
+    }
+}

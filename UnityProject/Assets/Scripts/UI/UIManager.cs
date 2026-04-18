@@ -4,7 +4,7 @@
 // Версия: 1.1 — Исправлен баг начального состояния
 // ============================================================================
 // Создано: 2026-03-30 14:00:00 UTC
-// Редактировано: 2026-04-13 10:34:08 UTC — замена UnityEngine.Input на Input System
+// Редактировано: 2026-04-18 20:30:00 UTC — интеграция InventoryScreen v2.0
 //
 // ИЗМЕНЕНИЯ В ВЕРСИИ 1.1:
 // - FIX: currentState инициализируется как None (sentinel) для первого запуска
@@ -16,6 +16,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using CultivationGame.Core;
+using CultivationGame.UI.Inventory;
 
 namespace CultivationGame.UI
 {
@@ -31,6 +32,7 @@ namespace CultivationGame.UI
         [SerializeField] private GameObject mainMenu;
         [SerializeField] private GameObject dialogPanel;
         [SerializeField] private GameObject inventoryPanel;
+        [SerializeField] private InventoryScreen inventoryScreen;  // NEW v2.0 — InventoryScreen component
         [SerializeField] private GameObject characterPanel;
         [SerializeField] private GameObject mapPanel;
         
@@ -329,6 +331,9 @@ namespace CultivationGame.UI
         public void OpenInventory()
         {
             SetState(GameState.Inventory);
+            // Редактировано: 2026-04-18 — обновляем InventoryScreen при открытии
+            if (inventoryScreen != null)
+                inventoryScreen.Refresh();
         }
         
         /// <summary>
