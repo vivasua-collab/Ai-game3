@@ -1,134 +1,194 @@
-# Архитектура генерации сцены — Двухскриптовая модель
+# Архитектура генерации сцены — Оркестратор + фазовые файлы
 
 **Создано:** 2026-04-17 13:49:14 UTC
-**Версия:** 1.0
+**Редактировано:** 2026-04-18 17:17:54 UTC
+**Версия:** 2.0
 
 ---
 
 ## Принцип
 
-Генерация сцены разделена на **ДВА скрипта**. Это предотвращает регрессионные баги при модификации базового генератора.
+Генерация сцены построена по паттерну **Оркестратор + отдельные файлы фаз**. Каждая фаза — изолированный класс в отдельном файле. Оркестратор только регистрирует фазы и управляет их запуском. Это предотвращает регрессионные баги и упрощает модификацию отдельных фаз.
 
 ---
 
-## Скрипт 1: FullSceneBuilder.cs — ЗАМОРОЖЕН 🧊
+## Структура файлов
+
+```
+Assets/Scripts/Editor/
+├── FullSceneBuilder.cs                  # ОРКЕСТРАТОР (заморожен)
+└── SceneBuilder/
+    ├── IScenePhase.cs                   # Интерфейс фазы
+    ├── SceneBuilderConstants.cs         # Общие константы
+    ├── SceneBuilderUtils.cs             # Общие утилиты
+    ├── Phase01Folders.cs                # Фаза 01: Папки
+    ├── Phase02TagsLayers.cs             # Фаза 02: Теги и слои
+    ├── Phase03SceneCreation.cs          # Фаза 03: Создание сцены
+    ├── Phase04CameraLight.cs            # Фаза 04: Камера и свет
+    ├── Phase05GameManager.cs            # Фаза 05: GameManager
+    ├── Phase06Player.cs                 # Фаза 06: Игрок
+    ├── Phase07UI.cs                     # Фаза 07: UI
+    ├── Phase08Tilemap.cs                # Фаза 08: Tilemap
+    ├── Phase09GenerateAssets.cs         # Фаза 09: Генерация ассетов
+    ├── Phase10GenerateSprites.cs        # Фаза 10: Спрайты тайлов
+    ├── Phase11GenerateUIPrefabs.cs      # Фаза 11: UI-префабы
+    ├── Phase12TMPEssentials.cs          # Фаза 12: TMP Essentials
+    ├── Phase13SaveScene.cs             # Фаза 13: Сохранение сцены
+    ├── Phase14CreateTileAssets.cs       # Фаза 14: Tile .asset файлы
+    └── Phase15ConfigureTestLocation.cs  # Фаза 15: Тестовая локация
+```
+
+---
+
+## Оркестратор: FullSceneBuilder.cs — ЗАМОРОЖЕН 🧊
 
 **Путь:** `Assets/Scripts/Editor/FullSceneBuilder.cs`
-**Версия:** 1.2 (FROZEN)
-**Строк:** 2517
+**Версия:** 2.0 (FROZEN)
+**Строк:** ~224
 **Статус:** ЗАМОРОЖЕН — редактирование ЗАПРЕЩЕНО
 
 ### Что делает
 
-- 15 идемпотентных фаз: папки → теги/слои → сцена → камера/свет → GameManager → Player → UI → Tilemap → ассеты → спрайты → формации → TMP → сохранение → тайлы → тестовая локация
-- Создаёт сцену с нуля до полностью рабочего состояния
-- Каждая фаза: `IsNeeded()` → `Execute()` → логирование
-- Повторный запуск безопасен — пропуск уже выполненных фаз
+- Регистрирует 15 фаз в массиве `PHASES`
+- Управляет запуском: `IsNeeded()` → `Execute()` → логирование
+- Обрабатывает ошибки: try/catch с диалогом продолжения
+- Предоставляет меню: `Tools → Full Scene Builder → Build All` и отдельные фазы
 
 ### Почему заморожен
 
-- Многократные баги от прямого редактирования: Sorting Layer порядок, Missing Prefabs, дубликаты компонентов
-- Каждый баг требовал отката и повторной сборки
-- Скрипт сложный (2517 строк) — любое изменение может сломать 15 фаз
+- Оркестратор НЕ содержит логики создания объектов — только диспетчеризацию
+- Любое изменение оркестратора может сломать ВСЮ сборку сцены
+- Добавление новых фаз = добавление строки в массив `PHASES` — это безопасная операция, но требует подтверждения
 
-### Исключение — критические багфиксы
+### ⚠️ АБСОЛЮТНЫЙ ЗАПРЕТ
 
-- Только если баг ломает компиляцию или делает сцену неработоспособной
-- Перед фиксом — ОБЯЗАТЕЛЬНО запросить подтверждение у пользователя
-- После фикса — обновить версию (1.2 → 1.3) и дату в заголовке файла
-
-### Фазы (подробно)
-
-| Фаза | Имя | IsNeeded | Execute | Описание |
-|------|-----|----------|---------|----------|
-| 01 | Folders | Проверка 33 папок | Создание недостающих | Базовая структура каталогов |
-| 02 | Tags & Layers | Проверка 7 тегов + 8 слоёв + Sorting Layers | Создание тегов, Physics Layers, Sorting Layers | FIX-SORT: проверка порядка |
-| 03 | Create Scene | Проверка файла сцены | Создание сцены, удаление дефолтной камеры | |
-| 04 | Camera & Light | Камера + GlobalLight2D | Camera2DSetup + Directional Light + Light2D (reflection) | |
-| 05 | GameManager | GameManager GO | GameInitializer + 8 системных компонентов | |
-| 06 | Player | Player GO | Rigidbody2D + CircleCollider2D + 8 компонентов | PlayerVisual, НЕ SpriteRenderer |
-| 07 | UI | Canvas + EventSystem | HUD: TMP тексты + слайдеры | |
-| 08 | Tilemap | Grid + Terrain + Objects tilemaps | TileMapController + TestLocationGameController + HarvestableSpawner | |
-| 09 | Generate Assets | AssetGenerator | JSON → ScriptableObjects | |
-| 10 | Tile Sprites | Процедурные спрайты | Sprite.Create для terrain | |
-| 11 | Formation UI | Префабы формаций | Canvas + элементы | |
-| 12 | TMP Essentials | Импорт TMP | Package requirement | |
-| 13 | Save Scene | Сохранение | EditorSceneManager.SaveScene | |
-| 14 | Tile Assets | .asset файлы | TerrainTile + ObjectTile для 15+ типов | |
-| 15 | Configure Test Location | Камера + коллайдеры | Verify HarvestableSpawner | |
+**НЕ переписывать оркестратор в монолит.** Не объединять фазовые файлы обратно в FullSceneBuilder.cs.
+Не менять архитектуру «оркестратор + фазовые файлы» ни при каких обстоятельствах.
+Это решение закреплено пользователем после подтверждения работоспособности.
 
 ---
 
-## Скрипт 2: ScenePatchBuilder.cs — АКТИВНЫЙ 📝
+## Интерфейс: IScenePhase
+
+```csharp
+public interface IScenePhase
+{
+    string Name { get; }       // Короткое имя (для логирования)
+    string MenuPath { get; }   // Путь в меню
+    int Order { get; }         // Порядковый номер (1-15)
+    bool IsNeeded();           // Проверяет, нужно ли выполнение
+    void Execute();            // Выполняет фазу
+}
+```
+
+Каждая фаза идемпотентна — повторный запуск безопасен, пропускает уже выполненное.
+
+---
+
+## Вспомогательные файлы
+
+### SceneBuilderConstants.cs
+
+Общие константы для всех фаз:
+- `SCENE_PATH`, `SCENE_NAME`
+- `REQUIRED_FOLDERS` (33 папки)
+- `REQUIRED_TAGS` (7 тегов)
+- `REQUIRED_LAYERS` (8 слоёв)
+- `REQUIRED_SORTING_LAYERS` (6 sorting layers в порядке Default < Background < Terrain < Objects < Player < UI)
+
+### SceneBuilderUtils.cs
+
+Общие утилиты:
+- `EnsureSceneOpen()` — проверка/открытие сцены
+- `SetupComponent<T>()` — настройка компонента через SerializedObject
+- `SetProperty()` — установка свойства SerializedObject
+- `CleanMissingPrefabs()` — очистка Missing Scripts/Prefabs
+
+---
+
+## Реестр фаз
+
+| # | Класс | Имя | Описание | Объединённые патчи |
+|---|-------|-----|----------|-------------------|
+| 01 | Phase01Folders | Folders | Создание 33 папок | — |
+| 02 | Phase02TagsLayers | Tags & Layers | Теги, Physics Layers, Sorting Layers | PATCH-001, PATCH-011, PATCH-012 |
+| 03 | Phase03SceneCreation | Scene Creation | Создание сцены, удаление дефолтной камеры | — |
+| 04 | Phase04CameraLight | Camera & Light | Camera2D, GlobalLight2D, Directional Light | PATCH-004, PATCH-009, PATCH-010 |
+| 05 | Phase05GameManager | GameManager | GameInitializer + системные компоненты | — |
+| 06 | Phase06Player | Player | Rigidbody2D + 8 компонентов + PlayerVisual | PATCH-003 |
+| 07 | Phase07UI | UI | Canvas + EventSystem + HUD | — |
+| 08 | Phase08Tilemap | Tilemap | Grid + Terrain/Objects + TileMapController | PATCH-002, PATCH-005, PATCH-006, PATCH-007 |
+| 09 | Phase09GenerateAssets | Generate Assets | JSON → ScriptableObjects | — |
+| 10 | Phase10GenerateSprites | Tile Sprites | Процедурные спрайты | — |
+| 11 | Phase11GenerateUIPrefabs | Formation UI | UI-префабы формаций | — |
+| 12 | Phase12TMPEssentials | TMP Essentials | Импорт TMP | — |
+| 13 | Phase13SaveScene | Save Scene | EditorSceneManager.SaveScene | — |
+| 14 | Phase14CreateTileAssets | Tile Assets | TerrainTile + ObjectTile для 15+ типов | — |
+| 15 | Phase15ConfigureTestLocation | Test Location | Камера + коллайдеры + HarvestableSpawner | — |
+
+---
+
+## Устаревший файл: ScenePatchBuilder.cs — DEPRECATED ⛔
 
 **Путь:** `Assets/Scripts/Editor/ScenePatchBuilder.cs`
-**Версия:** 1.0
-**Строк:** 1019
-**Статус:** АКТИВЕН — сюда вносятся ВСЕ будущие изменения сцены
+**Статус:** УСТАРЕЛ, оставлен для обратной совместимости меню
 
-### Что делает
+Все 12 патчей (PATCH-001..PATCH-012) объединены в соответствующие фазовые файлы.
+ScenePatchBuilder.cs перенаправляет пользователя к `Tools → Full Scene Builder → Build All`.
 
-- Инкрементальные патчи поверх сцены, созданной FullSceneBuilder
-- Каждый патч = атомарное изменение с верификацией
-- Патчи идемпотентны — повторный запуск безопасен
+**НЕ добавлять новые патчи в ScenePatchBuilder.cs.**
+Все изменения сцены вносятся в соответствующий фазовый файл.
 
-### Архитектура патча
+---
 
-```
-PATCH-NNN:
-  1. IsApplied()  — проверка, применён ли уже (по состоянию сцены)
-  2. Apply()      — применение патча
-  3. Validate()   — пост-проверка корректности
-  4. Описание     — для логирования
-```
+## Как добавить изменение сцены
 
-### Реестр применённых патчей
+### Если изменение относится к существующей фазе:
 
-**EditorPrefs ключ:** `CultivationGame_AppliedPatches`
-Формат: строка с разделителями `;` (например `PATCH-001;PATCH-002;PATCH-003`)
+1. Открыть нужный `PhaseNNXxx.cs`
+2. Добавить логику в `Execute()` (с проверкой — уже применено?)
+3. Добавить using для новых пространств имён при необходимости
+4. Протестировать: `Tools → Full Scene Builder → [нужная фаза]`
+5. Закоммитить с пометкой `PhaseNN: описание изменения`
 
-### Текущие патчи
+### Если нужна новая фаза:
 
-| ID | Описание | Критичность |
-|----|----------|-------------|
-| PATCH-001 | Порядок Sorting Layers (Default < Background < Terrain < Objects < Player < UI) | КРИТИЧЕСКИЙ |
-| PATCH-002 | TilemapRenderer на правильных Sorting Layers | КРИТИЧЕСКИЙ |
-| PATCH-003 | PlayerVisual SpriteRenderer на слое 'Player' | КРИТИЧЕСКИЙ |
-| PATCH-004 | GlobalLight2D существует и настроен | ВЫСОКИЙ |
-| PATCH-005 | HarvestableSpawner назначен на GameController | ВЫСОКИЙ |
-| PATCH-006 | Grid cellSize=(2,2,1), cellGap=(0,0,0) | СРЕДНИЙ |
-| PATCH-007 | Terrain НЕ имеет TilemapCollider2D | ВЫСОКИЙ |
-| PATCH-008 | Missing Scripts и Prefabs — очистка | СРЕДНИЙ |
+1. Создать `PhaseNNName.cs` в `Assets/Scripts/Editor/SceneBuilder/`
+2. Реализовать `IScenePhase` (Name, MenuPath, Order, IsNeeded, Execute)
+3. Добавить `using CultivationGame.Editor.SceneBuilder;`
+4. Зарегистрировать в массиве `PHASES` в FullSceneBuilder.cs
+5. Протестировать
 
-### Меню Unity
+### ❌ Чего НЕ делать:
 
-- `Tools → Scene Patch Builder → Apply All Pending Patches`
-- `Tools → Scene Patch Builder → Validate Current Scene`
-- `Tools → Scene Patch Builder → Show Applied Patches`
-- `Tools → Scene Patch Builder → Reset Patch History (Dangerous!)`
+- НЕ редактировать FullSceneBuilder.cs кроме добавления строки в `PHASES`
+- НЕ объединять фазовые файлы обратно в монолит
+- НЕ добавлять патчи в ScenePatchBuilder.cs
+- НЕ менять интерфейс IScenePhase без согласования
 
-### Как добавить новый патч
+---
 
-1. Определить следующий ID (PATCH-009, PATCH-010...)
-2. Добавить `PatchInfo` в массив `PATCHES` в ScenePatchBuilder.cs
-3. Реализовать три метода: `IsPatchNNNApplied()`, `ApplyPatchNNN()`, `ValidatePatchNNN()`
-4. Проверить: `Validate Current Scene` должен показывать новый патч
-5. Закоммитить с пометкой `PATCH-NNN: описание`
+## Меню Unity
+
+- `Tools → Full Scene Builder → Build All (One Click)` — полная сборка
+- `Tools → Full Scene Builder → Phase NN: ...` — отдельная фаза
+- `Tools → Scene Patch Builder → ...` — УСТАРЕЛО, перенаправляет к Full Scene Builder
 
 ---
 
 ## Правило: НЕ РЕДАКТИРОВАТЬ FullSceneBuilder.cs
 
 **Если агент собирается редактировать FullSceneBuilder.cs — ОСТАНОВИТЬСЯ и:**
-1. Проверить: это критический багфикс? Если НЕТ → создать патч в ScenePatchBuilder.cs
-2. Если ДА → запросить подтверждение у пользователя перед редактированием
-3. После любого редактирования FullSceneBuilder → обновить версию и дату в заголовке
+1. Это добавление новой фазы в массив `PHASES`? → допустимо, но запросить подтверждение
+2. Это рефакторинг оркестратора? → ЗАПРЕЩЕНО
+3. Это объединение фаз в монолит? → ЗАПРЕЩЕНО
+4. Это критический багфикс? → запросить подтверждение у пользователя
 
 **Нарушение этого правила = регрессионный баг и потеря времени.**
 
 ---
 
-## Известные проблемы (требуют патчей)
+## Известные проблемы
 
 1. **Белые швы между terrain-тайлами** — Sprite.Create с FilterMode.Point может оставлять 1px артефакты. Возможное решение: pad-спрайты или Sprite.DrawMode.Sliced
-2. **Sorting Layer порядок при первом запуске** — если FullSceneBuilder создаёт слои, а потом ScenePatchBuilder запускается первым, порядок может быть неправильным. Решение: ScenePatchBuilder PATCH-001 покрывает этот случай
+2. **Hero rendering behind surface** — Player может рендериться за поверхностью при неправильном порядке Sorting Layers. Покрывается Phase02TagsLayers
