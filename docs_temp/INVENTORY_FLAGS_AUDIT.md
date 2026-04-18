@@ -1,8 +1,12 @@
 # Аудит: Сложность добавления флагов для Духовного хранилища и Колец хранения
 
 **Создано:** 2026-04-18 18:31:36 UTC
-**Версия:** 1.0
-**Статус:** ✅ Аудит завершён
+**Редактировано:** 2026-04-18 18:35:37 UTC
+**Версия:** 2.0
+**Статус:** ✅ Аудит завершён (v2.0 — с учётом пересоздания Assets)
+
+**Ключевое условие:** На данном этапе папка `Assets/` удаляется и пересоздаётся генератором (Phase09). Нет существующих .asset файлов, нет save-данных, нет проблем совместимости. Это кардинально снижает риски.
+
 **Связанные документы:**
 - `docs_temp/INVENTORY_UI_DRAFT.md` — Драфт v2.0 инвентаря
 - `docs/EQUIPMENT_SYSTEM.md` — Система экипировки
@@ -70,11 +74,14 @@ None, WeaponMain, WeaponOff, Armor, Clothing, Charger, RingLeft, RingRight, Acce
 
 ## 3. Что нужно добавить — поуровневая сложность
 
+> **v2.0 NOTE**: Поскольку Assets пересоздаются генератором, риски совместимости = 0.
+> EquipmentSlot enum можно переписать полностью, без боязни сломать сериализацию.
+
 ### 3.1 🟢 ПРОСТО (1-2 часа, нулевой риск)
 
 | Изменение | Файл | Риск | Пояснение |
 |-----------|------|------|-----------|
-| Добавить `volume` (float, default=1.0) в ItemData | ItemData.cs | Нулевой | Unity SO с новыми полями + default совместимы |
+| Добавить `volume` (float, default=1.0) в ItemData | ItemData.cs | Нулевой | Assets пересоздаются — нечего ломать |
 | Создать enum `NestingFlag` | Enums.cs | Нулевой | Чисто добавление нового enum |
 | Добавить `allowNesting` (NestingFlag, default=Any) в ItemData | ItemData.cs | Нулевой | Новое поле с default |
 
@@ -89,88 +96,117 @@ public enum NestingFlag
 }
 ```
 
-**Почему безопасно**: ScriptableObject при добавлении нового поля с default-значением не ломает существующие .asset файлы. Unity автоматически подставит default при десериализации.
-
-**Default-значения для существующих предметов:**
+**Default-значения:**
 - `volume = 1.0` — средний предмет (расходники/материалы уточним позже)
 - `allowNesting = NestingFlag.Any` — по умолчанию можно куда угодно
 
-**Что нужно уточнить**: Таблица volume по категориям из драфта §4:
-- Расходники: 0.1
-- Кольца/амулеты: 0.1-0.3
-- Еда/травы: 0.5
-- Материалы: 0.5-1
-- Лёгкое оружие: 1
-- Среднее оружие: 2
-- Броня: 1-2
-- Тяжёлое оружие: 3-4
-- Тяжёлая броня: 3-4
-- Рюкзак: 2-5
-- Кольцо хранения (как предмет): 0.3
+**Таблица volume по категориям (из драфта §4):**
 
-### 3.2 🟡 СРЕДНЕ (3-5 часов, требует осторожности)
+| Категория | Объём | Примечание |
+|-----------|-------|------------|
+| Расходники (пилюли, свитки) | 0.1 | Очень маленькие |
+| Кольца, амулеты | 0.1-0.3 | Маленькие |
+| Еда, травы | 0.5 | Средние |
+| Ингредиенты, материалы | 0.5-1 | Зависит от типа |
+| Лёгкое оружие (кинжалы) | 1 | Одноручное малое |
+| Среднее оружие (мечи) | 2 | Одноручное |
+| Броня (перчатки, сапоги) | 1-2 | Средняя |
+| Тяжёлое оружие (двуручное) | 3-4 | Большое |
+| Тяжёлая броня (нагрудник) | 3-4 | Большая |
+| Рюкзак | 2-5 | Зависит от размера |
+| Кольцо хранения (как предмет) | 0.3 | Само кольцо |
+
+### 3.2 🟢 ПРОСТО — EquipmentSlot enum (ранее 🟡 СРЕДНЕ)
+
+> **v2.0 CHANGE**: Поскольку Assets пересоздаются, EquipmentSlot можно переписать полностью. Риск снижен с «СРЕДНИЙ» до «НУЛЕВОЙ».
 
 | Изменение | Файл | Риск | Пояснение |
 |-----------|------|------|-----------|
-| Создать BackpackData : ItemData | BackpackData.cs (новый) | Низкий | Новый файл + [CreateAssetMenu] |
-| Создать StorageRingData : ItemData | StorageRingData.cs (новый) | Низкий | Аналогично |
-| Обновить EquipmentSlot enum | Enums.cs | **СРЕДНИЙ** | Сдвиг int-значений ломает сериализацию |
-| Обновить AssetGeneratorExtended | AssetGeneratorExtended.cs | Средний | Добавить генерацию новых типов |
+| Переписать EquipmentSlot enum | Enums.cs | **Нулевой** | Assets пересоздаются, нечего ломать |
+| Создать BackpackData : ItemData | BackpackData.cs (новый) | Нулевой | Новый файл + [CreateAssetMenu] |
+| Создать StorageRingData : ItemData | StorageRingData.cs (новый) | Нулевой | Аналогично |
+| Обновить AssetGeneratorExtended | AssetGeneratorExtended.cs | Низкий | Добавить генерацию новых типов |
 
-**Критический момент — EquipmentSlot enum**:
-
-При добавлении/переименовании значений в enum, Unity сериализует по int-индексу. Если вставить значение в середину, все последующие сдвинутся.
-
-**Безопасные варианты:**
-1. ✅ Добавлять новые значения **ТОЛЬКО В КОНЕЦ** enum
-2. ✅ Создать **параллельный DollSlot enum** для UI-куклы
-3. ❌ НЕ переименовывать существующие значения
-4. ❌ НЕ вставлять значения в середину
-
-**Рекомендуемый вариант — DollSlot enum**:
+**Новый EquipmentSlot enum (по драфту v2.0):**
 
 ```csharp
-// Слоты куклы для UI (отображение)
-public enum DollSlot
+/// <summary>
+/// Слот экипировки (переработан по INVENTORY_UI_DRAFT.md v2.0)
+/// 
+/// Видимые слоты куклы (7): Head, Torso, Belt, Legs, Feet, WeaponMain, WeaponOff
+/// Скрытые слоты (заглушки на будущее): Amulet, RingLeft1, RingLeft2, 
+///   RingRight1, RingRight2, Charger, Hands, Back
+/// </summary>
+public enum EquipmentSlot
 {
-    Head,           // Голова
-    Torso,          // Торс
-    Belt,           // Пояс
-    Legs,           // Ноги
-    Feet,           // Ступни
-    WeaponMain,     // Основная рука
-    WeaponOff       // Вторичная рука
+    None,
+    
+    // === Видимые слоты куклы ===
+    Head,           // Голова — шлем, шапка, корона
+    Torso,          // Торс — нагрудник, рубашка, роба
+    Belt,           // Пояс — ремень, пояс зелий, зарядник-пояс
+    Legs,           // Ноги — поножи, штаны
+    Feet,           // Ступни — сабатоны, сапоги
+    WeaponMain,     // Основная рука — одноручное или щит
+    WeaponOff,      // Вторичная рука — одноручное, щит или инструмент
+    
+    // === Скрытые слоты (заглушки) ===
+    Amulet,         // Амулет — будет с ювелирной системой
+    RingLeft1,      // Кольцо левое 1 — будет с системой хранения
+    RingLeft2,      // Кольцо левое 2
+    RingRight1,     // Кольцо правое 1
+    RingRight2,     // Кольцо правое 2
+    Charger,        // Зарядник Ци — будет с системой зарядников
+    Hands,          // Перчатки — будет с расширением экипировки
+    Back            // Плащ/спина — будет с расширением экипировки
 }
 ```
 
-Маппинг DollSlot → EquipmentSlot делается отдельно, НЕ ломая сериализацию.
+**Почему полная замена безопасна:**
+- Assets пересоздаются из JSON при каждой сборке (Phase09)
+- Нет сохранённых .asset файлов с int-индексами старого enum
+- EquipmentController.cs, EquipmentData.cs — будут переписаны в рамках полной переделки
+- ItemCategory enum остаётся без изменений
+
+**Удалены из старого enum:**
+- `Armor` — заменён на `Head/Torso/Legs/Feet`
+- `Clothing` — объединено с бронёй (один слот на зону)
+- `Accessory` — заменён на `Amulet`
+- `Backpack` — рюкзак НЕ слот экипировки (по драфту v2.0 — отдельная система)
+- `RingLeft / RingRight` — заменены на 4 слота (RingLeft1/2, RingRight1/2)
 
 **BackpackData (новый ScriptableObject):**
 ```csharp
+[CreateAssetMenu(fileName = "Backpack", menuName = "Cultivation/Backpack")]
 public class BackpackData : ItemData
 {
-    public int gridWidth = 3;
-    public int gridHeight = 4;
-    public float weightReduction = 0f;     // % снижения веса
-    public float maxWeightBonus = 0f;      // бонус к максимальному весу
-    public int beltSlots = 0;              // дополнительные слоты пояса
+    [Header("Backpack")]
+    public int gridWidth = 3;           // ширина сетки
+    public int gridHeight = 4;          // высота сетки
+    public float weightReduction = 0f;  // % снижения веса
+    public float maxWeightBonus = 0f;   // бонус к максимальному весу (кг)
+    public int beltSlots = 0;           // дополнительные слоты пояса (0-4)
 }
 ```
 
 **StorageRingData (новый ScriptableObject):**
 ```csharp
+[CreateAssetMenu(fileName = "StorageRing", menuName = "Cultivation/Storage Ring")]
 public class StorageRingData : ItemData
 {
-    public float maxVolume = 5f;           // максимальный объём хранения
-    public int qiCostBase = 5;             // базовая стоимость Qi
-    public float qiCostPerUnit = 2f;       // стоимость Qi за единицу объёма
-    public float accessTime = 1.5f;        // время доступа (сек)
+    [Header("Storage Ring")]
+    public float maxVolume = 5f;        // максимальный объём хранения
+    public int qiCostBase = 5;          // базовая стоимость Qi
+    public float qiCostPerUnit = 2f;    // стоимость Qi за единицу объёма
+    public float accessTime = 1.5f;     // время доступа (сек)
 }
 ```
 
 **Урок из прошлого**: EquipmentData и MaterialData были вынесены из ItemData.cs в отдельные файлы (commit 2026-04-13), потому что Unity требует совпадение имени файла и класса для ScriptableObject с `[CreateAssetMenu]`. Каждый новый подкласс — **свой файл**.
 
 ### 3.3 🔴 СЛОЖНО (8-15 часов, новые системы)
+
+> Без изменений — контроллеры и UI — это новый код, риски от пересоздания Assets не влияют.
 
 | Изменение | Файл | Риск | Пояснение |
 |-----------|------|------|-----------|
@@ -212,86 +248,99 @@ qiCtrl.CultivationLevel  // уровень культивации
 
 ## 4. Обратная совместимость Save Data
 
+> **v2.0 NOTE**: На данном этапе нет save-данных. Вся секция неактуальна до появления реальных сохранений.
+
 | Формат | Влияние | Действие |
 |--------|---------|----------|
 | InventorySlotSaveData | ✅ Без изменений | volume/allowNesting берутся из ItemData, не из сейва |
-| EquipmentSaveData | ✅ Без изменений | Новые слоты = пустые при загрузке старого сейва |
+| EquipmentSaveData | ⚠️ Изменится | Новые слоты enum — нужен апгрейд сейва |
 | CraftingSaveData | ✅ Без изменений | |
 | **Новый** SpiritStorageSaveData | 🆕 Новый формат | Нужно создать |
 | **Новый** StorageRingSaveData | 🆕 Новый формат | Нужно создать |
 
-**Вывод**: Существующие save-форматы НЕ ломаются. Новые форматы — только для новых данных.
+**Вывод**: Пока нет реальных сохранений — нет проблем. К моменту появления save-системы формат устаканится.
 
 ---
 
-## 5. Проблема EquipmentSlot — детальный анализ
+## 5. Проблема EquipmentSlot — РЕШЕНА
 
-### 5.1 Текущий enum vs Драфт v2.0
+> **v2.0 CHANGE**: Поскольку Assets пересоздаются, выбран **Вариант C — полная замена EquipmentSlot**.
 
-| Слот драфта v2.0 | Текущий enum | Совпадение |
-|-------------------|-------------|------------|
-| head | ❌ | Нет — нужно добавить |
-| torso | ❌ (есть Armor, Clothing) | Несоответствие модели |
-| belt | ❌ | Нет — нужно добавить |
-| legs | ❌ | Нет — нужно добавить |
-| feet | ❌ | Нет — нужно добавить |
-| weapon_main | ✅ WeaponMain | Да |
-| weapon_off | ✅ WeaponOff | Да |
-| ring_left_1 | ⚠️ RingLeft | Частично — нужен ring_left_2 |
-| ring_right_1 | ⚠️ RingRight | Частично — нужен ring_right_2 |
+### 5.1 Решение
 
-### 5.2 Архитектурное решение
+~~Проблема: Текущий EquipmentSlot основан на «матрёшке» (Armor + Clothing — раздельные слоты). Драфт v2.0 упрощает до 7 видимых слотов.~~
 
-**Проблема**: Текущий EquipmentSlot основан на «матрёшке» (Armor + Clothing — раздельные слоты для одной зоны). Драфт v2.0 упрощает до 7 видимых слотов (один слот на зону, без разделения armor/clothing).
+**Решение**: EquipmentSlot переписывается полностью по драфту v2.0. Старый enum удаляется. Все файлы, ссылающиеся на EquipmentSlot, обновляются одновременно.
 
-**Варианты:**
+**Почему это безопасно сейчас:**
+1. Assets пересоздаются из JSON — нет .asset файлов со старыми int-значениями
+2. InventoryController + EquipmentController — и так подлежат полной переделке
+3. CraftingController ссылается на EquipmentGrade (не меняется), не на EquipmentSlot напрямую
+4. Phase09 (AssetGeneratorExtended) генерирует EquipmentData с slot-полем — обновляется вместе с enum
 
-| Вариант | Описание | Плюсы | Минусы |
-|---------|----------|-------|--------|
-| A: Добавить в конец EquipmentSlot | Head, Torso, Belt, Legs, Feet, RingLeft2, RingRight2 | Просто | Старые слоты Armor/Clothing — мёртвый код |
-| B: Новый DollSlot enum | Параллельный enum для UI-куклы | Не ломает EquipmentSlot | Нужен маппинг |
-| C: Полная замена EquipmentSlot | Переписать enum по драфту | Чистая архитектура | **ЛОМАЕТ** все EquipmentData.assets |
+### 5.2 Влияние на существующие файлы
 
-**Рекомендация**: Вариант B. Создать `DollSlot` enum для UI-куклы, EquipmentSlot оставить для бэкенда экипировки. Маппинг DollSlot → List<EquipmentSlot> (например, DollSlot.Torso → [EquipmentSlot.Armor, EquipmentSlot.Clothing]).
-
-**При полной переделке (текущий план)**: EquipmentSlot переписывается полностью, старые ассеты перегенерируются. Тогда вариант C становится допустимым.
+| Файл | Что менять | Сложность |
+|------|-----------|-----------|
+| Enums.cs | Переписать EquipmentSlot | 🟢 Просто |
+| EquipmentData.cs | slot-поле автоматически подхватит новый enum | 🟢 Ничего менять |
+| EquipmentController.cs | Полная переделка (уже запланирована) | 🔴 Но не из-за enum |
+| AssetGeneratorExtended.cs | Обновить генерацию EquipmentData | 🟡 Средне |
+| InventorySlotSaveData | Нет ссылки на EquipmentSlot | 🟢 Ничего |
+| EquipmentSaveData | Ссылка на EquipmentSlot — обновится | 🟢 Автоматически |
 
 ---
 
-## 6. Итоговая оценка сложности
+## 6. Итоговая оценка сложности (v2.0 — с пересозданием Assets)
 
 | Этап | Сложность | Время | Зависимости |
 |------|-----------|-------|-------------|
 | Добавить volume + allowNesting в ItemData | 🟢 Простая | 1-2 ч | Нет |
-| Создать BackpackData + StorageRingData | 🟡 Средняя | 3-5 ч | ItemData с volume |
-| Решить вопрос EquipmentSlot/DollSlot | 🟡 Средняя | 2-3 ч | Архитектурное решение |
+| Переписать EquipmentSlot enum | 🟢 Простая | 30 мин | Нет (Assets пересоздаются) |
+| Создать BackpackData + StorageRingData | 🟢 Простая | 2-3 ч | ItemData с volume |
+| Обновить AssetGeneratorExtended | 🟡 Средняя | 2-3 ч | Новые SO + новый enum |
 | SpiritStorageController | 🔴 Сложная | 5-8 ч | QiController |
 | StorageRingController | 🔴 Сложная | 5-8 ч | QiController + volume |
 | Интеграция allowNesting в UI | 🟡 Средняя | 3-4 ч | Оба контроллера |
 
-**Итого**: 19-30 часов на полный цикл.
+**Итого**: 18-28 часов на полный цикл.
 
 ### Минимальный набор для «флаги работают»:
 - volume + allowNesting в ItemData: **1-2 часа**
 - NestingFlag enum в Enums.cs: **15 минут**
+- Переписать EquipmentSlot: **30 минут**
 - BackpackData + StorageRingData ScriptableObject: **2-3 часа**
 
-**Итого минимум**: 3-5 часов, чтобы данные были готовы для контроллеров.
+**Итого минимум**: 4-6 часов, чтобы данные были готовы для контроллеров.
 
 ---
 
 ## 7. Рекомендуемый порядок внедрения
 
 1. ✅ Добавить `NestingFlag` enum в Enums.cs
-2. ✅ Добавить `volume` + `allowNesting` в ItemData.cs (с defaults)
-3. ✅ Создать BackpackData.cs (наследник ItemData)
-4. ✅ Создать StorageRingData.cs (наследник ItemData)
-5. ✅ Решить EquipmentSlot vs DollSlot (архитектурное решение)
-6. 🔜 Написать SpiritStorageController
-7. 🔜 Написать StorageRingController
-8. 🔜 UI-интеграция: контекстное меню, валидация, стоимость Qi
+2. ✅ Переписать `EquipmentSlot` enum по драфту v2.0
+3. ✅ Добавить `volume` + `allowNesting` в ItemData.cs (с defaults)
+4. ✅ Создать BackpackData.cs (наследник ItemData)
+5. ✅ Создать StorageRingData.cs (наследник ItemData)
+6. 🔜 Обновить AssetGeneratorExtended для новых SO и enum
+7. 🔜 Написать SpiritStorageController
+8. 🔜 Написать StorageRingController
+9. 🔜 UI-интеграция: контекстное меню, валидация, стоимость Qi
+
+---
+
+## 8. Изменения v2.0 относительно v1.0
+
+| Пункт | v1.0 | v2.0 | Причина |
+|-------|------|------|---------|
+| EquipmentSlot | 🟡 СРЕДНЕ (риск сериализации) | 🟢 НУЛЕВОЙ | Assets пересоздаются |
+| Рекомендация EquipmentSlot | Вариант B (DollSlot) | Вариант C (полная замена) | Нет .asset для ломания |
+| Обратная совместимость Save | Актуальна | Не актуальна | Нет save-данных |
+| Итого минимум | 3-5 ч | 4-6 ч | Включена переработка enum |
+| Итого полный цикл | 19-30 ч | 18-28 ч | Упрощение enum |
 
 ---
 
 *Документ создан: 2026-04-18 18:31:36 UTC*
-*Статус: Аудит завершён*
+*Редактировано: 2026-04-18 18:35:37 UTC*
+*Статус: Аудит завершён (v2.0)*
