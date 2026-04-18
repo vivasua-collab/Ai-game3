@@ -1,8 +1,8 @@
 # Чекпоинт: Полная переделка инвентаря
 
 **Дата:** 2026-04-18 18:20:58 UTC
-**Редактировано:** 2026-04-18 19:25:00 UTC
-**Статус:** in_progress — Этап 0 ✅, Этап 1 ✅, Этап 2 ✅
+**Редактировано:** 2026-04-18 20:30:00 UTC
+**Статус:** in_progress — Этап 0 ✅, Этап 1 ✅, Этап 2 ✅, Этап 3 ✅
 
 ## Контекст
 
@@ -89,15 +89,35 @@
 - CRA-BUG-02: (уже исправлен INV-H01)
 - CRA-BUG-03: GetAvailableRecipes O(N²) → O(N)
 
-### Этап 3: UI ⬜
+### Этап 3: UI ✅
 
-- [ ] 3.1 InventoryScreen.cs — Canvas, открытие/закрытие по I
-- [ ] 3.2 BodyDollPanel.cs — 7 видимых слотов
-- [ ] 3.3 BackpackPanel.cs — динамическая сетка
-- [ ] 3.4 InventorySlotUI.cs — визуальный слот
-- [ ] 3.5 DragDropHandler.cs — перетаскивание
-- [ ] 3.6 TooltipPanel.cs — карточка предмета
-- [ ] 3.7 Проверить компиляцию + визуал
+- [x] 3.1 InventoryScreen.cs — Canvas, открытие/закрытие по I ✅
+- [x] 3.2 BodyDollPanel.cs — 7 видимых слотов + DollSlotUI ✅
+- [x] 3.3 BackpackPanel.cs — динамическая сетка от BackpackData ✅
+- [x] 3.4 InventorySlotUI.cs — визуальный слот предмета (v2) ✅
+- [x] 3.5 DragDropHandler.cs — перетаскивание между зонами ✅
+- [x] 3.6 TooltipPanel.cs — карточка предмета с volume/nesting ✅
+- [x] 3.7 UIManager обновлён — интеграция InventoryScreen ✅
+- [x] 3.8 Git push ✅
+
+**Коммит:** 3e9d2c7 — Inventory UI v2.0 Этап 3
+
+**Новые файлы (Assets/Scripts/UI/Inventory/):**
+| Файл | Назначение |
+|------|-----------|
+| InventoryScreen.cs | Главный экран инвентаря, управляет всеми панелями |
+| BackpackPanel.cs | Diablo-style сетка, размер от BackpackData |
+| BodyDollPanel.cs | 7 видимых слотов экипировки + DollSlotUI |
+| InventorySlotUI.cs | Визуальная ячейка предмета |
+| DragDropHandler.cs | Централизованный drag & drop |
+| TooltipPanel.cs | Карточка предмета с volume + allowNesting |
+
+**Особенности реализации:**
+- TooltipPanel показывает **объём** и **флаг вложения** (NestingFlag) — NEW v2.0
+- DragDropHandler координирует перетаскивание между рюкзаком и куклой
+- BackpackPanel динамически перестраивает сетку при смене рюкзака
+- BodyDollPanel поддерживает блокировку WeaponOff двуручным оружием
+- InventoryScreen интегрирован с UIManager через InventoryScreen component reference
 
 ### Отложено (не в текущей сессии):
 - Этап 4: Духовное хранилище (SpiritStorageController + каталогизатор)
@@ -146,7 +166,7 @@
 
 ## Следующий шаг
 
-Начать Этап 3 — UI (InventoryScreen, BodyDollPanel, BackpackPanel).
+Начать Этап 4 — Духовное хранилище (SpiritStorageController + каталогизатор).
 
 ---
 

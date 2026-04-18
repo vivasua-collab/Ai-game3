@@ -1238,3 +1238,32 @@ Stage Summary:
 - 5 файлов изменены
 - Этапы 0, 1, 2 завершены
 - Следующий: Этап 3 — UI (InventoryScreen, BodyDollPanel, BackpackPanel)
+
+---
+Task ID: 3
+Agent: Main Agent
+Task: Этап 3 — UI инвентаря (InventoryScreen, BackpackPanel, BodyDollPanel, DragDropHandler, TooltipPanel, InventorySlotUI)
+
+Work Log:
+- Прочитаны все текущие файлы: InventoryController.cs, EquipmentController.cs, InventoryUI.cs, UIManager.cs, CharacterPanelUI.cs
+- Прочитаны чекпоинты: 04_18_inventory_rewrite.md, 04_18_inventory_implementation.md
+- Прочитана документация: INVENTORY_UI_DRAFT.md v2.0, INVENTORY_FLAGS_AUDIT.md v2.0
+- Создана директория Assets/Scripts/UI/Inventory/
+- Создан InventorySlotUI.cs — визуальная ячейка предмета с подсветкой, drag, контекстным меню
+- Создан BackpackPanel.cs — динамическая Diablo-style сетка от BackpackData
+- Создан BodyDollPanel.cs — 7 видимых слотов + DollSlotUI (блокировка WeaponOff)
+- Создан DragDropHandler.cs — централизованная система drag & drop
+- Создан TooltipPanel.cs — карточка предмета с volume + allowNesting (v2.0)
+- Создан InventoryScreen.cs — главный экран инвентаря, открытие/закрытие по I
+- Обновлён UIManager.cs — добавлена ссылка InventoryScreen, using CultivationGame.UI.Inventory
+- Исправлен конфликт ContextMenuOption между CultivationGame.UI и CultivationGame.UI.Inventory
+- Коммит 3e9d2c7, push success
+
+Stage Summary:
+- 6 новых файлов UI инвентаря в Assets/Scripts/UI/Inventory/
+- UIManager обновлён для интеграции с InventoryScreen
+- TooltipPanel показывает volume + NestingFlag (новые поля v2.0)
+- DragDropHandler координирует перетаскивание между рюкзаком и куклой
+- BackpackPanel перестраивается при смене рюкзака (OnBackpackChanged)
+- Чекпоинт обновлён: Этап 3 ✅
+- Следующий этап: Этап 4 — SpiritStorageController
