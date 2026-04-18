@@ -1194,3 +1194,47 @@ Stage Summary:
 - 4 файла изменены: EquipmentController.cs, Phase06Player.cs, SceneSetupTools.cs, InventoryUI.cs
 - Этапы 0 и 1 завершены
 - Следующий: Этап 2 — рюкзак (InventoryController переписать под BackpackData)
+---
+Task ID: phase2-backpack-rewrite
+Agent: Main Agent
+Task: Этап 2 — Переписать InventoryController v2.0 (рюкзак) + CraftingController багфиксы
+
+Work Log:
+- Прочитаны InventoryController.cs (751 строка), CraftingController.cs (693 строки), MaterialSystem.cs (548 строк)
+- Проведён аудит багов INV-BUG-01..07 и CRA-BUG-01..03
+- Полная переработка InventoryController.cs:
+  - Динамическая сетка от BackpackData (SetBackpack/RemoveBackpack)
+  - effectiveWeight = rawWeight × (1 − backpack.weightReduction)
+  - MaxWeight = baseMaxWeight + backpack.maxWeightBonus
+  - Мост EquipFromInventory / UnequipToInventory
+  - SortInventory по категории → имени → редкости
+  - InventorySlotSaveData: +grade field
+  - gridSlotIds (int[,]) вместо bool[,] — для корректной перестройки
+  - RebuildGridFromSlots вместо побитового FreeGrid
+- Исправлено 7 багов Inventory:
+  - INV-BUG-01: рекурсивный AddItem → итеративный (вес корректен при частичном добавлении)
+  - INV-BUG-02: RemoveFromSlot — вес вычисляется до модификации слота
+  - INV-BUG-03: Resize — полная перестройка occupancy через ApplyGridSize
+  - INV-BUG-04: FreeGrid → RebuildGridFromSlots (нет пересечений)
+  - INV-BUG-05: HasDurability при durability=0 → true (>= 0 вместо > 0)
+  - INV-BUG-06: LoadSaveData durability=0 → загружается (>= 0 вместо > 0)
+  - INV-BUG-07: FreeSlots → FreeCells (ячейки сетки, а не количество предметов)
+- Исправлено 3 бага Crafting:
+  - CRA-BUG-01: Уведомление о потере материалов (materialsLost флаг)
+  - CRA-BUG-02: (уже исправлен INV-H01 в предыдущей сессии)
+  - CRA-BUG-03: GetAvailableRecipes O(N²) → O(N) с предвычислением availableItems
+- Каскадные фиксы:
+  - Phase06Player.cs: gridWidth→defaultGridWidth, maxWeight→baseMaxWeight (3×4, 30кг)
+  - SceneSetupTools.cs: gridWidth→defaultGridWidth, maxWeight→baseMaxWeight
+  - InventoryUI.cs: CurrentWeight→EffectiveWeight, maxWeight→MaxWeight
+  - CraftingController.cs: FreeSlots→FreeCells
+- Коммит f3a5683, push success
+- Обновлён чекпоинт 04_18_inventory_rewrite.md
+
+Stage Summary:
+- InventoryController v2.0 полностью переписан (498 добавлений, 205 удалений)
+- CraftingController: 3 бага исправлено
+- 10 багов исправлено суммарно (7 INV + 3 CRA)
+- 5 файлов изменены
+- Этапы 0, 1, 2 завершены
+- Следующий: Этап 3 — UI (InventoryScreen, BodyDollPanel, BackpackPanel)

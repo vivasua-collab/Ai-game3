@@ -1,8 +1,8 @@
 # Чекпоинт: Полная переделка инвентаря
 
 **Дата:** 2026-04-18 18:20:58 UTC
-**Редактировано:** 2026-04-18 19:05:00 UTC
-**Статус:** in_progress — Этап 0 ✅, Этап 1 ✅
+**Редактировано:** 2026-04-18 19:25:00 UTC
+**Статус:** in_progress — Этап 0 ✅, Этап 1 ✅, Этап 2 ✅
 
 ## Контекст
 
@@ -63,14 +63,31 @@
 - EQP-BUG-04: нет логики двуручного оружия → добавлена
 - EQP-BUG-05: GradeMultiplier не совпадает с EQUIPMENT_SYSTEM.md → разделены durability/effectiveness
 
-### Этап 2: Рюкзак (Backpack) ⬜
+### Этап 2: Рюкзак (Backpack) ✅
 
-- [ ] 2.1 Переписать InventoryController.cs (динамическая сетка от BackpackData)
-- [ ] 2.2 Исправить все баги INV-BUG-01..07
-- [ ] 2.3 Добавить SetBackpack() + effectiveWeight
-- [ ] 2.4 Добавить EquipFromSlot / UnequipToInventory мост
-- [ ] 2.5 Обновить CraftingController.cs (исправить баги CRA-BUG-01..03)
-- [ ] 2.6 Проверить компиляцию
+- [x] 2.1 Переписать InventoryController.cs (динамическая сетка от BackpackData) ✅
+- [x] 2.2 Исправить все баги INV-BUG-01..07 ✅
+- [x] 2.3 Добавить SetBackpack() + effectiveWeight ✅
+- [x] 2.4 Добавить EquipFromInventory / UnequipToInventory мост ✅
+- [x] 2.5 Обновить CraftingController.cs (CRA-BUG-01..03) ✅
+- [x] 2.6 Проверить компиляцию + git push ✅
+
+**Коммит:** f3a5683 — InventoryController v2.0 + CraftingController багфиксы
+**Каскадные фиксы:** Phase06Player.cs, SceneSetupTools.cs, InventoryUI.cs
+
+**Исправленные баги Inventory (7):**
+- INV-BUG-01: Рекурсивный AddItem → итеративный
+- INV-BUG-02: RemoveFromSlot — вес до модификации
+- INV-BUG-03: Resize — полная перестройка occupancy
+- INV-BUG-04: FreeGrid → RebuildGridFromSlots
+- INV-BUG-05: HasDurability при durability=0 → true
+- INV-BUG-06: LoadSaveData durability=0 → загружается
+- INV-BUG-07: FreeSlots → FreeCells (ячейки, не предметы)
+
+**Исправленные баги Crafting (3):**
+- CRA-BUG-01: Уведомление о потере материалов
+- CRA-BUG-02: (уже исправлен INV-H01)
+- CRA-BUG-03: GetAvailableRecipes O(N²) → O(N)
 
 ### Этап 3: UI ⬜
 
@@ -129,9 +146,9 @@
 
 ## Следующий шаг
 
-Начать Этап 2 — рюкзак (InventoryController.cs переписать под динамическую сетку от BackpackData).
+Начать Этап 3 — UI (InventoryScreen, BodyDollPanel, BackpackPanel).
 
 ---
 
 *Чекпоинт создан: 2026-04-18 18:20:58 UTC*
-*Редактировано: 2026-04-18 19:05:00 UTC*
+*Редактировано: 2026-04-18 19:25:00 UTC*
