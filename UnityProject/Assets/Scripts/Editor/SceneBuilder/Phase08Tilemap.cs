@@ -9,6 +9,7 @@
 using UnityEngine;
 using UnityEditor;
 using UnityEngine.Tilemaps;
+using CultivationGame.Core;
 using CultivationGame.World;
 using CultivationGame.TileSystem;
 

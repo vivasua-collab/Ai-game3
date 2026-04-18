@@ -8,6 +8,7 @@
 #if UNITY_EDITOR
 using UnityEngine;
 using UnityEditor;
+using CultivationGame.Core;
 using CultivationGame.Player;
 using CultivationGame.Qi;
 using CultivationGame.Body;
