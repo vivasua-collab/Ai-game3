@@ -416,9 +416,9 @@ public class SceneSetupTools : EditorWindow
         var ec = player.GetComponent<EquipmentController>();
         if (ec == null) return;
         
+        // v2.0: useLayerSystem и maxLayersPerSlot убраны (нет слоёв)
         SerializedObject so = new SerializedObject(ec);
-        SetProperty(so, "useLayerSystem", true);
-        SetProperty(so, "maxLayersPerSlot", 2);
+        SetProperty(so, "enforceRequirements", true);
         so.ApplyModifiedProperties();
     }
     

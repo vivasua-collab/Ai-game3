@@ -462,7 +462,7 @@ namespace CultivationGame.UI
 
             if (equipmentController != null)
             {
-                if (equipmentController.Equip(equipmentData))
+                if (equipmentController.Equip(equipmentData) != null)
                 {
                     // Удаляем из инвентаря
                     inventoryController.RemoveItem(slot.SlotId, 1);

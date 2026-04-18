@@ -152,9 +152,9 @@ namespace CultivationGame.Editor.SceneBuilder
         {
             SceneBuilderUtils.SetupComponent<EquipmentController>(player, ec =>
             {
+                // v2.0: useLayerSystem и maxLayersPerSlot убраны (нет слоёв)
                 SerializedObject so = new SerializedObject(ec);
-                SceneBuilderUtils.SetProperty(so, "useLayerSystem", true);
-                SceneBuilderUtils.SetProperty(so, "maxLayersPerSlot", 2);
+                SceneBuilderUtils.SetProperty(so, "enforceRequirements", true);
                 so.ApplyModifiedProperties();
             });
         }

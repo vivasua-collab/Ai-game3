@@ -1,8 +1,20 @@
 // ============================================================================
-// EquipmentController.cs — Система экипировки
+// EquipmentController.cs — Система экипировки (v2.0 — переработка куклы)
 // Cultivation World Simulator
+// ============================================================================
 // Создано: 2026-04-03
-// Редактировано: 2026-04-11 06:38:02 UTC — INV-H03: проверка требований экипировки, SAV-H01: сериализация customBonuses, Qi int→long
+// Редактировано: 2026-04-18 19:00:00 UTC — ПОЛНАЯ ПЕРЕРАБОТКА по INVENTORY_UI_DRAFT.md v2.0
+// ============================================================================
+// Изменения v2.0:
+// - Убрана система слоёв («матрёшка») для видимых слотов — 1 предмет на слот
+// - Добавлена логика 1H/2H оружия (TwoHand блокирует WeaponOff)
+// - Разделены GradeMultiplier: durability (урон/защита) и effectiveness (бонусы)
+// - Исправлен баг EQP-BUG-02: рассчитанное value бонусов не использовалось
+// - Исправлен баг EQP-BUG-03: SwapSlots не обновлял currentLayer
+// - Исправлен баг EQP-BUG-04: нет логики двуручного оружия
+// - Исправлен баг EQP-BUG-05: GradeMultiplier не совпадает с EQUIPMENT_SYSTEM.md
+// - Скрытые слоты (Amulet, Ring*, Charger, Hands, Back) — заглушки
+// ============================================================================
 
 using System;
 using System.Collections.Generic;
@@ -16,49 +28,91 @@ using CultivationGame.Player;
 namespace CultivationGame.Inventory
 {
     /// <summary>
-    /// Контроллер экипировки персонажа.
-    /// Реализует принцип "матрёшка" — несколько слоёв одежды.
+    /// Контроллер экипировки персонажа (v2.0).
+    /// 
+    /// Видимые слоты куклы (7): Head, Torso, Belt, Legs, Feet, WeaponMain, WeaponOff
+    /// Скрытые слоты (заглушки): Amulet, RingLeft1/2, RingRight1/2, Charger, Hands, Back
+    /// 
+    /// Правила:
+    /// - Каждый видимый слот = 1 предмет (нет слоёв)
+    /// - Одноручное оружие занимает 1 слот руки
+    /// - Двуручное оружие занимает WeaponMain + блокирует WeaponOff
+    /// - Скрытые слоты не функциональны (заглушки на будущее)
     /// </summary>
     public class EquipmentController : MonoBehaviour
     {
+        #region Constants
+
+        /// <summary>Видимые слоты куклы — 7 основных</summary>
+        public static readonly EquipmentSlot[] VisibleSlots = new[]
+        {
+            EquipmentSlot.Head,
+            EquipmentSlot.Torso,
+            EquipmentSlot.Belt,
+            EquipmentSlot.Legs,
+            EquipmentSlot.Feet,
+            EquipmentSlot.WeaponMain,
+            EquipmentSlot.WeaponOff
+        };
+
+        /// <summary>Скрытые слоты — заглушки на будущее</summary>
+        public static readonly EquipmentSlot[] HiddenSlots = new[]
+        {
+            EquipmentSlot.Amulet,
+            EquipmentSlot.RingLeft1,
+            EquipmentSlot.RingLeft2,
+            EquipmentSlot.RingRight1,
+            EquipmentSlot.RingRight2,
+            EquipmentSlot.Charger,
+            EquipmentSlot.Hands,
+            EquipmentSlot.Back
+        };
+
+        #endregion
+
         #region Configuration
 
         [Header("Equipment Settings")]
-        [Tooltip("Включить систему слоёв")]
-        public bool useLayerSystem = true;
-
-        [Tooltip("Максимум слоёв на один слот")]
-        [Range(1, 3)]
-        public int maxLayersPerSlot = 2;
+        [Tooltip("Включить ограничение требований экипировки")]
+        public bool enforceRequirements = true;
 
         #endregion
 
         #region Runtime Data
 
-        // Основные слоты экипировки
-        private Dictionary<EquipmentSlot, List<EquipmentInstance>> equipmentSlots;
+        /// <summary>Экипировка: слот → экземпляр (1 предмет на слот)</summary>
+        private Dictionary<EquipmentSlot, EquipmentInstance> equippedItems;
 
-        // Кэш вычисленных статов
+        /// <summary>Заблокирован ли WeaponOff двуручным оружием</summary>
+        private bool isWeaponOffBlocked = false;
+
+        /// <summary>Кэш вычисленных статов</summary>
         private EquipmentStats cachedStats;
 
-        // Флаг_dirty для пересчёта статов
+        /// <summary>Флаг dirty для пересчёта статов</summary>
         private bool statsDirty = true;
 
         #endregion
 
         #region Events
 
+        /// <summary>Предмет экипирован в слот</summary>
         public event Action<EquipmentSlot, EquipmentInstance> OnEquipmentEquipped;
+
+        /// <summary>Предмет снят со слота</summary>
         public event Action<EquipmentSlot, EquipmentInstance> OnEquipmentUnequipped;
+
+        /// <summary>Статы от экипировки изменились</summary>
         public event Action<EquipmentStats> OnStatsChanged;
-#pragma warning disable CS0067
-        public event Action<EquipmentSlot, bool> OnSlotAvailabilityChanged;
-#pragma warning restore CS0067
+
+        /// <summary>Слот WeaponOff заблокирован/разблокирован двуручным оружием</summary>
+        public event Action<bool> OnWeaponOffBlockChanged;
 
         #endregion
 
         #region Properties
 
+        /// <summary>Текущие статы от экипировки (пересчитываются при необходимости)</summary>
         public EquipmentStats CurrentStats
         {
             get
@@ -68,6 +122,9 @@ namespace CultivationGame.Inventory
                 return cachedStats;
             }
         }
+
+        /// <summary>Заблокирован ли WeaponOff двуручным оружием</summary>
+        public bool IsWeaponOffBlocked => isWeaponOffBlocked;
 
         #endregion
 
@@ -84,114 +141,150 @@ namespace CultivationGame.Inventory
 
         private void InitializeSlots()
         {
-            equipmentSlots = new Dictionary<EquipmentSlot, List<EquipmentInstance>>();
+            equippedItems = new Dictionary<EquipmentSlot, EquipmentInstance>();
 
+            // Инициализируем все слоты как пустые
             foreach (EquipmentSlot slot in Enum.GetValues(typeof(EquipmentSlot)))
             {
-                equipmentSlots[slot] = new List<EquipmentInstance>();
+                equippedItems[slot] = null;
             }
 
             cachedStats = new EquipmentStats();
+            isWeaponOffBlocked = false;
         }
 
         #endregion
 
-        #region Equip/Unequip
+        #region Equip / Unequip
 
         /// <summary>
-        /// Экипирует предмет
+        /// Экипирует предмет в соответствующий слот.
+        /// 
+        /// Логика 1H/2H:
+        /// - Одноручное: занимает 1 слот (WeaponMain или WeaponOff)
+        /// - Двуручное: занимает WeaponMain, блокирует WeaponOff
+        ///   - Если WeaponOff занят → сначала снимается
+        /// 
+        /// Если слот занят → старый предмет снимается автоматически.
         /// </summary>
-        public bool Equip(EquipmentData equipmentData, EquipmentGrade grade = EquipmentGrade.Common, int durability = -1)
+        /// <param name="equipmentData">Данные экипировки</param>
+        /// <param name="grade">Грейд предмета</param>
+        /// <param name="durability">Прочность (−1 = максимальная)</param>
+        /// <returns>Экземпляр экипировки или null при ошибке</returns>
+        public EquipmentInstance Equip(EquipmentData equipmentData, EquipmentGrade grade = EquipmentGrade.Common, int durability = -1)
         {
             if (equipmentData == null)
-                return false;
+                return null;
 
             EquipmentSlot slot = equipmentData.slot;
 
-            // FIX: Получаем параметры игрока для проверки требований
-            int playerCultivationLevel = 0;
-            Dictionary<string, float> playerStats = null;
-            
-            var qiCtrl = ServiceLocator.GetOrFind<QiController>();
-            if (qiCtrl != null)
-                playerCultivationLevel = qiCtrl.CultivationLevel;
-            
-            var playerCtrl = ServiceLocator.GetOrFind<PlayerController>();
-            if (playerCtrl != null && playerCtrl.StatDevelopment != null)
-                playerStats = playerCtrl.StatDevelopment.GetAllStatsAsDictionary();
+            // Скрытые слоты — не функциональны
+            if (!IsSlotVisible(slot))
+            {
+                Debug.LogWarning($"[EquipmentController] Слот {slot} — скрытый (заглушка), экипировка невозможна");
+                return null;
+            }
 
             // Проверяем требования
-            if (!CanEquip(equipmentData, playerCultivationLevel, playerStats))
-                return false;
+            if (enforceRequirements && !CanEquip(equipmentData))
+                return null;
 
-            // Создаём экземпляр
-            var instance = new EquipmentInstance
+            // === Логика двуручного оружия ===
+            if (equipmentData.handType == WeaponHandType.TwoHand)
             {
-                equipmentData = equipmentData,
-                grade = grade,
-                durability = durability > 0 ? durability : equipmentData.maxDurability,
-                currentLayer = equipmentSlots[slot].Count
-            };
-
-            // Если слот занят и нет системы слоёв — снимаем старое
-            if (!useLayerSystem && equipmentSlots[slot].Count > 0)
-            {
-                Unequip(slot);
+                return EquipTwoHand(equipmentData, grade, durability);
             }
 
-            // Проверяем лимит слоёв
-            if (equipmentSlots[slot].Count >= maxLayersPerSlot)
+            // === Логика WeaponOff при заблокированном слоте ===
+            if (slot == EquipmentSlot.WeaponOff && isWeaponOffBlocked)
             {
-                // Снимаем самый внутренний слой
-                UnequipLayer(slot, 0);
+                Debug.LogWarning("[EquipmentController] WeaponOff заблокирован двуручным оружием");
+                return null;
             }
 
-            // Добавляем экипировку
-            equipmentSlots[slot].Add(instance);
+            // === Логика WeaponMain — если экипируем 1H, а там двуручное ===
+            if (slot == EquipmentSlot.WeaponMain && equippedItems[EquipmentSlot.WeaponMain] != null)
+            {
+                var currentMain = equippedItems[EquipmentSlot.WeaponMain];
+                if (currentMain.equipmentData.handType == WeaponHandType.TwoHand)
+                {
+                    // Снимаем двуручное оружие (освобождает оба слота)
+                    Unequip(EquipmentSlot.WeaponMain);
+                }
+            }
+
+            // === Стандартная экипировка — если слот занят, снимаем старое ===
+            EquipmentInstance oldItem = null;
+            if (equippedItems[slot] != null)
+            {
+                oldItem = Unequip(slot);
+            }
+
+            // Создаём экземпляр и надеваем
+            var instance = CreateInstance(equipmentData, grade, durability);
+            equippedItems[slot] = instance;
             statsDirty = true;
 
             OnEquipmentEquipped?.Invoke(slot, instance);
             OnStatsChanged?.Invoke(CurrentStats);
 
-            return true;
+            return instance;
         }
 
         /// <summary>
-        /// Снимает экипировку с указанного слота
+        /// Экипирует двуручное оружие на WeaponMain + блокирует WeaponOff.
         /// </summary>
-        public EquipmentInstance Unequip(EquipmentSlot slot)
+        private EquipmentInstance EquipTwoHand(EquipmentData equipmentData, EquipmentGrade grade, int durability)
         {
-            if (equipmentSlots[slot].Count == 0)
-                return null;
+            // Если WeaponOff занят → снимаем
+            if (equippedItems[EquipmentSlot.WeaponOff] != null)
+            {
+                Unequip(EquipmentSlot.WeaponOff);
+            }
 
-            // Снимаем внешний слой (последний добавленный)
-            int lastIndex = equipmentSlots[slot].Count - 1;
-            var instance = equipmentSlots[slot][lastIndex];
-            equipmentSlots[slot].RemoveAt(lastIndex);
+            // Если WeaponMain занят → снимаем
+            if (equippedItems[EquipmentSlot.WeaponMain] != null)
+            {
+                Unequip(EquipmentSlot.WeaponMain);
+            }
+
+            // Экипируем двуручное на WeaponMain
+            var instance = CreateInstance(equipmentData, grade, durability);
+            equippedItems[EquipmentSlot.WeaponMain] = instance;
+
+            // Блокируем WeaponOff
+            isWeaponOffBlocked = true;
+            OnWeaponOffBlockChanged?.Invoke(true);
 
             statsDirty = true;
 
-            OnEquipmentUnequipped?.Invoke(slot, instance);
+            OnEquipmentEquipped?.Invoke(EquipmentSlot.WeaponMain, instance);
             OnStatsChanged?.Invoke(CurrentStats);
 
             return instance;
         }
 
         /// <summary>
-        /// Снимает экипировку с указанного слоя
+        /// Снимает экипировку с указанного слота.
+        /// 
+        /// Для двуручного оружия: при снятии с WeaponMain — освобождает WeaponOff.
         /// </summary>
-        public EquipmentInstance UnequipLayer(EquipmentSlot slot, int layerIndex)
+        /// <param name="slot">Слот для снятия</param>
+        /// <returns>Снятый экземпляр или null</returns>
+        public EquipmentInstance Unequip(EquipmentSlot slot)
         {
-            if (layerIndex < 0 || layerIndex >= equipmentSlots[slot].Count)
+            var instance = equippedItems[slot];
+            if (instance == null)
                 return null;
 
-            var instance = equipmentSlots[slot][layerIndex];
-            equipmentSlots[slot].RemoveAt(layerIndex);
+            // Снимаем предмет
+            equippedItems[slot] = null;
 
-            // Обновляем индексы слоёв
-            for (int i = 0; i < equipmentSlots[slot].Count; i++)
+            // Если снимаем двуручное с WeaponMain — разблокируем WeaponOff
+            if (slot == EquipmentSlot.WeaponMain && instance.equipmentData.handType == WeaponHandType.TwoHand)
             {
-                equipmentSlots[slot][i].currentLayer = i;
+                isWeaponOffBlocked = false;
+                OnWeaponOffBlockChanged?.Invoke(false);
             }
 
             statsDirty = true;
@@ -203,47 +296,21 @@ namespace CultivationGame.Inventory
         }
 
         /// <summary>
-        /// Снимает всю экипировку
+        /// Снимает всю экипировку.
         /// </summary>
+        /// <returns>Список снятых предметов</returns>
         public List<EquipmentInstance> UnequipAll()
         {
             var allEquipment = new List<EquipmentInstance>();
 
-            foreach (var slot in equipmentSlots.Keys)
+            foreach (EquipmentSlot slot in Enum.GetValues(typeof(EquipmentSlot)))
             {
-                while (equipmentSlots[slot].Count > 0)
-                {
-                    var instance = Unequip(slot);
-                    if (instance != null)
-                        allEquipment.Add(instance);
-                }
+                var instance = Unequip(slot);
+                if (instance != null)
+                    allEquipment.Add(instance);
             }
 
             return allEquipment;
-        }
-
-        /// <summary>
-        /// Меняет экипировку местами (для двуручного/одноручного)
-        /// </summary>
-        public bool SwapSlots(EquipmentSlot slot1, EquipmentSlot slot2)
-        {
-            var list1 = equipmentSlots[slot1];
-            var list2 = equipmentSlots[slot2];
-
-            if (list1.Count == 0 && list2.Count == 0)
-                return false;
-
-            // Меняем местами списки
-            var temp = new List<EquipmentInstance>(list1);
-            list1.Clear();
-            list1.AddRange(list2);
-            list2.Clear();
-            list2.AddRange(temp);
-
-            statsDirty = true;
-            OnStatsChanged?.Invoke(CurrentStats);
-
-            return true;
         }
 
         #endregion
@@ -251,21 +318,36 @@ namespace CultivationGame.Inventory
         #region Query
 
         /// <summary>
-        /// Проверяет, можно ли экипировать предмет
-        /// FIX INV-H03: Реализована проверка требований (2026-04-11)
+        /// Проверяет, можно ли экипировать предмет.
+        /// Проверяет: уровень культивации, требования к статам.
         /// </summary>
-        public bool CanEquip(EquipmentData equipmentData, int playerCultivationLevel = 0, Dictionary<string, float> playerStats = null)
+        public bool CanEquip(EquipmentData equipmentData, int playerCultivationLevel = -1, Dictionary<string, float> playerStats = null)
         {
             if (equipmentData == null)
                 return false;
 
-            // FIX INV-H03: Check cultivation level requirement (2026-04-11)
+            // Получаем уровень культивации, если не передан
+            if (playerCultivationLevel < 0)
+            {
+                var qiCtrl = ServiceLocator.GetOrFind<QiController>();
+                playerCultivationLevel = qiCtrl != null ? qiCtrl.CultivationLevel : 0;
+            }
+
+            // Получаем статы игрока, если не переданы
+            if (playerStats == null)
+            {
+                var playerCtrl = ServiceLocator.GetOrFind<PlayerController>();
+                if (playerCtrl != null && playerCtrl.StatDevelopment != null)
+                    playerStats = playerCtrl.StatDevelopment.GetAllStatsAsDictionary();
+            }
+
+            // Проверка уровня культивации
             if (equipmentData.requiredCultivationLevel > 0 && playerCultivationLevel < equipmentData.requiredCultivationLevel)
             {
                 return false;
             }
 
-            // FIX INV-H03: Check stat requirements (2026-04-11)
+            // Проверка требований к статам
             if (equipmentData.statRequirements != null && equipmentData.statRequirements.Count > 0 && playerStats != null)
             {
                 foreach (var req in equipmentData.statRequirements)
@@ -276,7 +358,7 @@ namespace CultivationGame.Inventory
                     }
                     else
                     {
-                        // Stat not found — requirement not met
+                        // Стат не найден — требование не выполнено
                         return false;
                     }
                 }
@@ -286,68 +368,80 @@ namespace CultivationGame.Inventory
         }
 
         /// <summary>
-        /// Получает экипировку в указанном слоте (внешний слой)
+        /// Получает экипировку в указанном слоте.
         /// </summary>
         public EquipmentInstance GetEquipment(EquipmentSlot slot)
         {
-            if (equipmentSlots[slot].Count == 0)
-                return null;
-
-            return equipmentSlots[slot][equipmentSlots[slot].Count - 1];
+            return equippedItems[slot];
         }
 
         /// <summary>
-        /// Получает все слои экипировки в слоте
-        /// </summary>
-        public List<EquipmentInstance> GetAllLayers(EquipmentSlot slot)
-        {
-            return new List<EquipmentInstance>(equipmentSlots[slot]);
-        }
-
-        /// <summary>
-        /// Получает экипировку по слою
-        /// </summary>
-        public EquipmentInstance GetEquipmentAtLayer(EquipmentSlot slot, int layer)
-        {
-            if (layer < 0 || layer >= equipmentSlots[slot].Count)
-                return null;
-
-            return equipmentSlots[slot][layer];
-        }
-
-        /// <summary>
-        /// Проверяет, занят ли слот
+        /// Проверяет, занят ли слот.
         /// </summary>
         public bool IsSlotOccupied(EquipmentSlot slot)
         {
-            return equipmentSlots[slot].Count > 0;
+            return equippedItems[slot] != null;
         }
 
         /// <summary>
-        /// Подсчитывает количество слоёв в слоте
+        /// Проверяет, является ли слот видимым (на кукле).
         /// </summary>
-        public int GetLayerCount(EquipmentSlot slot)
+        public static bool IsSlotVisible(EquipmentSlot slot)
         {
-            return equipmentSlots[slot].Count;
+            return Array.IndexOf(VisibleSlots, slot) >= 0;
         }
 
         /// <summary>
-        /// Получает все предметы определённого типа
+        /// Проверяет, является ли слот скрытым (заглушка).
+        /// </summary>
+        public static bool IsSlotHidden(EquipmentSlot slot)
+        {
+            return Array.IndexOf(HiddenSlots, slot) >= 0;
+        }
+
+        /// <summary>
+        /// Получает все экипированные предметы.
+        /// </summary>
+        public List<EquipmentInstance> GetAllEquipped()
+        {
+            var result = new List<EquipmentInstance>();
+            foreach (var kvp in equippedItems)
+            {
+                if (kvp.Value != null)
+                    result.Add(kvp.Value);
+            }
+            return result;
+        }
+
+        /// <summary>
+        /// Получает все предметы определённой категории.
         /// </summary>
         public List<EquipmentInstance> GetEquipmentByCategory(ItemCategory category)
         {
             var result = new List<EquipmentInstance>();
-
-            foreach (var slotList in equipmentSlots.Values)
+            foreach (var kvp in equippedItems)
             {
-                foreach (var instance in slotList)
-                {
-                    if (instance.equipmentData.category == category)
-                        result.Add(instance);
-                }
+                if (kvp.Value != null && kvp.Value.equipmentData.category == category)
+                    result.Add(kvp.Value);
             }
-
             return result;
+        }
+
+        /// <summary>
+        /// Получает оружие в основной руке (с учётом двуручности).
+        /// </summary>
+        public EquipmentInstance GetMainWeapon()
+        {
+            return equippedItems[EquipmentSlot.WeaponMain];
+        }
+
+        /// <summary>
+        /// Получает оружие во второй руке (если не заблокировано двуручным).
+        /// </summary>
+        public EquipmentInstance GetOffWeapon()
+        {
+            if (isWeaponOffBlocked) return null;
+            return equippedItems[EquipmentSlot.WeaponOff];
         }
 
         #endregion
@@ -355,73 +449,99 @@ namespace CultivationGame.Inventory
         #region Stats Calculation
 
         /// <summary>
-        /// Пересчитывает все статы от экипировки
+        /// Пересчитывает все статы от экипировки.
         /// </summary>
         private void RecalculateStats()
         {
             cachedStats = new EquipmentStats();
 
-            foreach (var slotList in equipmentSlots.Values)
+            foreach (var kvp in equippedItems)
             {
-                foreach (var instance in slotList)
+                if (kvp.Value != null)
                 {
-                    AddEquipmentStats(instance);
+                    AddEquipmentStats(kvp.Value);
                 }
             }
 
             statsDirty = false;
         }
 
+        /// <summary>
+        /// Добавляет статы одного предмета к кэшу.
+        /// Использует РАЗНЫЕ множители для урона/защиты и бонусов.
+        /// </summary>
         private void AddEquipmentStats(EquipmentInstance instance)
         {
             var data = instance.equipmentData;
-            float gradeMultiplier = GetGradeMultiplier(instance.grade);
+            float durabilityMult = GetDurabilityMultiplier(instance.grade);
+            float effectivenessMult = GetEffectivenessMultiplier(instance.grade);
 
-            // Базовые статы
-            cachedStats.totalDamage += Mathf.RoundToInt(data.damage * gradeMultiplier);
-            cachedStats.totalDefense += Mathf.RoundToInt(data.defense * gradeMultiplier);
+            // Урон и защита — множитель прочности (×0.5..×4.0)
+            cachedStats.totalDamage += Mathf.RoundToInt(data.damage * durabilityMult);
+            cachedStats.totalDefense += Mathf.RoundToInt(data.defense * durabilityMult);
             cachedStats.damageReduction += data.damageReduction;
             cachedStats.dodgeBonus += data.dodgeBonus;
 
-            // Бонусы к характеристикам
+            // Бонусы к характеристикам — множитель эффективности (×0.5..×3.25)
             foreach (var bonus in data.statBonuses)
             {
-                float value = bonus.isPercentage ? bonus.bonus : bonus.bonus * gradeMultiplier;
+                // FIX EQP-BUG-02: используем рассчитанное value, а не bonus.bonus напрямую
+                float value = bonus.isPercentage ? bonus.bonus : bonus.bonus * effectivenessMult;
 
                 switch (bonus.statName.ToLower())
                 {
                     case "strength":
                     case "str":
-                        cachedStats.strength += bonus.bonus;
+                        cachedStats.strength += value;
                         break;
                     case "agility":
                     case "agi":
-                        cachedStats.agility += bonus.bonus;
+                        cachedStats.agility += value;
                         break;
                     case "constitution":
                     case "con":
-                        cachedStats.constitution += bonus.bonus;
+                        cachedStats.constitution += value;
                         break;
                     case "intelligence":
                     case "int":
-                        cachedStats.intelligence += bonus.bonus;
+                        cachedStats.intelligence += value;
+                        break;
+                    case "conductivity":
+                    case "cond":
+                        cachedStats.conductivity += value;
                         break;
                     case "qi":
                     case "maxqi":
-                        cachedStats.maxQi += bonus.bonus;
+                        cachedStats.maxQi += value;
                         break;
                     case "qiregen":
-                        cachedStats.qiRegen += bonus.bonus;
+                        cachedStats.qiRegen += value;
+                        break;
+                    case "vitality":
+                    case "vit":
+                        cachedStats.vitality += value;
                         break;
                     default:
                         cachedStats.customBonuses[bonus.statName] =
-                            cachedStats.GetCustomBonus(bonus.statName) + bonus.bonus;
+                            cachedStats.GetCustomBonus(bonus.statName) + value;
                         break;
                 }
             }
         }
 
-        private float GetGradeMultiplier(EquipmentGrade grade)
+        /// <summary>
+        /// Множитель прочности — для урона и защиты.
+        /// Источник: EQUIPMENT_SYSTEM.md §2.1 "Уровни качества"
+        /// 
+        /// | Грейд | Прочность |
+        /// |-------|-----------|
+        /// | Damaged | ×0.5 |
+        /// | Common | ×1.0 |
+        /// | Refined | ×1.5 |
+        /// | Perfect | ×2.5 |
+        /// | Transcendent | ×4.0 |
+        /// </summary>
+        private float GetDurabilityMultiplier(EquipmentGrade grade)
         {
             return grade switch
             {
@@ -434,12 +554,40 @@ namespace CultivationGame.Inventory
             };
         }
 
+        /// <summary>
+        /// Множитель эффективности — для бонусов к характеристикам.
+        /// Источник: EQUIPMENT_SYSTEM.md §2.1 "Уровни качества"
+        /// 
+        /// | Грейд | Эффективность |
+        /// |-------|---------------|
+        /// | Damaged | ×0.5 |
+        /// | Common | ×1.0 |
+        /// | Refined | ×1.4 (1.3-1.5) |
+        /// | Perfect | ×2.1 (1.7-2.5) |
+        /// | Transcendent | ×3.25 (2.5-4.0) |
+        /// 
+        /// Для диапазонов используется среднее значение.
+        /// FIX EQP-BUG-05: Ранее использовался тот же множитель, что и для прочности.
+        /// </summary>
+        private float GetEffectivenessMultiplier(EquipmentGrade grade)
+        {
+            return grade switch
+            {
+                EquipmentGrade.Damaged => 0.5f,
+                EquipmentGrade.Common => 1.0f,
+                EquipmentGrade.Refined => 1.4f,       // (1.3 + 1.5) / 2
+                EquipmentGrade.Perfect => 2.1f,       // (1.7 + 2.5) / 2
+                EquipmentGrade.Transcendent => 3.25f, // (2.5 + 4.0) / 2
+                _ => 1.0f
+            };
+        }
+
         #endregion
 
         #region Durability
 
         /// <summary>
-        /// Наносит урон прочности экипировке
+        /// Наносит урон прочности экипировке в указанном слоте.
         /// </summary>
         public void DamageEquipment(EquipmentSlot slot, int amount)
         {
@@ -449,15 +597,19 @@ namespace CultivationGame.Inventory
 
             instance.durability = Mathf.Max(0, instance.durability - amount);
 
-            // Если прочность 0 — экипировка ломается
+            // Снижаем статы при поломке
+            statsDirty = true;
+            OnStatsChanged?.Invoke(CurrentStats);
+
             if (instance.durability == 0)
             {
-                // TODO: Уведомление о поломке
+                // Экипировка сломана — уведомление
+                Debug.Log($"[EquipmentController] Экипировка в слоте {slot} сломана!");
             }
         }
 
         /// <summary>
-        /// Чинит экипировку
+        /// Чинит экипировку в указанном слоте.
         /// </summary>
         public void RepairEquipment(EquipmentSlot slot, int amount)
         {
@@ -469,20 +621,34 @@ namespace CultivationGame.Inventory
         }
 
         /// <summary>
-        /// Полностью чинит всю экипировку
+        /// Полностью чинит всю экипировку.
         /// </summary>
         public void RepairAll()
         {
-            foreach (var slotList in equipmentSlots.Values)
+            foreach (var kvp in equippedItems)
             {
-                foreach (var instance in slotList)
+                if (kvp.Value != null && kvp.Value.durability >= 0)
                 {
-                    if (instance.durability >= 0)
-                    {
-                        instance.durability = instance.equipmentData.maxDurability;
-                    }
+                    kvp.Value.durability = kvp.Value.equipmentData.maxDurability;
                 }
             }
+        }
+
+        #endregion
+
+        #region Helpers
+
+        /// <summary>
+        /// Создаёт экземпляр экипировки.
+        /// </summary>
+        private EquipmentInstance CreateInstance(EquipmentData data, EquipmentGrade grade, int durability)
+        {
+            return new EquipmentInstance
+            {
+                equipmentData = data,
+                grade = grade,
+                durability = durability > 0 ? durability : data.maxDurability
+            };
         }
 
         #endregion
@@ -490,32 +656,25 @@ namespace CultivationGame.Inventory
         #region Save/Load
 
         /// <summary>
-        /// Получает данные для сохранения
+        /// Получает данные для сохранения.
+        /// Формат упрощён — 1 предмет на слот, без слоёв.
         /// </summary>
         public Dictionary<string, EquipmentSaveData> GetSaveData()
         {
             var data = new Dictionary<string, EquipmentSaveData>();
 
-            foreach (var kvp in equipmentSlots)
+            foreach (var kvp in equippedItems)
             {
-                if (kvp.Value.Count > 0)
+                if (kvp.Value != null)
                 {
-                    var layers = new List<EquipmentLayerSaveData>();
-                    foreach (var instance in kvp.Value)
-                    {
-                        layers.Add(new EquipmentLayerSaveData
-                        {
-                            itemId = instance.equipmentData.itemId,
-                            grade = instance.grade,
-                            durability = instance.durability,
-                            layer = instance.currentLayer
-                        });
-                    }
-
                     data[kvp.Key.ToString()] = new EquipmentSaveData
                     {
                         slot = kvp.Key,
-                        layers = layers
+                        itemId = kvp.Value.equipmentData.itemId,
+                        grade = kvp.Value.grade,
+                        durability = kvp.Value.durability,
+                        isTwoHandBlocking = (kvp.Key == EquipmentSlot.WeaponMain &&
+                                             kvp.Value.equipmentData.handType == WeaponHandType.TwoHand)
                     };
                 }
             }
@@ -524,7 +683,7 @@ namespace CultivationGame.Inventory
         }
 
         /// <summary>
-        /// Загружает данные
+        /// Загружает данные.
         /// </summary>
         public void LoadSaveData(Dictionary<string, EquipmentSaveData> data, Dictionary<string, EquipmentData> itemDatabase)
         {
@@ -536,12 +695,9 @@ namespace CultivationGame.Inventory
             {
                 var slotData = kvp.Value;
 
-                foreach (var layerData in slotData.layers)
+                if (itemDatabase.TryGetValue(slotData.itemId, out var equipmentData))
                 {
-                    if (itemDatabase.TryGetValue(layerData.itemId, out var equipmentData))
-                    {
-                        Equip(equipmentData, layerData.grade, layerData.durability);
-                    }
+                    Equip(equipmentData, slotData.grade, slotData.durability);
                 }
             }
         }
@@ -550,7 +706,10 @@ namespace CultivationGame.Inventory
     }
 
     // ============================================================================
-    // EquipmentInstance — Экземпляр экипировки
+    // EquipmentInstance — Экземпляр экипировки (v2.0)
+    // ============================================================================
+    // Убрано поле currentLayer — нет слоёв в v2.0
+    // Добавлено свойство IsTwoHand
     // ============================================================================
 
     [Serializable]
@@ -559,19 +718,19 @@ namespace CultivationGame.Inventory
         public EquipmentData equipmentData;
         public EquipmentGrade grade;
         public int durability;
-        public int currentLayer;
 
         // Properties
         public string ItemId => equipmentData?.itemId ?? "";
         public string Name => equipmentData?.nameRu ?? "Unknown";
         public EquipmentSlot Slot => equipmentData?.slot ?? EquipmentSlot.None;
+        public WeaponHandType HandType => equipmentData?.handType ?? WeaponHandType.OneHand;
+        public bool IsTwoHand => HandType == WeaponHandType.TwoHand;
         public int MaxDurability => equipmentData?.maxDurability ?? 100;
         public float DurabilityPercent => MaxDurability > 0 ? (float)durability / MaxDurability : 1f;
         public DurabilityCondition Condition => GetCondition();
 
         private DurabilityCondition GetCondition()
         {
-            // FIX INV-C01: durability=0 → Broken, durability<0 → Pristine (no durability system) (2026-04-11)
             if (durability < 0) return DurabilityCondition.Pristine;
             if (durability == 0) return DurabilityCondition.Broken;
 
@@ -586,7 +745,7 @@ namespace CultivationGame.Inventory
     }
 
     // ============================================================================
-    // EquipmentSlots — Визуальные слоты
+    // EquipmentSlotsUI — Визуальные слоты (оставлен для совместимости с UI)
     // ============================================================================
 
     [Serializable]
@@ -640,7 +799,9 @@ namespace CultivationGame.Inventory
     }
 
     // ============================================================================
-    // EquipmentStats — Вычисленные статы
+    // EquipmentStats — Вычисленные статы (v2.0)
+    // ============================================================================
+    // Добавлены: conductivity, vitality
     // ============================================================================
 
     [Serializable]
@@ -657,6 +818,8 @@ namespace CultivationGame.Inventory
         public float agility;
         public float constitution;
         public float intelligence;
+        public float conductivity;
+        public float vitality;
 
         // Qi
         public float maxQi;
@@ -671,7 +834,7 @@ namespace CultivationGame.Inventory
         }
 
         /// <summary>
-        /// FIX SAV-H01: Convert customBonuses to serializable array for JsonUtility (2026-04-11)
+        /// FIX SAV-H01: Convert customBonuses to serializable array for JsonUtility
         /// </summary>
         public CustomBonusEntry[] CustomBonusesToSerializable()
         {
@@ -685,7 +848,7 @@ namespace CultivationGame.Inventory
         }
 
         /// <summary>
-        /// FIX SAV-H01: Restore customBonuses from serializable array (2026-04-11)
+        /// FIX SAV-H01: Restore customBonuses from serializable array
         /// </summary>
         public void CustomBonusesFromSerializable(CustomBonusEntry[] entries)
         {
@@ -716,6 +879,8 @@ namespace CultivationGame.Inventory
                 result.agility += stat.agility;
                 result.constitution += stat.constitution;
                 result.intelligence += stat.intelligence;
+                result.conductivity += stat.conductivity;
+                result.vitality += stat.vitality;
                 result.maxQi += stat.maxQi;
                 result.qiRegen += stat.qiRegen;
 
@@ -730,22 +895,16 @@ namespace CultivationGame.Inventory
     }
 
     // ============================================================================
-    // Save Data
+    // Save Data (v2.0 — упрощённый формат, 1 предмет на слот)
     // ============================================================================
 
     [Serializable]
     public class EquipmentSaveData
     {
         public EquipmentSlot slot;
-        public List<EquipmentLayerSaveData> layers;
-    }
-
-    [Serializable]
-    public class EquipmentLayerSaveData
-    {
         public string itemId;
         public EquipmentGrade grade;
         public int durability;
-        public int layer;
+        public bool isTwoHandBlocking;
     }
 }
