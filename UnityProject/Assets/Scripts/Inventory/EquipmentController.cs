@@ -178,11 +178,15 @@ namespace CultivationGame.Inventory
 
             EquipmentSlot slot = equipmentData.slot;
 
-            // Скрытые слоты — не функциональны
+            // Скрытые слоты — разрешаем ТОЛЬКО для StorageRingData на слотах колец
             if (!IsSlotVisible(slot))
             {
-                Debug.LogWarning($"[EquipmentController] Слот {slot} — скрытый (заглушка), экипировка невозможна");
-                return null;
+                bool isRingWithStorageRing = IsRingSlot(slot) && equipmentData is StorageRingData;
+                if (!isRingWithStorageRing)
+                {
+                    Debug.LogWarning($"[EquipmentController] Слот {slot} — скрытый (заглушка), экипировка невозможна");
+                    return null;
+                }
             }
 
             // Проверяем требования
@@ -397,6 +401,21 @@ namespace CultivationGame.Inventory
         public static bool IsSlotHidden(EquipmentSlot slot)
         {
             return Array.IndexOf(HiddenSlots, slot) >= 0;
+        }
+
+        /// <summary>Слоты колец — скрытые, но функциональные для StorageRingData</summary>
+        public static readonly EquipmentSlot[] RingSlots = new[]
+        {
+            EquipmentSlot.RingLeft1, EquipmentSlot.RingLeft2,
+            EquipmentSlot.RingRight1, EquipmentSlot.RingRight2
+        };
+
+        /// <summary>
+        /// Проверяет, является ли слот слотом кольца.
+        /// </summary>
+        public static bool IsRingSlot(EquipmentSlot slot)
+        {
+            return Array.IndexOf(RingSlots, slot) >= 0;
         }
 
         /// <summary>

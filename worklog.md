@@ -1267,3 +1267,90 @@ Stage Summary:
 - BackpackPanel перестраивается при смене рюкзака (OnBackpackChanged)
 - Чекпоинт обновлён: Этап 3 ✅
 - Следующий этап: Этап 4 — SpiritStorageController
+
+---
+Task ID: 3
+Agent: Sub Agent
+Task: Phase 5 — Create StorageRingController.cs (volume-limited ring storage)
+
+Work Log:
+- Прочитан worklog.md — получен контекст проекта (Phase 5 инвентаря)
+- Прочитаны референсные файлы: SpiritStorageController.cs (883 строки), EquipmentController.cs, InventoryController.cs, StorageRingData.cs, Enums.cs (EquipmentSlot, NestingFlag, EquipmentGrade)
+- Проанализированы различия StorageRingController vs SpiritStorageController:
+  1. Объём-ограниченный (SpiritStorage — безлимитный). Трекинг currentVolume/maxVolume из StorageRingData.
+  2. Qi-стоимость по объёму (SpiritStorage — по весу): qiCostBase + volume × qiCostPerUnit
+  3. NestingFlag: Any ✅, Ring ✅, Spirit ❌, None ❌ (Spirit: Any ✅, Spirit ✅)
+  4. StorageRingData → НЕЛЬЗЯ поместить (пространственная нестабильность)
+  5. Привязка к слоту кольца (RingLeft1/2, RingRight1/2) — до 4 колец
+  6. Нет требования уровня культивации (Spirit: AwakenedCore)
+  7. Авто-подписка на OnEquipmentEquipped/OnEquipmentUnequipped
+
+- Создан файл: Assets/Scripts/Inventory/StorageRingController.cs (~680 строк)
+
+**Реализованные компоненты:**
+- Константы: RingSlots[] (RingLeft1/2, RingRight1/2)
+- Конфигурация: inventoryController, equipmentController (References)
+- Runtime: ringEntries, ringCurrentVolume, activeRings, ringEntryById, ringEntriesByItemId, qiController, nextEntryId
+- События: OnItemStored, OnItemRetrieved, OnRingStorageActivated, OnRingStorageDeactivated, OnContentsChanged(slot), OnOperationFailed
+- Свойства: GetActiveRing, IsRingSlotActive, GetCurrentVolume, GetMaxVolume, GetVolumePercent, GetEntries, AccessTime, GetAccessTime
+- Unity Lifecycle: Awake (инициализация словарей для 4 слотов, QiController), OnEnable/OnDisable (подписка на EquipmentController)
+- Equipment Event Handlers: OnEquipmentEquipped/OnEquipmentUnequipped → авто ActivateRing/DeactivateRing
+- Ring Activation: ActivateRing(slot, ringData), DeactivateRing(slot) — предметы остаются, но недоступны
+- Cost Calculation: GetStorageCost(slot, volume), GetRetrievalCost(slot, volume) — qiCostBase + volume × qiCostPerUnit
+- Validation: CanStore(slot, itemData) — Any ✅, Ring ✅, Spirit ❌, None ❌, StorageRingData ❌
+- CanStoreWithQi(slot, itemData, count) — объём + Qi проверка
+- CanRetrieveWithQi(slot, entryId, count) — Qi + место в инвентаре
+- Store/Retrieve: StoreFromInventory, StoreDirect, RetrieveToInventory (с Qi-возвратом при ошибке)
+- Catalog/Query: GetContents, FilterByCategory/Rarity/Weight, Search, GetGroupedByCategory, FindEntriesByItemId, FindEntry, CountItem, HasItem, SortEntries — все scoped к слоту
+- Internal: AddEntry, RemoveFromEntry (с float guard на volume), GenerateEntryId ("ring_{id}")
+- Clear/ClearAll
+- Save/Load: GetSaveData/LoadSaveData с StorageRingSaveData/StorageRingSlotSaveData/StorageRingEntrySaveData
+- Editor Support: Dump All Rings, Activate Test Ring (ScriptableObject.CreateInstance)
+- StorageRingEntry class: entryId, itemId, _itemData, count, durability, grade, totalWeight, totalVolume + computed properties
+- Save Data classes: StorageRingSaveData (slots[], nextEntryId), StorageRingSlotSaveData (slot, entries[], currentVolume, nextEntryId), StorageRingEntrySaveData (entryId, itemId, count, durability, grade)
+- Русские комментарии на протяжении всего файла
+
+Stage Summary:
+- Создан StorageRingController.cs — полностью реализованный контроллер кольца хранения
+- Объём-ограниченное хранилище с Qi-стоимостью по объёму
+- Авто-определение экипировки/снятия кольца через EquipmentController events
+- Per-slot структуры данных: ringEntries, ringCurrentVolume, ringEntryById, ringEntriesByItemId
+- Полная совместимость со стилем SpiritStorageController
+- Сохранение/загрузка с per-slot данными
+
+---
+Task ID: 6-7
+Agent: Sub Agent
+Task: Modify InventoryScreen.cs and DragDropHandler.cs to integrate StorageRing system (Phase 5)
+
+Work Log:
+- Прочитан worklog.md для контекста предыдущих задач
+- Прочитаны оба целевых файла: InventoryScreen.cs (261 строка), DragDropHandler.cs (594 строки)
+- Прочитаны зависимости: StorageRingController.cs, StorageRingPanel.cs, Enums.cs (EquipmentSlot)
+- StorageRingPanel уже имеет Initialize(StorageRingController, InventoryController), Show(), Hide(), RefreshContents()
+- StorageRingController.RingSlots — статический массив RingLeft1/2, RingRight1/2
+
+**InventoryScreen.cs — 7 групп изменений:**
+1. Добавлены поля: [SerializeField] StorageRingPanel storageRingPanel, GameObject spiritStoragePanel
+2. Добавлен [Header("Storage Tabs")] с кнопками: backpackTab, spiritStorageTab, storageRingTab
+3. Добавлен runtime-поля: StorageRingController storageRingController, enum StorageTab, activeTab
+4. Initialize(): storageRingController через ServiceLocator.GetOrFind; storageRingPanel.Initialize(); подписка tab-кнопок
+5. SwitchTab(StorageTab): показывает/скрывает backpackPanel, spiritStoragePanel, storageRingPanel; обновляет цвета кнопок
+6. Refresh(): добавлен storageRingPanel.RefreshContents()
+7. OnEnable/OnDisable: storageRingPanel.Show()/Hide()
+
+**DragDropHandler.cs — 4 группы изменений:**
+1. Добавлен runtime-field: StorageRingController storageRingController
+2. Initialize(): storageRingController через ServiceLocator.GetOrFind<StorageRingController>()
+3. GetInventoryContextMenuOptions(): добавлена опция "В кольцо хранения" перед "Выбросить"
+   — Условие: storageRingController != null && GetActiveRingSlots().Count > 0 && CanStore(ringSlot, itemData)
+4. Добавлен #region Storage Ring Helpers:
+   — GetActiveRingSlots(): итерация по StorageRingController.RingSlots, проверка IsRingSlotActive
+   — StoreInRing(InventorySlot): вызывает StoreFromInventory на первом активном кольце
+
+Stage Summary:
+- 2 файла модифицированы: InventoryScreen.cs, DragDropHandler.cs
+- InventoryScreen: интегрирована панель кольца хранения, вкладки хранилища, переключение панелей
+- DragDropHandler: добавлена опция контекстного меню "В кольцо хранения", helper-методы
+- Все ссылки используют ServiceLocator.GetOrFind — совместимо с остальным проектом
+- spiritStorageTab не подключён (placeholder для будущего)

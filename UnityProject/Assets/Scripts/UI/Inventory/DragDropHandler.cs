@@ -50,6 +50,7 @@ namespace CultivationGame.UI.Inventory
         private EquipmentController equipmentController;
         private BackpackPanel backpackPanel;
         private BodyDollPanel bodyDollPanel;
+        private StorageRingController storageRingController;
 
         /// <summary>Текущий перетаскиваемый слот</summary>
         private InventorySlotUI draggedSlotUI;
@@ -88,6 +89,9 @@ namespace CultivationGame.UI.Inventory
             equipmentController = equipController;
             backpackPanel = backpack;
             bodyDollPanel = doll;
+
+            // Находим контроллер кольца хранения
+            storageRingController = ServiceLocator.GetOrFind<StorageRingController>();
 
             // Скрываем иконку перетаскивания
             if (dragIcon != null)
@@ -463,6 +467,22 @@ namespace CultivationGame.UI.Inventory
                 });
             }
 
+            // В кольцо хранения
+            var activeRingSlots = GetActiveRingSlots();
+            if (storageRingController != null && activeRingSlots.Count > 0)
+            {
+                // Используем первое активное кольцо для проверки
+                var ringSlot = activeRingSlots[0];
+                if (storageRingController.CanStore(ringSlot, itemData))
+                {
+                    options.Add(new ContextMenuOption
+                    {
+                        label = "В кольцо хранения",
+                        action = () => StoreInRing(slot)
+                    });
+                }
+            }
+
             // Выбросить
             options.Add(new ContextMenuOption
             {
@@ -559,6 +579,48 @@ namespace CultivationGame.UI.Inventory
         {
             if (inventoryController == null) return;
             inventoryController.RemoveSlot(slot.SlotId);
+            HideContextMenu();
+        }
+
+        #endregion
+
+        #region Storage Ring Helpers
+
+        /// <summary>
+        /// Возвращает список активных слотов колец хранения.
+        /// </summary>
+        private List<EquipmentSlot> GetActiveRingSlots()
+        {
+            var result = new List<EquipmentSlot>();
+            if (storageRingController == null) return result;
+
+            foreach (var slot in StorageRingController.RingSlots)
+            {
+                if (storageRingController.IsRingSlotActive(slot))
+                    result.Add(slot);
+            }
+            return result;
+        }
+
+        /// <summary>
+        /// Перемещает предмет из инвентаря в первое активное кольцо хранения.
+        /// </summary>
+        private void StoreInRing(InventorySlot slot)
+        {
+            if (storageRingController == null || inventoryController == null) return;
+
+            var activeRingSlots = GetActiveRingSlots();
+            if (activeRingSlots.Count == 0) return;
+
+            // Используем первое активное кольцо
+            var ringSlot = activeRingSlots[0];
+            var result = storageRingController.StoreFromInventory(ringSlot, slot.SlotId);
+
+            if (result != null)
+            {
+                Debug.Log($"[DragDrop] Предмет помещён в кольцо хранения: {slot.ItemData?.nameRu} → {ringSlot}");
+            }
+
             HideContextMenu();
         }
 

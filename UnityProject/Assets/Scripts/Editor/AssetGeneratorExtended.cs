@@ -35,6 +35,7 @@ namespace CultivationGame.Editor
         private const string OUTPUT_EQUIPMENT = "Assets/Data/Equipment";
         private const string OUTPUT_ITEMS = "Assets/Data/Items";
         private const string OUTPUT_MATERIALS = "Assets/Data/Materials";
+        private const string OUTPUT_STORAGE_RINGS = "Assets/Data/StorageRings";
 
         #endregion
 
@@ -51,6 +52,7 @@ namespace CultivationGame.Editor
             total += GenerateEquipment();
             total += GenerateItems();
             total += GenerateMaterials();
+            total += GenerateStorageRings();
 
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
@@ -535,6 +537,105 @@ namespace CultivationGame.Editor
             // Новые поля хранилища
             asset.volume = CalculateVolume(ItemCategory.Material, data.durability * 0.01f);
             asset.allowNesting = NestingFlag.Any;
+        }
+
+        #endregion
+
+        #region Storage Rings (4)
+
+        /// <summary>
+        /// Генерация колец хранения (StorageRingData).
+        /// Создано: 2026-04-19 15:30:00 UTC — Этап 5
+        /// Источник: INVENTORY_UI_DRAFT.md §3.6.2
+        /// </summary>
+        [MenuItem("Tools/Generate Assets/Storage Rings (4)", false, 16)]
+        public static int GenerateStorageRings()
+        {
+            EnsureDirectory(OUTPUT_STORAGE_RINGS);
+
+            int count = 0;
+
+            // Кольцо-щель (стартовое)
+            var ring1 = ScriptableObject.CreateInstance<StorageRingData>();
+            ApplyStorageRingData(ring1,
+                "ring_slit", "Кольцо-щель", "Slit Ring",
+                "Пространственная щель — минимальный объём хранения.",
+                ItemRarity.Common, 5f, 5, 3f, 1.5f, 0.3f, 0.1f);
+            AssetDatabase.CreateAsset(ring1, Path.Combine(OUTPUT_STORAGE_RINGS, "Ring_Slit.asset"));
+            count++;
+
+            // Кольцо-карман
+            var ring2 = ScriptableObject.CreateInstance<StorageRingData>();
+            ApplyStorageRingData(ring2,
+                "ring_pocket", "Кольцо-карман", "Pocket Ring",
+                "Пространственный карман — для путешественника.",
+                ItemRarity.Uncommon, 15f, 5, 2f, 1.5f, 0.3f, 0.1f);
+            AssetDatabase.CreateAsset(ring2, Path.Combine(OUTPUT_STORAGE_RINGS, "Ring_Pocket.asset"));
+            count++;
+
+            // Кольцо-кладовая
+            var ring3 = ScriptableObject.CreateInstance<StorageRingData>();
+            ApplyStorageRingData(ring3,
+                "ring_vault", "Кольцо-кладовая", "Vault Ring",
+                "Пространственная кладовая — для серьёзных запасов.",
+                ItemRarity.Rare, 30f, 5, 1f, 1.5f, 0.3f, 0.1f);
+            AssetDatabase.CreateAsset(ring3, Path.Combine(OUTPUT_STORAGE_RINGS, "Ring_Vault.asset"));
+            count++;
+
+            // Кольцо-пространство
+            var ring4 = ScriptableObject.CreateInstance<StorageRingData>();
+            ApplyStorageRingData(ring4,
+                "ring_space", "Кольцо-пространство", "Space Ring",
+                "Целое пространство в кольце — высшее достижение пространственного ремесла.",
+                ItemRarity.Epic, 60f, 5, 0.5f, 1.5f, 0.3f, 0.1f);
+            AssetDatabase.CreateAsset(ring4, Path.Combine(OUTPUT_STORAGE_RINGS, "Ring_Space.asset"));
+            count++;
+
+            Debug.Log($"[AssetGeneratorExtended] Generated {count} StorageRingData assets");
+            return count;
+        }
+
+        /// <summary>
+        /// Применяет данные к StorageRingData.
+        /// </summary>
+        private static void ApplyStorageRingData(
+            StorageRingData asset,
+            string itemId, string nameRu, string nameEn,
+            string description, ItemRarity rarity,
+            float maxVolume, int qiCostBase, float qiCostPerUnit,
+            float accessTime, float volume, float weight)
+        {
+            // ItemData поля
+            asset.itemId = itemId;
+            asset.nameRu = nameRu;
+            asset.nameEn = nameEn;
+            asset.description = description;
+
+            asset.category = ItemCategory.Accessory;
+            asset.itemType = "storage_ring";
+            asset.rarity = rarity;
+
+            asset.stackable = false;
+            asset.maxStack = 1;
+            asset.sizeWidth = 1;
+            asset.sizeHeight = 1;
+            asset.weight = weight;
+            asset.value = Mathf.RoundToInt(maxVolume * 10);
+
+            asset.hasDurability = false;
+            asset.maxDurability = 100;
+
+            asset.requiredCultivationLevel = 0; // Не требует культивации
+
+            // Новые поля хранилища
+            asset.volume = volume;
+            asset.allowNesting = NestingFlag.None; // Кольца хранения НЕЛЬЗЯ поместить в другие хранилища
+
+            // StorageRingData поля
+            asset.maxVolume = maxVolume;
+            asset.qiCostBase = qiCostBase;
+            asset.qiCostPerUnit = qiCostPerUnit;
+            asset.accessTime = accessTime;
         }
 
         #endregion

@@ -34,6 +34,13 @@ namespace CultivationGame.UI.Inventory
         [SerializeField] private BodyDollPanel bodyDollPanel;
         [SerializeField] private DragDropHandler dragDropHandler;
         [SerializeField] private TooltipPanel tooltipPanel;
+        [SerializeField] private StorageRingPanel storageRingPanel;
+        [SerializeField] private GameObject spiritStoragePanel;
+
+        [Header("Storage Tabs")]
+        [SerializeField] private UnityEngine.UI.Button backpackTab;
+        [SerializeField] private UnityEngine.UI.Button spiritStorageTab;
+        [SerializeField] private UnityEngine.UI.Button storageRingTab;
 
         [Header("Belt (future)")]
         [SerializeField] private Transform beltContainer;
@@ -54,8 +61,12 @@ namespace CultivationGame.UI.Inventory
 
         private InventoryController inventoryController;
         private EquipmentController equipmentController;
+        private StorageRingController storageRingController;
         private bool isInitialized = false;
         private bool isOpen = false;
+
+        private enum StorageTab { Backpack, SpiritStorage, StorageRing }
+        private StorageTab activeTab = StorageTab.Backpack;
 
         #endregion
 
@@ -81,6 +92,10 @@ namespace CultivationGame.UI.Inventory
 
             // Анимация открытия
             isOpen = true;
+
+            // Показываем панель кольца хранения
+            if (storageRingPanel != null)
+                storageRingPanel.Show();
         }
 
         private void OnDisable()
@@ -93,6 +108,10 @@ namespace CultivationGame.UI.Inventory
                 tooltipPanel.Hide();
             if (dragDropHandler != null)
                 dragDropHandler.HideContextMenu();
+
+            // Скрываем панель кольца хранения
+            if (storageRingPanel != null)
+                storageRingPanel.Hide();
         }
 
         private void Update()
@@ -109,6 +128,7 @@ namespace CultivationGame.UI.Inventory
             // Находим контроллеры через ServiceLocator
             inventoryController = ServiceLocator.GetOrFind<InventoryController>();
             equipmentController = ServiceLocator.GetOrFind<EquipmentController>();
+            storageRingController = ServiceLocator.GetOrFind<StorageRingController>();
 
             // Инициализируем панели
             if (backpackPanel != null && inventoryController != null)
@@ -119,6 +139,11 @@ namespace CultivationGame.UI.Inventory
             if (bodyDollPanel != null && equipmentController != null && inventoryController != null)
             {
                 bodyDollPanel.Initialize(equipmentController, inventoryController, dragDropHandler);
+            }
+
+            if (storageRingPanel != null && storageRingController != null)
+            {
+                storageRingPanel.Initialize(storageRingController, inventoryController);
             }
 
             if (dragDropHandler != null)
@@ -133,9 +158,18 @@ namespace CultivationGame.UI.Inventory
             if (sortButton != null)
                 sortButton.onClick.AddListener(SortInventory);
 
+            // Кнопки вкладок хранилища
+            if (backpackTab != null)
+                backpackTab.onClick.AddListener(() => SwitchTab(StorageTab.Backpack));
+            if (storageRingTab != null)
+                storageRingTab.onClick.AddListener(() => SwitchTab(StorageTab.StorageRing));
+
             // Заголовок
             if (titleText != null)
                 titleText.text = "ИНВЕНТАРЬ";
+
+            // Начальная вкладка — рюкзак
+            SwitchTab(StorageTab.Backpack);
 
             isInitialized = true;
         }
@@ -202,6 +236,53 @@ namespace CultivationGame.UI.Inventory
 
             if (bodyDollPanel != null)
                 bodyDollPanel.RefreshAllSlots();
+
+            if (storageRingPanel != null)
+                storageRingPanel.RefreshContents();
+        }
+
+        #endregion
+
+        #region Storage Tabs
+
+        /// <summary>
+        /// Переключает вкладку хранилища (рюкзак / духовное хранилище / кольцо хранения).
+        /// </summary>
+        private void SwitchTab(StorageTab tab)
+        {
+            activeTab = tab;
+
+            // Показываем/скрываем панели
+            if (backpackPanel != null)
+                backpackPanel.gameObject.SetActive(tab == StorageTab.Backpack);
+
+            if (spiritStoragePanel != null)
+                spiritStoragePanel.SetActive(tab == StorageTab.SpiritStorage);
+
+            if (storageRingPanel != null)
+                storageRingPanel.gameObject.SetActive(tab == StorageTab.StorageRing);
+
+            // Обновляем цвета кнопок вкладок
+            UpdateTabButtonColors();
+        }
+
+        /// <summary>
+        /// Обновляет визуальное состояние кнопок вкладок.
+        /// </summary>
+        private void UpdateTabButtonColors()
+        {
+            SetTabColor(backpackTab, activeTab == StorageTab.Backpack);
+            SetTabColor(spiritStorageTab, activeTab == StorageTab.SpiritStorage);
+            SetTabColor(storageRingTab, activeTab == StorageTab.StorageRing);
+        }
+
+        private void SetTabColor(UnityEngine.UI.Button button, bool active)
+        {
+            if (button == null) return;
+            var colors = button.colors;
+            colors.normalColor = active ? new Color(0.3f, 0.6f, 0.9f) : Color.white;
+            colors.selectedColor = colors.normalColor;
+            button.colors = colors;
         }
 
         #endregion

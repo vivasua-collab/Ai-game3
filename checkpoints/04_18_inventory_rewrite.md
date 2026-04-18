@@ -2,7 +2,7 @@
 
 **Дата:** 2026-04-18 18:20:58 UTC
 **Редактировано:** 2026-04-19 12:30:00 UTC
-**Статус:** in_progress — Этап 0 ✅, Этап 1 ✅, Этап 2 ✅, Этап 3 ✅, Этап 4 ✅
+**Статус:** in_progress — Этап 0 ✅, Этап 1 ✅, Этап 2 ✅, Этап 3 ✅, Этап 4 ✅, Этап 5 ✅
 
 ## Контекст
 
@@ -158,8 +158,70 @@
 **Изменённые файлы:**
 - `Scripts/Save/SaveManager.cs` — +SpiritStorageController reference, +SpiritStorageData в GameSaveData
 
+### Этап 5: Кольца хранения ✅
+
+- [x] 5.1 Создать StorageRingController.cs ✅
+- [x] 5.2 Объём-ограниченное хранилище (volume-based, не weight-based) ✅
+- [x] 5.3 NestingFlag: Any/Ring → ✅, Spirit/None → ❌ ✅
+- [x] 5.4 Запрет StorageRingData (пространственная нестабильность) ✅
+- [x] 5.5 Автоактивация при экипировке StorageRingData на слот кольца ✅
+- [x] 5.6 Каталогизатор: фильтры по категории, редкости, объёму, текстовый поиск ✅
+- [x] 5.7 Стоимость Qi: qiCostBase + volume × qiCostPerUnit ✅
+- [x] 5.8 Save/Load: StorageRingSaveData + интеграция в GameSaveData ✅
+- [x] 5.9 EquipmentController: разрешить StorageRingData на слотах колец ✅
+- [x] 5.10 StorageRingPanel.cs — каталогизатор UI ✅
+- [x] 5.11 InventoryScreen — вкладка кольца хранения ✅
+- [x] 5.12 DragDropHandler — контекстное меню «В кольцо хранения» ✅
+- [x] 5.13 BodyDollPanel — слоты колец + display names ✅
+- [x] 5.14 AssetGeneratorExtended — 4 кольца хранения ✅
+- [x] 5.15 SaveManager — save/load StorageRingController ✅
+
+**Новый файл:**
+| Файл | Назначение |
+|------|-----------|
+| `Scripts/Inventory/StorageRingController.cs` | Контроллер кольца хранения |
+| `Scripts/UI/Inventory/StorageRingPanel.cs` | UI панель каталогизатора кольца |
+
+**Ключевые классы:**
+| Класс | Назначение |
+|-------|-----------|
+| `StorageRingController` | Объём-ограниченное хранилище с каталогизатором |
+| `StorageRingEntry` | Запись в кольце (itemId, count, durability, grade, totalVolume) |
+| `StorageRingSaveData` | Данные для сохранения (все слоты) |
+| `StorageRingSlotSaveData` | Данные одного слота кольца |
+| `StorageRingEntrySaveData` | Запись для сохранения |
+| `StorageRingPanel` | UI панель каталогизатора |
+
+**API StorageRingController:**
+- `ActivateRing(slot, ringData)` / `DeactivateRing(slot)` — управление кольцами
+- `StoreFromInventory(ringSlot, inventorySlotId, count)` — из инвентаря в кольцо
+- `RetrieveToInventory(ringSlot, entryId, count)` — из кольца в инвентарь
+- `StoreDirect(ringSlot, itemData, count, ...)` — напрямую в кольцо
+- `CanStore(ringSlot, itemData)` — проверка NestingFlag + объёма
+- `CanStoreWithQi(ringSlot, itemData, count)` — проверка NestingFlag + Qi + объём
+- `GetStorageCost(ringSlot, volume)` / `GetRetrievalCost(ringSlot, volume)` — расчёт Qi
+- `GetCurrentVolume(slot)` / `GetMaxVolume(slot)` / `GetVolumePercent(slot)` — объём
+- `FilterByCategory/FilterByRarity/Search/GetGroupedByCategory` — каталогизатор
+- `GetSaveData()` / `LoadSaveData()` — сохранение/загрузка
+
+**Изменённые файлы:**
+- `Scripts/Inventory/EquipmentController.cs` — +IsRingSlot(), +RingSlots, разрешить StorageRingData на слотах колец
+- `Scripts/UI/Inventory/InventoryScreen.cs` — +storageRingPanel, +StorageTab enum, +SwitchTab()
+- `Scripts/UI/Inventory/DragDropHandler.cs` — +storageRingController, +«В кольцо хранения» в контекстном меню
+- `Scripts/UI/Inventory/BodyDollPanel.cs` — +ringSlot UIs (4 слота), +ring display names
+- `Scripts/Save/SaveManager.cs` — +storageRingController, +StorageRingData в GameSaveData
+- `Scripts/Editor/AssetGeneratorExtended.cs` — +GenerateStorageRings() (4 кольца: щель, карман, кладовая, пространство)
+
+**Сгенерированные кольца (4 шт.):**
+| Кольцо | Объём | Qi (base+perUnit) | Редкость |
+|--------|-------|-------------------|----------|
+| Кольцо-щель | 5 | 5 + vol×3 | Common |
+| Кольцо-карман | 15 | 5 + vol×2 | Uncommon |
+| Кольцо-кладовая | 30 | 5 + vol×1 | Rare |
+| Кольцо-пространство | 60 | 5 + vol×0.5 | Epic |
+
 ### Отложено (не в текущей сессии):
-- Этап 5: Кольца хранения (StorageRingController + объём)
+- Этап 5: Кольца хранения (StorageRingController + объём) ✅ ВЫПОЛНЕН
 - Этап 6: Пояс + контекстное меню + анимации
 
 ---
@@ -204,7 +266,7 @@
 
 ## Следующий шаг
 
-Начать Этап 5 — Кольца хранения (StorageRingController + объём).
+Начать Этап 6 — Пояс + контекстное меню + анимации.
 
 ---
 

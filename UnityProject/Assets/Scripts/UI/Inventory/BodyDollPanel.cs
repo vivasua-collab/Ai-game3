@@ -219,6 +219,10 @@ namespace CultivationGame.UI.Inventory
                 EquipmentSlot.Feet => "Ступни",
                 EquipmentSlot.WeaponMain => "Осн. рука",
                 EquipmentSlot.WeaponOff => "Доп. рука",
+                EquipmentSlot.RingLeft1 => "Кольцо Л1",
+                EquipmentSlot.RingLeft2 => "Кольцо Л2",
+                EquipmentSlot.RingRight1 => "Кольцо П1",
+                EquipmentSlot.RingRight2 => "Кольцо П2",
                 _ => slotType.ToString()
             };
         }
@@ -244,6 +248,16 @@ namespace CultivationGame.UI.Inventory
         [SerializeField] private DollSlotUI feetSlot;
         [SerializeField] private DollSlotUI weaponMainSlot;
         [SerializeField] private DollSlotUI weaponOffSlot;
+
+        [Header("Ring Slots (hidden → functional for StorageRingData)")]
+        [SerializeField] private DollSlotUI ringLeft1Slot;
+        [SerializeField] private DollSlotUI ringLeft2Slot;
+        [SerializeField] private DollSlotUI ringRight1Slot;
+        [SerializeField] private DollSlotUI ringRight2Slot;
+
+        [Header("Ring Storage Indicator")]
+        [SerializeField] private GameObject ringStorageIndicator;
+        [SerializeField] private TMPro.TMP_Text ringVolumeText;
 
         [Header("Stats Summary")]
         [SerializeField] private TMP_Text damageText;
@@ -297,6 +311,12 @@ namespace CultivationGame.UI.Inventory
             if (feetSlot != null) { slotMap[EquipmentSlot.Feet] = feetSlot; feetSlot.Initialize(this); }
             if (weaponMainSlot != null) { slotMap[EquipmentSlot.WeaponMain] = weaponMainSlot; weaponMainSlot.Initialize(this); }
             if (weaponOffSlot != null) { slotMap[EquipmentSlot.WeaponOff] = weaponOffSlot; weaponOffSlot.Initialize(this); }
+
+            // Слоты колец — функциональны для StorageRingData
+            if (ringLeft1Slot != null) { slotMap[EquipmentSlot.RingLeft1] = ringLeft1Slot; ringLeft1Slot.Initialize(this); }
+            if (ringLeft2Slot != null) { slotMap[EquipmentSlot.RingLeft2] = ringLeft2Slot; ringLeft2Slot.Initialize(this); }
+            if (ringRight1Slot != null) { slotMap[EquipmentSlot.RingRight1] = ringRight1Slot; ringRight1Slot.Initialize(this); }
+            if (ringRight2Slot != null) { slotMap[EquipmentSlot.RingRight2] = ringRight2Slot; ringRight2Slot.Initialize(this); }
 
             // Подписка на события слотов
             foreach (var kvp in slotMap)

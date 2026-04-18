@@ -70,6 +70,9 @@ namespace CultivationGame.Save
         // SpiritStorage reference (added 2026-04-19)
         private SpiritStorageController spiritStorageController;
         
+        // StorageRing reference (added 2026-04-19)
+        private StorageRingController storageRingController;
+        
         // === State ===
         private string currentSaveSlot = "";
         private float autoSaveTimer = 0f;
@@ -154,6 +157,9 @@ namespace CultivationGame.Save
             
             // SpiritStorage (added 2026-04-19)
             spiritStorageController = FindFirstObjectByType<SpiritStorageController>();
+            
+            // StorageRing (added 2026-04-19)
+            storageRingController = FindFirstObjectByType<StorageRingController>();
         }
         
         private void EnsureSaveDirectory()
@@ -360,6 +366,12 @@ namespace CultivationGame.Save
             {
                 data.SpiritStorageData = spiritStorageController.GetSaveData();
             }
+            
+            // StorageRing (added 2026-04-19)
+            if (storageRingController != null)
+            {
+                data.StorageRingData = storageRingController.GetSaveData();
+            }
             return data;
         }
         
@@ -500,6 +512,13 @@ namespace CultivationGame.Save
                 // For now, pass empty dict — real implementation needs asset loading
                 var itemDatabase = new Dictionary<string, Data.ScriptableObjects.ItemData>();
                 spiritStorageController.LoadSaveData(data.SpiritStorageData, itemDatabase);
+            }
+            
+            // StorageRing (added 2026-04-19)
+            if (storageRingController != null && data.StorageRingData != null)
+            {
+                var itemDatabase = new Dictionary<string, Data.ScriptableObjects.ItemData>();
+                storageRingController.LoadSaveData(data.StorageRingData, itemDatabase);
             }
         }
         
@@ -801,6 +820,9 @@ namespace CultivationGame.Save
         
         // SpiritStorage (added 2026-04-19)
         public SpiritStorageSaveData SpiritStorageData;
+        
+        // StorageRing (added 2026-04-19)
+        public StorageRingSaveData StorageRingData;
     }
     
     /// <summary>
