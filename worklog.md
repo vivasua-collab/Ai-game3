@@ -1129,3 +1129,27 @@ Stage Summary:
 - START_PROMPT.md очищен от документации — только операционные правила
 - docs_asset_setup/SCENE_BUILDER_ARCHITECTURE.md создан — полная документация
 - 3 файла изменено, git commit + push pending
+
+---
+Task ID: inventory-plan
+Agent: Main Agent
+Task: Полная переделка инвентаря — создание плана с чекпоинтами
+
+Work Log:
+- 2026-04-18 18:20 UTC: Прочитаны все ключевые файлы проекта
+- Прочитаны: START_PROMPT.md, INVENTORY_UI_DRAFT.md (v2.0), INVENTORY_SYSTEM.md, EQUIPMENT_SYSTEM.md, UNITY_DOCS_LINKS.md
+- Прочитан весь код инвентаря: InventoryController.cs (751), EquipmentController.cs (752), MaterialSystem.cs (549), CraftingController.cs (694)
+- Найдены все зависимые типы: EquipmentSlot, EquipmentGrade, ItemData, EquipmentData, MaterialData, ServiceLocator, QiController, PlayerController
+- Проведён аудит — найдено 8 ошибок (AUD-01..AUD-08), из них 3 ВЫСОКИЕ
+- Обнаружено критическое несоответствие EquipmentSlot enum и v2.0 дизайна
+- Создан план: docs_temp/INVENTORY_IMPLEMENTATION_PLAN.md
+- Создан чекпоинт: checkpoints/04_18_inventory_rewrite.md
+- 4 этапа: Этап 0 (данные) → Этап 1 (кукла) → Этап 2 (рюкзак) → Этап 3 (UI)
+- Этапы 4-6 отложены: дух. хранилище, кольца, пояс
+
+Stage Summary:
+- План создан с детальными чекпоинтами для восстановления контекста
+- GitHub: vivasua-collab/Ai-game3.git, main (токен из контекста сессии)
+- 8 багов в текущем коде задокументированы (AUD-01..AUD-08)
+- MaterialSystem.cs — единственный файл, который НЕ требует переделки
+- Следующий шаг: Этап 0 (обновление EquipmentSlot enum, NestingFlag, BackpackData)
