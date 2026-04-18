@@ -1153,3 +1153,44 @@ Stage Summary:
 - 8 багов в текущем коде задокументированы (AUD-01..AUD-08)
 - MaterialSystem.cs — единственный файл, который НЕ требует переделки
 - Следующий шаг: Этап 0 (обновление EquipmentSlot enum, NestingFlag, BackpackData)
+---
+Task ID: phase1-doll-rewrite
+Agent: Main Agent
+Task: Этап 1 — Переписать EquipmentController v2.0 (базовая кукла)
+
+Work Log:
+- Прочитан START_PROMPT.md и подтверждены правила (контекст из summary)
+- Прочитаны текущие файлы: Enums.cs, ItemData.cs, EquipmentData.cs, BackpackData.cs, StorageRingData.cs
+- Обнаружено: Этап 0 (модели данных) УЖЕ ВЫПОЛНЕН в предыдущей сессии
+  - EquipmentSlot enum переписан (7 видимых + 8 скрытых слотов)
+  - NestingFlag, WeaponHandType enum добавлены
+  - volume + allowNesting добавлены в ItemData
+  - BackpackData.cs, StorageRingData.cs созданы
+  - AssetGeneratorExtended обновлён
+- Прочитан EquipmentController.cs (751 строка) — аудит перед переписыванием
+- Проведён поиск всех файлов, ссылающихся на EquipmentSlot — 6 файлов, все используют НОВЫЕ значения
+- Полная переработка EquipmentController.cs:
+  - Убрана система слоёв («матрёшка») → 1 предмет на слот
+  - Dictionary<EquipmentSlot, List<EquipmentInstance>> → Dictionary<EquipmentSlot, EquipmentInstance>
+  - Добавлена логика 1H/2H оружия (EquipTwoHand, isWeaponOffBlocked)
+  - Разделены GetDurabilityMultiplier и GetEffectivenessMultiplier
+  - Исправлен баг EQP-BUG-02: value бонусов использовалось
+  - Исправлен баг EQP-BUG-04: добавлена логика двуручного оружия
+  - Исправлен баг EQP-BUG-05: множители соответствуют EQUIPMENT_SYSTEM.md
+  - EquipmentInstance: убрано currentLayer, добавлен IsTwoHand
+  - EquipmentStats: +conductivity, +vitality
+  - EquipmentSaveData: упрощён (1 предмет на слот, без layers)
+  - Скрытые слоты — заглушки (IsSlotVisible/IsSlotHidden)
+- Каскадные фиксы:
+  - Phase06Player.cs: useLayerSystem/maxLayersPerSlot → enforceRequirements
+  - SceneSetupTools.cs: useLayerSystem/maxLayersPerSlot → enforceRequirements
+  - InventoryUI.cs: Equip() returns EquipmentInstance, not bool → null check
+- Коммит a41fb51, push success
+- Обновлён чекпоинт 04_18_inventory_rewrite.md
+
+Stage Summary:
+- EquipmentController v2.0 полностью переписан (367 добавлений, 208 удалений)
+- 3 бага исправлены: EQP-BUG-02, EQP-BUG-04, EQP-BUG-05
+- 4 файла изменены: EquipmentController.cs, Phase06Player.cs, SceneSetupTools.cs, InventoryUI.cs
+- Этапы 0 и 1 завершены
+- Следующий: Этап 2 — рюкзак (InventoryController переписать под BackpackData)

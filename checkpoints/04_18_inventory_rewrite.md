@@ -1,8 +1,8 @@
 # Чекпоинт: Полная переделка инвентаря
 
 **Дата:** 2026-04-18 18:20:58 UTC
-**Редактировано:** 2026-04-18 18:39:26 UTC
-**Статус:** in_progress
+**Редактировано:** 2026-04-18 19:05:00 UTC
+**Статус:** in_progress — Этап 0 ✅, Этап 1 ✅
 
 ## Контекст
 
@@ -37,23 +37,31 @@
 
 **Подробный план:** `checkpoints/04_18_data_model_rewrite.md`
 
-- [ ] 0.1 Переписать EquipmentSlot enum (полная замена по драфту v2.0)
-- [ ] 0.2 Добавить NestingFlag enum
-- [ ] 0.3 Добавить volume + allowNesting в ItemData
-- [ ] 0.4 Создать BackpackData.cs ScriptableObject
-- [ ] 0.5 Создать StorageRingData.cs ScriptableObject
-- [ ] 0.6 Добавить WeaponHandType enum + handType в EquipmentData
-- [ ] 0.7 Обновить AssetGeneratorExtended под новый enum и новые SO
-- [ ] 0.8 Обновить все файлы, ссылающиеся на EquipmentSlot
-- [ ] 0.9 Проверить компиляцию
+- [x] 0.1 Переписать EquipmentSlot enum (полная замена по драфту v2.0) ✅
+- [x] 0.2 Добавить NestingFlag enum ✅
+- [x] 0.3 Добавить volume + allowNesting в ItemData ✅
+- [x] 0.4 Создать BackpackData.cs ScriptableObject ✅
+- [x] 0.5 Создать StorageRingData.cs ScriptableObject ✅
+- [x] 0.6 Добавить WeaponHandType enum + handType в EquipmentData ✅
+- [x] 0.7 Обновить AssetGeneratorExtended под новый enum и новые SO ✅
+- [x] 0.8 Обновить все файлы, ссылающиеся на EquipmentSlot ✅
+- [x] 0.9 Проверить компиляцию ✅
 
-### Этап 1: Базовая кукла (Doll) ⬜
+### Этап 1: Базовая кукла (Doll) ✅
 
-- [ ] 1.1 Переписать EquipmentController.cs (7 видимых слотов, 1H/2H логика)
-- [ ] 1.2 Переписать EquipmentInstance (под новый EquipmentSlot)
-- [ ] 1.3 Переписать EquipmentStats (с учётом уточнённых GradeMultiplier)
-- [ ] 1.4 Интеграция с ServiceLocator
-- [ ] 1.5 Проверить компиляцию
+- [x] 1.1 Переписать EquipmentController.cs (7 видимых слотов, 1H/2H логика) ✅
+- [x] 1.2 Переписать EquipmentInstance (убран currentLayer, +IsTwoHand) ✅
+- [x] 1.3 Переписать EquipmentStats (раздельные GradeMultiplier, +conductivity, +vitality) ✅
+- [x] 1.4 Интеграция с ServiceLocator + каскадные фиксы ✅
+- [x] 1.5 Проверить компиляцию + git push ✅
+
+**Коммит:** a41fb51 — EquipmentController v2.0
+**Каскадные фиксы:** Phase06Player.cs, SceneSetupTools.cs, InventoryUI.cs
+
+**Исправленные баги:**
+- EQP-BUG-02: value бонусов рассчитывалось, но не использовалось
+- EQP-BUG-04: нет логики двуручного оружия → добавлена
+- EQP-BUG-05: GradeMultiplier не совпадает с EQUIPMENT_SYSTEM.md → разделены durability/effectiveness
 
 ### Этап 2: Рюкзак (Backpack) ⬜
 
@@ -121,9 +129,9 @@
 
 ## Следующий шаг
 
-Начать Этап 0 — переделка моделей данных. Подробный чекпоинт: `04_18_data_model_rewrite.md`.
+Начать Этап 2 — рюкзак (InventoryController.cs переписать под динамическую сетку от BackpackData).
 
 ---
 
 *Чекпоинт создан: 2026-04-18 18:20:58 UTC*
-*Редактировано: 2026-04-18 18:39:26 UTC*
+*Редактировано: 2026-04-18 19:05:00 UTC*
