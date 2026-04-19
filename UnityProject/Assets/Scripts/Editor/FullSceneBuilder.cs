@@ -24,6 +24,9 @@
 //   SceneBuilder/Phase01Folders.cs         — Фаза 01
 //   SceneBuilder/Phase02TagsLayers.cs      — Фаза 02
 //   ... и т.д. для Phase03-Phase15
+//   SceneBuilder/Phase16InventoryData.cs    — Фаза 16
+//   SceneBuilder/Phase17InventoryUI.cs       — Фаза 17
+//   SceneBuilder/Phase18InventoryComponents.cs — Фаза 18
 //   FullSceneBuilder.cs                    — Оркестратор (этот файл)
 //
 // СОВМЕСТИМОСТЬ: Unity 6.3+ (6000.3)
@@ -62,6 +65,9 @@ namespace CultivationGame.Editor
             new Phase13SaveScene(),
             new Phase14CreateTileAssets(),
             new Phase15ConfigureTestLocation(),
+            new Phase16InventoryData(),
+            new Phase17InventoryUI(),
+            new Phase18InventoryComponents(),
         };
 
         #endregion
@@ -185,6 +191,15 @@ namespace CultivationGame.Editor
 
         [MenuItem("Tools/Full Scene Builder/Phase 15: Configure Test Location", false, 115)]
         public static void RunPhase15() { RunSinglePhase(14); }
+
+        [MenuItem("Tools/Full Scene Builder/Phase 16: Inventory Data", false, 116)]
+        public static void RunPhase16() { RunSinglePhase(15); }
+
+        [MenuItem("Tools/Full Scene Builder/Phase 17: Inventory UI", false, 117)]
+        public static void RunPhase17() { RunSinglePhase(16); }
+
+        [MenuItem("Tools/Full Scene Builder/Phase 18: Inventory Components", false, 118)]
+        public static void RunPhase18() { RunSinglePhase(17); }
 
         // ====================================================================
         //  UTILITY: Run Single Phase

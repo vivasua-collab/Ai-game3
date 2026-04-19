@@ -27,7 +27,7 @@ namespace CultivationGame.Editor.SceneBuilder
         /// <summary>Путь в меню (например "Phase 01: Folders")</summary>
         string MenuPath { get; }
 
-        /// <summary>Порядковый номер фазы (1-15)</summary>
+        /// <summary>Порядковый номер фазы (1-18)</summary>
         int Order { get; }
 
         /// <summary>Проверяет, нужно ли выполнение фазы</summary>

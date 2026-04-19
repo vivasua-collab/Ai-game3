@@ -59,6 +59,8 @@ namespace CultivationGame.Editor.SceneBuilder
             "Assets/Art/Items",
             "Assets/Art/Sprites",
             "Assets/Art/UI",
+            "Assets/Data/Backpacks",
+            "Assets/Data/StorageRings",
         };
 
         // Теги
