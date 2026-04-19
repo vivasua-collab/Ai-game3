@@ -1,8 +1,8 @@
 # Архитектура генерации сцены — Оркестратор + фазовые файлы
 
 **Создано:** 2026-04-17 13:49:14 UTC
-**Редактировано:** 2026-04-18 17:17:54 UTC
-**Версия:** 2.0
+**Редактировано:** 2026-04-19 06:25:00 UTC
+**Версия:** 2.1
 
 ---
 
@@ -35,7 +35,10 @@ Assets/Scripts/Editor/
     ├── Phase12TMPEssentials.cs          # Фаза 12: TMP Essentials
     ├── Phase13SaveScene.cs             # Фаза 13: Сохранение сцены
     ├── Phase14CreateTileAssets.cs       # Фаза 14: Tile .asset файлы
-    └── Phase15ConfigureTestLocation.cs  # Фаза 15: Тестовая локация
+    ├── Phase15ConfigureTestLocation.cs  # Фаза 15: Тестовая локация
+    ├── Phase16InventoryData.cs          # Фаза 16: Данные инвентаря (Backpack, StorageRing)
+    ├── Phase17InventoryUI.cs            # Фаза 17: UI инвентаря (InventoryScreen, панели)
+    └── Phase18InventoryComponents.cs    # Фаза 18: Компоненты инвентаря на Player
 ```
 
 ---
@@ -49,7 +52,7 @@ Assets/Scripts/Editor/
 
 ### Что делает
 
-- Регистрирует 15 фаз в массиве `PHASES`
+- Регистрирует 18 фаз в массиве `PHASES`
 - Управляет запуском: `IsNeeded()` → `Execute()` → логирование
 - Обрабатывает ошибки: try/catch с диалогом продолжения
 - Предоставляет меню: `Tools → Full Scene Builder → Build All` и отдельные фазы
@@ -75,7 +78,7 @@ public interface IScenePhase
 {
     string Name { get; }       // Короткое имя (для логирования)
     string MenuPath { get; }   // Путь в меню
-    int Order { get; }         // Порядковый номер (1-15)
+    int Order { get; }         // Порядковый номер (1-18)
     bool IsNeeded();           // Проверяет, нужно ли выполнение
     void Execute();            // Выполняет фазу
 }
@@ -91,7 +94,7 @@ public interface IScenePhase
 
 Общие константы для всех фаз:
 - `SCENE_PATH`, `SCENE_NAME`
-- `REQUIRED_FOLDERS` (33 папки)
+- `REQUIRED_FOLDERS` (35 папок, включая инвентарные)
 - `REQUIRED_TAGS` (7 тегов)
 - `REQUIRED_LAYERS` (8 слоёв)
 - `REQUIRED_SORTING_LAYERS` (6 sorting layers в порядке Default < Background < Terrain < Objects < Player < UI)
@@ -125,6 +128,9 @@ public interface IScenePhase
 | 13 | Phase13SaveScene | Save Scene | EditorSceneManager.SaveScene | — |
 | 14 | Phase14CreateTileAssets | Tile Assets | TerrainTile + ObjectTile для 15+ типов | — |
 | 15 | Phase15ConfigureTestLocation | Test Location | Камера + коллайдеры + HarvestableSpawner | — |
+| 16 | Phase16InventoryData | Inventory Data | BackpackData + StorageRingData .asset файлы | — |
+| 17 | Phase17InventoryUI | Inventory UI | InventoryScreen + BodyDoll + Backpack + Tooltip + DragDrop панели | — |
+| 18 | Phase18InventoryComponents | Inventory Components | SpiritStorage + StorageRing контроллеры на Player | — |
 
 ---
 
@@ -188,7 +194,96 @@ ScenePatchBuilder.cs перенаправляет пользователя к `T
 
 ---
 
+## Фазы инвентаря (16-18) — Детализация
+
+Фазы 16-18 реализуют систему инвентаря по спецификации `docs_temp/INVENTORY_UI_DRAFT.md` v2.0.
+
+### Phase16InventoryData
+
+**Что делает:**
+- Создаёт `BackpackData` .asset файлы (стартовый рюкзак + черновики)
+- Создаёт `StorageRingData` .asset файлы (4 кольца хранения)
+- Добавляет папки `Assets/Data/Backpacks` и `Assets/Data/StorageRings`
+- Обновляет существующие `ItemData` .asset файлы: поля `volume` и `allowNesting`
+
+**IsNeeded():** Проверяет наличие папки `Assets/Data/Backpacks`
+
+**Зависимости:** Phase09GenerateAssets (ItemData уже созданы)
+
+**Создаваемые ассеты:**
+
+| Ассет | Класс | Параметры |
+|-------|-------|----------|
+| Backpack_ClothSack | BackpackData | grid=3×4, weightReduction=0%, beltSlots=0 |
+| Backpack_LeatherPack | BackpackData | grid=4×5, weightReduction=10%, beltSlots=1 |
+| Backpack_IronContainer | BackpackData | grid=5×5, weightReduction=15%, beltSlots=2 |
+| Backpack_SpiritBag | BackpackData | grid=6×6, weightReduction=25%, beltSlots=2 |
+| StorageRing_Slit | StorageRingData | maxVolume=5, qiCostBase=5 |
+| StorageRing_Pocket | StorageRingData | maxVolume=15, qiCostBase=5 |
+| StorageRing_Vault | StorageRingData | maxVolume=30, qiCostBase=5 |
+| StorageRing_Space | StorageRingData | maxVolume=60, qiCostBase=5 |
+
+### Phase17InventoryUI
+
+**Что делает:**
+- Создаёт GameObject `InventoryScreen` в `GameUI` Canvas
+- Добавляет панель `BodyDollPanel` с 7 видимыми слотами экипировки
+- Добавляет панель `BackpackPanel` с динамической сеткой 3×4
+- Добавляет `TooltipPanel`, `DragDropHandler`, `ContextMenu`
+- Добавляет TabBar для переключения (Рюкзак / Дух. хранилище / Кольцо)
+- Добавляет `StorageRingPanel` и `SpiritStoragePanel`
+
+**IsNeeded():** Проверяет наличие `InventoryScreen` в сцене
+
+**Зависимости:** Phase07UI (Canvas существует), Phase16InventoryData (ассеты инвентаря)
+
+**Иерархия создаваемых объектов:**
+```
+GameUI/
+└── InventoryScreen (скрыт по умолчанию)
+    ├── BackgroundOverlay
+    ├── MainPanel
+    │   ├── Header ("ИНВЕНТАРЬ" + кнопка закрытия)
+    │   ├── ContentArea
+    │   │   ├── BodyDollPanel
+    │   │   │   ├── HeadSlot
+    │   │   │   ├── TorsoSlot
+    │   │   │   ├── BeltSlot
+    │   │   │   ├── LegsSlot
+    │   │   │   ├── FeetSlot
+    │   │   │   ├── WeaponMainSlot
+    │   │   │   └── WeaponOffSlot
+    │   │   └── BackpackPanel
+    │   │       ├── BackpackHeader
+    │   │       ├── GridContainer (3×4)
+    │   │       └── WeightBar
+    │   ├── BeltPanel
+    │   └── TabBar
+    │       ├── BackpackTab
+    │       ├── SpiritStorageTab
+    │       └── StorageRingTab
+    ├── TooltipPanel
+    ├── DragDropLayer
+    └── ContextMenu
+```
+
+### Phase18InventoryComponents
+
+**Что делает:**
+- Добавляет `SpiritStorageController` на Player
+- Добавляет `StorageRingController` на Player
+- Подключает `InventoryController` к `InventoryScreen` UI
+- Подключает `EquipmentController` к `BodyDollPanel` UI
+- Настраивает начальный рюкзак (ClothSack) на старте игры
+
+**IsNeeded():** Проверяет наличие `SpiritStorageController` на Player
+
+**Зависимости:** Phase06Player (Player существует), Phase17InventoryUI (UI существует)
+
+---
+
 ## Известные проблемы
 
 1. **Белые швы между terrain-тайлами** — Sprite.Create с FilterMode.Point может оставлять 1px артефакты. Возможное решение: pad-спрайты или Sprite.DrawMode.Sliced
 2. **Hero rendering behind surface** — Player может рендериться за поверхностью при неправильном порядке Sorting Layers. Покрывается Phase02TagsLayers
+3. **Инвентарь: начальный рюкзак** — Phase18 устанавливает стартовый рюкзак ClothSack. Если рюкзаки меняются через Gameplay — нужен Save/Load (Phase18 не заменяет систему сохранения)

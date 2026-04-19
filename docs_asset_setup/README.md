@@ -62,6 +62,15 @@
 |------|-------------|--------|
 | [16_TileSystem_SemiAuto.md](./16_TileSystem_SemiAuto.md) | Тайлы + тестовая локация | Полуавтомат |
 
+### Инвентарь
+
+| Файл | Что создаёт | Способ |
+|------|-------------|--------|
+| [17_InventoryData.md](./17_InventoryData.md) | 4 рюкзака + 4 кольца хранения + volume/allowNesting | Вручную |
+| [17_InventoryData_SemiAuto.md](./17_InventoryData_SemiAuto.md) | 4 рюкзака + 4 кольца хранения + volume/allowNesting | Полуавтомат |
+| [18_InventoryUI.md](./18_InventoryUI.md) | InventoryScreen + BodyDoll + Backpack + Tooltip + DragDrop + ContextMenu + SpiritStorage + StorageRing | Вручную |
+| [18_InventoryUI_SemiAuto.md](./18_InventoryUI_SemiAuto.md) | InventoryScreen + BodyDoll + Backpack + Tooltip + DragDrop + ContextMenu + SpiritStorage + StorageRing | Полуавтомат |
+
 ---
 
 ## 🤖 Инструменты автоматизации
@@ -71,7 +80,7 @@
 **Скрипт:** `Editor/FullSceneBuilder.cs`
 **Меню:** `Tools → Full Scene Builder → Build All (One Click)`
 
-Инкрементальный генератор полной сцены. Выполняет 13 фаз, каждая идемпотентна
+Инкрементальный генератор полной сцены. Выполняет 18 фаз, каждая идемпотентна
 (повторный запуск безопасен — пропускает уже выполненные фазы).
 
 #### Фазы
@@ -91,6 +100,11 @@
 | 11 | Formation UI Prefabs | Префабы UI для формаций |
 | 12 | TMP Essentials | Проверка/импорт TMP Essentials |
 | 13 | Save Scene | Сохранение сцены |
+| 14 | Tile Assets | TerrainTile + ObjectTile для 15+ типов |
+| 15 | Test Location | Камера + коллайдеры + HarvestableSpawner |
+| 16 | Inventory Data | BackpackData (4 рюкзака) + StorageRingData (4 кольца) + volume/allowNesting для ItemData |
+| 17 | Inventory UI | InventoryScreen + BodyDoll (7 слотов) + BackpackPanel (3×4) + Tooltip + DragDrop + ContextMenu + SpiritStorage + StorageRing |
+| 18 | Inventory Components | SpiritStorageController + StorageRingController на Player + подключение UI |
 
 #### Как использовать
 
@@ -107,6 +121,11 @@ Tools → Full Scene Builder → Phase 01: Folders
 Tools → Full Scene Builder → Phase 02: Tags and Layers
 ...
 Tools → Full Scene Builder → Phase 13: Save Scene
+Tools → Full Scene Builder → Phase 14: Create Tile Assets
+Tools → Full Scene Builder → Phase 15: Configure Test Location
+Tools → Full Scene Builder → Phase 16: Inventory Data
+Tools → Full Scene Builder → Phase 17: Inventory UI
+Tools → Full Scene Builder → Phase 18: Inventory Components
 ```
 
 #### Повторный запуск
@@ -125,7 +144,7 @@ Tools → Full Scene Builder → Phase 13: Save Scene
 
 | Меню | Скрипт | Назначение |
 |------|--------|------------|
-| `Tools → Full Scene Builder → Build All` | `Editor/FullSceneBuilder.cs` | **Всё за 1 клик (13 фаз)** |
+| `Tools → Full Scene Builder → Build All` | `Editor/FullSceneBuilder.cs` | **Всё за 1 клик (18 фаз)** |
 | `Tools → Full Scene Builder → Phase NN` | `Editor/FullSceneBuilder.cs` | Отдельная фаза |
 | `Window → Asset Generator` | `Editor/AssetGenerator.cs` | Базовые данные |
 | `Window → Asset Generator Extended` | `Editor/AssetGeneratorExtended.cs` | Контент |
@@ -152,6 +171,8 @@ Tools → Full Scene Builder → Phase 13: Save Scene
 3. **Формации** — `Tools → Generate Assets → Formation Assets`
 4. **Сцена** — см. [04_BasicScene_SemiAuto.md](./04_BasicScene_SemiAuto.md)
 5. **Player** — см. [05_PlayerSetup_SemiAuto.md](./05_PlayerSetup_SemiAuto.md)
+6. **Инвентарь (данные)** — см. [17_InventoryData_SemiAuto.md](./17_InventoryData_SemiAuto.md)
+7. **Инвентарь (UI)** — см. [18_InventoryUI_SemiAuto.md](./18_InventoryUI_SemiAuto.md)
 
 ---
 
@@ -163,6 +184,8 @@ Tools → Full Scene Builder → Phase 13: Save Scene
 | Формулы расчёта | `docs/ALGORITHMS.md` |
 | Система Ци | `docs/QI_SYSTEM.md` |
 | Боевая система | `docs/COMBAT_SYSTEM.md` |
+| Спецификация инвентаря | `docs_temp/INVENTORY_UI_DRAFT.md` |
+| Аудит флагов инвентаря | `docs_temp/INVENTORY_FLAGS_AUDIT.md` |
 | Enums проекта | `UnityProject/Assets/Scripts/Core/Enums.cs` |
 | Примеры кода | `docs_examples/` |
 
@@ -176,4 +199,4 @@ Tools → Full Scene Builder → Phase 13: Save Scene
 
 ---
 
-*Обновлено: 2026-04-13 10:31:16 UTC*
+*Обновлено: 2026-04-19 06:25:00 UTC*

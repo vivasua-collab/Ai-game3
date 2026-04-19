@@ -264,11 +264,51 @@
 
 ---
 
+## Интеграция в SceneBuilder (Фазы 16-18)
+
+**Дата:** 2026-04-19 06:25:00 UTC
+**Статус:** ✅ Документация создана
+
+### Добавленные фазы:
+
+| # | Фаза | Описание | Файловый класс |
+|---|------|----------|---------------|
+| 16 | Inventory Data | BackpackData (4) + StorageRingData (4) + volume/allowNesting | Phase16InventoryData.cs |
+| 17 | Inventory UI | InventoryScreen + BodyDoll + Backpack + Tooltip + DragDrop + SpiritStorage + StorageRing | Phase17InventoryUI.cs |
+| 18 | Inventory Components | SpiritStorageController + StorageRingController на Player | Phase18InventoryComponents.cs |
+
+### Созданные документы:
+
+| Файл | Тип | Описание |
+|------|-----|----------|
+| `docs_asset_setup/17_InventoryData.md` | Ручная | Пошаговое создание BackpackData + StorageRingData + обновление ItemData |
+| `docs_asset_setup/17_InventoryData_SemiAuto.md` | Полуавтомат | Phase 16 генератор — всё автоматически |
+| `docs_asset_setup/18_InventoryUI.md` | Ручная | Пошаговое создание UI инвентаря (14 шагов) |
+| `docs_asset_setup/18_InventoryUI_SemiAuto.md` | Полуавтомат | Phase 17 генератор + ручные подключения |
+
+### Обновлённые документы:
+
+| Файл | Изменение |
+|------|-----------|
+| `docs_asset_setup/SCENE_BUILDER_ARCHITECTURE.md` | v2.1 — +фазы 16-18 + детализация |
+| `docs_asset_setup/README.md` | +секция «Инвентарь» + фазы 16-18 в таблице |
+
+### ⚠️ Замечание:
+
+Фазовые .cs файлы (Phase16/17/18) ещё НЕ созданы — только документация.
+Для реализации нужно:
+1. Создать Phase16InventoryData.cs — генерация BackpackData + StorageRingData .asset
+2. Создать Phase17InventoryUI.cs — создание GameObject-ов в сцене
+3. Создать Phase18InventoryComponents.cs — добавление компонентов на Player
+4. Добавить 3 строки в PHASES массив FullSceneBuilder.cs (заморожен → запросить подтверждение)
+
+---
+
 ## Следующий шаг
 
-Начать Этап 6 — Пояс + контекстное меню + анимации.
+Создать Phase16-18 .cs файлы и зарегистрировать в FullSceneBuilder.
 
 ---
 
 *Чекпоинт создан: 2026-04-18 18:20:58 UTC*
-*Редактировано: 2026-04-19 12:30:00 UTC*
+*Редактировано: 2026-04-19 06:25:00 UTC*
