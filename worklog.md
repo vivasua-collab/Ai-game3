@@ -1354,3 +1354,42 @@ Stage Summary:
 - DragDropHandler: добавлена опция контекстного меню "В кольцо хранения", helper-методы
 - Все ссылки используют ServiceLocator.GetOrFind — совместимо с остальным проектом
 - spiritStorageTab не подключён (placeholder для будущего)
+
+---
+Task ID: inventory-verification
+Agent: Main Agent
+Task: Верификация выполнения инвентарных чекпоинтов + GitHub push
+
+Work Log:
+- Прочитаны все 4 чекпоинта: 04_18_data_model_rewrite.md, 04_18_inventory_implementation.md, 04_18_inventory_rewrite.md, 04_19_scene_builder_inventory_phases.md
+- Проверены все ключевые файлы (20+) на соответствие чекпоинтам:
+  - Enums.cs: EquipmentSlot (7 видимых + 8 скрытых), NestingFlag, WeaponHandType ✅
+  - ItemData.cs: volume, allowNesting, sizeHeight Range(1,2) ✅
+  - BackpackData.cs: gridWidth/Height, weightReduction, maxWeightBonus, beltSlots ✅
+  - StorageRingData.cs: наследует от EquipmentData (FIX CS8121/CS0184), maxVolume, qiCost*, accessTime ✅
+  - EquipmentData.cs: handType ✅
+  - EquipmentController.cs: 7 видимых слотов, 1H/2H логика, RingSlots, IsRingSlot ✅
+  - InventoryController.cs: динамическая сетка, SetBackpack, EquipFromInventory/UnequipToInventory, 7 багфиксов ✅
+  - SpiritStorageController.cs: каталогизатор, NestingFlag, Qi cost, Save/Load, AwakenedCore ✅
+  - StorageRingController.cs: объём-based, автоактивация, каталогизатор, Save/Load ✅
+  - 7 UI файлов в Scripts/UI/Inventory/ ✅
+  - Phase16InventoryData.cs: 5 Backpacks + 4 StorageRings + ItemData volume/nesting ✅
+  - Phase17InventoryUI.cs: InventoryScreen + панели ✅
+  - Phase18InventoryComponents.cs: SpiritStorage + StorageRing на Player ✅
+  - FullSceneBuilder.cs: 18 фаз зарегистрировано + 3 MenuItems ✅
+  - SceneBuilderConstants.cs: +Backpacks, +StorageRings папки ✅
+  - IScenePhase.cs: Order 1-18 ✅
+  - SaveManager.cs: SpiritStorage + StorageRing Save/Load ✅
+  - AssetGeneratorExtended.cs: ParseEquipmentSlot переписан ✅
+- Найдены 2 некритичных замечания:
+  - Старые InventoryUI.cs и CharacterPanelUI.cs не удалены (legacy, не критично)
+  - StorageRingData наследует от EquipmentData вместо ItemData (осознанный FIX)
+- Проверен git status: working tree clean, up to date с origin/main
+- Все коммиты уже синхронизированы с GitHub
+
+Stage Summary:
+- Все 4 чекпоинта проверены — реализация полностью соответствует требованиям
+- Этапы 0-5 инвентаря: ✅ COMPLETE
+- SceneBuilder фазы 16-18: ✅ COMPLETE
+- GitHub: актуален, всё запушено
+- 2 некритичных замечания (legacy файлы, осознанное отклонение наследования)
