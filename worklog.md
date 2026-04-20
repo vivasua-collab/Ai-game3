@@ -1393,3 +1393,26 @@ Stage Summary:
 - SceneBuilder фазы 16-18: ✅ COMPLETE
 - GitHub: актуален, всё запушено
 - 2 некритичных замечания (legacy файлы, осознанное отклонение наследования)
+
+---
+Task ID: fix-sorting-layers-and-cs1503
+Agent: Main Agent
+Task: Fix sorting layer inconsistency across PCs + remaining compilation errors + push to GitHub
+
+Work Log:
+- Verified CS1503 in AssetGeneratorExtended.cs: ALREADY FIXED (ParseEquipmentSlot object→string, WeaponJson.slot object→string)
+- Verified BackpackPanel.cs: ALREADY FIXED (using UnityEngine.EventSystems present)
+- Verified InventoryScreen.cs: ALREADY FIXED (FindFirstObjectByType, #pragma warning disable CS0414)
+- ROOT CAUSE of sorting layer bug identified: ProjectSettings/TagManager.asset was MISSING from Git repo
+  - Without TagManager.asset in VCS, each PC gets Unity's default sorting layers
+  - EnsureSortingLayers() had non-deterministic uniqueID assignment (old code preserved IDs, Guid.NewGuid())
+- Created ProjectSettings/TagManager.asset with correct sorting layers and deterministic uniqueIDs (0,1,2,3,4,5)
+- Created 14 essential ProjectSettings files (ProjectSettings, EditorBuild, EditorSettings, Graphics, Input, Quality, Physics2D, Dynamics, Time, Audio, NavMesh, VFX, ClusterInput, UnityConnect)
+- Audited all code changes — no remaining compilation errors
+- Committed and pushed to GitHub (ba40e62)
+
+Stage Summary:
+- Sorting layer fix: ROOT CAUSE = missing TagManager.asset + non-deterministic uniqueIDs
+- Both issues now fixed: TagManager.asset in Git + deterministic uniqueID = index
+- All previous compilation errors (CS1503, CS0246, CS0618, CS0414) already fixed
+- GitHub: up to date, all changes pushed
