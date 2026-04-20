@@ -3,6 +3,7 @@
 // Cultivation World Simulator
 // ============================================================================
 // Создано: 2026-04-18 20:00:00 UTC
+// Редактировано: 2026-04-20 06:27:21 UTC — +using UnityEngine.EventSystems (FIX CS0246)
 // ============================================================================
 // Отображает сетку инвентаря, размер которой определяется BackpackData.
 // Стартовый рюкзак: 3×4 (12 ячеек). При смене рюкзака — пересоздаётся.
@@ -13,6 +14,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.EventSystems;
 using TMPro;
 using CultivationGame.Core;
 using CultivationGame.Inventory;
