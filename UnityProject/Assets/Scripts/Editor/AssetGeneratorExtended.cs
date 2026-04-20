@@ -318,7 +318,7 @@ namespace CultivationGame.Editor
             asset.value = data.value;
 
             asset.slot = ParseEquipmentSlot(data.slot);
-            asset.handType = data.isTwoHanded ? WeaponHandType.TwoHand : ParseWeaponHandType(data.slot, data.weaponType);
+            asset.handType = data.isTwoHanded ? WeaponHandType.TwoHand : ParseWeaponHandType(data.slot?.ToString(), data.weaponType);
             asset.damage = Mathf.RoundToInt((data.damageRange.min + data.damageRange.max) / 2f);
             asset.defense = 0;
 
