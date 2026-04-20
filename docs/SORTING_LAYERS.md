@@ -1,7 +1,7 @@
 # 🎨 Sorting Layers — Порядок рендеринга 2D
 
-**Версия:** 1.0  
-**Дата:** 2026-04-17  
+**Версия:** 2.0  
+**Дата:** 2026-04-21  
 **Проект:** Cultivation World Simulator (Unity 6.3 URP 2D)
 
 ---
@@ -18,14 +18,20 @@ Unity URP 2D рендерит спрайты **снизу вверх** по Sort
   ▼ Порядок рендеринга (снизу → вверх, позади → впереди):
 
   ┌─────────────────────────────────────────────────────┐
-  │  [0] Default     — НЕ ИСПОЛЬЗОВАТЬ! Fallback        │
+  │  [0] Default     — ❌ ЗАПРЕЩЁН! Fallback            │
   │  [1] Background  — Фоновые декорации                │
   │  [2] Terrain     — Поверхность земли/воды/лавы      │
   │  [3] Objects     — Деревья, камни, ресурсы, дроп    │
   │  [4] Player      — Игрок и тень                     │
   │  [5] UI          — UI элементы в мировом простр.     │
   └─────────────────────────────────────────────────────┘
+   
+  uniqueID = индекс слоя (0,1,2,3,4,5) — ДЕТЕРМИНИРОВАННО!
 ```
+
+> **⚠️ ВАЖНО:** uniqueID каждого слоя назначается **детерминированно** (= индексу).  
+> Это гарантирует одинаковый порядок слоёв на любом ПК.  
+> См. раздел «Баг: Разный порядок слоёв на разных ПК».
 
 ---
 
@@ -73,6 +79,7 @@ Unity URP 2D рендерит спрайты **снизу вверх** по Sort
 | OverlayTilemap | TilemapRenderer | 10 | — | TileMapController.cs |
 | Herb (harvestable) | SpriteRenderer | 1 | PNG | HarvestableSpawner.cs |
 | Bush (harvestable) | SpriteRenderer | 2 | PNG | HarvestableSpawner.cs |
+| Bush_Berry (harvestable) | SpriteRenderer | 2 | PNG | HarvestableSpawner.cs |
 | Rock_Small (harvestable) | SpriteRenderer | 3 | PNG | HarvestableSpawner.cs |
 | Rock_Medium (harvestable) | SpriteRenderer | 3 | PNG | HarvestableSpawner.cs |
 | OreVein (harvestable) | SpriteRenderer | 4 | PNG | HarvestableSpawner.cs |
@@ -93,44 +100,60 @@ Unity URP 2D рендерит спрайты **снизу вверх** по Sort
 
 > **Fallback:** Если слой "Player" не существует или его индекс меньше Terrain/Objects, PlayerVisual переводит спрайт на слой "Objects" с sortingOrder=100. Это гарантирует, что игрок виден поверх terrain и objects.
 
-### Слой [5] UI — UI элементы
+### Слой [5] UI — UI элементы в мировом пространстве
 
-| Объект | Компонент | sortingOrder | Источник |
-|--------|-----------|-------------|----------|
-| Formation UI | SpriteRenderer | 1000 | FormationUI.cs |
-| Formation UI prefabs | SpriteRenderer | 1000 | FormationUIPrefabsGenerator.cs |
-| Harvest Feedback | SpriteRenderer | 100 | HarvestFeedbackUI.cs |
+| Объект | Компонент | sortingOrder | Источник | Примечание |
+|--------|-----------|-------------|----------|------------|
+| Formation UI preview | SpriteRenderer | 1000 | FormationUI.cs | ⚠️ Не назначает sortingLayerName! |
+| Formation UI prefabs | SpriteRenderer | 1000 | FormationUIPrefabsGenerator.cs | ⚠️ Не назначает sortingLayerName! |
+| Harvest Feedback | Canvas (WorldSpace) | 100 | HarvestFeedbackUI.cs | Canvas.sortingOrder, не SpriteRenderer |
+
+> **⚠️ ПРОБЛЕМА:** FormationUI и FormationUIPrefabsGenerator НЕ назначают `sortingLayerName = "UI"`. SpriteRenderer без sortingLayerName попадает на Default → рендерится ПОСЛЕ всех слоёв. Это работает только потому, что Default рендерится поверх UI, но это совпадение, а не правильное поведение. **Нужно исправить: добавить `sr.sortingLayerName = "UI"` в оба файла.**
 
 ---
 
 ## 🔧 Где настраиваются Sorting Layers
 
-### Создание слоёв (Editor-only)
+### Источник истины: TagManager.asset
 
-| Место | Файл | Метод |
-|-------|------|-------|
-| FullSceneBuilder | FullSceneBuilder.cs | `EnsureSortingLayers()` — создаёт слои через TagManager |
-| TileMapController | TileMapController.cs | `EnsureSortingLayersExist()` — создаёт недостающие |
+| Файл | Назначение |
+|------|-----------|
+| `ProjectSettings/TagManager.asset` | **Единственный источник истины.** Содержит Sorting Layers с детерминированными uniqueID. Обязан быть в Git! |
 
-### Проверка ПОРЯДКА слоёв (NEW — FIX-SORT)
+> **⚠️ КРИТИЧЕСКИ:** Если `TagManager.asset` отсутствует в Git, каждый ПК при клонировании получает дефолтные Unity-слои (только "Default"). Это приводит к разному порядку слоёв на разных машинах. См. «Баг: Разный порядок слоёв на разных ПК».
 
-| Место | Файл | Метод |
-|-------|------|-------|
-| TileMapController | TileMapController.cs | `EnsureSortingLayerOrder()` — проверяет и исправляет порядок |
-| PlayerVisual | PlayerVisual.cs | `EnsureCorrectSortingLayer()` — проверяет, что Player выше Objects |
+### Создание и проверка слоёв (Editor-only)
+
+| Место | Файл | Метод | Что делает |
+|-------|------|-------|-----------|
+| Phase02TagsLayers | Phase02TagsLayers.cs | `IsNeeded()` | Проверяет: существование, порядок И uniqueID слоёв |
+| Phase02TagsLayers | Phase02TagsLayers.cs | `Execute()` → `SceneBuilderUtils.EnsureSortingLayers()` | Создаёт недостающие + переназначает uniqueID |
+| SceneBuilderUtils | SceneBuilderUtils.cs | `EnsureSortingLayers()` | Создаёт слои + переставляет в правильный порядок + uniqueID = индекс |
+| TileMapController | TileMapController.cs | `EnsureSortingLayersExist()` | Создаёт недостающие (рантайм) |
+| TileMapController | TileMapController.cs | `EnsureSortingLayerOrder()` | Проверяет и исправляет порядок + uniqueID |
+
+### Константы слоёв
+
+| Файл | Переменная | Значение |
+|------|-----------|----------|
+| SceneBuilderConstants.cs | `REQUIRED_SORTING_LAYERS` | `["Default", "Background", "Terrain", "Objects", "Player", "UI"]` |
 
 ### Назначение слоёв рендерерам
 
-| Компонент | Файл | Метод | Слой |
-|-----------|------|-------|------|
-| Terrain TilemapRenderer | TileMapController.cs | `FixTilemapSortingLayers()` | "Terrain" |
-| Objects TilemapRenderer | TileMapController.cs | `FixTilemapSortingLayers()` | "Objects" |
-| Overlay TilemapRenderer | TileMapController.cs | `FixTilemapSortingLayers()` | "Objects" (order=10) |
-| **ЛЮБОЙ** TilemapRenderer | TileMapController.cs | `FixAllTilemapRenderers()` | по имени GO |
-| Player SpriteRenderer | PlayerVisual.cs | `CreateVisual()` + `EnsureCorrectSortingLayer()` | "Player" |
-| Harvestable SpriteRenderer | HarvestableSpawner.cs | `CreateHarvestableSprite()` | "Objects" |
-| Resource SpriteRenderer | ResourceSpawner.cs | `CreateResourceSprite()` | "Objects" |
-| Drop SpriteRenderer | DestructibleObjectController.cs | `CreateDropSprite()` | "Objects" |
+| Компонент | Файл | Метод | Слой | sortingOrder |
+|-----------|------|-------|------|-------------|
+| Terrain TilemapRenderer | TileMapController.cs | `FixTilemapSortingLayers()` | "Terrain" | 0 |
+| Objects TilemapRenderer | TileMapController.cs | `FixTilemapSortingLayers()` | "Objects" | 0 |
+| Overlay TilemapRenderer | TileMapController.cs | `FixTilemapSortingLayers()` | "Objects" | 10 |
+| **ЛЮБОЙ** TilemapRenderer | TileMapController.cs | `FixAllTilemapRenderers()` | по имени GO | — |
+| Player SpriteRenderer | PlayerVisual.cs | `CreateVisual()` + `EnsureCorrectSortingLayer()` | "Player" | 0 |
+| Player Shadow SpriteRenderer | PlayerVisual.cs | `CreateVisual()` | "Player" | -1 |
+| Harvestable SpriteRenderer | HarvestableSpawner.cs | `CreateHarvestableSprite()` | "Objects" | по типу (1-5) |
+| Resource SpriteRenderer | ResourceSpawner.cs | `CreateResourceSprite()` | "Objects" | 5 |
+| Drop SpriteRenderer | DestructibleObjectController.cs | `CreateDropSprite()` | "Objects" | 5 |
+| Formation UI SpriteRenderer | FormationUI.cs | `CreateFormationPreview()` | ⚠️ Default (нет назначения) | 1000 |
+| Formation prefab SpriteRenderer | FormationUIPrefabsGenerator.cs | генерация | ⚠️ Default (нет назначения) | 1000 |
+| Harvest Feedback | HarvestFeedbackUI.cs | `EnsureCanvasExists()` | Canvas (Default) | 100 |
 
 ---
 
@@ -151,6 +174,21 @@ Unity URP 2D рендерит спрайты **снизу вверх** по Sort
 ---
 
 ## 🚨 Типичные баги и решения
+
+### Баг: Разный порядок слоёв на разных ПК 🔴
+
+**Симптом:** На одном ПК Player рендерится поверх Terrain, на другом — позади. Разный порядок Sorting Layers.  
+**Причина (двойная):**
+1. `ProjectSettings/TagManager.asset` **отсутствовал в Git** — каждый ПК получает дефолтные слои Unity
+2. `uniqueID` генерировались **случайно** (`Guid.NewGuid().GetHashCode()`) — на разных ПК разные ID → разный порядок
+
+**Решение:**
+1. `TagManager.asset` добавлен в Git с правильными слоями и детерминированными uniqueID
+2. `EnsureSortingLayers()` переписан: `uniqueID = индекс слоя` (0,1,2,3,4,5)
+3. `Phase02TagsLayers.IsNeeded()` проверяет, что uniqueID совпадают с индексами
+4. `TileMapController.EnsureSortingLayerOrder()` также переназначает uniqueID детерминированно
+
+**Файлы исправления:** SceneBuilderUtils.cs, Phase02TagsLayers.cs, TileMapController.cs, TagManager.asset
 
 ### Баг: Terrain рендерится поверх Player
 
@@ -174,6 +212,11 @@ Unity URP 2D рендерит спрайты **снизу вверх** по Sort
 **Причина:** PNG-спрайты через Unity Import Pipeline имеют субпиксельные зазоры  
 **Решение:** Все terrain-спрайты — процедурные (Sprite.Create), PPU=32, FilterMode.Point
 
+### Баг: Formation UI рендерится на Default слое
+
+**Причина:** `FormationUI.cs` и `FormationUIPrefabsGenerator.cs` не назначают `sortingLayerName`  
+**Решение:** Добавить `sr.sortingLayerName = "UI"` в оба файла (пока не исправлено, работает за счёт Default поверх UI)
+
 ---
 
 ## 📐 Формат спрайтов
@@ -187,6 +230,28 @@ Unity URP 2D рендерит спрайты **снизу вверх** по Sort
 
 ---
 
+## 🔢 Детерминированные uniqueID
+
+С версии 2.0 все Sorting Layers имеют **детерминированные uniqueID**, равные индексу слоя:
+
+| Индекс | Имя слоя | uniqueID | Примечание |
+|--------|----------|----------|-----------|
+| 0 | Default | 0 | Всегда существует, не удаляется |
+| 1 | Background | 1 | |
+| 2 | Terrain | 2 | |
+| 3 | Objects | 3 | Критический — PlayerVisual, HarvestableSpawner |
+| 4 | Player | 4 | PlayerVisual |
+| 5 | UI | 5 | FormationUI, HarvestFeedbackUI |
+
+**Почему это важно:** Unity использует `uniqueID` для определения порядка рендеринга. Если на разных ПК слои имеют разные `uniqueID`, порядок рендеринга будет отличаться даже при одинаковых именах слоёв. Детерминированное назначение `uniqueID = индекс` гарантирует воспроизводимость.
+
+**Где проверяется:**
+- `Phase02TagsLayers.IsNeeded()` — проверяет `sortingLayers[i].id == i`
+- `SceneBuilderUtils.EnsureSortingLayers()` — переназначает при расхождении
+- `TileMapController.EnsureSortingLayerOrder()` — переназначает при расхождении
+
+---
+
 ## 📎 Связанные документы
 
 - [ARCHITECTURE.md](./ARCHITECTURE.md) — Общая архитектура
@@ -196,4 +261,5 @@ Unity URP 2D рендерит спрайты **снизу вверх** по Sort
 ---
 
 *Создано: 2026-04-17 12:50 UTC*  
+*Редактировано: 2026-04-21 — v2.0: +детерминированные uniqueID, +TagManager.asset в Git, +баг с разными ПК, +FormationUI проблема, +Phase02TagsLayers, актуализация по коду*  
 *Проект: Cultivation World Simulator*
