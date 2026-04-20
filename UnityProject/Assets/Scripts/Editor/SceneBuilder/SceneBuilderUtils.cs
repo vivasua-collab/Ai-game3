@@ -86,6 +86,13 @@ namespace CultivationGame.Editor.SceneBuilder
         /// Создание Sorting Layers для 2D рендеринга и перестановка в правильный порядок.
         /// Без Sorting Layer "Objects" все SpriteRenderer с sortingLayerName="Objects"
         /// игнорируются в Unity 6+ → спрайты невидимы!
+        ///
+        /// РЕДАКТИРОВАНО 2026-04-21: uniqueID теперь назначаются ДЕТЕРМИНИРОВАННО
+        /// по индексу слоя (0, 1, 2, ...). Это гарантирует одинаковый порядок
+        /// Sorting Layers на разных ПК при сборке проекта.
+        ///
+        /// ПРИЧИНА БАГА: Старый код сохранял старые uniqueID при перестановке,
+        /// но на разных ПК uniqueID могли отличаться → разный порядок слоёв.
         /// </summary>
         public static void EnsureSortingLayers()
         {
@@ -110,9 +117,8 @@ namespace CultivationGame.Editor.SceneBuilder
                     existingLayers.Add(nameProp.stringValue);
             }
 
-            // ШАГ 2: Добавляем недостающие слои
+            // ШАГ 2: Добавляем недостающие слои (uniqueID пока не важен — переназначим в ШАГЕ 3)
             bool addedNew = false;
-            int nextId = sortingLayersProp.arraySize;
 
             foreach (string layerName in requiredSortingLayers)
             {
@@ -130,14 +136,11 @@ namespace CultivationGame.Editor.SceneBuilder
                 var newElement = sortingLayersProp.GetArrayElementAtIndex(insertIndex);
                 var nameProp = newElement.FindPropertyRelative("name");
                 if (nameProp != null) nameProp.stringValue = layerName;
-                var idProp = newElement.FindPropertyRelative("uniqueID");
-                if (idProp != null) idProp.intValue = nextId;
                 var lockedProp = newElement.FindPropertyRelative("locked");
                 if (lockedProp != null) lockedProp.boolValue = false;
 
                 addedNew = true;
-                Debug.Log($"[SceneBuilder] Sorting Layer \"{layerName}\" создан (ID={nextId})");
-                nextId++;
+                Debug.Log($"[SceneBuilder] Sorting Layer \"{layerName}\" создан");
             }
 
             if (addedNew)
@@ -146,65 +149,69 @@ namespace CultivationGame.Editor.SceneBuilder
                 tagManager.Update();
             }
 
-            // ШАГ 3: Переставляем слои в правильный порядок
-            var layerData = new List<Dictionary<string, object>>();
+            // ШАГ 3: Собираем имена слоёв, переставляем в правильный порядок
+            var layerNames = new List<string>();
             for (int i = 0; i < sortingLayersProp.arraySize; i++)
             {
-                var elem = sortingLayersProp.GetArrayElementAtIndex(i);
-                var data = new Dictionary<string, object>();
-                var nProp = elem.FindPropertyRelative("name");
-                var idProp2 = elem.FindPropertyRelative("uniqueID");
-                var lProp = elem.FindPropertyRelative("locked");
-                if (nProp != null) data["name"] = nProp.stringValue;
-                if (idProp2 != null) data["uniqueID"] = idProp2.intValue;
-                if (lProp != null) data["locked"] = lProp.boolValue;
-                layerData.Add(data);
+                var nProp = sortingLayersProp.GetArrayElementAtIndex(i).FindPropertyRelative("name");
+                if (nProp != null && !string.IsNullOrEmpty(nProp.stringValue))
+                    layerNames.Add(nProp.stringValue);
             }
 
-            var newOrder = new List<Dictionary<string, object>>();
+            // Строим правильный порядок: сначала required, потом любые дополнительные
+            var newOrder = new List<string>();
             var usedNames = new HashSet<string>();
 
             foreach (var expectedName in requiredSortingLayers)
             {
-                var found = layerData.Find(d => d.ContainsKey("name") && (string)d["name"] == expectedName);
-                if (found != null)
+                if (layerNames.Contains(expectedName))
                 {
-                    newOrder.Add(found);
+                    newOrder.Add(expectedName);
                     usedNames.Add(expectedName);
                 }
             }
 
-            foreach (var data in layerData)
+            foreach (var name in layerNames)
             {
-                if (data.ContainsKey("name") && !usedNames.Contains((string)data["name"]))
-                    newOrder.Add(data);
+                if (!usedNames.Contains(name))
+                    newOrder.Add(name);
             }
 
+            // Проверяем, нужен ли реордер
             bool needsReorder = false;
-            for (int i = 0; i < layerData.Count && i < newOrder.Count; i++)
+            for (int i = 0; i < layerNames.Count && i < newOrder.Count; i++)
             {
-                string oldName = layerData[i].ContainsKey("name") ? (string)layerData[i]["name"] : "";
-                string newName = newOrder[i].ContainsKey("name") ? (string)newOrder[i]["name"] : "";
-                if (oldName != newName) { needsReorder = true; break; }
+                if (layerNames[i] != newOrder[i]) { needsReorder = true; break; }
             }
 
-            if (!needsReorder && !addedNew)
+            // Проверяем, нужно ли переназначить uniqueID (ДЕТЕРМИНИРОВАННО)
+            bool needsIdReassign = false;
+            for (int i = 0; i < sortingLayersProp.arraySize; i++)
             {
-                Debug.Log("[SceneBuilder] Sorting Layers уже в правильном порядке");
+                var idProp = sortingLayersProp.GetArrayElementAtIndex(i).FindPropertyRelative("uniqueID");
+                if (idProp != null && idProp.intValue != i)
+                {
+                    needsIdReassign = true;
+                    break;
+                }
+            }
+
+            if (!needsReorder && !needsIdReassign && !addedNew)
+            {
+                Debug.Log("[SceneBuilder] Sorting Layers уже в правильном порядке с корректными ID");
                 return;
             }
 
+            // ШАГ 4: Перестраиваем массив с ДЕТЕРМИНИРОВАННЫМИ uniqueID
+            // uniqueID = индекс слоя (0, 1, 2, ...) — гарантирует одинаковый результат на любом ПК
             sortingLayersProp.ClearArray();
-            foreach (var data in newOrder)
+            for (int i = 0; i < newOrder.Count; i++)
             {
-                sortingLayersProp.InsertArrayElementAtIndex(sortingLayersProp.arraySize);
-                var elem = sortingLayersProp.GetArrayElementAtIndex(sortingLayersProp.arraySize - 1);
-                if (data.ContainsKey("name"))
-                    elem.FindPropertyRelative("name").stringValue = (string)data["name"];
-                if (data.ContainsKey("uniqueID"))
-                    elem.FindPropertyRelative("uniqueID").intValue = (int)data["uniqueID"];
-                if (data.ContainsKey("locked"))
-                    elem.FindPropertyRelative("locked").boolValue = (bool)data["locked"];
+                sortingLayersProp.InsertArrayElementAtIndex(i);
+                var elem = sortingLayersProp.GetArrayElementAtIndex(i);
+                elem.FindPropertyRelative("name").stringValue = newOrder[i];
+                elem.FindPropertyRelative("uniqueID").intValue = i;  // ДЕТЕРМИНИРОВАННЫЙ ID
+                elem.FindPropertyRelative("locked").boolValue = false;
             }
 
             tagManager.ApplyModifiedProperties();
@@ -221,7 +228,9 @@ namespace CultivationGame.Editor.SceneBuilder
 
             if (needsReorder)
                 Debug.Log("[SceneBuilder] ✅ Порядок Sorting Layers ИСПРАВЛЕН! Terrain < Objects < Player");
-            else
+            if (needsIdReassign)
+                Debug.Log("[SceneBuilder] ✅ uniqueID переназначены детерминированно (0, 1, 2, ...)");
+            if (!needsReorder && !needsIdReassign)
                 Debug.Log("[SceneBuilder] ✅ Sorting Layers созданы в правильном порядке");
         }
 

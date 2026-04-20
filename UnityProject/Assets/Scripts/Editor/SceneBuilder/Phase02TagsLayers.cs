@@ -44,7 +44,7 @@ namespace CultivationGame.Editor.SceneBuilder
                 if (!found) return true;
             }
 
-            // Проверяем Sorting Layers — существование И порядок
+            // Проверяем Sorting Layers — существование, порядок И uniqueID
             var sortingLayers = SortingLayer.layers;
             string[] requiredOrder = SceneBuilderConstants.REQUIRED_SORTING_LAYERS;
 
@@ -60,7 +60,7 @@ namespace CultivationGame.Editor.SceneBuilder
                         break;
                     }
                 }
-                if (indices[i] < 0) return false; // Слой не найден
+                if (indices[i] < 0) return true; // Слой не найден — НУЖНО создать
             }
 
             // Строгий порядок
@@ -68,6 +68,13 @@ namespace CultivationGame.Editor.SceneBuilder
             {
                 if (indices[i] <= indices[i - 1])
                     return true;
+            }
+
+            // Проверяем, что uniqueID совпадают с индексами (детерминированность)
+            for (int i = 0; i < sortingLayers.Length; i++)
+            {
+                if (sortingLayers[i].id != i)
+                    return true; // uniqueID не детерминирован — нужно переназначить
             }
 
             // PATCH-012: Layer 11 не должен называться "UI" (конфликт с built-in layer 5)

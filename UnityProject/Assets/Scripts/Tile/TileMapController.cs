@@ -190,7 +190,8 @@ namespace CultivationGame.TileSystem
                         sortingLayersProp.InsertArrayElementAtIndex(sortingLayersProp.arraySize);
                         var newLayer = sortingLayersProp.GetArrayElementAtIndex(sortingLayersProp.arraySize - 1);
                         newLayer.FindPropertyRelative("name").stringValue = layerName;
-                        newLayer.FindPropertyRelative("uniqueID").intValue = System.Guid.NewGuid().GetHashCode();
+                        // uniqueID будет переназначен детерминированно в EnsureSortingLayerOrder()
+                        newLayer.FindPropertyRelative("uniqueID").intValue = sortingLayersProp.arraySize - 1;
                         newLayer.FindPropertyRelative("locked").boolValue = false;
                         Debug.Log($"[TileMapController] FIX-V2-7: Создан Sorting Layer \"{layerName}\"");
                     }
@@ -280,7 +281,8 @@ namespace CultivationGame.TileSystem
                     sortingLayersProp.InsertArrayElementAtIndex(sortingLayersProp.arraySize);
                     var newLayer = sortingLayersProp.GetArrayElementAtIndex(sortingLayersProp.arraySize - 1);
                     newLayer.FindPropertyRelative("name").stringValue = layerName;
-                    newLayer.FindPropertyRelative("uniqueID").intValue = System.Guid.NewGuid().GetHashCode();
+                    // uniqueID будет переназначен детерминированно ниже
+                    newLayer.FindPropertyRelative("uniqueID").intValue = sortingLayersProp.arraySize - 1;
                     newLayer.FindPropertyRelative("locked").boolValue = false;
                     Debug.Log($"[TileMapController] FIX-SORT: Создан недостающий слой \"{layerName}\"");
                 }
@@ -325,18 +327,18 @@ namespace CultivationGame.TileSystem
                     newOrder.Add(data);
             }
 
-            // Очищаем массив и заполняем в новом порядке
+            // Очищаем массив и заполняем в новом порядке с ДЕТЕРМИНИРОВАННЫМИ uniqueID
+            // uniqueID = индекс слоя (0, 1, 2, ...) — гарантирует одинаковый результат на любом ПК
             sortingLayersProp.ClearArray();
-            foreach (var data in newOrder)
+            for (int idx = 0; idx < newOrder.Count; idx++)
             {
-                sortingLayersProp.InsertArrayElementAtIndex(sortingLayersProp.arraySize);
-                var elem = sortingLayersProp.GetArrayElementAtIndex(sortingLayersProp.arraySize - 1);
+                var data = newOrder[idx];
+                sortingLayersProp.InsertArrayElementAtIndex(idx);
+                var elem = sortingLayersProp.GetArrayElementAtIndex(idx);
                 if (data.ContainsKey("name"))
                     elem.FindPropertyRelative("name").stringValue = (string)data["name"];
-                if (data.ContainsKey("uniqueID"))
-                    elem.FindPropertyRelative("uniqueID").intValue = (int)data["uniqueID"];
-                if (data.ContainsKey("locked"))
-                    elem.FindPropertyRelative("locked").boolValue = (bool)data["locked"];
+                elem.FindPropertyRelative("uniqueID").intValue = idx;  // ДЕТЕРМИНИРОВАННЫЙ ID
+                elem.FindPropertyRelative("locked").boolValue = false;
             }
 
             tagManager.ApplyModifiedProperties();

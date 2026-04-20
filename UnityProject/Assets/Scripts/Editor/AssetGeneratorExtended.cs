@@ -318,7 +318,7 @@ namespace CultivationGame.Editor
             asset.value = data.value;
 
             asset.slot = ParseEquipmentSlot(data.slot);
-            asset.handType = data.isTwoHanded ? WeaponHandType.TwoHand : ParseWeaponHandType(data.slot?.ToString(), data.weaponType);
+            asset.handType = data.isTwoHanded ? WeaponHandType.TwoHand : ParseWeaponHandType(data.slot, data.weaponType);
             asset.damage = Mathf.RoundToInt((data.damageRange.min + data.damageRange.max) / 2f);
             asset.defense = 0;
 
@@ -740,11 +740,11 @@ namespace CultivationGame.Editor
         /// Парсинг слота экипировки из JSON.
         /// Редактировано: 2026-04-18 18:43:19 UTC — переписан под новый EquipmentSlot enum (v2.0)
         /// </summary>
-        private static EquipmentSlot ParseEquipmentSlot(object value)
+        private static EquipmentSlot ParseEquipmentSlot(string value)
         {
-            if (value == null) return EquipmentSlot.WeaponMain;
+            if (string.IsNullOrEmpty(value)) return EquipmentSlot.WeaponMain;
 
-            string slotStr = value.ToString().ToLower();
+            string slotStr = value.ToLower();
 
             switch (slotStr)
             {
@@ -1353,7 +1353,7 @@ namespace CultivationGame.Editor
             public float range;
             public float weight;
             public int value;
-            public object slot;
+            public string slot;
             public bool isTwoHanded;
         }
 
