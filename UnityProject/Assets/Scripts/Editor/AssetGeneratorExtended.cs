@@ -631,6 +631,10 @@ namespace CultivationGame.Editor
             asset.volume = volume;
             asset.allowNesting = NestingFlag.None; // Кольца хранения НЕЛЬЗЯ поместить в другие хранилища
 
+            // EquipmentData-поля (StorageRingData наследует от EquipmentData с 2026-04-20)
+            asset.slot = EquipmentSlot.RingLeft1; // дефолтный слот — переназначается при экипировке
+            asset.handType = WeaponHandType.OneHand;
+
             // StorageRingData поля
             asset.maxVolume = maxVolume;
             asset.qiCostBase = qiCostBase;

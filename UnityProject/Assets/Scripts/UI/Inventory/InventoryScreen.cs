@@ -3,6 +3,7 @@
 // Cultivation World Simulator
 // ============================================================================
 // Создано: 2026-04-18 20:00:00 UTC
+// Редактировано: 2026-04-20 06:50:00 UTC — FIX CS0618, CS0414
 // ============================================================================
 // Объединяет все панели инвентаря в один экран:
 // - BodyDollPanel (7 видимых слотов экипировки)
@@ -44,7 +45,9 @@ namespace CultivationGame.UI.Inventory
 
         [Header("Belt (future)")]
         [SerializeField] private Transform beltContainer;
+#pragma warning disable CS0414 // Поле используется через Unity Inspector (будущее расширение)
         [SerializeField] private int maxBeltSlots = 4;
+#pragma warning restore CS0414
 
         [Header("UI Elements")]
         [SerializeField] private UnityEngine.UI.Button closeButton;
@@ -52,7 +55,9 @@ namespace CultivationGame.UI.Inventory
         [SerializeField] private TMPro.TMP_Text titleText;
 
         [Header("Animation")]
+#pragma warning disable CS0414 // Поле используется через Unity Inspector (будущее расширение)
         [SerializeField] private float openCloseDuration = 0.15f;
+#pragma warning restore CS0414
         [SerializeField] private AnimationCurve openCurve = AnimationCurve.EaseInOut(0, 0, 1, 1);
 
         #endregion
@@ -322,7 +327,7 @@ namespace CultivationGame.UI.Inventory
             {
                 Close();
                 // Уведомляем UIManager
-                var uiManager = FindObjectOfType<CultivationGame.UI.UIManager>();
+                var uiManager = FindFirstObjectByType<CultivationGame.UI.UIManager>();
                 if (uiManager != null)
                     uiManager.ReturnToPrevious();
             }
@@ -331,7 +336,7 @@ namespace CultivationGame.UI.Inventory
             if (Keyboard.current.iKey.wasPressedThisFrame)
             {
                 Close();
-                var uiManager = FindObjectOfType<CultivationGame.UI.UIManager>();
+                var uiManager = FindFirstObjectByType<CultivationGame.UI.UIManager>();
                 if (uiManager != null)
                     uiManager.ToggleInventory();
             }

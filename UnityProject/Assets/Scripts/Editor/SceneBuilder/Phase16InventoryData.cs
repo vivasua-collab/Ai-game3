@@ -6,6 +6,8 @@
 // Добавляет папки Assets/Data/Backpacks и Assets/Data/StorageRings.
 // Обновляет существующие ItemData .asset файлы: volume и allowNesting.
 //
+// Редактировано: 2026-04-20 06:45:00 UTC — StorageRingData → EquipmentData, +slot
+//
 // Зависимости: Phase09GenerateAssets (ItemData уже созданы)
 // ============================================================================
 
@@ -173,6 +175,10 @@ namespace CultivationGame.Editor.SceneBuilder
             data.hasDurability = false;
             data.volume = 0.05f;
             data.allowNesting = NestingFlag.None; // Кольцо нельзя вложить — пространственная нестабильность
+
+            // EquipmentData-поля (StorageRingData наследует от EquipmentData)
+            data.slot = EquipmentSlot.RingLeft1; // дефолтный слот — переназначается при экипировке
+            data.handType = WeaponHandType.OneHand;
 
             // StorageRingData-specific fields
             data.maxVolume = maxVolume;
