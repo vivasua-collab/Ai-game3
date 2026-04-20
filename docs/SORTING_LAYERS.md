@@ -1,7 +1,7 @@
 # 🎨 Sorting Layers — Порядок рендеринга 2D
 
-**Версия:** 2.0  
-**Дата:** 2026-04-21  
+**Версия:** 3.0  
+**Дата:** 2026-04-20  
 **Проект:** Cultivation World Simulator (Unity 6.3 URP 2D)
 
 ---
@@ -114,13 +114,17 @@ Unity URP 2D рендерит спрайты **снизу вверх** по Sort
 
 ## 🔧 Где настраиваются Sorting Layers
 
-### Источник истины: TagManager.asset
+### Источник истины: КОД (не TagManager.asset!)
 
 | Файл | Назначение |
 |------|-----------|
-| `ProjectSettings/TagManager.asset` | **Единственный источник истины.** Содержит Sorting Layers с детерминированными uniqueID. Обязан быть в Git! |
+| `SceneBuilderConstants.cs` | **Единственный источник истины.** `REQUIRED_SORTING_LAYERS` определяет имена и порядок слоёв |
+| `SceneBuilderUtils.cs` | `EnsureSortingLayers()` — создаёт слои + назначает детерминированные uniqueID |
+| `TileMapController.cs` | `EnsureSortingLayersExist()` + `EnsureSortingLayerOrder()` — рантайм-проверка и исправление |
 
-> **⚠️ КРИТИЧЕСКИ:** Если `TagManager.asset` отсутствует в Git, каждый ПК при клонировании получает дефолтные Unity-слои (только "Default"). Это приводит к разному порядку слоёв на разных машинах. См. «Баг: Разный порядок слоёв на разных ПК».
+> **⚠️ ВАЖНО:** `ProjectSettings/` **удалён из проекта** — вызывает падение Unity Editor. Unity пересоздаёт TagManager.asset автоматически при открытии проекта. Слои создаются и проверяются **кодом** при каждом запуске, не вручную.
+>
+> Код гарантированно создаёт правильные слои с детерминированными uniqueID = индекс (0,1,2,3,4,5) на любом ПК.
 
 ### Создание и проверка слоёв (Editor-only)
 
@@ -178,17 +182,19 @@ Unity URP 2D рендерит спрайты **снизу вверх** по Sort
 ### Баг: Разный порядок слоёв на разных ПК 🔴
 
 **Симптом:** На одном ПК Player рендерится поверх Terrain, на другом — позади. Разный порядок Sorting Layers.  
-**Причина (двойная):**
-1. `ProjectSettings/TagManager.asset` **отсутствовал в Git** — каждый ПК получает дефолтные слои Unity
+**Причина (историческая):**
+1. `ProjectSettings/TagManager.asset` **отсутствовал в Git** — каждый ПК получал дефолтные слои Unity
 2. `uniqueID` генерировались **случайно** (`Guid.NewGuid().GetHashCode()`) — на разных ПК разные ID → разный порядок
 
-**Решение:**
-1. `TagManager.asset` добавлен в Git с правильными слоями и детерминированными uniqueID
-2. `EnsureSortingLayers()` переписан: `uniqueID = индекс слоя` (0,1,2,3,4,5)
-3. `Phase02TagsLayers.IsNeeded()` проверяет, что uniqueID совпадают с индексами
-4. `TileMapController.EnsureSortingLayerOrder()` также переназначает uniqueID детерминированно
+**Решение (текущее):**
+1. `ProjectSettings/` удалён из проекта — вызывает падение Unity Editor
+2. Unity пересоздаёт TagManager.asset автоматически при открытии проекта
+3. Код (`EnsureSortingLayers()` / `EnsureSortingLayerOrder()`) создаёт слои с `uniqueID = индекс` (0,1,2,3,4,5) — **детерминированно**
+4. `Phase02TagsLayers.IsNeeded()` проверяет, что uniqueID совпадают с индексами
+5. `TileMapController.EnsureSortingLayerOrder()` переназначает uniqueID детерминированно в рантайме
 
-**Файлы исправления:** SceneBuilderUtils.cs, Phase02TagsLayers.cs, TileMapController.cs, TagManager.asset
+**Источник истины:** `SceneBuilderConstants.REQUIRED_SORTING_LAYERS` (код, не файл)
+**Файлы исправления:** SceneBuilderUtils.cs, Phase02TagsLayers.cs, TileMapController.cs
 
 ### Баг: Terrain рендерится поверх Player
 
@@ -261,5 +267,5 @@ Unity URP 2D рендерит спрайты **снизу вверх** по Sort
 ---
 
 *Создано: 2026-04-17 12:50 UTC*  
-*Редактировано: 2026-04-21 — v2.0: +детерминированные uniqueID, +TagManager.asset в Git, +баг с разными ПК, +FormationUI проблема, +Phase02TagsLayers, актуализация по коду*  
+*Редактировано: 2026-04-20 09:19 UTC — v3.0: ProjectSettings/ удалён (краш Unity), источник истины → код (SceneBuilderConstants), TagManager.asset создаётся Unity автоматически, актуализация по коду*  
 *Проект: Cultivation World Simulator*
