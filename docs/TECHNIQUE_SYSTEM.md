@@ -28,8 +28,12 @@
 > **Это главное правило расчёта урона техник.**
 
 ```
-finalDamage = capacity × gradeMult
+finalDamage = capacity × gradeMultiplier × ultimateMultiplier
 ```
+
+Где:
+- `gradeMultiplier` = множитель Grade (common:1.0, refined:1.3, perfect:1.6, transcendent:2.0)
+- `ultimateMultiplier` = isUltimate ? 2.0 : 1.0
 
 ### Принцип 2: Архитектура "Матрёшка"
 
@@ -51,9 +55,9 @@ finalDamage = capacity × gradeMult
 | Grade | Урон | Бонусов | Шанс эффекта |
 |-------|------|---------|--------------|
 | Common | ×1.0 | 0 | 0% |
-| Refined | ×1.2 | 1 | 20% |
-| Perfect | ×1.4 | 2 | 50% |
-| Transcendent | ×1.6 | 3 | 80% |
+| Refined | ×1.3 | 1 | 20% |
+| Perfect | ×1.6 | 2 | 50% |
+| Transcendent | ×2.0 | 3 | 80% |
 
 **Важно:** Стоимость Ци всегда ×1.0 — не зависит от Grade.
 
@@ -77,7 +81,7 @@ finalDamage = capacity × gradeMult
 ### Формула
 
 ```
-capacity = baseCapacity(type) × 2^(level-1) × masteryBonus
+capacity = baseCapacity(type) × 2^(level-1) × (1 + mastery/100 × 0.5)
 ```
 
 ### Базовая ёмкость по типам
@@ -102,7 +106,7 @@ capacity = baseCapacity(type) × 2^(level-1) × masteryBonus
 **melee_strike L5, mastery 0%:**
 ```
 capacity = 64 × 2^4 × 1.0 = 1024 базового Ци
-finalDamage = 1024 × gradeMult
+finalDamage = 1024 × gradeMultiplier × ultimateMultiplier
 ```
 
 **ranged_projectile L9, mastery 100%:**
@@ -170,7 +174,7 @@ capacity = 32 × 256 × 1.5 = 12288 базового Ци
 
 ---
 
-## 🌟 Стихии (8 элементов)
+## 🌟 Стихии (7 элементов)
 
 > **Источник истины:** [ELEMENTS_SYSTEM.md](./ELEMENTS_SYSTEM.md)
 
@@ -183,7 +187,8 @@ capacity = 32 × 256 × 1.5 = 12288 базового Ци
 | Молния | lightning | Цепной урон |
 | Пустота | void | Пробитие, антимагия |
 | Нейтральный | neutral | Чистый Ци |
-| Яд | poison | DoT, дебаффы |
+
+> ⚠️ **Poison (Яд) — НЕ стихия**, а состояние Ци. Реализуется через `technique.type=poison`. Яд не входит в список стихийных элементов.
 
 ### Ограничения по типам техник
 
@@ -297,8 +302,8 @@ masteryGained = max(0.1, baseGain × (1 - currentMastery / 100))
 ### Условия
 
 - 5% шанс для Transcendent техник
-- Множитель урона: ×1.3
-- Множитель стоимости Ци: ×1.5
+- Множитель урона: ×2.0 (согласно ALGORITHMS.md §4.2: ultimateMultiplier = isUltimate ? 2.0 : 1.0)
+- Множитель стоимости Ци: ×2.0
 - Маркер в названии: ⚡
 
 ---

@@ -75,7 +75,7 @@
 
 ### Данные NPC (дополнено в Fix-07)
 
-- NPCSaveData — Attitude (числовое -100..+100 вместо Disposition)
+- NPCSaveData — Attitude (числовое -100..+100 вместо Disposition) — согласовано с NPC_AI_SYSTEM.md Fix-07
 - PersonalityTrait [Flags] — черты характера (Aggressive, Cautious, Treacherous, Ambitious, Loyal, Pacifist, Curious, Vengeful)
 - SkillLevelData — навыки NPC по уровням
 

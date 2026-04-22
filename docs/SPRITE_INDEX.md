@@ -167,7 +167,7 @@
 
 ---
 
-## 7. 🔥 Elements (Стихии) — 8 спрайтов
+## 7. 🔥 Elements (Стихии) — 7 спрайтов
 
 **Путь:** `Assets/Sprites/Elements/`  
 **ScriptableObject:** ElementData.cs
@@ -179,7 +179,7 @@
 | 3 | element_earth.png | Земля |
 | 4 | element_air.png | Воздух |
 | 5 | element_lightning.png | Молния |
-| 6 | element_poison.png | Яд |
+| 6 | ~~element_poison.png~~ | ~~Яд~~ ⚠️ DEPRECATED — не входит в текущий набор стихий |
 | 7 | element_void.png | Пустота |
 | 8 | element_neutral.png | Нейтральная |
 
@@ -222,7 +222,7 @@
 | 7 | cultivation_07_eternal_ring.png | Вечное кольцо |
 | 8 | cultivation_08_voice_of_heaven.png | Голос небес |
 | 9 | cultivation_09_immortal_core.png | Бессмертное ядро |
-| 10 | cultivation_10_ascension.png | Вознесение |
+| 10 | cultivation_10_ascension.png | Вознесение ⚠️ ПЛАНИРУЕТСЯ — не входит в текущую модель данных (1-9) |
 
 ---
 
@@ -290,13 +290,13 @@
 | NPC | 12 | Sprites/Characters/NPC/ |
 | Equipment | 20 | Sprites/Equipment/ |
 | Items | 16 | Sprites/Items/ |
-| Elements | 8 | Sprites/Elements/ |
+| Elements | 7 | Sprites/Elements/ |
 | Techniques | 11 | Sprites/Techniques/ |
 | Cultivation | 10 | Sprites/Cultivation/ |
 | Combat Effects | 12 | Sprites/Combat/TechniqueEffects/ |
 | Orbital Weapons | 8 | Sprites/Combat/OrbitalWeapons/ |
 | UI | 4 | Sprites/UI/ |
-| **ИТОГО** | **127** | |
+| **ИТОГО** | **126** | |
 
 ---
 
@@ -310,9 +310,12 @@
 - ✅ Tree (→Tree_Oak), Rock_Small, Rock_Medium, Bush, Chest, OreVein, Herb
 - ❌ Tree_Pine, Tree_Birch, Bush_Berry, Grass_Tall, Flower, Rock_Large, Boulder, Pond, Well, Wall_Wood, Wall_Stone, Door, Window, Shrine, Altar — спрайтов нет
 
-### ElementData (8 записей) → 8 спрайтов ✅ ПОЛНОЕ
+### ElementData (7 записей) → 7 спрайтов ✅ ПОЛНОЕ
+- ⚠️ element_poison.png DEPRECATED — не входит в текущий набор стихий
 
-### CultivationLevelData (10 записей) → 10 спрайтов ✅ ПОЛНОЕ
+### CultivationLevelData (9 записей) → 10 спрайтов ⚠️ 1 ПЛАНИРУЕТСЯ
+- ✅ Уровни 1-9
+- ⚠️ cultivation_10_ascension.png — ПЛАНИРУЕТСЯ (не входит в текущую модель данных)
 
 ### TechniqueType (11 типов) → 11 спрайтов ✅ ПОЛНОЕ
 

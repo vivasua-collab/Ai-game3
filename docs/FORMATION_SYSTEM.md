@@ -360,36 +360,36 @@ FormationSystem
 > **Полная реализация:** [examples/FormationSystem_Examples.md](./examples/FormationSystem_Examples.md#5-enums-для-формаций-c)
 
 **FormationCoreType:**
-| Значение | Описание |
-|----------|----------|
-| Disk | Диск (портативный) |
-| Altar | Алтарь (стационарный) |
-| Array | Массив |
-| Totem | Тотем |
-| Seal | Печать |
+| Значение | Описание | Статус |
+|----------|----------|--------|
+| Disk | Диск (портативный) | ✅ В DATA_MODELS |
+| Altar | Алтарь (стационарный) | ✅ В DATA_MODELS |
+| Array | Массив | 🔜 Планируемое расширение |
+| Totem | Тотем | 🔜 Планируемое расширение |
+| Seal | Печать | 🔜 Планируемое расширение |
 
 **FormationCoreVariant:**
-| Значение | Описание |
-|----------|----------|
-| Stone | Камень |
-| Jade | Нефрит |
-| Iron | Железо |
-| SpiritIron | Духовное железо |
-| Crystal | Кристалл |
-| StarMetal | Звёздный металл |
-| VoidMatter | Пустотная материя |
+| Значение | Описание | Статус |
+|----------|----------|--------|
+| Stone | Камень | ✅ В DATA_MODELS |
+| Jade | Нефрит | ✅ В DATA_MODELS |
+| Iron | Железо | ✅ В DATA_MODELS |
+| SpiritIron | Духовное железо | ✅ В DATA_MODELS |
+| Crystal | Кристалл | ✅ В DATA_MODELS |
+| StarMetal | Звёздный металл | 🔜 Планируемое расширение |
+| VoidMatter | Пустотная материя | 🔜 Планируемое расширение |
 
 **FormationType:**
-| Значение | Описание |
-|----------|----------|
-| Barrier | Барьер |
-| Trap | Ловушка |
-| Amplification | Усиление |
-| Suppression | Подавление |
-| Gathering | Сбор |
-| Detection | Обнаружение |
-| Teleportation | Телепортация |
-| Summoning | Призыв |
+| Значение | Описание | Статус |
+|----------|----------|--------|
+| Barrier | Барьер | ✅ В DATA_MODELS |
+| Trap | Ловушка | ✅ В DATA_MODELS |
+| Amplification | Усиление | ✅ В DATA_MODELS |
+| Suppression | Подавление | ✅ В DATA_MODELS |
+| Gathering | Сбор | 🔜 Планируемое расширение |
+| Detection | Обнаружение | 🔜 Планируемое расширение |
+| Teleportation | Телепортация | 🔜 Планируемое расширение |
+| Summoning | Призыв | 🔜 Планируемое расширение |
 
 **FormationSize:**
 | Значение | Размер |

@@ -96,6 +96,7 @@
 |----------|----------|
 | name | Название |
 | ideology | Идеология |
+| nationId | ID нации |
 | leaderSectId | Главная секта |
 | memberSectIds | Секты-участники |
 | combinedPower | Суммарная мощь |
@@ -140,19 +141,21 @@
 
 | Эффект | Описание |
 |--------|----------|
-| dispositionBonusWithSect | + к отношению с членами секты |
-| dispositionPenaltyWithEnemies | - к отношению с врагами секты |
+| attitudeBonusWithSect | + к отношению с членами секты |
+| attitudePenaltyWithEnemies | - к отношению с врагами секты |
 | reputationModifier | Множитель репутации |
 
 ---
 
 ## 📊 Расчёт отношений
 
-### Формула disposition
+### Формула attitude
+
+> **C-20:** Пороги Attitude приведены в соответствие с NPC_AI_SYSTEM.md Fix-07.
 
 ```
-finalDisposition = 
-  + personalDisposition
+finalAttitude = 
+  + personalAttitude
   + sectRelation × 0.5
   + factionRelation × 0.3
   + nationRelation × 0.2
@@ -164,12 +167,13 @@ finalDisposition =
 
 | Значение | Отношение | Поведение |
 |----------|-----------|-----------|
-| 80-100 | Дружелюбный | Помощь |
-| 50-79 | Благосклонный | Мирный диалог |
-| 20-49 | Нейтральный | Осторожность |
-| -20-19 | Подозрительный | Избегание |
-| -50--21 | Враждебный | Агрессия |
-| -100--51 | Ненависть | Атака |
+| 80-100 | Клятвенный союзник | Самопожертвование |
+| 50-79 | Союзник | Лояльность |
+| 10-49 | Друг | Помощь, торговля |
+| -9-9 | Нейтральный | Безразличие |
+| -20--10 | Недоброжелательный | Избегание |
+| -50--21 | Враждебный | Атака если спровоцирован |
+| -100--51 | Ненависть | Атака без предупреждения |
 
 ---
 
@@ -181,7 +185,20 @@ finalDisposition =
 | `Scripts/Factions/Nation.cs` | Государство |
 | `Scripts/Factions/Faction.cs` | Фракция |
 | `Scripts/Factions/Sect.cs` | Секта |
-| `Scripts/Factions/DispositionCalculator.cs` | Расчёт отношений |
+| `Scripts/Factions/AttitudeCalculator.cs` | Расчёт отношений |
+
+---
+
+## 🔗 Отношения между фракциями (FactionRelation)
+
+### Структура
+
+| Поле | Тип | Описание |
+|------|-----|----------|
+| sourceId | string | ID исходной фракции |
+| targetId | string | ID целевой фракции |
+| relationType | string | Тип отношения (ally/enemy/neutral/vassal) |
+| strength | int | Сила отношения (-100 до 100) |
 
 ---
 

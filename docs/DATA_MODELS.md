@@ -1,9 +1,10 @@
 # 🗄️ Модели данных: Unity Migration
 
-**Версия:** 1.2  
+**Версия:** 1.3  
 **Дата:** 2026-04-07 (обновлено)  
 **Статус:** 📋 Дополнено данными из кода  
-**Источники:** prisma/schema.prisma, src/types/body.ts, src/types/entity-types.ts
+**Источники:** prisma/schema.prisma, src/types/body.ts, src/types/entity-types.ts  
+> Обновлено: Qi-значения → long (Fix-01, согласно ARCHITECTURE.md)
 
 ---
 
@@ -57,10 +58,10 @@
 | **Культивация** |||
 | cultivationLevel | int | Основной уровень (1-9) |
 | cultivationSubLevel | int | Под-уровень (0-9) |
-| coreCapacity | int | Ёмкость ядра |
+| coreCapacity | long | Ёмкость ядра |
 | coreQuality | float | Качество ядра |
-| currentQi | int | Текущее Ци |
-| accumulatedQi | int | Накопленное для прорыва |
+| currentQi | long | Текущее Ци |
+| accumulatedQi | long | Накопленное для прорыва |
 | **Физиология** |||
 | health | float | Здоровье (%) |
 | fatigue | float | Физическая усталость (%) |
@@ -91,8 +92,8 @@
 | **Культивация** |||
 | cultivationLevel | int | Уровень культивации |
 | cultivationSubLevel | int | Под-уровень |
-| coreCapacity | int | Ёмкость ядра |
-| currentQi | int | Текущее Ци |
+| coreCapacity | long | Ёмкость ядра |
+| currentQi | long | Текущее Ци |
 | **Характеристики** |||
 | strength | float | Сила |
 | agility | float | Ловкость |
@@ -100,10 +101,10 @@
 | conductivity | float | Проводимость |
 | vitality | float | Живучесть |
 | **Личность (JSON)** |||
-| personality | JSON | Черты характера |
+| personality | JSON | Черты характера (PersonalityTrait [Flags] в коде) |
 | motivation | string | Мотивация |
 | **Отношения** |||
-| disposition | float | Отношение к ГГ (-100 до 100) |
+| attitude | float | Отношение к ГГ (-100 до 100) (Fix-07: переименовано из disposition) |
 | relations | JSON | Отношения с другими |
 | factionId | string | ID фракции |
 | **Прочее (JSON)** |||
@@ -190,9 +191,31 @@
 |------|-----|----------|
 | id | string | Уникальный ID |
 | characterId | string | ID персонажа |
-| slotId | string | head, torso, left_hand... |
+| slotId | string | См. слоты ниже |
 | itemId | string | ID предмета |
 | equippedAt | DateTime | Время экипировки |
+
+**Слоты экипировки (EquipmentSlot):**
+
+| Слот | Категория | Описание |
+|------|-----------|----------|
+| Head | Body Zone | Голова |
+| Torso | Body Zone | Торс |
+| Belt | Belt | Ремень (заряды/зелья) |
+| Legs | Body Zone | Ноги |
+| Feet | Body Zone | Обувь |
+| WeaponMain | Weapon | Основное оружие |
+| WeaponOff | Weapon | Вторичное оружие |
+| Amulet | Accessory | Амулет (макс. 1) |
+| RingLeft1 | Ring | Кольцо левое 1 |
+| RingLeft2 | Ring | Кольцо левое 2 |
+| RingRight1 | Ring | Кольцо правое 1 |
+| RingRight2 | Ring | Кольцо правое 2 |
+| Charger | Charger | Зарядное устройство (макс. 1) |
+| Hands | Future | Руки (резерв) |
+| Back | Future | Спина (резерв) |
+
+> **Head/Torso/Legs/Feet** = body zones; **Belt** = для зарядов/зелий; **WeaponMain/Off** = оружие; **Rings** = макс. 4; **Amulet** = 1; **Charger** = 1; **Hands/Back** = будущее расширение.
 
 ---
 
@@ -213,19 +236,21 @@
 | grade | string | common, refined, perfect, transcendent |
 | level | int | Уровень техники (1-9) |
 | **Параметры** |||
-| baseCapacity | int | Базовая ёмкость |
+| baseCapacity | long | Базовая ёмкость |
 | minLevel | int | Мин. уровень развития |
 | maxLevel | int | Макс. уровень развития |
 | canEvolve | bool | Можно развивать |
 | **Требования** |||
 | minCultivationLevel | int | Мин. уровень культивации |
-| qiCost | int | Стоимость Ци |
+| qiCost | long | Стоимость Ци |
 | physicalFatigueCost | float | Физическая усталость |
 | mentalFatigueCost | float | Ментальная усталость |
 | statRequirements | JSON | Требования к статам |
 | statScaling | JSON | Масштабирование от статов |
 | effects | JSON | Эффекты |
 | computedValues | JSON | Вычисленные значения |
+
+> **Примечание (S-03):** Яд (poison) **не является элементом** — это состояние Ци. Обработка ядов обеспечивается через `technique.type=poison`. Список элементов остаётся из 7 значений (fire, water, earth, air, void, neutral).
 
 ### 9. CharacterTechnique — Изученная техника
 
@@ -269,9 +294,9 @@
 | level | int | Уровень |
 | formationType | string | barrier, trap, amplification, suppression... |
 | size | string | small, medium, large, great, heavy |
-| currentQi | int | Текущее Ци |
-| maxCapacity | int | Макс. ёмкость |
-| contourQi | int | Затрачено на прорисовку |
+| currentQi | long | Текущее Ци |
+| maxCapacity | long | Макс. ёмкость |
+| contourQi | long | Затрачено на прорисовку |
 | creationRadius | int | Радиус создания |
 | effectRadius | int | Радиус эффекта |
 | drainPerHour | int | Утечка Ци/час |
@@ -388,8 +413,8 @@
 
 | Уровень | Тип | Описание |
 |---------|-----|----------|
-| Уровень 1 | SoulType | ПЕРВИЧНЫЙ: character, creature, spirit, construct |
-| Уровень 2 | Morphology | ВТОРИЧНЫЙ: humanoid, quadruped, bird, serpentine, arthropod |
+| Уровень 1 | SoulType | ПЕРВИЧНЫЙ: character, creature, spirit, artifact, construct |
+| Уровень 2 | Morphology | ВТОРИЧНЫЙ: humanoid, quadruped, bird, serpentine, arthropod, amorphous |
 | Уровень 3 | Species | КОНКРЕТНЫЙ: human, elf, wolf, dragon |
 
 ### Поля пресета вида
@@ -397,8 +422,8 @@
 | Поле | Тип | Описание |
 |------|-----|----------|
 | id | string | Уникальный ID |
-| soulType | string | character, creature, spirit, construct |
-| morphology | string | humanoid, quadruped, bird, serpentine, arthropod |
+| soulType | string | character, creature, spirit, artifact, construct |
+| morphology | string | humanoid, quadruped, bird, serpentine, arthropod, amorphous |
 | bodyMaterial | string | organic, scaled, chitin, ethereal, mineral, chaos |
 | **Характеристики (Range)** ||
 | strength | {min, max} | Диапазон силы |

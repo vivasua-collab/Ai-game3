@@ -324,7 +324,7 @@ Selector
 
 ### Расчёт отношения (Attitude + PersonalityTrait)
 
-> **Изменено в Fix-07:** Disposition заменён на `Attitude` (числовое -100..+100) + `PersonalityTrait [Flags]`.
+> **Изменено в Fix-07:** Disposition заменён на `Attitude` (числовое -100..+100) + `PersonalityTrait [Flags]`. DATA_MODELS.md обновлён соответственно.
 
 ```
 finalAttitude = 
@@ -360,6 +360,8 @@ finalAttitude =
 | Pacifist | 32 | Избегание конфликта |
 | Curious | 64 | Любопытство, исследование |
 | Vengeful | 128 | Мстительность |
+
+> **Примечание (M-07):** PersonalityTrait [Flags] реализованы в коде (Enums.cs). DATA_MODELS.md обновляется для соответствия.
 
 ---
 
