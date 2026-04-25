@@ -1,8 +1,8 @@
 # Архитектура генерации сцены — Оркестратор + фазовые файлы
 
 **Создано:** 2026-04-17 13:49:14 UTC
-**Редактировано:** 2026-04-19 06:25:00 UTC
-**Версия:** 2.1
+**Редактировано:** 2026-04-25 16:15:00 MSK
+**Версия:** 2.2
 
 ---
 
@@ -227,42 +227,50 @@ ScenePatchBuilder.cs перенаправляет пользователя к `T
 
 **Что делает:**
 - Создаёт GameObject `InventoryScreen` в `GameUI` Canvas
-- Добавляет панель `BodyDollPanel` с 7 видимыми слотами экипировки
-- Добавляет панель `BackpackPanel` с динамической сеткой 3×4
-- Добавляет `TooltipPanel`, `DragDropHandler`, `ContextMenu`
-- Добавляет TabBar для переключения (Рюкзак / Дух. хранилище / Кольцо)
-- Добавляет `StorageRingPanel` и `SpiritStoragePanel`
+- Добавляет панель `BodyDollPanel` с полной внутренней иерархией:
+  - TitleText «КУКЛА»
+  - BodySilhouette (placeholder Image)
+  - 7 видимых DollSlotUI (Head, Torso, Belt, Legs, Feet, WeaponMain, WeaponOff)
+  - 4 скрытых DollSlotUI (RingLeft1/2, RingRight1/2)
+  - StatsPanel (DamageText, DefenseText, StatsSummaryText)
+  - RingStorageIndicator (скрыт, RingVolumeText)
+- Подключает 17 SerializeField BodyDollPanel + 88 SerializeField DollSlotUI (11×8)
+- Добавляет панель `BackpackPanel` с динамической сеткой 3×4 + 7 SerializeField
+- Создаёт InventorySlotUI prefab (6 дочерних + 6 SerializeField)
+- Добавляет `TooltipPanel` (24 SerializeField wiring)
+- Добавляет `DragDropHandler` (5 SerializeField wiring)
+- Добавляет TabBar (3 вкладки), ContextMenu, SpiritStoragePanel, StorageRingPanel
+- Подключает все ссылки InventoryScreen (10 полей) + UIManager (2 поля)
+- **Итого: ~150 wiring операций автоматически**
 
 **IsNeeded():** Проверяет наличие `InventoryScreen` в сцене
 
-**Зависимости:** Phase07UI (Canvas существует), Phase16InventoryData (ассеты инвентаря)
+**Зависимости:** Phase07UI (Canvas), Phase16InventoryData (ассеты инвентаря)
+
+**Спецификация:** `docs_temp/INVENTORY_UI_DRAFT.md` v2.0, `docs_asset_setup/18_InventoryUI.md`
 
 **Иерархия создаваемых объектов:**
 ```
 GameUI/
-└── InventoryScreen (скрыт по умолчанию)
+└── InventoryScreen (скрыт)
     ├── BackgroundOverlay
-    ├── MainPanel
-    │   ├── Header ("ИНВЕНТАРЬ" + кнопка закрытия)
+    ├── MainPanel (900×600)
+    │   ├── Header
     │   ├── ContentArea
-    │   │   ├── BodyDollPanel
-    │   │   │   ├── HeadSlot
-    │   │   │   ├── TorsoSlot
-    │   │   │   ├── BeltSlot
-    │   │   │   ├── LegsSlot
-    │   │   │   ├── FeetSlot
-    │   │   │   ├── WeaponMainSlot
-    │   │   │   └── WeaponOffSlot
-    │   │   └── BackpackPanel
-    │   │       ├── BackpackHeader
-    │   │       ├── GridContainer (3×4)
-    │   │       └── WeightBar
+    │   │   ├── BodyDollPanel (200px)
+    │   │   │   ├── TitleText, BodySilhouette
+    │   │   │   ├── 7 DollSlotUI (180×40px, 8 SerializeField каждый)
+    │   │   │   ├── 4 скрытых DollSlotUI (кольца)
+    │   │   │   ├── StatsPanel
+    │   │   │   └── RingStorageIndicator
+    │   │   └── BackpackPanel (450px)
+    │   │       ├── BackpackNameText, WeightText, WeightBar, SlotsText
+    │   │       ├── GridBackground → GridContainer
+    │   │       └── SlotUIPrefab (неактивен)
+    │   ├── SpiritStoragePanel
     │   ├── BeltPanel
     │   └── TabBar
-    │       ├── BackpackTab
-    │       ├── SpiritStorageTab
-    │       └── StorageRingTab
-    ├── TooltipPanel
+    ├── TooltipPanel (250×300)
     ├── DragDropLayer
     └── ContextMenu
 ```

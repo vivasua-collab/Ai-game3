@@ -68,8 +68,8 @@
 |------|-------------|--------|
 | [17_InventoryData.md](./17_InventoryData.md) | 4 рюкзака + 4 кольца хранения + volume/allowNesting | Вручную |
 | [17_InventoryData_SemiAuto.md](./17_InventoryData_SemiAuto.md) | 4 рюкзака + 4 кольца хранения + volume/allowNesting | Полуавтомат |
-| [18_InventoryUI.md](./18_InventoryUI.md) | InventoryScreen + BodyDoll + Backpack + Tooltip + DragDrop + ContextMenu + SpiritStorage + StorageRing | Вручную |
-| [18_InventoryUI_SemiAuto.md](./18_InventoryUI_SemiAuto.md) | InventoryScreen + BodyDoll + Backpack + Tooltip + DragDrop + ContextMenu + SpiritStorage + StorageRing | Полуавтомат |
+| [18_InventoryUI.md](./18_InventoryUI.md) | InventoryScreen + BodyDoll + Backpack + Tooltip + DragDrop + ContextMenu + SpiritStorage + StorageRing (вручную wiring) | Вручную |
+| [18_InventoryUI_SemiAuto.md](./18_InventoryUI_SemiAuto.md) | InventoryScreen + BodyDoll + Backpack + Tooltip + DragDrop + ContextMenu + SpiritStorage + StorageRing — ~150 wiring автоматически | Полуавтомат |
 
 ---
 
@@ -103,7 +103,7 @@
 | 14 | Tile Assets | TerrainTile + ObjectTile для 15+ типов |
 | 15 | Test Location | Камера + коллайдеры + HarvestableSpawner |
 | 16 | Inventory Data | BackpackData (4 рюкзака) + StorageRingData (4 кольца) + volume/allowNesting для ItemData |
-| 17 | Inventory UI | InventoryScreen + BodyDoll (7 слотов) + BackpackPanel (3×4) + Tooltip + DragDrop + ContextMenu + SpiritStorage + StorageRing |
+| 17 | Inventory UI | InventoryScreen + BodyDoll (7 слотов + wiring) + BackpackPanel (3×4 + wiring) + Tooltip + DragDrop + ContextMenu + SpiritStorage + StorageRing — ~150 wiring операций автоматически |
 | 18 | Inventory Components | SpiritStorageController + StorageRingController на Player + подключение UI |
 
 #### Как использовать
@@ -199,4 +199,4 @@ Tools → Full Scene Builder → Phase 18: Inventory Components
 
 ---
 
-*Обновлено: 2026-04-19 06:25:00 UTC*
+*Обновлено: 2026-04-25 16:15:00 MSK*
