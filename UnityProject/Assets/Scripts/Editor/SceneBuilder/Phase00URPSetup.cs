@@ -11,7 +11,7 @@
 // Создано: 2026-04-25 13:45:00 UTC
 // Редактировано: 2026-04-26 — FIX: CS0103 GraphicsSettings + CS0136 variable conflicts
 //   - Добавлен using UnityEngine.Rendering (GraphicsSettings находится там)
-//   - currentRenderPipeline → customRenderPipeline (Unity 6.3 API)
+//   - currentRenderPipeline — правильное свойство (customRenderPipeline не существует)
 //   - Переименованы конфликтующие переменные so/rendererListProp
 // ============================================================================
 
@@ -39,7 +39,7 @@ namespace CultivationGame.Editor.SceneBuilder
             // или если GraphicsSettings не назначен
             bool hasURPAsset = AssetDatabase.LoadAssetAtPath<UniversalRenderPipelineAsset>(URP_ASSET_PATH) != null;
             bool hasRenderer2D = AssetDatabase.LoadAssetAtPath<Renderer2DData>(RENDERER2D_PATH) != null;
-            bool hasGraphicsSettings = GraphicsSettings.customRenderPipeline != null;
+            bool hasGraphicsSettings = GraphicsSettings.currentRenderPipeline != null;
 
             return !hasURPAsset || !hasRenderer2D || !hasGraphicsSettings;
         }
@@ -190,8 +190,7 @@ namespace CultivationGame.Editor.SceneBuilder
         /// Назначить UniversalRenderPipelineAsset как текущий Render Pipeline.
         /// Без этого Unity использует Built-in renderer.
         ///
-        /// Unity 6.3: customRenderPipeline заменяет устаревший currentRenderPipeline.
-        /// Используем SerializedObject как fallback для совместимости.
+        /// Unity 6.3: currentRenderPipeline — актуальное свойство GraphicsSettings.
         /// </summary>
         private void AssignToGraphicsSettings(UniversalRenderPipelineAsset urpAsset)
         {
@@ -201,15 +200,15 @@ namespace CultivationGame.Editor.SceneBuilder
                 return;
             }
 
-            // Способ 1: Прямое назначение через customRenderPipeline (Unity 6+)
-            if (GraphicsSettings.customRenderPipeline == urpAsset)
+            // Прямое назначение через currentRenderPipeline
+            if (GraphicsSettings.currentRenderPipeline == urpAsset)
             {
                 Debug.Log("[Phase00] GraphicsSettings уже назначен");
                 return;
             }
 
-            GraphicsSettings.customRenderPipeline = urpAsset;
-            Debug.Log($"[Phase00] ✅ GraphicsSettings.customRenderPipeline назначен: {urpAsset.name}");
+            GraphicsSettings.currentRenderPipeline = urpAsset;
+            Debug.Log($"[Phase00] ✅ GraphicsSettings.currentRenderPipeline назначен: {urpAsset.name}");
 
             // Также проверить QualitySettings
             int qualityLevel = QualitySettings.GetQualityLevel();
