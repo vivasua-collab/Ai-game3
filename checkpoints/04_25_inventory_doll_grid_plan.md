@@ -1,6 +1,6 @@
 # Чекпоинт: План внедрения куклы + сетки инвентаря
 # Дата: 2026-04-25 12:52:20 UTC
-# Статус: plan_ready — код НЕ пишется, только план
+# Статус: in_progress — реализация начата
 
 ---
 
@@ -156,6 +156,7 @@ BackpackPanel уже имеет внутренние элементы и wiring:
 |---------|--------|-----------|--------|
 | Железный меч | 1×2 | Weapon | equipment.json |
 | Кожаная броня | 1×2 | Armor | equipment.json |
+| Деревянный щит | 2×2 | Armor | equipment.json |
 | Пилюля здоровья | 1×1 | Consumable | items.json |
 | Пилюля здоровья ×3 | 1×1 | Consumable (стак) | items.json |
 | Железная руда ×5 | 1×1 | Material | items.json |
@@ -194,7 +195,7 @@ BackpackPanel уже имеет внутренние элементы и wiring:
 
 ## ПЛАН: Wiring — BodyDollPanel SerializeField
 
-### BodyDollPanel: 16 полей для wiring
+### BodyDollPanel: 17 полей для wiring
 
 ```csharp
 private void WireBodyDollPanelReferences(
@@ -238,7 +239,7 @@ private void WireDollSlotReferences(DollSlotUI slotUI,
 }
 ```
 
-**Итого wiring операций:** 16 (BodyDollPanel) + 11×8 (DollSlotUI) = 104
+**Итого wiring операций:** 17 (BodyDollPanel, включая bodySilhouette) + 11×8 (DollSlotUI) = 105
 
 ---
 
@@ -316,21 +317,32 @@ private void WireDollSlotReferences(DollSlotUI slotUI,
 
 | Параметр | Значение | Источник |
 |----------|----------|----------|
-| MainPanel | 900×600 | 18_InventoryUI.md §3 |
-| ContentArea | HorizontalLayout, spacing 15 | 18_InventoryUI.md §3.2 |
-| BodyDollPanel | 200px width | 18_InventoryUI.md §4 |
-| BackpackPanel | 450px width | 18_InventoryUI.md §5 |
-| Слот куклы | 180×40px | 18_InventoryUI.md §4.2 |
-| Ячейка сетки | 50×50px | 18_InventoryUI.md §5.2 |
-| Spacing ячеек | 2px | 18_InventoryUI.md §5.2 |
-| Стартовый рюкзак | 3×4 | INVENTORY_UI_DRAFT.md §3.3 |
-| Header | h=40px | Phase17 текущий код |
-| BeltPanel | h=50px | 18_InventoryUI.md §6 |
-| TabBar | h=35px | 18_InventoryUI.md §7 |
-| TooltipPanel | 250×300 | 18_InventoryUI.md §8 |
+| MainPanel | 900×600 | docs_asset_setup/18_InventoryUI.md §3 |
+| ContentArea | HorizontalLayout, spacing 15 | docs_asset_setup/18_InventoryUI.md §3.2 |
+| BodyDollPanel | 200px width | docs_asset_setup/18_InventoryUI.md §4 |
+| BackpackPanel | 450px width | docs_asset_setup/18_InventoryUI.md §5 |
+| Слот куклы | 180×40px | docs_asset_setup/18_InventoryUI.md §4.2 |
+| Ячейка сетки | 50×50px | docs_asset_setup/18_InventoryUI.md §5.2 |
+| Spacing ячеек | 2px | docs_asset_setup/18_InventoryUI.md §5.2 |
+| Стартовый рюкзак | 3×4 | docs_temp/INVENTORY_UI_DRAFT.md §3.3 |
+| Header | h=40px | docs_asset_setup/18_InventoryUI.md §3.1 |
+| BeltPanel | h=50px | docs_asset_setup/18_InventoryUI.md §6 |
+| TabBar | h=35px | docs_asset_setup/18_InventoryUI.md §7 |
+| TooltipPanel | 250×300 | docs_asset_setup/18_InventoryUI.md §8 |
+
+---
+
+## ПРЕДПОСЫЛКИ
+
+Этапы 0-2 из `docs_temp/INVENTORY_IMPLEMENTATION_PLAN.md` уже выполнены:
+- ✅ Этап 0: EquipmentSlot enum обновлён (Enums.cs), WeaponHandType добавлен, BackpackData SO создан
+- ✅ Этап 1: EquipmentController переписан (7 видимых слотов, 1H/2H)
+- ✅ Этап 2: InventoryController переписан (динамическая сетка от рюкзака)
+- Текущий план = Этап 3 UI (wiring Phase17)
 
 ---
 
 ## ИСТОРИЯ
 
 *Чекпоинт создан: 2026-04-25 12:52:20 UTC — план без кода*
+*Редактировано: 2026-04-25 15:57 MSK — 4 правки по аудиту: wiring-счёт 16→17, полный путь docs_asset_setup/, 2×2 предмет, предпосылки этапов 0-2*

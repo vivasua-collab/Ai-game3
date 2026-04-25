@@ -15,6 +15,10 @@
 // Редактировано: 2026-04-25 14:35:00 MSK — Добавлено создание внутренних
 //   элементов BackpackPanel, InventorySlotUI prefab, DragDropHandler wiring,
 //   TooltipPanel wiring. Все SerializeField ссылки подключены.
+// Редактировано: 2026-04-25 16:00:00 MSK — Добавлено создание внутренних
+//   элементов BodyDollPanel (DollSlotUI, иерархия слотов экипировки),
+//   методы CreateDollSlot, WireDollSlotReferences, WireBodyDollPanelReferences.
+//   Фон куклы обновлён per docs_asset_setup/18_InventoryUI.md §4.
 // ============================================================================
 
 #if UNITY_EDITOR
@@ -24,6 +28,7 @@ using UnityEngine.UI;
 using TMPro;
 using CultivationGame.UI;
 using CultivationGame.UI.Inventory;
+using CultivationGame.Core;
 
 namespace CultivationGame.Editor.SceneBuilder
 {
@@ -578,9 +583,131 @@ namespace CultivationGame.Editor.SceneBuilder
             dollRect.offsetMax = Vector2.zero;
 
             var dollImage = dollPanel.AddComponent<Image>();
-            dollImage.color = new Color(0.1f, 0.1f, 0.12f, 0.8f);
+            // Редактировано: 2026-04-25 16:00:00 MSK — цвет фона куклы per docs §4
+            dollImage.color = new Color(34f/255f, 34f/255f, 51f/255f, 1f);
 
             bodyDollPanelOut = dollPanel.AddComponent<BodyDollPanel>();
+
+            // --- Внутренние элементы BodyDollPanel ---
+            // Редактировано: 2026-04-25 16:00:00 MSK
+
+            // Заголовок «КУКЛА»
+            var titleTMP = SceneBuilderUtils.CreateTMPText(dollPanel, "TitleText", "КУКЛА",
+                new Vector2(0, 0), 14, FontStyles.Bold, new Color(0.85f, 0.8f, 0.7f));
+            var titleRect = titleTMP.GetComponent<RectTransform>();
+            titleRect.anchorMin = new Vector2(0f, 1f);
+            titleRect.anchorMax = new Vector2(1f, 1f);
+            titleRect.pivot = new Vector2(0.5f, 1f);
+            titleRect.anchoredPosition = new Vector2(0f, -4f);
+            titleRect.sizeDelta = new Vector2(0f, 22f);
+            titleTMP.alignment = TextAlignmentOptions.Center;
+
+            // Силуэт тела — плейсхолдер
+            GameObject silhouetteGO = new GameObject("BodySilhouette");
+            silhouetteGO.transform.SetParent(dollPanel.transform, false);
+            var silhouetteRect = silhouetteGO.AddComponent<RectTransform>();
+            silhouetteRect.anchorMin = new Vector2(0.5f, 1f);
+            silhouetteRect.anchorMax = new Vector2(0.5f, 1f);
+            silhouetteRect.pivot = new Vector2(0.5f, 1f);
+            silhouetteRect.anchoredPosition = new Vector2(0f, -26f);
+            silhouetteRect.sizeDelta = new Vector2(60f, 80f);
+            var bodySilhouette = silhouetteGO.AddComponent<Image>();
+            bodySilhouette.color = new Color(0.15f, 0.15f, 0.2f, 1f);
+            bodySilhouette.raycastTarget = false;
+
+            // 7 видимых слотов экипировки
+            var headSlot = CreateDollSlot(dollPanel, "Head", EquipmentSlot.Head, -30f);
+            var torsoSlot = CreateDollSlot(dollPanel, "Torso", EquipmentSlot.Torso, -70f);
+            var beltSlot = CreateDollSlot(dollPanel, "Belt", EquipmentSlot.Belt, -110f);
+            var legsSlot = CreateDollSlot(dollPanel, "Legs", EquipmentSlot.Legs, -150f);
+            var feetSlot = CreateDollSlot(dollPanel, "Feet", EquipmentSlot.Feet, -190f);
+            var weaponMainSlot = CreateDollSlot(dollPanel, "WeaponMain", EquipmentSlot.WeaponMain, -240f);
+            var weaponOffSlot = CreateDollSlot(dollPanel, "WeaponOff", EquipmentSlot.WeaponOff, -280f);
+
+            // 4 скрытых слота колец
+            var ringLeft1Slot = CreateDollSlot(dollPanel, "RingLeft1", EquipmentSlot.RingLeft1, 0f);
+            var ringLeft2Slot = CreateDollSlot(dollPanel, "RingLeft2", EquipmentSlot.RingLeft2, 0f);
+            var ringRight1Slot = CreateDollSlot(dollPanel, "RingRight1", EquipmentSlot.RingRight1, 0f);
+            var ringRight2Slot = CreateDollSlot(dollPanel, "RingRight2", EquipmentSlot.RingRight2, 0f);
+            ringLeft1Slot.gameObject.SetActive(false);
+            ringLeft2Slot.gameObject.SetActive(false);
+            ringRight1Slot.gameObject.SetActive(false);
+            ringRight2Slot.gameObject.SetActive(false);
+
+            // Панель статистики
+            GameObject statsPanelGO = new GameObject("StatsPanel");
+            statsPanelGO.transform.SetParent(dollPanel.transform, false);
+            var statsPanelRect = statsPanelGO.AddComponent<RectTransform>();
+            statsPanelRect.anchorMin = new Vector2(0f, 1f);
+            statsPanelRect.anchorMax = new Vector2(1f, 1f);
+            statsPanelRect.pivot = new Vector2(0f, 1f);
+            statsPanelRect.anchoredPosition = new Vector2(0f, -310f);
+            statsPanelRect.sizeDelta = new Vector2(0f, 70f);
+
+            var damageText = SceneBuilderUtils.CreateTMPText(statsPanelGO, "DamageText", "Урон: 0",
+                new Vector2(4f, -2f), 11, FontStyles.Normal, new Color(0.9f, 0.5f, 0.3f));
+            var damageRect = damageText.GetComponent<RectTransform>();
+            damageRect.anchorMin = new Vector2(0f, 1f);
+            damageRect.anchorMax = new Vector2(1f, 1f);
+            damageRect.pivot = new Vector2(0f, 1f);
+            damageRect.anchoredPosition = new Vector2(4f, -2f);
+            damageRect.sizeDelta = new Vector2(-8f, 16f);
+
+            var defenseText = SceneBuilderUtils.CreateTMPText(statsPanelGO, "DefenseText", "Защита: 0",
+                new Vector2(4f, -20f), 11, FontStyles.Normal, new Color(0.4f, 0.7f, 0.9f));
+            var defenseRect = defenseText.GetComponent<RectTransform>();
+            defenseRect.anchorMin = new Vector2(0f, 1f);
+            defenseRect.anchorMax = new Vector2(1f, 1f);
+            defenseRect.pivot = new Vector2(0f, 1f);
+            defenseRect.anchoredPosition = new Vector2(4f, -20f);
+            defenseRect.sizeDelta = new Vector2(-8f, 16f);
+
+            var statsSummaryText = SceneBuilderUtils.CreateTMPText(statsPanelGO, "StatsSummaryText", "",
+                new Vector2(4f, -38f), 10, FontStyles.Normal, new Color(0.7f, 0.7f, 0.7f));
+            var statsSummaryRect = statsSummaryText.GetComponent<RectTransform>();
+            statsSummaryRect.anchorMin = new Vector2(0f, 1f);
+            statsSummaryRect.anchorMax = new Vector2(1f, 1f);
+            statsSummaryRect.pivot = new Vector2(0f, 1f);
+            statsSummaryRect.anchoredPosition = new Vector2(4f, -38f);
+            statsSummaryRect.sizeDelta = new Vector2(-8f, 28f);
+
+            // Индикатор хранилища кольца (скрыт)
+            GameObject ringStorageIndicatorGO = new GameObject("RingStorageIndicator");
+            ringStorageIndicatorGO.transform.SetParent(dollPanel.transform, false);
+            var ringIndRect = ringStorageIndicatorGO.AddComponent<RectTransform>();
+            ringIndRect.anchorMin = new Vector2(0f, 1f);
+            ringIndRect.anchorMax = new Vector2(1f, 1f);
+            ringIndRect.pivot = new Vector2(0f, 1f);
+            ringIndRect.anchoredPosition = new Vector2(0f, -380f);
+            ringIndRect.sizeDelta = new Vector2(0f, 24f);
+            var ringIndBg = ringStorageIndicatorGO.AddComponent<Image>();
+            ringIndBg.color = new Color(0.15f, 0.12f, 0.2f, 0.8f);
+            ringIndBg.raycastTarget = false;
+
+            var ringVolumeText = SceneBuilderUtils.CreateTMPText(ringStorageIndicatorGO,
+                "RingVolumeText", "Объём: 0/0",
+                new Vector2(4f, 0f), 10, FontStyles.Normal, new Color(0.6f, 0.5f, 0.8f));
+            var ringVolRect = ringVolumeText.GetComponent<RectTransform>();
+            ringVolRect.anchorMin = new Vector2(0f, 0f);
+            ringVolRect.anchorMax = new Vector2(1f, 1f);
+            ringVolRect.pivot = new Vector2(0.5f, 0.5f);
+            ringVolRect.anchoredPosition = new Vector2(0f, 0f);
+            ringVolRect.sizeDelta = new Vector2(0f, 0f);
+            ringVolumeText.alignment = TextAlignmentOptions.Center;
+
+            ringStorageIndicatorGO.SetActive(false);
+
+            // --- Подключение SerializeField ссылок BodyDollPanel ---
+            WireBodyDollPanelReferences(
+                bodyDollPanelOut,
+                headSlot, torsoSlot, beltSlot, legsSlot, feetSlot,
+                weaponMainSlot, weaponOffSlot,
+                ringLeft1Slot, ringLeft2Slot, ringRight1Slot, ringRight2Slot,
+                ringStorageIndicatorGO, ringVolumeText,
+                damageText, defenseText, statsSummaryText,
+                bodySilhouette);
+
+            Debug.Log("[Phase17] BodyDollPanel внутренние элементы созданы и подключены (17 полей)");
 
             // BackpackPanel (правая часть)
             GameObject backpackPanel = new GameObject("BackpackPanel");
@@ -1141,6 +1268,209 @@ namespace CultivationGame.Editor.SceneBuilder
 
             Debug.Log("[Phase17] ContextMenuPrefab создан");
             return menuGO;
+        }
+
+        // ====================================================================
+        //  DollSlotUI — создание и подключение
+        // ====================================================================
+        // Редактировано: 2026-04-25 16:00:00 MSK
+
+        /// <summary>
+        /// Создаёт один DollSlotUI — слот экипировки на кукле.
+        /// Размер 180×40px, фон rgba(51,51,68,255), рамка rgba(68,68,68,255).
+        /// 7 дочерних объектов, 8 SerializeField ссылок подключаются через
+        /// WireDollSlotReferences.
+        /// </summary>
+        private DollSlotUI CreateDollSlot(GameObject parent, string slotName,
+            EquipmentSlot equipSlot, float yPos)
+        {
+            // Корневой объект слота
+            GameObject slotGO = new GameObject(slotName);
+            slotGO.transform.SetParent(parent.transform, false);
+            var slotRect = slotGO.AddComponent<RectTransform>();
+            slotRect.anchorMin = new Vector2(0f, 1f);
+            slotRect.anchorMax = new Vector2(1f, 1f);
+            slotRect.pivot = new Vector2(0f, 1f);
+            slotRect.anchoredPosition = new Vector2(0f, yPos);
+            slotRect.sizeDelta = new Vector2(0f, 40f); // Высота 40px, ширина тянется по родителю
+
+            // Фон слота — rgba(51, 51, 68, 255)
+            var bgImage = slotGO.AddComponent<Image>();
+            bgImage.color = new Color(51f / 255f, 51f / 255f, 68f / 255f, 1f);
+            bgImage.raycastTarget = true;
+
+            // Компонент DollSlotUI
+            var slotUI = slotGO.AddComponent<DollSlotUI>();
+
+            // --- 7 дочерних объектов ---
+
+            // 1. IconImage (правая сторона, скрыт по умолчанию) → iconImage
+            GameObject iconGO = new GameObject("IconImage");
+            iconGO.transform.SetParent(slotGO.transform, false);
+            var iconRect = iconGO.AddComponent<RectTransform>();
+            iconRect.anchorMin = new Vector2(1f, 0f);
+            iconRect.anchorMax = new Vector2(1f, 1f);
+            iconRect.pivot = new Vector2(1f, 0.5f);
+            iconRect.sizeDelta = new Vector2(36f, 36f);
+            iconRect.anchoredPosition = new Vector2(-2f, 0f);
+            var iconImage = iconGO.AddComponent<Image>();
+            iconImage.color = Color.white;
+            iconImage.raycastTarget = false;
+            iconGO.SetActive(false); // Скрыт по умолчанию
+
+            // 2. SlotBorder (полный размер поверх) → slotBorder
+            GameObject borderGO = new GameObject("SlotBorder");
+            borderGO.transform.SetParent(slotGO.transform, false);
+            var borderRect = borderGO.AddComponent<RectTransform>();
+            borderRect.anchorMin = Vector2.zero;
+            borderRect.anchorMax = Vector2.one;
+            borderRect.offsetMin = Vector2.zero;
+            borderRect.offsetMax = Vector2.zero;
+            var slotBorder = borderGO.AddComponent<Image>();
+            slotBorder.color = new Color(68f / 255f, 68f / 255f, 68f / 255f, 1f);
+            slotBorder.raycastTarget = false;
+
+            // 3. SlotLabel (левая сторона, название слота) → slotLabel
+            var slotLabel = SceneBuilderUtils.CreateTMPText(slotGO, "SlotLabel", slotName,
+                new Vector2(4f, 0f), 11, FontStyles.Bold, new Color(0.7f, 0.7f, 0.7f));
+            var slotLabelRect = slotLabel.GetComponent<RectTransform>();
+            slotLabelRect.anchorMin = new Vector2(0f, 0f);
+            slotLabelRect.anchorMax = new Vector2(0.4f, 1f);
+            slotLabelRect.pivot = new Vector2(0f, 0.5f);
+            slotLabelRect.anchoredPosition = new Vector2(4f, 0f);
+            slotLabelRect.sizeDelta = new Vector2(0f, 0f);
+            slotLabel.alignment = TextAlignmentOptions.Left;
+
+            // 4. ItemNameText (центр, пустой) → itemNameText
+            var itemNameText = SceneBuilderUtils.CreateTMPText(slotGO, "ItemNameText", "",
+                new Vector2(0f, 0f), 11, FontStyles.Normal, Color.white);
+            var itemNameRect = itemNameText.GetComponent<RectTransform>();
+            itemNameRect.anchorMin = new Vector2(0.4f, 0f);
+            itemNameRect.anchorMax = new Vector2(0.75f, 1f);
+            itemNameRect.pivot = new Vector2(0.5f, 0.5f);
+            itemNameRect.anchoredPosition = Vector2.zero;
+            itemNameRect.sizeDelta = Vector2.zero;
+            itemNameText.alignment = TextAlignmentOptions.Center;
+
+            // 5. DurabilityBar (нижняя часть, скрыта) → durabilityBar
+            GameObject durBarGO = new GameObject("DurabilityBar");
+            durBarGO.transform.SetParent(slotGO.transform, false);
+            var durBarRect = durBarGO.AddComponent<RectTransform>();
+            durBarRect.anchorMin = new Vector2(0f, 0f);
+            durBarRect.anchorMax = new Vector2(1f, 0f);
+            durBarRect.pivot = new Vector2(0f, 0f);
+            durBarRect.offsetMin = new Vector2(2f, 1f);
+            durBarRect.offsetMax = new Vector2(-2f, 4f);
+            var durabilityBar = durBarGO.AddComponent<Image>();
+            durabilityBar.color = new Color(0.3f, 0.9f, 0.3f, 0.9f);
+            durabilityBar.raycastTarget = false;
+            durBarGO.SetActive(false); // Скрыт по умолчанию
+
+            // 6. BlockedOverlay (полный размер, скрыт) → blockedOverlay
+            GameObject blockedGO = new GameObject("BlockedOverlay");
+            blockedGO.transform.SetParent(slotGO.transform, false);
+            var blockedRect = blockedGO.AddComponent<RectTransform>();
+            blockedRect.anchorMin = Vector2.zero;
+            blockedRect.anchorMax = Vector2.one;
+            blockedRect.offsetMin = Vector2.zero;
+            blockedRect.offsetMax = Vector2.zero;
+            var blockedImage = blockedGO.AddComponent<Image>();
+            blockedImage.color = new Color(0.3f, 0.3f, 0.3f, 0.6f);
+            blockedImage.raycastTarget = false;
+            blockedGO.SetActive(false); // Скрыт по умолчанию
+
+            // 7. EmptyIcon (центр, видимый) → emptyIcon
+            GameObject emptyIconGO = new GameObject("EmptyIcon");
+            emptyIconGO.transform.SetParent(slotGO.transform, false);
+            var emptyIconRect = emptyIconGO.AddComponent<RectTransform>();
+            emptyIconRect.anchorMin = new Vector2(0.5f, 0.5f);
+            emptyIconRect.anchorMax = new Vector2(0.5f, 0.5f);
+            emptyIconRect.pivot = new Vector2(0.5f, 0.5f);
+            emptyIconRect.sizeDelta = new Vector2(24f, 24f);
+            emptyIconRect.anchoredPosition = Vector2.zero;
+
+            // --- Подключение 8 SerializeField ссылок ---
+            WireDollSlotReferences(slotUI, iconImage, slotBorder, slotLabel,
+                itemNameText, durabilityBar, blockedGO, emptyIconGO, equipSlot);
+
+            Debug.Log($"[Phase17] DollSlotUI создан: {slotName} ({equipSlot})");
+            return slotUI;
+        }
+
+        /// <summary>
+        /// Подключает все 8 SerializeField ссылок DollSlotUI через SerializedObject.
+        /// </summary>
+        private void WireDollSlotReferences(DollSlotUI slotUI,
+            Image iconImage, Image slotBorder, TMP_Text slotLabel,
+            TMP_Text itemNameText, Image durabilityBar,
+            GameObject blockedOverlay, GameObject emptyIcon,
+            EquipmentSlot slotType)
+        {
+            // Редактировано: 2026-04-25 16:00:00 MSK
+            SerializedObject so = new SerializedObject(slotUI);
+
+            so.FindProperty("iconImage").objectReferenceValue = iconImage;
+            so.FindProperty("slotBorder").objectReferenceValue = slotBorder;
+            so.FindProperty("slotLabel").objectReferenceValue = slotLabel;
+            so.FindProperty("itemNameText").objectReferenceValue = itemNameText;
+            so.FindProperty("durabilityBar").objectReferenceValue = durabilityBar;
+            so.FindProperty("blockedOverlay").objectReferenceValue = blockedOverlay;
+            so.FindProperty("emptyIcon").objectReferenceValue = emptyIcon;
+            so.FindProperty("slotType").intValue = (int)slotType;
+
+            so.ApplyModifiedProperties();
+        }
+
+        /// <summary>
+        /// Подключает все 17 SerializeField ссылок BodyDollPanel через SerializedObject.
+        /// Поля: 11 слотов DollSlotUI, ringStorageIndicator, ringVolumeText,
+        /// damageText, defenseText, statsSummaryText, bodySilhouette.
+        /// </summary>
+        private void WireBodyDollPanelReferences(
+            BodyDollPanel panel,
+            DollSlotUI headSlot, DollSlotUI torsoSlot, DollSlotUI beltSlot,
+            DollSlotUI legsSlot, DollSlotUI feetSlot,
+            DollSlotUI weaponMainSlot, DollSlotUI weaponOffSlot,
+            DollSlotUI ringLeft1Slot, DollSlotUI ringLeft2Slot,
+            DollSlotUI ringRight1Slot, DollSlotUI ringRight2Slot,
+            GameObject ringStorageIndicator, TMP_Text ringVolumeText,
+            TMP_Text damageText, TMP_Text defenseText, TMP_Text statsSummaryText,
+            Image bodySilhouette)
+        {
+            // Редактировано: 2026-04-25 16:00:00 MSK
+            SerializedObject so = new SerializedObject(panel);
+
+            // 1-5: видимые слоты экипировки
+            so.FindProperty("headSlot").objectReferenceValue = headSlot;
+            so.FindProperty("torsoSlot").objectReferenceValue = torsoSlot;
+            so.FindProperty("beltSlot").objectReferenceValue = beltSlot;
+            so.FindProperty("legsSlot").objectReferenceValue = legsSlot;
+            so.FindProperty("feetSlot").objectReferenceValue = feetSlot;
+
+            // 6-7: оружейные слоты
+            so.FindProperty("weaponMainSlot").objectReferenceValue = weaponMainSlot;
+            so.FindProperty("weaponOffSlot").objectReferenceValue = weaponOffSlot;
+
+            // 8-11: скрытые слоты колец
+            so.FindProperty("ringLeft1Slot").objectReferenceValue = ringLeft1Slot;
+            so.FindProperty("ringLeft2Slot").objectReferenceValue = ringLeft2Slot;
+            so.FindProperty("ringRight1Slot").objectReferenceValue = ringRight1Slot;
+            so.FindProperty("ringRight2Slot").objectReferenceValue = ringRight2Slot;
+
+            // 12-13: индикатор хранилища кольца
+            so.FindProperty("ringStorageIndicator").objectReferenceValue = ringStorageIndicator;
+            so.FindProperty("ringVolumeText").objectReferenceValue = ringVolumeText;
+
+            // 14-16: тексты статистики
+            so.FindProperty("damageText").objectReferenceValue = damageText;
+            so.FindProperty("defenseText").objectReferenceValue = defenseText;
+            so.FindProperty("statsSummaryText").objectReferenceValue = statsSummaryText;
+
+            // 17: силуэт тела
+            so.FindProperty("bodySilhouette").objectReferenceValue = bodySilhouette;
+
+            so.ApplyModifiedProperties();
+            Debug.Log("[Phase17] BodyDollPanel SerializeField ссылки подключены (17 полей)");
         }
 
         private void CreateContextMenu(GameObject parent)
