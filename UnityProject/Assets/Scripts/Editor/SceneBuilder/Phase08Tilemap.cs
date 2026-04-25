@@ -3,6 +3,9 @@
 // Cultivation World Simulator
 // ============================================================================
 // Объединяет: Phase 08 (FullSceneBuilder) + PATCH-002, PATCH-005, PATCH-006, PATCH-007
+// Редактировано: 2026-04-25 14:32:00 MSK — FIX: Sprite-Unlit-Default на TilemapRenderer
+//   Без явного материала TilemapRenderer наследует Sprite-Lit-Default от Renderer2D,
+//   который рендерит ЧЁРНЫМ без Light2D. Unlit не требует Light2D.
 // ============================================================================
 
 #if UNITY_EDITOR
@@ -52,6 +55,8 @@ namespace CultivationGame.Editor.SceneBuilder
             terrainRenderer.sortingLayerName = "Terrain"; // PATCH-002
             terrainRenderer.sortingOrder = 0;
             terrainRenderer.mode = TilemapRenderer.Mode.Chunk;
+            // FIX: Sprite-Unlit-Default — не требует Light2D, рендерит корректно
+            AssignUnlitMaterial(terrainRenderer);
             // PATCH-007: НЕ добавляем TilemapCollider2D на Terrain
 
             // Objects Tilemap
@@ -62,6 +67,8 @@ namespace CultivationGame.Editor.SceneBuilder
             objectRenderer.sortingLayerName = "Objects"; // PATCH-002
             objectRenderer.sortingOrder = 0;
             objectRenderer.mode = TilemapRenderer.Mode.Chunk;
+            // FIX: Sprite-Unlit-Default — не требует Light2D, рендерит корректно
+            AssignUnlitMaterial(objectRenderer);
             objectsObj.AddComponent<TilemapCollider2D>();
 
             // TileMapController
@@ -127,6 +134,12 @@ namespace CultivationGame.Editor.SceneBuilder
                 }
             }
 
+            // PATCH-008: Sprite-Unlit-Default на существующих TilemapRenderer
+            foreach (var r in renderers)
+            {
+                AssignUnlitMaterial(r);
+            }
+
             // PATCH-006: Grid cellSize
             var grid = Object.FindFirstObjectByType<Grid>();
             if (grid != null && (grid.cellSize != new Vector3(2f, 2f, 1f) || grid.cellGap != Vector3.zero))
@@ -162,6 +175,36 @@ namespace CultivationGame.Editor.SceneBuilder
                     hso.FindProperty("tileMapController").objectReferenceValue = tileController;
                 hso.ApplyModifiedProperties();
                 Debug.Log("[Phase08] PATCH-005: HarvestableSpawner добавлен");
+            }
+        }
+
+        /// <summary>
+        /// Назначает Sprite-Unlit-Default материал на TilemapRenderer.
+        /// Без этого TilemapRenderer наследует Sprite-Lit-Default от Renderer2D,
+        /// который рендерит ЧЁРНЫМ без Light2D в сцене.
+        /// Редактировано: 2026-04-25 14:32:00 MSK
+        /// </summary>
+        private static void AssignUnlitMaterial(TilemapRenderer renderer)
+        {
+            if (renderer == null) return;
+
+            // Проверяем — уже Unlit?
+            if (renderer.sharedMaterial != null &&
+                renderer.sharedMaterial.shader != null &&
+                renderer.sharedMaterial.shader.name.Contains("Unlit"))
+            {
+                return; // Уже Unlit — пропускаем
+            }
+
+            Shader unlitShader = Shader.Find("Universal Render Pipeline/2D/Sprite-Unlit-Default");
+            if (unlitShader != null)
+            {
+                renderer.material = new Material(unlitShader);
+                Debug.Log($"[Phase08] PATCH-008: Sprite-Unlit-Default назначен на \"{renderer.gameObject.name}\"");
+            }
+            else
+            {
+                Debug.LogWarning($"[Phase08] PATCH-008: Sprite-Unlit-Default shader НЕ НАЙДЕН для \"{renderer.gameObject.name}\"");
             }
         }
     }

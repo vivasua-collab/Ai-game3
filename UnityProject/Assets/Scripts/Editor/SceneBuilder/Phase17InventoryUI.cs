@@ -12,15 +12,16 @@
 //
 // Зависимости: Phase07UI (Canvas + UIManager), Phase16InventoryData (ассеты)
 //
-// Редактировано: 2026-04-25 10:30:00 UTC — FIX: Подключение InventoryScreen
-//   к UIManager (inventoryPanel + inventoryScreen ссылки). Без этого клавиша I
-//   не отображает инвентарь. Также подключены внутренние ссылки InventoryScreen.
+// Редактировано: 2026-04-25 14:35:00 MSK — Добавлено создание внутренних
+//   элементов BackpackPanel, InventorySlotUI prefab, DragDropHandler wiring,
+//   TooltipPanel wiring. Все SerializeField ссылки подключены.
 // ============================================================================
 
 #if UNITY_EDITOR
 using UnityEngine;
 using UnityEditor;
 using UnityEngine.UI;
+using TMPro;
 using CultivationGame.UI;
 using CultivationGame.UI.Inventory;
 
@@ -91,11 +92,11 @@ namespace CultivationGame.Editor.SceneBuilder
             // Tab bar — получаем ссылки на кнопки вкладок
             CreateTabBar(mainPanel, out var backpackTab, out var spiritStorageTab, out var storageRingTab);
 
-            // Tooltip panel
+            // Tooltip panel — создаём внутренние элементы и подключаем ссылки
             CreateTooltipPanel(inventoryScreenGO, out var tooltipPanel);
 
-            // DragDrop layer
-            CreateDragDropLayer(inventoryScreenGO, out var dragDropHandler);
+            // DragDrop layer — создаём внутренние элементы и подключаем ссылки
+            CreateDragDropLayer(inventoryScreenGO, out var dragDropHandler, tooltipPanel);
 
             // Context menu
             CreateContextMenu(inventoryScreenGO);
@@ -117,7 +118,7 @@ namespace CultivationGame.Editor.SceneBuilder
         }
 
         // ====================================================================
-        //  Wiring
+        //  Wiring — InventoryScreen
         // ====================================================================
 
         private void WireInventoryScreenReferences(
@@ -181,6 +182,253 @@ namespace CultivationGame.Editor.SceneBuilder
             so.ApplyModifiedProperties();
 
             Debug.Log("[Phase17] UIManager.inventoryPanel + inventoryScreen подключены");
+        }
+
+        // ====================================================================
+        //  Wiring — BackpackPanel
+        // ====================================================================
+
+        /// <summary>
+        /// Подключает все SerializeField ссылки BackpackPanel через SerializedObject.
+        /// </summary>
+        private void WireBackpackPanelReferences(
+            BackpackPanel panel,
+            GameObject slotUIPrefab,
+            Transform gridContainer,
+            RectTransform gridBackground,
+            TMP_Text backpackNameText,
+            TMP_Text weightText,
+            Slider weightBar,
+            TMP_Text slotsText)
+        {
+            SerializedObject so = new SerializedObject(panel);
+
+            so.FindProperty("slotUIPrefab").objectReferenceValue = slotUIPrefab;
+            so.FindProperty("gridContainer").objectReferenceValue = gridContainer;
+            so.FindProperty("gridBackground").objectReferenceValue = gridBackground;
+            so.FindProperty("backpackNameText").objectReferenceValue = backpackNameText;
+            so.FindProperty("weightText").objectReferenceValue = weightText;
+            so.FindProperty("weightBar").objectReferenceValue = weightBar;
+            so.FindProperty("slotsText").objectReferenceValue = slotsText;
+
+            so.ApplyModifiedProperties();
+            Debug.Log("[Phase17] BackpackPanel SerializeField ссылки подключены (7 полей)");
+        }
+
+        // ====================================================================
+        //  Wiring — DragDropHandler
+        // ====================================================================
+
+        /// <summary>
+        /// Подключает все SerializeField ссылки DragDropHandler через SerializedObject.
+        /// </summary>
+        private void WireDragDropHandlerReferences(
+            DragDropHandler handler,
+            Image dragIcon,
+            RectTransform dragTransform,
+            GameObject contextMenuPrefab,
+            Transform contextMenuContainer,
+            TooltipPanel tooltipPanel)
+        {
+            SerializedObject so = new SerializedObject(handler);
+
+            so.FindProperty("dragIcon").objectReferenceValue = dragIcon;
+            so.FindProperty("dragTransform").objectReferenceValue = dragTransform;
+            so.FindProperty("contextMenuPrefab").objectReferenceValue = contextMenuPrefab;
+            so.FindProperty("contextMenuContainer").objectReferenceValue = contextMenuContainer;
+            so.FindProperty("tooltipPanel").objectReferenceValue = tooltipPanel;
+
+            so.ApplyModifiedProperties();
+            Debug.Log("[Phase17] DragDropHandler SerializeField ссылки подключены (5 полей)");
+        }
+
+        // ====================================================================
+        //  Wiring — TooltipPanel
+        // ====================================================================
+
+        /// <summary>
+        /// Подключает все SerializeField ссылки TooltipPanel через SerializedObject.
+        /// </summary>
+        private void WireTooltipPanelReferences(
+            TooltipPanel panel,
+            Image rarityBorder,
+            TMP_Text nameText,
+            TMP_Text rarityText,
+            TMP_Text typeText,
+            GameObject combatSection,
+            TMP_Text damageText,
+            TMP_Text defenseText,
+            TMP_Text coverageText,
+            TMP_Text damageReductionText,
+            TMP_Text dodgeBonusText,
+            GameObject physicalSection,
+            TMP_Text weightText,
+            TMP_Text volumeText,
+            TMP_Text nestingText,
+            TMP_Text durabilityText,
+            GameObject bonusesSection,
+            TMP_Text bonusesText,
+            GameObject materialSection,
+            TMP_Text materialText,
+            TMP_Text gradeText,
+            GameObject requirementsSection,
+            TMP_Text requirementsText,
+            TMP_Text descriptionText,
+            TMP_Text valueText)
+        {
+            SerializedObject so = new SerializedObject(panel);
+
+            // Заголовок
+            so.FindProperty("rarityBorder").objectReferenceValue = rarityBorder;
+            so.FindProperty("nameText").objectReferenceValue = nameText;
+            so.FindProperty("rarityText").objectReferenceValue = rarityText;
+            so.FindProperty("typeText").objectReferenceValue = typeText;
+
+            // Боевой раздел
+            so.FindProperty("combatSection").objectReferenceValue = combatSection;
+            so.FindProperty("damageText").objectReferenceValue = damageText;
+            so.FindProperty("defenseText").objectReferenceValue = defenseText;
+            so.FindProperty("coverageText").objectReferenceValue = coverageText;
+            so.FindProperty("damageReductionText").objectReferenceValue = damageReductionText;
+            so.FindProperty("dodgeBonusText").objectReferenceValue = dodgeBonusText;
+
+            // Физический раздел
+            so.FindProperty("physicalSection").objectReferenceValue = physicalSection;
+            so.FindProperty("weightText").objectReferenceValue = weightText;
+            so.FindProperty("volumeText").objectReferenceValue = volumeText;
+            so.FindProperty("nestingText").objectReferenceValue = nestingText;
+            so.FindProperty("durabilityText").objectReferenceValue = durabilityText;
+
+            // Бонусы
+            so.FindProperty("bonusesSection").objectReferenceValue = bonusesSection;
+            so.FindProperty("bonusesText").objectReferenceValue = bonusesText;
+
+            // Материал / Грейд
+            so.FindProperty("materialSection").objectReferenceValue = materialSection;
+            so.FindProperty("materialText").objectReferenceValue = materialText;
+            so.FindProperty("gradeText").objectReferenceValue = gradeText;
+
+            // Требования
+            so.FindProperty("requirementsSection").objectReferenceValue = requirementsSection;
+            so.FindProperty("requirementsText").objectReferenceValue = requirementsText;
+
+            // Описание
+            so.FindProperty("descriptionText").objectReferenceValue = descriptionText;
+
+            // Стоимость
+            so.FindProperty("valueText").objectReferenceValue = valueText;
+
+            so.ApplyModifiedProperties();
+            Debug.Log("[Phase17] TooltipPanel SerializeField ссылки подключены (24 поля)");
+        }
+
+        // ====================================================================
+        //  SlotUI Prefab Creation
+        // ====================================================================
+
+        /// <summary>
+        /// Создаёт префаб InventorySlotUI — шаблон для Instantiate в BackpackPanel.
+        /// Префаб НЕАКТИВЕН (шаблон для Instantiate).
+        /// </summary>
+        private GameObject CreateSlotUIPrefab()
+        {
+            // Корневой объект — SlotUIPrefab
+            GameObject slotGO = new GameObject("SlotUIPrefab");
+            var slotRect = slotGO.AddComponent<RectTransform>();
+            slotRect.anchorMin = new Vector2(0f, 1f);
+            slotRect.anchorMax = new Vector2(0f, 1f);
+            slotRect.pivot = new Vector2(0f, 1f);
+            slotRect.sizeDelta = new Vector2(50f, 50f);
+
+            // Фон (background) — тёмно-синий
+            var bgImage = slotGO.AddComponent<Image>();
+            bgImage.color = new Color(0.1f, 0.1f, 0.18f, 0.8f);
+            bgImage.raycastTarget = true;
+
+            // Компонент InventorySlotUI
+            var slotUI = slotGO.AddComponent<InventorySlotUI>();
+
+            // --- Дочерние объекты для каждого SerializeField ---
+
+            // Icon (иконка предмета) → iconImage
+            GameObject iconGO = new GameObject("Icon");
+            iconGO.transform.SetParent(slotGO.transform, false);
+            var iconRect = iconGO.AddComponent<RectTransform>();
+            iconRect.anchorMin = Vector2.zero;
+            iconRect.anchorMax = Vector2.one;
+            iconRect.offsetMin = new Vector2(4, 4);
+            iconRect.offsetMax = new Vector2(-4, -4);
+            var iconImage = iconGO.AddComponent<Image>();
+            iconImage.color = Color.white;
+            iconImage.raycastTarget = false;
+
+            // Border (рамка по редкости) → border
+            GameObject borderGO = new GameObject("Border");
+            borderGO.transform.SetParent(slotGO.transform, false);
+            var borderRect = borderGO.AddComponent<RectTransform>();
+            borderRect.anchorMin = Vector2.zero;
+            borderRect.anchorMax = Vector2.one;
+            borderRect.offsetMin = Vector2.zero;
+            borderRect.offsetMax = Vector2.zero;
+            var borderImage = borderGO.AddComponent<Image>();
+            borderImage.color = new Color(0.5f, 0.5f, 0.5f, 0.5f); // Серая рамка
+            borderImage.raycastTarget = false;
+
+            // CountText (количество в стаке) → countText
+            var countTMP = SceneBuilderUtils.CreateTMPText(slotGO, "CountText", "",
+                new Vector2(25, -2), 12, FontStyles.Bold, Color.white);
+            // Переопределяем привязку — правый нижний угол
+            var countRect = countTMP.GetComponent<RectTransform>();
+            countRect.anchorMin = new Vector2(1f, 0f);
+            countRect.anchorMax = new Vector2(1f, 0f);
+            countRect.pivot = new Vector2(1f, 0f);
+            countRect.anchoredPosition = new Vector2(-3, 2);
+            countRect.sizeDelta = new Vector2(30, 16);
+            countTMP.alignment = TextAlignmentOptions.BottomRight;
+
+            // DurabilityBar (полоска прочности) → durabilityBar
+            GameObject durBarGO = new GameObject("DurabilityBar");
+            durBarGO.transform.SetParent(slotGO.transform, false);
+            var durBarRect = durBarGO.AddComponent<RectTransform>();
+            durBarRect.anchorMin = new Vector2(0f, 0f);
+            durBarRect.anchorMax = new Vector2(1f, 0f);
+            durBarRect.pivot = new Vector2(0f, 0f);
+            durBarRect.offsetMin = new Vector2(3, 2);
+            durBarRect.offsetMax = new Vector2(-3, 5);
+            var durBarImage = durBarGO.AddComponent<Image>();
+            durBarImage.color = new Color(0.3f, 0.9f, 0.3f, 0.9f); // Зелёная полоска
+            durBarImage.raycastTarget = false;
+
+            // BlockedOverlay (блокировка слота) → blockedOverlay
+            GameObject blockedGO = new GameObject("BlockedOverlay");
+            blockedGO.transform.SetParent(slotGO.transform, false);
+            var blockedRect = blockedGO.AddComponent<RectTransform>();
+            blockedRect.anchorMin = Vector2.zero;
+            blockedRect.anchorMax = Vector2.one;
+            blockedRect.offsetMin = Vector2.zero;
+            blockedRect.offsetMax = Vector2.zero;
+            var blockedImage = blockedGO.AddComponent<Image>();
+            blockedImage.color = new Color(0.3f, 0.3f, 0.3f, 0.6f); // Полупрозрачный серый
+            blockedImage.raycastTarget = false;
+            blockedGO.SetActive(false);
+
+            // --- Подключение SerializeField ссылок InventorySlotUI ---
+            SerializedObject so = new SerializedObject(slotUI);
+
+            so.FindProperty("iconImage").objectReferenceValue = iconImage;
+            so.FindProperty("background").objectReferenceValue = bgImage;
+            so.FindProperty("border").objectReferenceValue = borderImage;
+            so.FindProperty("countText").objectReferenceValue = countTMP;
+            so.FindProperty("durabilityBar").objectReferenceValue = durBarImage;
+            so.FindProperty("blockedOverlay").objectReferenceValue = blockedGO;
+
+            so.ApplyModifiedProperties();
+
+            // Префаб НЕАКТИВЕН — шаблон для Instantiate
+            slotGO.SetActive(false);
+
+            Debug.Log("[Phase17] SlotUIPrefab создан (InventorySlotUI + 6 дочерних элементов)");
+            return slotGO;
         }
 
         // ====================================================================
@@ -348,6 +596,98 @@ namespace CultivationGame.Editor.SceneBuilder
 
             backpackPanelOut = backpackPanel.AddComponent<BackpackPanel>();
 
+            // --- Внутренние элементы BackpackPanel ---
+
+            // GridBackground — фон сетки
+            GameObject gridBgGO = new GameObject("GridBackground");
+            gridBgGO.transform.SetParent(backpackPanel.transform, false);
+            var gridBgRect = gridBgGO.AddComponent<RectTransform>();
+            gridBgRect.anchorMin = new Vector2(0f, 0f);
+            gridBgRect.anchorMax = new Vector2(1f, 1f);
+            gridBgRect.offsetMin = new Vector2(8, 35);
+            gridBgRect.offsetMax = new Vector2(-8, -30);
+            var gridBgImage = gridBgGO.AddComponent<Image>();
+            gridBgImage.color = new Color(0.08f, 0.08f, 0.1f, 0.5f);
+
+            // GridContainer — контейнер для ячеек
+            GameObject gridContGO = new GameObject("GridContainer");
+            gridContGO.transform.SetParent(gridBgGO.transform, false);
+            var gridContRect = gridContGO.AddComponent<RectTransform>();
+            gridContRect.anchorMin = new Vector2(0f, 1f);
+            gridContRect.anchorMax = new Vector2(1f, 1f);
+            gridContRect.pivot = new Vector2(0f, 1f);
+            gridContRect.offsetMin = new Vector2(8, -8);
+            gridContRect.offsetMax = new Vector2(-8, -8);
+            gridContRect.sizeDelta = new Vector2(0f, 0f);
+
+            // BackpackNameText — название рюкзака
+            var bpNameText = SceneBuilderUtils.CreateTMPText(backpackPanel, "BackpackNameText",
+                "Тканевая сумка",
+                new Vector2(10, -5), 14, FontStyles.Bold,
+                new Color(0.85f, 0.8f, 0.7f));
+            var bpNameRect = bpNameText.GetComponent<RectTransform>();
+            bpNameRect.anchorMin = new Vector2(0f, 1f);
+            bpNameRect.anchorMax = new Vector2(0.6f, 1f);
+            bpNameRect.pivot = new Vector2(0f, 1f);
+            bpNameRect.anchoredPosition = new Vector2(10, -5);
+            bpNameRect.sizeDelta = new Vector2(200f, 20f);
+
+            // WeightText — текущий / максимальный вес
+            var weightTMP = SceneBuilderUtils.CreateTMPText(backpackPanel, "WeightText",
+                "0.0 / 10.0 кг",
+                new Vector2(0, -5), 12, FontStyles.Normal,
+                Color.white);
+            var weightTMPRect = weightTMP.GetComponent<RectTransform>();
+            weightTMPRect.anchorMin = new Vector2(0.6f, 1f);
+            weightTMPRect.anchorMax = new Vector2(1f, 1f);
+            weightTMPRect.pivot = new Vector2(1f, 1f);
+            weightTMPRect.anchoredPosition = new Vector2(-10, -5);
+            weightTMPRect.sizeDelta = new Vector2(150f, 18f);
+            weightTMP.alignment = TextAlignmentOptions.Right;
+
+            // WeightBar — полоска веса
+            var weightBarSlider = SceneBuilderUtils.CreateBar(backpackPanel, "WeightBar",
+                new Vector2(10, -25), 200f, 8f,
+                new Color(0.3f, 0.7f, 0.3f, 0.9f));
+            var weightBarRect = weightBarSlider.GetComponent<RectTransform>();
+            weightBarRect.anchorMin = new Vector2(0f, 1f);
+            weightBarRect.anchorMax = new Vector2(1f, 1f);
+            weightBarRect.pivot = new Vector2(0f, 1f);
+            weightBarRect.anchoredPosition = new Vector2(10, -25);
+            weightBarRect.sizeDelta = new Vector2(-20, 8f);
+            weightBarSlider.maxValue = 10f;
+            weightBarSlider.value = 0f;
+
+            // SlotsText — занято / всего слотов
+            var slotsTMP = SceneBuilderUtils.CreateTMPText(backpackPanel, "SlotsText",
+                "0/12",
+                new Vector2(0, -25), 11, FontStyles.Normal,
+                new Color(0.7f, 0.7f, 0.7f));
+            var slotsTMPRect = slotsTMP.GetComponent<RectTransform>();
+            slotsTMPRect.anchorMin = new Vector2(1f, 1f);
+            slotsTMPRect.anchorMax = new Vector2(1f, 1f);
+            slotsTMPRect.pivot = new Vector2(1f, 1f);
+            slotsTMPRect.anchoredPosition = new Vector2(-10, -25);
+            slotsTMPRect.sizeDelta = new Vector2(60f, 14f);
+            slotsTMP.alignment = TextAlignmentOptions.Right;
+
+            // SlotUIPrefab — шаблон для ячеек
+            GameObject slotPrefab = CreateSlotUIPrefab();
+            slotPrefab.transform.SetParent(backpackPanel.transform, false);
+
+            // --- Подключение SerializeField ссылок BackpackPanel ---
+            WireBackpackPanelReferences(
+                backpackPanelOut,
+                slotPrefab,
+                gridContGO.transform,
+                gridBgRect,
+                bpNameText,
+                weightTMP,
+                weightBarSlider,
+                slotsTMP);
+
+            Debug.Log("[Phase17] BackpackPanel внутренние элементы созданы и подключены");
+
             // StorageRingPanel (скрыта по умолчанию, показывается при выборе вкладки)
             GameObject ringPanel = new GameObject("StorageRingPanel");
             ringPanel.transform.SetParent(content.transform, false);
@@ -462,6 +802,10 @@ namespace CultivationGame.Editor.SceneBuilder
             labelText.alignment = TextAnchor.MiddleCenter;
         }
 
+        // ====================================================================
+        //  TooltipPanel — создание внутренних элементов + подключение
+        // ====================================================================
+
         private void CreateTooltipPanel(GameObject parent, out TooltipPanel tooltipPanelOut)
         {
             tooltipPanelOut = null;
@@ -479,10 +823,241 @@ namespace CultivationGame.Editor.SceneBuilder
             image.color = new Color(0.1f, 0.1f, 0.12f, 0.95f);
 
             tooltipPanelOut = tooltip.AddComponent<TooltipPanel>();
+
+            // --- Внутренние элементы TooltipPanel ---
+
+            // Рамка редкости — rarityBorder
+            GameObject rarityBorderGO = new GameObject("RarityBorder");
+            rarityBorderGO.transform.SetParent(tooltip.transform, false);
+            var rarityBorderRect = rarityBorderGO.AddComponent<RectTransform>();
+            rarityBorderRect.anchorMin = Vector2.zero;
+            rarityBorderRect.anchorMax = Vector2.one;
+            rarityBorderRect.offsetMin = Vector2.zero;
+            rarityBorderRect.offsetMax = Vector2.zero;
+            var rarityBorderImage = rarityBorderGO.AddComponent<Image>();
+            rarityBorderImage.color = Color.gray;
+            rarityBorderImage.raycastTarget = false;
+
+            // Внутренний контент с отступом от рамки
+            GameObject contentGO = new GameObject("Content");
+            contentGO.transform.SetParent(tooltip.transform, false);
+            var contentRect = contentGO.AddComponent<RectTransform>();
+            contentRect.anchorMin = Vector2.zero;
+            contentRect.anchorMax = Vector2.one;
+            contentRect.offsetMin = new Vector2(6, 6);
+            contentRect.offsetMax = new Vector2(-6, -6);
+
+            float yPos = 0f; // Текущая позиция по Y (от верхнего края)
+
+            // Название предмета — nameText
+            var nameTMP = SceneBuilderUtils.CreateTMPText(contentGO, "NameText", "",
+                new Vector2(0, yPos), 16, FontStyles.Bold, Color.white);
+            var nameR = nameTMP.GetComponent<RectTransform>();
+            nameR.anchorMin = new Vector2(0f, 1f);
+            nameR.anchorMax = new Vector2(1f, 1f);
+            nameR.pivot = new Vector2(0f, 1f);
+            nameR.anchoredPosition = new Vector2(0, yPos);
+            nameR.sizeDelta = new Vector2(0f, 22f);
+            yPos -= 22f;
+
+            // Редкость — rarityText
+            var rarityTMP = SceneBuilderUtils.CreateTMPText(contentGO, "RarityText", "",
+                new Vector2(0, yPos), 12, FontStyles.Normal, Color.gray);
+            var rarityR = rarityTMP.GetComponent<RectTransform>();
+            rarityR.anchorMin = new Vector2(0f, 1f);
+            rarityR.anchorMax = new Vector2(0.5f, 1f);
+            rarityR.pivot = new Vector2(0f, 1f);
+            rarityR.anchoredPosition = new Vector2(0, yPos);
+            rarityR.sizeDelta = new Vector2(0f, 16f);
+            yPos -= 16f;
+
+            // Тип — typeText
+            var typeTMP = SceneBuilderUtils.CreateTMPText(contentGO, "TypeText", "",
+                new Vector2(0, yPos), 12, FontStyles.Normal, new Color(0.7f, 0.7f, 0.7f));
+            var typeR = typeTMP.GetComponent<RectTransform>();
+            typeR.anchorMin = new Vector2(0.5f, 1f);
+            typeR.anchorMax = new Vector2(1f, 1f);
+            typeR.pivot = new Vector2(1f, 1f);
+            typeR.anchoredPosition = new Vector2(0, yPos);
+            typeR.sizeDelta = new Vector2(0f, 16f);
+            typeTMP.alignment = TextAlignmentOptions.Right;
+            yPos -= 20f;
+
+            // --- Боевой раздел (CombatSection) ---
+            GameObject combatSectionGO = new GameObject("CombatSection");
+            combatSectionGO.transform.SetParent(contentGO.transform, false);
+            var combatSectionRect = combatSectionGO.AddComponent<RectTransform>();
+            combatSectionRect.anchorMin = new Vector2(0f, 1f);
+            combatSectionRect.anchorMax = new Vector2(1f, 1f);
+            combatSectionRect.pivot = new Vector2(0f, 1f);
+            combatSectionRect.anchoredPosition = new Vector2(0, yPos);
+            combatSectionRect.sizeDelta = new Vector2(0f, 50f);
+            yPos -= 50f;
+
+            var damageTMP = SceneBuilderUtils.CreateTMPText(combatSectionGO, "DamageText", "",
+                new Vector2(5, 0), 12, FontStyles.Normal, new Color(1f, 0.5f, 0.3f));
+            damageTMP.GetComponent<RectTransform>().sizeDelta = new Vector2(220f, 16f);
+
+            var defenseTMP = SceneBuilderUtils.CreateTMPText(combatSectionGO, "DefenseText", "",
+                new Vector2(5, -16), 12, FontStyles.Normal, new Color(0.3f, 0.6f, 1f));
+            defenseTMP.GetComponent<RectTransform>().sizeDelta = new Vector2(220f, 16f);
+
+            var coverageTMP = SceneBuilderUtils.CreateTMPText(combatSectionGO, "CoverageText", "",
+                new Vector2(5, -32), 12, FontStyles.Normal, new Color(0.6f, 0.6f, 0.8f));
+            coverageTMP.GetComponent<RectTransform>().sizeDelta = new Vector2(220f, 16f);
+
+            var dmgRedTMP = SceneBuilderUtils.CreateTMPText(combatSectionGO, "DamageReductionText", "",
+                new Vector2(120, 0), 11, FontStyles.Normal, new Color(0.7f, 0.5f, 0.8f));
+            dmgRedTMP.GetComponent<RectTransform>().sizeDelta = new Vector2(110f, 14f);
+
+            var dodgeTMP = SceneBuilderUtils.CreateTMPText(combatSectionGO, "DodgeBonusText", "",
+                new Vector2(120, -16), 11, FontStyles.Normal, new Color(0.5f, 0.8f, 0.5f));
+            dodgeTMP.GetComponent<RectTransform>().sizeDelta = new Vector2(110f, 14f);
+
+            combatSectionGO.SetActive(false);
+
+            // --- Физический раздел (PhysicalSection) ---
+            GameObject physicalSectionGO = new GameObject("PhysicalSection");
+            physicalSectionGO.transform.SetParent(contentGO.transform, false);
+            var physicalSectionRect = physicalSectionGO.AddComponent<RectTransform>();
+            physicalSectionRect.anchorMin = new Vector2(0f, 1f);
+            physicalSectionRect.anchorMax = new Vector2(1f, 1f);
+            physicalSectionRect.pivot = new Vector2(0f, 1f);
+            physicalSectionRect.anchoredPosition = new Vector2(0, yPos);
+            physicalSectionRect.sizeDelta = new Vector2(0f, 60f);
+            yPos -= 60f;
+
+            var physWeightTMP = SceneBuilderUtils.CreateTMPText(physicalSectionGO, "WeightText", "",
+                new Vector2(5, 0), 12, FontStyles.Normal, Color.white);
+            physWeightTMP.GetComponent<RectTransform>().sizeDelta = new Vector2(220f, 16f);
+
+            var volumeTMP = SceneBuilderUtils.CreateTMPText(physicalSectionGO, "VolumeText", "",
+                new Vector2(5, -16), 12, FontStyles.Normal, Color.white);
+            volumeTMP.GetComponent<RectTransform>().sizeDelta = new Vector2(220f, 16f);
+
+            var nestingTMP = SceneBuilderUtils.CreateTMPText(physicalSectionGO, "NestingText", "",
+                new Vector2(5, -32), 12, FontStyles.Normal, Color.white);
+            nestingTMP.GetComponent<RectTransform>().sizeDelta = new Vector2(220f, 16f);
+
+            var durTMP = SceneBuilderUtils.CreateTMPText(physicalSectionGO, "DurabilityText", "",
+                new Vector2(5, -48), 12, FontStyles.Normal, Color.white);
+            durTMP.GetComponent<RectTransform>().sizeDelta = new Vector2(220f, 16f);
+
+            // --- Раздел бонусов (BonusesSection) ---
+            GameObject bonusesSectionGO = new GameObject("BonusesSection");
+            bonusesSectionGO.transform.SetParent(contentGO.transform, false);
+            var bonusesSectionRect = bonusesSectionGO.AddComponent<RectTransform>();
+            bonusesSectionRect.anchorMin = new Vector2(0f, 1f);
+            bonusesSectionRect.anchorMax = new Vector2(1f, 1f);
+            bonusesSectionRect.pivot = new Vector2(0f, 1f);
+            bonusesSectionRect.anchoredPosition = new Vector2(0, yPos);
+            bonusesSectionRect.sizeDelta = new Vector2(0f, 40f);
+            yPos -= 40f;
+
+            var bonusesTMP = SceneBuilderUtils.CreateTMPText(bonusesSectionGO, "BonusesText", "",
+                new Vector2(5, 0), 11, FontStyles.Normal, new Color(0.9f, 0.85f, 0.5f));
+            bonusesTMP.GetComponent<RectTransform>().sizeDelta = new Vector2(220f, 36f);
+
+            bonusesSectionGO.SetActive(false);
+
+            // --- Раздел материала (MaterialSection) ---
+            GameObject materialSectionGO = new GameObject("MaterialSection");
+            materialSectionGO.transform.SetParent(contentGO.transform, false);
+            var materialSectionRect = materialSectionGO.AddComponent<RectTransform>();
+            materialSectionRect.anchorMin = new Vector2(0f, 1f);
+            materialSectionRect.anchorMax = new Vector2(1f, 1f);
+            materialSectionRect.pivot = new Vector2(0f, 1f);
+            materialSectionRect.anchoredPosition = new Vector2(0, yPos);
+            materialSectionRect.sizeDelta = new Vector2(0f, 30f);
+            yPos -= 30f;
+
+            var materialTMP = SceneBuilderUtils.CreateTMPText(materialSectionGO, "MaterialText", "",
+                new Vector2(5, 0), 12, FontStyles.Normal, new Color(0.7f, 0.65f, 0.5f));
+            materialTMP.GetComponent<RectTransform>().sizeDelta = new Vector2(120f, 16f);
+
+            var gradeTMP = SceneBuilderUtils.CreateTMPText(materialSectionGO, "GradeText", "",
+                new Vector2(130, 0), 12, FontStyles.Normal, new Color(0.8f, 0.7f, 0.4f));
+            gradeTMP.GetComponent<RectTransform>().sizeDelta = new Vector2(100f, 16f);
+
+            materialSectionGO.SetActive(false);
+
+            // --- Раздел требований (RequirementsSection) ---
+            GameObject requirementsSectionGO = new GameObject("RequirementsSection");
+            requirementsSectionGO.transform.SetParent(contentGO.transform, false);
+            var reqSectionRect = requirementsSectionGO.AddComponent<RectTransform>();
+            reqSectionRect.anchorMin = new Vector2(0f, 1f);
+            reqSectionRect.anchorMax = new Vector2(1f, 1f);
+            reqSectionRect.pivot = new Vector2(0f, 1f);
+            reqSectionRect.anchoredPosition = new Vector2(0, yPos);
+            reqSectionRect.sizeDelta = new Vector2(0f, 30f);
+            yPos -= 30f;
+
+            var requirementsTMP = SceneBuilderUtils.CreateTMPText(requirementsSectionGO, "RequirementsText", "",
+                new Vector2(5, 0), 11, FontStyles.Normal, new Color(0.9f, 0.5f, 0.3f));
+            requirementsTMP.GetComponent<RectTransform>().sizeDelta = new Vector2(220f, 26f);
+
+            requirementsSectionGO.SetActive(false);
+
+            // --- Описание (DescriptionText) ---
+            var descTMP = SceneBuilderUtils.CreateTMPText(contentGO, "DescriptionText", "",
+                new Vector2(5, yPos), 11, FontStyles.Italic, new Color(0.65f, 0.65f, 0.65f));
+            var descR = descTMP.GetComponent<RectTransform>();
+            descR.anchorMin = new Vector2(0f, 1f);
+            descR.anchorMax = new Vector2(1f, 1f);
+            descR.pivot = new Vector2(0f, 1f);
+            descR.anchoredPosition = new Vector2(5, yPos);
+            descR.sizeDelta = new Vector2(-10f, 40f);
+            yPos -= 40f;
+
+            // --- Стоимость (ValueText) ---
+            var valueTMP = SceneBuilderUtils.CreateTMPText(contentGO, "ValueText", "",
+                new Vector2(5, yPos), 12, FontStyles.Bold, new Color(0.9f, 0.8f, 0.3f));
+            var valueR = valueTMP.GetComponent<RectTransform>();
+            valueR.anchorMin = new Vector2(0f, 1f);
+            valueR.anchorMax = new Vector2(1f, 1f);
+            valueR.pivot = new Vector2(0f, 1f);
+            valueR.anchoredPosition = new Vector2(5, yPos);
+            valueR.sizeDelta = new Vector2(-10f, 18f);
+
+            // --- Подключение SerializeField ссылок TooltipPanel ---
+            WireTooltipPanelReferences(
+                tooltipPanelOut,
+                rarityBorderImage,
+                nameTMP,
+                rarityTMP,
+                typeTMP,
+                combatSectionGO,
+                damageTMP,
+                defenseTMP,
+                coverageTMP,
+                dmgRedTMP,
+                dodgeTMP,
+                physicalSectionGO,
+                physWeightTMP,
+                volumeTMP,
+                nestingTMP,
+                durTMP,
+                bonusesSectionGO,
+                bonusesTMP,
+                materialSectionGO,
+                materialTMP,
+                gradeTMP,
+                requirementsSectionGO,
+                requirementsTMP,
+                descTMP,
+                valueTMP);
+
             tooltip.SetActive(false);
+            Debug.Log("[Phase17] TooltipPanel внутренние элементы созданы и подключены");
         }
 
-        private void CreateDragDropLayer(GameObject parent, out DragDropHandler dragDropOut)
+        // ====================================================================
+        //  DragDropLayer — создание внутренних элементов + подключение
+        // ====================================================================
+
+        private void CreateDragDropLayer(GameObject parent,
+            out DragDropHandler dragDropOut,
+            TooltipPanel tooltipPanel)
         {
             dragDropOut = null;
 
@@ -496,6 +1071,76 @@ namespace CultivationGame.Editor.SceneBuilder
             rect.offsetMax = Vector2.zero;
 
             dragDropOut = dragLayer.AddComponent<DragDropHandler>();
+
+            // --- DragIcon — иконка перетаскиваемого предмета ---
+            GameObject dragIconGO = new GameObject("DragIcon");
+            dragIconGO.transform.SetParent(dragLayer.transform, false);
+            var dragIconRect = dragIconGO.AddComponent<RectTransform>();
+            dragIconRect.anchorMin = new Vector2(0.5f, 0.5f);
+            dragIconRect.anchorMax = new Vector2(0.5f, 0.5f);
+            dragIconRect.pivot = new Vector2(0.5f, 0.5f);
+            dragIconRect.sizeDelta = new Vector2(50f, 50f);
+            var dragIconImage = dragIconGO.AddComponent<Image>();
+            dragIconImage.color = Color.white;
+            dragIconImage.raycastTarget = false;
+            dragIconGO.SetActive(false); // Скрыта по умолчанию
+
+            // --- ContextMenuPrefab — шаблон контекстного меню ---
+            GameObject contextMenuPrefab = CreateContextMenuPrefab();
+            contextMenuPrefab.transform.SetParent(dragLayer.transform, false);
+
+            // --- ContextMenuContainer — контейнер для экземпляров контекстного меню ---
+            GameObject contextMenuContGO = new GameObject("ContextMenuContainer");
+            contextMenuContGO.transform.SetParent(dragLayer.transform, false);
+            var cmContRect = contextMenuContGO.AddComponent<RectTransform>();
+            cmContRect.anchorMin = Vector2.zero;
+            cmContRect.anchorMax = Vector2.one;
+            cmContRect.offsetMin = Vector2.zero;
+            cmContRect.offsetMax = Vector2.zero;
+
+            // --- Подключение SerializeField ссылок DragDropHandler ---
+            WireDragDropHandlerReferences(
+                dragDropOut,
+                dragIconImage,
+                dragIconRect,
+                contextMenuPrefab,
+                contextMenuContGO.transform,
+                tooltipPanel);
+
+            Debug.Log("[Phase17] DragDropHandler внутренние элементы созданы и подключены");
+        }
+
+        /// <summary>
+        /// Создаёт шаблон контекстного меню для DragDropHandler.contextMenuPrefab.
+        /// </summary>
+        private GameObject CreateContextMenuPrefab()
+        {
+            // Корневой объект — ContextMenuPrefab
+            GameObject menuGO = new GameObject("ContextMenuPrefab");
+            var menuRect = menuGO.AddComponent<RectTransform>();
+            menuRect.anchorMin = new Vector2(0.5f, 0.5f);
+            menuRect.anchorMax = new Vector2(0.5f, 0.5f);
+            menuRect.pivot = new Vector2(0f, 1f);
+            menuRect.sizeDelta = new Vector2(160f, 120f);
+
+            // Фон
+            var bgImage = menuGO.AddComponent<Image>();
+            bgImage.color = new Color(0.1f, 0.1f, 0.12f, 0.95f);
+
+            // Контейнер для пунктов меню
+            GameObject itemsContainer = new GameObject("ItemsContainer");
+            itemsContainer.transform.SetParent(menuGO.transform, false);
+            var itemsRect = itemsContainer.AddComponent<RectTransform>();
+            itemsRect.anchorMin = Vector2.zero;
+            itemsRect.anchorMax = Vector2.one;
+            itemsRect.offsetMin = new Vector2(4, 4);
+            itemsRect.offsetMax = new Vector2(-4, -4);
+
+            // Префаб НЕАКТИВЕН
+            menuGO.SetActive(false);
+
+            Debug.Log("[Phase17] ContextMenuPrefab создан");
+            return menuGO;
         }
 
         private void CreateContextMenu(GameObject parent)

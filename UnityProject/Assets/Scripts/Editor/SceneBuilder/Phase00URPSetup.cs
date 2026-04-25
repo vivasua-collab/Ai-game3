@@ -80,14 +80,17 @@ namespace CultivationGame.Editor.SceneBuilder
             // Создаём через ScriptableObject (Reflection не нужен — тип в прямой ссылке)
             var rendererData = ScriptableObject.CreateInstance<Renderer2DData>();
 
-            // Настройки по умолчанию (совпадают с существующим Renderer2D.asset)
-            // m_DefaultMaterialType = 0 (Lit) — чтобы Light2D работал
+            // Настройки по умолчанию
+            // Редактировано: 2026-04-25 14:33:00 MSK — m_DefaultMaterialType = 1 (Unlit)
+            // Причина: Lit default рендерит ЧЁРНЫМ без Light2D в сцене.
+            // Unlit не требует Light2D — спрайты видны сразу.
+            // Если Light2D будет добавлен позже — переключить обратно на 0 (Lit).
             var rendererSo = new SerializedObject(rendererData);
 
             // m_DefaultMaterialType: 0 = Lit, 1 = Unlit, 2 = Custom
             var defaultMatTypeProp = rendererSo.FindProperty("m_DefaultMaterialType");
             if (defaultMatTypeProp != null)
-                defaultMatTypeProp.intValue = 0; // Lit — Light2D будет освещать спрайты
+                defaultMatTypeProp.intValue = 1; // Unlit — не требует Light2D
 
             // m_HDREmulationScale
             var hdrProp = rendererSo.FindProperty("m_HDREmulationScale");

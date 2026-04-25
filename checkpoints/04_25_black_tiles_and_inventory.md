@@ -1,5 +1,5 @@
 # Чекпоинт: Детальный анализ — чёрные тайлы + UnassignedReferenceException в инвентаре
-# Дата: 2026-04-26
+# Дата: 2026-04-25 14:31:57 MSK
 # Статус: analysis_complete — план исправлений утверждён
 
 ## Симптомы (от пользователя)
@@ -301,4 +301,28 @@ private void WireBackpackPanelReferences(BackpackPanel panel, ...)
 
 ## ИСТОРИЯ ИСПРАВЛЕНИЙ
 
-(Пока нет — исправления начинаются после утверждения плана)
+### 2026-04-25 14:35:00 MSK — Исправления по плану
+
+**Исправление #1**: Phase08Tilemap.cs — Sprite-Unlit-Default на TilemapRenderer
+- **Причина**: TilemapRenderer без явного материала наследует Sprite-Lit-Default → рендерит ЧЁРНЫМ без Light2D
+- **Что изменено**: Добавлен метод `AssignUnlitMaterial()` — назначает Sprite-Unlit-Default на каждый TilemapRenderer. Вызывается при создании новых tilemap и в `ApplyPatchesToExisting()`
+- **Что может сломаться**: Тайлы не реагируют на 2D свет, но системы освещения пока нет — не проблема
+
+**Исправление #2**: Phase00URPSetup.cs — m_DefaultMaterialType = 1 (Unlit)
+- **Причина**: Lit default рендерит ЧЁРНЫМ без Light2D — все SpriteRenderer без явного материала чёрные
+- **Что изменено**: `defaultMatTypeProp.intValue = 0` → `1` (Unlit)
+- **Что может сломаться**: Новые SpriteRenderer без материала будут Unlit — но Phase08 даёт явный материал
+
+**Исправление #3**: BackpackPanel.cs — null guard в PlaceItemInGrid
+- **Причина**: `Instantiate(slotUIPrefab, gridContainer)` → crash когда slotUIPrefab=null
+- **Что изменено**: Добавлена проверка `if (slotUIPrefab == null || gridContainer == null) return;`
+- **Что может сломаться**: Предметы не отобразятся вместо crash — лучше чем crash
+
+**Исправление #4**: Phase17InventoryUI.cs — Полная wiring инвентаря
+- **Причина**: Phase17 создавал панели как пустые оболочки — ни одна SerializeField ссылка не создавалась
+- **Что изменено**:
+  - `CreateSlotUIPrefab()` — создаёт InventorySlotUI + 6 дочерних элементов + wires 6 ссылок
+  - `CreateContentArea()` — BackpackPanel internals: GridBackground, GridContainer, BackpackNameText, WeightText, WeightBar, SlotsText, SlotUIPrefab + `WireBackpackPanelReferences()` (7 полей)
+  - `CreateDragDropLayer()` — DragIcon, ContextMenuPrefab, ContextMenuContainer + `WireDragDropHandlerReferences()` (5 полей)
+  - `CreateTooltipPanel()` — RarityBorder, NameText, RarityText, TypeText, CombatSection, PhysicalSection, BonusesSection, MaterialSection, RequirementsSection, DescriptionText, ValueText + `WireTooltipPanelReferences()` (24 поля)
+- **Что может сломаться**: Визуальные баги если иерархия не совпадает с ожиданиями InventorySlotUI

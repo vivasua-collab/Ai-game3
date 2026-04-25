@@ -197,6 +197,8 @@ namespace CultivationGame.UI.Inventory
         private void PlaceItemInGrid(InventorySlot slot)
         {
             if (slot == null || slot.ItemData == null) return;
+            // Редактировано: 2026-04-25 14:34:00 MSK — null guard: предотвращает crash
+            if (slotUIPrefab == null || gridContainer == null) return;
 
             // Создаём визуальный слот для предмета
             var itemGO = Instantiate(slotUIPrefab, gridContainer);
