@@ -177,6 +177,30 @@ SpiritStorageController/StorageRingController на Player.
 4. ШАГ 6 — Диагностика
 5. Тест на локальном ПК: удалить Assets → Build All → Play
 
+## ИСТОРИЯ ИСПРАВЛЕНИЙ
+
+### 2026-04-26: Fix Phase00URPSetup.cs — ошибки компиляции
+
+**Проблема**: Phase00URPSetup.cs не компилируется — 5 ошибок CS0103 + CS0136 + CS0200.
+
+**Исправление #1**: CS0103 — `GraphicsSettings` не найден
+- **Причина**: Отсутствует `using UnityEngine.Rendering;` — `GraphicsSettings` живёт в этом namespace
+- **Что изменено**: Добавлен `using UnityEngine.Rendering;`
+- **Что может сломаться**: Конфликт имён с `CultivationGame.Core.GraphicsSettings` — но они в разных namespace, конфликт НЕТ
+
+**Исправление #2**: CS0136 — Переменные `so` и `rendererListProp` конфликтуют
+- **Причина**: Переменные объявлены в блоке `if (existing != null)` и затем повторно в теле того же метода — C# запрещает одинаковые имена во вложенных областях видимости
+- **Что изменено**: Переименованы: `so` → `existingSo`/`urpSo`/`rendererSo`, `rendererListProp` → `existingRendererList`/`urpRendererList`
+- **Что может сломаться**: Ничего — чисто косметическое переименование, логика не затронута
+
+**Исправление #3**: CS0200 — `GraphicsSettings.currentRenderPipeline` read-only
+- **Причина**: В Unity 6.3 свойство `currentRenderPipeline` доступно только для чтения, прямое присвоение невозможно
+- **Что изменено**: Назначение URP через `SerializedObject` на `ProjectSettings/GraphicsSettings.asset`, свойство `m_CustomRenderPipeline`
+- **Предыдущая ошибочная попытка**: Заменил `currentRenderPipeline` на `customRenderPipeline` — НЕТ такого свойства, получил CS0117
+- **Что может сломаться**: Если `m_CustomRenderPipeline` не найден в GraphicsSettings.asset → в логе будет ошибка с инструкцией назначить вручную. Чтение `currentRenderPipeline` (строка 42, 208) работает корректно — свойство read-only, не write-only.
+
+---
+
 ## Чеклист проверки на локальном ПК
 1. Удалить папку Assets локально
 2. Выполнить Build All (Tools > Full Scene Builder > Build All)

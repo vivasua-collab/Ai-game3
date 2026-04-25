@@ -11,8 +11,9 @@
 // Создано: 2026-04-25 13:45:00 UTC
 // Редактировано: 2026-04-26 — FIX: CS0103 GraphicsSettings + CS0136 variable conflicts
 //   - Добавлен using UnityEngine.Rendering (GraphicsSettings находится там)
-//   - currentRenderPipeline — правильное свойство (customRenderPipeline не существует)
+//   - currentRenderPipeline — read-only в Unity 6.3, назначение через SerializedObject
 //   - Переименованы конфликтующие переменные so/rendererListProp
+//   - FIX-v2: GraphicsSettings.currentRenderPipeline read-only → SerializedObject подход
 // ============================================================================
 
 #if UNITY_EDITOR
@@ -190,7 +191,10 @@ namespace CultivationGame.Editor.SceneBuilder
         /// Назначить UniversalRenderPipelineAsset как текущий Render Pipeline.
         /// Без этого Unity использует Built-in renderer.
         ///
-        /// Unity 6.3: currentRenderPipeline — актуальное свойство GraphicsSettings.
+        /// Unity 6.3: GraphicsSettings.currentRenderPipeline — READ-ONLY,
+        /// прямое присвоение невозможно (CS0200).
+        /// Единственный способ — SerializedObject на GraphicsSettings.asset.
+        /// Свойство в сериализации: m_CustomRenderPipeline.
         /// </summary>
         private void AssignToGraphicsSettings(UniversalRenderPipelineAsset urpAsset)
         {
@@ -200,15 +204,53 @@ namespace CultivationGame.Editor.SceneBuilder
                 return;
             }
 
-            // Прямое назначение через currentRenderPipeline
+            // Проверяем через read-only свойство (чтение доступно)
             if (GraphicsSettings.currentRenderPipeline == urpAsset)
             {
                 Debug.Log("[Phase00] GraphicsSettings уже назначен");
                 return;
             }
 
-            GraphicsSettings.currentRenderPipeline = urpAsset;
-            Debug.Log($"[Phase00] ✅ GraphicsSettings.currentRenderPipeline назначен: {urpAsset.name}");
+            // Unity 6.3: currentRenderPipeline read-only → назначаем через SerializedObject
+            // GraphicsSettings хранится как ProjectSettings/GraphicsSettings.asset
+            const string graphicsSettingsPath = "ProjectSettings/GraphicsSettings.asset";
+            var allAssets = AssetDatabase.LoadAllAssetsAtPath(graphicsSettingsPath);
+
+            bool assigned = false;
+            foreach (var asset in allAssets)
+            {
+                // Ищем именно UnityEngine.Rendering.GraphicsSettings
+                if (asset.GetType().Name != "GraphicsSettings") continue;
+
+                var so = new SerializedObject(asset);
+                var rpProp = so.FindProperty("m_CustomRenderPipeline");
+                if (rpProp == null)
+                {
+                    Debug.LogWarning("[Phase00] m_CustomRenderPipeline property не найден в GraphicsSettings.asset");
+                    continue;
+                }
+
+                if (rpProp.objectReferenceValue == urpAsset)
+                {
+                    Debug.Log("[Phase00] GraphicsSettings уже назначен (через SerializedObject)");
+                    assigned = true;
+                    break;
+                }
+
+                rpProp.objectReferenceValue = urpAsset;
+                so.ApplyModifiedProperties();
+                Debug.Log($"[Phase00] ✅ GraphicsSettings.m_CustomRenderPipeline назначен: {urpAsset.name} (через SerializedObject)");
+                assigned = true;
+                break;
+            }
+
+            if (!assigned)
+            {
+                Debug.LogError(
+                    "[Phase00] ❌ Не удалось назначить URP в GraphicsSettings! " +
+                    "GraphicsSettings.asset не найден или m_CustomRenderPipeline недоступен. " +
+                    "Назначьте вручную: Edit > Project Settings > Graphics > Scriptable Render Pipeline Settings");
+            }
 
             // Также проверить QualitySettings
             int qualityLevel = QualitySettings.GetQualityLevel();
