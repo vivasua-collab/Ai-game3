@@ -3,7 +3,7 @@
 // Cultivation World Simulator
 // ============================================================================
 // Создано: 2026-04-18 20:00:00 UTC
-// Редактировано: 2026-04-20 06:50:00 UTC — FIX CS0618, CS0414
+// Редактировано: 2026-04-25 10:38:00 UTC — FIX: Убрана двойная обработка I, UIManager.Instance
 // ============================================================================
 // Объединяет все панели инвентаря в один экран:
 // - BodyDollPanel (7 видимых слотов экипировки)
@@ -326,20 +326,15 @@ namespace CultivationGame.UI.Inventory
             if (Keyboard.current.escapeKey.wasPressedThisFrame)
             {
                 Close();
-                // Уведомляем UIManager
-                var uiManager = FindFirstObjectByType<CultivationGame.UI.UIManager>();
-                if (uiManager != null)
-                    uiManager.ReturnToPrevious();
+                // Уведомляем UIManager через singleton (FIX: был FindFirstObjectByType)
+                if (UIManager.Instance != null)
+                    UIManager.Instance.ReturnToPrevious();
             }
 
-            // I — закрыть инвентарь
-            if (Keyboard.current.iKey.wasPressedThisFrame)
-            {
-                Close();
-                var uiManager = FindFirstObjectByType<CultivationGame.UI.UIManager>();
-                if (uiManager != null)
-                    uiManager.ToggleInventory();
-            }
+            // Редактировано: 2026-04-25 — FIX: Убрана обработка клавиши I из InventoryScreen.
+            // UIManager — единственный обработчик переключения инвентаря.
+            // Раньше InventoryScreen тоже обрабатывал I → Close() + ToggleInventory(),
+            // что вызывало двойной toggle и конфликт SetActive.
         }
 
         #endregion

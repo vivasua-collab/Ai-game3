@@ -1,10 +1,10 @@
 // ============================================================================
 // GameInitializer.cs — Инициализация игры при старте
 // Cultivation World Simulator
-// Версия: 1.1 — Исправлены проблемы с event subscriptions
+// Версия: 1.2 — FIX: синхронизация UIManager state при инициализации
 // ============================================================================
 // Создан: 2026-04-01 13:03:39 UTC
-// Редактировано: 2026-04-13 12:05:15 UTC — FIX: WaitForSeconds→WaitForSecondsRealtime (timeScale deadlock)
+// Редактировано: 2026-04-25 10:35:00 UTC — FIX: UIManager.currentState синхронизируется с GameManager
 //
 // ИЗМЕНЕНИЯ В ВЕРСИИ 1.1:
 // - FIX: Lambda handlers заменены на named methods
@@ -226,6 +226,16 @@ namespace CultivationGame.Managers
             if (GameManager.Instance != null)
             {
                 GameManager.Instance.SetState(GameState.Playing);
+            }
+
+            // Редактировано: 2026-04-25 — FIX: Синхронизируем UIManager.currentState
+            // GameInitializer ставит GameManager в Playing, но UIManager.currentState
+            // остаётся MainMenu (из ForceInitialSync). Без этого клавиша I не работает.
+            var uiManager = CultivationGame.UI.UIManager.Instance;
+            if (uiManager != null && uiManager.CurrentState != GameState.Playing)
+            {
+                uiManager.StartNewGame();
+                Log("[GameInitializer] UIManager синхронизирован → Playing");
             }
         }
         

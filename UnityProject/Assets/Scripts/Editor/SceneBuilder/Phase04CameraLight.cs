@@ -3,6 +3,7 @@
 // Cultivation World Simulator
 // ============================================================================
 // Объединяет: Phase 04 (FullSceneBuilder) + PATCH-004, PATCH-009, PATCH-010
+// Редактировано: 2026-04-25 10:20:00 UTC — FIX: GlobalLight2D reflection fallback для Unity 6.3
 // ============================================================================
 
 #if UNITY_EDITOR
@@ -93,33 +94,70 @@ namespace CultivationGame.Editor.SceneBuilder
         /// <summary>
         /// PATCH-004: Global Light2D для URP 2D Renderer.
         /// Без Light2D все спрайты рендерятся как чёрные при Sprite-Lit-Default.
+        ///
+        /// Редактировано: 2026-04-25 — Добавлен fallback поиска типа Light2D
+        /// в разных сборках Unity (2022.3 vs 6.x).
         /// </summary>
         private void ExecuteGlobalLight2D()
         {
             var light2DObj = GameObject.Find("GlobalLight2D");
-            if (light2DObj == null)
-            {
-                light2DObj = new GameObject("GlobalLight2D");
-                var light2DType = System.Type.GetType("UnityEngine.Rendering.Universal.Light2D, Unity.2D.RenderPipeline.Runtime");
-                if (light2DType != null)
-                {
-                    var light2D = light2DObj.AddComponent(light2DType);
-                    var lightTypeProp = light2DType.GetProperty("lightType");
-                    if (lightTypeProp != null) lightTypeProp.SetValue(light2D, 1);
-                    var intensityProp = light2DType.GetProperty("intensity");
-                    if (intensityProp != null) intensityProp.SetValue(light2D, 1f);
-                    var colorProp = light2DType.GetProperty("color");
-                    if (colorProp != null) colorProp.SetValue(light2D, Color.white);
+            if (light2DObj != null) return; // Уже существует
 
-                    Undo.RegisterCreatedObjectUndo(light2DObj, "Create Global Light2D");
-                    Debug.Log("[Phase04] Global Light2D создан");
-                }
-                else
-                {
-                    Object.DestroyImmediate(light2DObj);
-                    Debug.LogWarning("[Phase04] Light2D тип не найден через Reflection");
-                }
+            light2DObj = new GameObject("GlobalLight2D");
+
+            // Пробуем несколько имён сборок — в разных версиях Unity тип Light2D
+            // находится в разных сборках:
+            //   Unity 2022.3: Unity.2D.RenderPipeline.Runtime
+            //   Unity 6.x:    Unity.RenderPipeline.Universal.2D.Runtime
+            //   Fallback:     поиск по имени во всех загруженных сборках
+            var light2DType = System.Type.GetType(
+                    "UnityEngine.Rendering.Universal.Light2D, Unity.2D.RenderPipeline.Runtime")
+                ?? System.Type.GetType(
+                    "UnityEngine.Rendering.Universal.Light2D, Unity.RenderPipeline.Universal.2D.Runtime")
+                ?? FindTypeByName("UnityEngine.Rendering.Universal.Light2D");
+
+            if (light2DType != null)
+            {
+                var light2D = light2DObj.AddComponent(light2DType);
+
+                // lightType = Global (1)
+                var lightTypeProp = light2DType.GetProperty("lightType")
+                                ?? light2DType.GetProperty("m_LightType");
+                if (lightTypeProp != null) lightTypeProp.SetValue(light2D, 1);
+
+                var intensityProp = light2DType.GetProperty("intensity")
+                                ?? light2DType.GetProperty("m_Intensity");
+                if (intensityProp != null) intensityProp.SetValue(light2D, 1f);
+
+                var colorProp = light2DType.GetProperty("color")
+                            ?? light2DType.GetProperty("m_Color");
+                if (colorProp != null) colorProp.SetValue(light2D, Color.white);
+
+                Undo.RegisterCreatedObjectUndo(light2DObj, "Create Global Light2D");
+                Debug.Log($"[Phase04] ✅ Global Light2D создан (сборка: {light2DType.Assembly.GetName().Name})");
             }
+            else
+            {
+                Object.DestroyImmediate(light2DObj);
+                Debug.LogError(
+                    "[Phase04] ❌ Light2D тип НЕ НАЙДЕН ни в одной сборке! " +
+                    "Установите пакет com.unity.render-pipelines.universal и убедитесь, " +
+                    "что 2D Renderer включён в URP Asset. " +
+                    "Без Light2D спрайты будут чёрными при Sprite-Lit-Default.");
+            }
+        }
+
+        /// <summary>
+        /// Поиск типа по fullname во всех загруженных сборках (fallback).
+        /// </summary>
+        private static System.Type FindTypeByName(string fullName)
+        {
+            foreach (var assembly in System.AppDomain.CurrentDomain.GetAssemblies())
+            {
+                var type = assembly.GetType(fullName);
+                if (type != null) return type;
+            }
+            return null;
         }
 
         private void ExecuteDiagnostics()
