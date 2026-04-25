@@ -4,6 +4,8 @@
 // ============================================================================
 // Редактировано: 2026-04-25 10:25:00 UTC — FIX: Добавлен UIManager, MenuUI,
 //   подключение SerializedField ссылок. Без UIManager клавиша I не работает.
+// Редактировано: 2026-04-25 14:00:00 UTC — FIX: Подключение HUDController
+//   SerializeField ссылок + MenuUI оставшиеся ссылки
 // ============================================================================
 
 #if UNITY_EDITOR
@@ -11,6 +13,7 @@ using UnityEngine;
 using UnityEditor;
 using UnityEngine.UI;
 using CultivationGame.UI;
+using CultivationGame.World;
 
 namespace CultivationGame.Editor.SceneBuilder
 {
@@ -68,7 +71,7 @@ namespace CultivationGame.Editor.SceneBuilder
             }
 
             // HUD Panel
-            GameObject hud = CreateHUDPanel(canvasGO);
+            GameObject hud = CreateHUDPanel(canvasGO, out var hudController);
 
             // MainMenu Panel (скрыта по умолчанию)
             GameObject mainMenu = CreateMainMenuPanel(canvasGO);
@@ -79,6 +82,9 @@ namespace CultivationGame.Editor.SceneBuilder
             // Подключаем SerializedField ссылки UIManager
             WireUIManagerReferences(uiManager, canvas, hud, mainMenu, pauseMenu);
 
+            // Подключаем SerializedField ссылки HUDController
+            WireHUDControllerReferences(hud, hudController);
+
             Undo.RegisterCreatedObjectUndo(canvasGO, "Create GameUI");
             Debug.Log("[Phase07] ✅ UI создан: Canvas + UIManager + HUD + MainMenu + PauseMenu");
         }
@@ -87,7 +93,7 @@ namespace CultivationGame.Editor.SceneBuilder
         //  HUD Panel
         // ====================================================================
 
-        private GameObject CreateHUDPanel(GameObject canvas)
+        private GameObject CreateHUDPanel(GameObject canvas, out HUDController outHudController)
         {
             GameObject hud = new GameObject("HUD");
             hud.transform.SetParent(canvas.transform, false);
@@ -97,28 +103,47 @@ namespace CultivationGame.Editor.SceneBuilder
             hudRect.anchorMax = new Vector2(0, 1);
             hudRect.pivot = new Vector2(0, 1);
             hudRect.anchoredPosition = new Vector2(10, -10);
-            hudRect.sizeDelta = new Vector2(320, 200);
+            hudRect.sizeDelta = new Vector2(320, 260);
 
             Image hudImage = hud.AddComponent<Image>();
             hudImage.color = new Color(0.1f, 0.1f, 0.15f, 0.85f);
 
             // HUDController component
-            hud.AddComponent<HUDController>();
+            outHudController = hud.AddComponent<HUDController>();
 
-            SceneBuilderUtils.CreateTMPText(hud, "LocationText", "Cultivation World", new Vector2(10, -10), 22,
+            // Location Text
+            var locationNameText = SceneBuilderUtils.CreateTMPText(hud, "LocationNameText", "Cultivation World", new Vector2(10, -10), 22,
                 TMPro.FontStyles.Bold, Color.white);
-            SceneBuilderUtils.CreateTMPText(hud, "TimeText", "День 1 — 06:00", new Vector2(10, -38), 18,
+            var locationTypeText = SceneBuilderUtils.CreateTMPText(hud, "LocationTypeText", "Тестовая локация", new Vector2(10, -34), 14,
+                TMPro.FontStyles.Normal, new Color(0.7f, 0.8f, 0.9f));
+
+            // Time
+            var timeText = SceneBuilderUtils.CreateTMPText(hud, "TimeText", "День 1 — 06:00", new Vector2(10, -54), 16,
                 TMPro.FontStyles.Normal, new Color(0.8f, 0.9f, 1f));
+            var dateText = SceneBuilderUtils.CreateTMPText(hud, "DateText", "Весна, Год 1", new Vector2(10, -74), 14,
+                TMPro.FontStyles.Normal, new Color(0.7f, 0.8f, 0.9f));
 
-            SceneBuilderUtils.CreateBar(hud, "HealthBar", new Vector2(10, -70), 280, 20, new Color(0.8f, 0.2f, 0.2f));
-            SceneBuilderUtils.CreateTMPText(hud, "HealthText", "HP: 100/100", new Vector2(10, -95), 16,
+            // Health Bar
+            var healthBar = SceneBuilderUtils.CreateBar(hud, "HealthBar", new Vector2(10, -95), 280, 20, new Color(0.8f, 0.2f, 0.2f));
+            var healthText = SceneBuilderUtils.CreateTMPText(hud, "HealthText", "HP: 100/100", new Vector2(10, -118), 14,
                 TMPro.FontStyles.Normal, Color.white);
 
-            SceneBuilderUtils.CreateBar(hud, "QiBar", new Vector2(10, -120), 280, 20, new Color(0.2f, 0.5f, 0.9f));
-            SceneBuilderUtils.CreateTMPText(hud, "QiText", "Ци: 100/100", new Vector2(10, -145), 16,
+            // Qi Bar
+            var qiBar = SceneBuilderUtils.CreateBar(hud, "QiBar", new Vector2(10, -138), 280, 20, new Color(0.2f, 0.5f, 0.9f));
+            var qiText = SceneBuilderUtils.CreateTMPText(hud, "QiText", "Ци: 100/100", new Vector2(10, -161), 14,
                 TMPro.FontStyles.Normal, Color.white);
 
-            SceneBuilderUtils.CreateBar(hud, "StaminaBar", new Vector2(10, -170), 280, 16, new Color(0.2f, 0.8f, 0.3f));
+            // Stamina Bar
+            var staminaBar = SceneBuilderUtils.CreateBar(hud, "StaminaBar", new Vector2(10, -181), 280, 16, new Color(0.2f, 0.8f, 0.3f));
+
+            // Cultivation
+            var cultivationLevelText = SceneBuilderUtils.CreateTMPText(hud, "CultivationLevelText", "Смертный", new Vector2(10, -205), 16,
+                TMPro.FontStyles.Bold, new Color(0.9f, 0.8f, 0.5f));
+            var cultivationProgressBar = SceneBuilderUtils.CreateBar(hud, "CultivationProgressBar", new Vector2(10, -225), 280, 10, new Color(0.6f, 0.3f, 0.8f));
+
+            // Сохраняем ссылки для HUDController wiring
+            // (wiring делается после создания всех элементов)
+            hud.name = "HUD"; // ensure name
 
             return hud;
         }
@@ -238,6 +263,71 @@ namespace CultivationGame.Editor.SceneBuilder
             so.ApplyModifiedProperties();
 
             Debug.Log("[Phase07] UIManager ссылки подключены: mainCanvas, hudPanel, mainMenu, pauseMenu");
+        }
+
+        /// <summary>
+        /// Подключение HUDController SerializeField ссылок.
+        /// Без этого HUD не обновляется в runtime (показывает статический текст).
+        /// Редактировано: 2026-04-25
+        /// </summary>
+        private void WireHUDControllerReferences(GameObject hud, HUDController hudController)
+        {
+            if (hudController == null) return;
+
+            SerializedObject so = new SerializedObject(hudController);
+
+            // TimeController — ищется через ServiceLocator в Awake(), но назначаем напрямую
+            var timeController = UnityEngine.Object.FindFirstObjectByType<TimeController>();
+            if (timeController != null)
+                so.FindProperty("timeController").objectReferenceValue = timeController;
+
+            // Ищем созданные UI элементы по имени
+            WirePropertyByName(so, "healthBar", hud, "HealthBar");
+            WirePropertyByName(so, "healthText", hud, "HealthText");
+            WirePropertyByName(so, "qiBar", hud, "QiBar");
+            WirePropertyByName(so, "qiText", hud, "QiText");
+            WirePropertyByName(so, "staminaBar", hud, "StaminaBar");
+            WirePropertyByName(so, "cultivationLevelText", hud, "CultivationLevelText");
+            WirePropertyByName(so, "cultivationProgressBar", hud, "CultivationProgressBar");
+            WirePropertyByName(so, "timeText", hud, "TimeText");
+            WirePropertyByName(so, "dateText", hud, "DateText");
+            WirePropertyByName(so, "locationNameText", hud, "LocationNameText");
+            WirePropertyByName(so, "locationTypeText", hud, "LocationTypeText");
+
+            so.ApplyModifiedProperties();
+
+            Debug.Log("[Phase07] HUDController ссылки подключены: healthBar, qiBar, staminaBar, timeText, dateText, locationText, cultivationLevelText, cultivationProgressBar");
+        }
+
+        /// <summary>
+        /// Найти дочерний GameObject по имени и подключить к SerializedProperty.
+        /// Поддерживает компоненты Slider, TMP_Text, Image.
+        /// </summary>
+        private static void WirePropertyByName(SerializedObject so, string propertyName, GameObject parent, string childName)
+        {
+            var prop = so.FindProperty(propertyName);
+            if (prop == null) return;
+
+            var child = parent.transform.Find(childName);
+            if (child == null)
+            {
+                Debug.LogWarning($"[Phase07] Не найден дочерний объект: {childName} для свойства {propertyName}");
+                return;
+            }
+
+            // Пробуем разные типы компонентов
+            var slider = child.GetComponent<Slider>();
+            var tmpText = child.GetComponent<TMPro.TMP_Text>();
+            var image = child.GetComponent<Image>();
+
+            if (slider != null)
+                prop.objectReferenceValue = slider;
+            else if (tmpText != null)
+                prop.objectReferenceValue = tmpText;
+            else if (image != null)
+                prop.objectReferenceValue = image;
+            else
+                prop.objectReferenceValue = child.gameObject;
         }
 
         // ====================================================================

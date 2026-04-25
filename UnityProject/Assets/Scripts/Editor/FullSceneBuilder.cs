@@ -5,7 +5,7 @@
 // Версия: 2.0 — Рефакторинг: монолит → оркестратор + отдельные файлы фаз
 //
 // АРХИТЕКТУРА:
-//   15 фаз, каждая в отдельном файле (Assets/Scripts/Editor/SceneBuilder/).
+//   19 фаз, каждая в отдельном файле (Assets/Scripts/Editor/SceneBuilder/).
 //   Каждая фаза реализует IScenePhase — IsNeeded() + Execute().
 //   Оркестратор регистрирует фазы и управляет их запуском.
 //
@@ -21,6 +21,7 @@
 //   SceneBuilder/IScenePhase.cs           — Интерфейс фазы
 //   SceneBuilder/SceneBuilderConstants.cs  — Общие константы
 //   SceneBuilder/SceneBuilderUtils.cs      — Общие утилиты
+//   SceneBuilder/Phase00URPSetup.cs           — Фаза 00 (NEW)
 //   SceneBuilder/Phase01Folders.cs         — Фаза 01
 //   SceneBuilder/Phase02TagsLayers.cs      — Фаза 02
 //   ... и т.д. для Phase03-Phase15
@@ -50,6 +51,7 @@ namespace CultivationGame.Editor
 
         private static readonly IScenePhase[] PHASES = new IScenePhase[]
         {
+            new Phase00URPSetup(),
             new Phase01Folders(),
             new Phase02TagsLayers(),
             new Phase03SceneCreation(),
@@ -147,59 +149,62 @@ namespace CultivationGame.Editor
         //  INDIVIDUAL PHASE MENU ITEMS
         // ====================================================================
 
+        [MenuItem("Tools/Full Scene Builder/Phase 00: URP Asset Setup", false, 100)]
+        public static void RunPhase00() { RunSinglePhase(0); }
+
         [MenuItem("Tools/Full Scene Builder/Phase 01: Folders", false, 101)]
-        public static void RunPhase01() { RunSinglePhase(0); }
+        public static void RunPhase01() { RunSinglePhase(1); }
 
         [MenuItem("Tools/Full Scene Builder/Phase 02: Tags and Layers", false, 102)]
-        public static void RunPhase02() { RunSinglePhase(1); }
+        public static void RunPhase02() { RunSinglePhase(2); }
 
         [MenuItem("Tools/Full Scene Builder/Phase 03: Create Scene", false, 103)]
-        public static void RunPhase03() { RunSinglePhase(2); }
+        public static void RunPhase03() { RunSinglePhase(3); }
 
         [MenuItem("Tools/Full Scene Builder/Phase 04: Camera and Light", false, 104)]
-        public static void RunPhase04() { RunSinglePhase(3); }
+        public static void RunPhase04() { RunSinglePhase(4); }
 
         [MenuItem("Tools/Full Scene Builder/Phase 05: GameManager and Systems", false, 105)]
-        public static void RunPhase05() { RunSinglePhase(4); }
+        public static void RunPhase05() { RunSinglePhase(5); }
 
         [MenuItem("Tools/Full Scene Builder/Phase 06: Player", false, 106)]
-        public static void RunPhase06() { RunSinglePhase(5); }
+        public static void RunPhase06() { RunSinglePhase(6); }
 
         [MenuItem("Tools/Full Scene Builder/Phase 07: UI (Canvas, HUD, EventSystem)", false, 107)]
-        public static void RunPhase07() { RunSinglePhase(6); }
+        public static void RunPhase07() { RunSinglePhase(7); }
 
         [MenuItem("Tools/Full Scene Builder/Phase 08: Tilemap System", false, 108)]
-        public static void RunPhase08() { RunSinglePhase(7); }
+        public static void RunPhase08() { RunSinglePhase(8); }
 
         [MenuItem("Tools/Full Scene Builder/Phase 09: Generate Assets from JSON", false, 109)]
-        public static void RunPhase09() { RunSinglePhase(8); }
+        public static void RunPhase09() { RunSinglePhase(9); }
 
         [MenuItem("Tools/Full Scene Builder/Phase 10: Generate Tile Sprites", false, 110)]
-        public static void RunPhase10() { RunSinglePhase(9); }
+        public static void RunPhase10() { RunSinglePhase(10); }
 
         [MenuItem("Tools/Full Scene Builder/Phase 11: Generate Formation UI Prefabs", false, 111)]
-        public static void RunPhase11() { RunSinglePhase(10); }
+        public static void RunPhase11() { RunSinglePhase(11); }
 
         [MenuItem("Tools/Full Scene Builder/Phase 12: Import TMP Essentials", false, 112)]
-        public static void RunPhase12() { RunSinglePhase(11); }
+        public static void RunPhase12() { RunSinglePhase(12); }
 
         [MenuItem("Tools/Full Scene Builder/Phase 13: Save Scene", false, 113)]
-        public static void RunPhase13() { RunSinglePhase(12); }
+        public static void RunPhase13() { RunSinglePhase(13); }
 
         [MenuItem("Tools/Full Scene Builder/Phase 14: Create Tile Assets", false, 114)]
-        public static void RunPhase14() { RunSinglePhase(13); }
+        public static void RunPhase14() { RunSinglePhase(14); }
 
         [MenuItem("Tools/Full Scene Builder/Phase 15: Configure Test Location", false, 115)]
-        public static void RunPhase15() { RunSinglePhase(14); }
+        public static void RunPhase15() { RunSinglePhase(15); }
 
         [MenuItem("Tools/Full Scene Builder/Phase 16: Inventory Data", false, 116)]
-        public static void RunPhase16() { RunSinglePhase(15); }
+        public static void RunPhase16() { RunSinglePhase(16); }
 
         [MenuItem("Tools/Full Scene Builder/Phase 17: Inventory UI", false, 117)]
-        public static void RunPhase17() { RunSinglePhase(16); }
+        public static void RunPhase17() { RunSinglePhase(17); }
 
         [MenuItem("Tools/Full Scene Builder/Phase 18: Inventory Components", false, 118)]
-        public static void RunPhase18() { RunSinglePhase(17); }
+        public static void RunPhase18() { RunSinglePhase(18); }
 
         // ====================================================================
         //  UTILITY: Run Single Phase

@@ -23,6 +23,7 @@ namespace CultivationGame.Editor.SceneBuilder
         // Папки, которые должны существовать
         public static readonly string[] REQUIRED_FOLDERS = new string[]
         {
+            "Assets/Settings",    // URP Asset + Renderer2D (Phase00)
             "Assets/Scenes",
             "Assets/Prefabs/Player",
             "Assets/Prefabs/NPC",

@@ -255,6 +255,7 @@ namespace CultivationGame.Core
         /// <summary>
         /// Логирует состояние Light2D.
         /// Вызывается из FullSceneBuilder.ExecuteCameraLight() после создания.
+        /// Редактировано: 2026-04-25 — Multi-assembly поиск Light2D типа (как в Phase04).
         /// </summary>
         public static void LogLightState()
         {
@@ -263,8 +264,8 @@ namespace CultivationGame.Core
             var light2DObj = GameObject.Find("GlobalLight2D");
             if (light2DObj != null)
             {
-                // Проверяем через reflection (Light2D в другой сборке)
-                var light2DType = System.Type.GetType("UnityEngine.Rendering.Universal.Light2D, Unity.2D.RenderPipeline.Runtime");
+                // Multi-assembly поиск Light2D типа (как в Phase04)
+                var light2DType = ResolveLight2DType();
                 if (light2DType != null)
                 {
                     var component = light2DObj.GetComponent(light2DType);
@@ -278,23 +279,136 @@ namespace CultivationGame.Core
                         Color color = colorProp != null ? (Color)colorProp.GetValue(component) : Color.white;
                         int lightType = lightTypeProp != null ? (int)lightTypeProp.GetValue(component) : -1;
 
-                        Debug.Log($"{PREFIX}-L8 GlobalLight2D: type={lightType} (1=Global), intensity={intensity}, color={color}");
+                        Debug.Log($"{PREFIX}-L8 GlobalLight2D: type={lightType} (1=Global), " +
+                            $"intensity={intensity}, color={color}, " +
+                            $"сборка={light2DType.Assembly.GetName().Name}");
                         Debug.Log($"{PREFIX}-L8 ✅ Light2D найден");
                     }
                     else
                     {
-                        Debug.LogWarning($"{PREFIX}-L8 ⚠️ GlobalLight2D объект есть, но компонент Light2D не найден");
+                        Debug.LogWarning($"{PREFIX}-L8 ⚠️ GlobalLight2D объект есть, " +
+                            $"тип найден ({light2DType.Assembly.GetName().Name}), " +
+                            $"но компонент Light2D не найден на объекте!");
                     }
                 }
                 else
                 {
-                    Debug.LogWarning($"{PREFIX}-L8 ⚠️ Тип Light2D не найден (сборка Unity.2D.RenderPipeline.Runtime)");
+                    Debug.LogWarning($"{PREFIX}-L8 ⚠️ Тип Light2D не найден ни в одной сборке! " +
+                        "Сборки Unity.2D.RenderPipeline.Runtime, Unity.RenderPipeline.Universal.2D.Runtime, " +
+                        "Unity.RenderPipeline.Universal.Runtime — ни одна не содержит Light2D.");
+                    LogLight2DDiagnostics();
                 }
             }
             else
             {
                 Debug.LogWarning($"{PREFIX}-L8 ❌ GlobalLight2D НЕ НАЙДЕН — спрайты будут чёрными (Sprite-Lit-Default)!");
             }
+
+            // Дополнительная диагностика: какие материалы используют рендереры
+            LogRendererMaterialState();
+        }
+
+        /// <summary>
+        /// Поиск типа Light2D через несколько имён сборок.
+        /// Версия для runtime (без Editor-зависимостей).
+        /// </summary>
+        private static System.Type ResolveLight2DType()
+        {
+            string[] assemblyNames = new string[]
+            {
+                "Unity.2D.RenderPipeline.Runtime",
+                "Unity.RenderPipeline.Universal.2D.Runtime",
+                "Unity.RenderPipeline.Universal.Runtime",
+            };
+
+            string fullTypeName = "UnityEngine.Rendering.Universal.Light2D";
+
+            foreach (var asmName in assemblyNames)
+            {
+                var type = System.Type.GetType($"{fullTypeName}, {asmName}");
+                if (type != null) return type;
+            }
+
+            // Fallback: поиск по fullName во всех загруженных сборках
+            foreach (var assembly in System.AppDomain.CurrentDomain.GetAssemblies())
+            {
+                try
+                {
+                    var type = assembly.GetType(fullTypeName);
+                    if (type != null) return type;
+                }
+                catch (System.Exception) { }
+            }
+
+            // Fallback: поиск по короткому имени "Light2D"
+            foreach (var assembly in System.AppDomain.CurrentDomain.GetAssemblies())
+            {
+                try
+                {
+                    foreach (var type in assembly.GetTypes())
+                    {
+                        if (type.Name == "Light2D" && type.IsSubclassOf(typeof(Component)))
+                            return type;
+                    }
+                }
+                catch (System.Reflection.ReflectionTypeLoadException) { }
+                catch (System.Exception) { }
+            }
+
+            return null;
+        }
+
+        /// <summary>
+        /// Диагностика: логировать сборки, связанные с рендерингом.
+        /// </summary>
+        private static void LogLight2DDiagnostics()
+        {
+            Debug.Log($"{PREFIX}-L8 === ДИАГНОСТИКА Light2D ===");
+            int renderRelated = 0;
+            foreach (var assembly in System.AppDomain.CurrentDomain.GetAssemblies())
+            {
+                string name = assembly.GetName().Name;
+                if (name.Contains("Render") || name.Contains("2D") || name.Contains("2d") ||
+                    name.Contains("Universal") || name.Contains("Pipeline"))
+                {
+                    Debug.Log($"{PREFIX}-L8   Сборка: {name}");
+                    renderRelated++;
+                }
+            }
+            Debug.Log($"{PREFIX}-L8 Render-related сборок: {renderRelated}");
+            Debug.Log($"{PREFIX}-L8 === КОНЕЦ ДИАГНОСТИКИ ===");
+        }
+
+        /// <summary>
+        /// Логирует информацию о материалах SpriteRenderer и TilemapRenderer.
+        /// Помогает определить, какие рендереры используют Sprite-Lit-Default
+        /// (требует Light2D) vs Sprite-Unlit-Default (не требует Light2D).
+        /// </summary>
+        private static void LogRendererMaterialState()
+        {
+            // TilemapRenderer'ы
+            var tilemapRenderers = Object.FindObjectsByType<TilemapRenderer>(FindObjectsSortMode.None);
+            foreach (var r in tilemapRenderers)
+            {
+                string shaderName = r.sharedMaterial != null ? r.sharedMaterial.shader.name : "NULL";
+                bool isLit = shaderName.Contains("Lit");
+                Debug.Log($"{PREFIX}-L8 TilemapRenderer \"{r.name}\": shader=\"{shaderName}\" " +
+                    $"{(isLit ? "⚠️ LIT (требует Light2D)" : "✅ UNLIT")}");
+            }
+
+            // SpriteRenderer'ы — подсчёт по шейдеру
+            var spriteRenderers = Object.FindObjectsByType<SpriteRenderer>(FindObjectsSortMode.None);
+            int litCount = 0, unlitCount = 0, otherCount = 0;
+            foreach (var sr in spriteRenderers)
+            {
+                if (sr.sharedMaterial == null) { otherCount++; continue; }
+                string shaderName = sr.sharedMaterial.shader.name;
+                if (shaderName.Contains("Lit") && !shaderName.Contains("Unlit")) litCount++;
+                else if (shaderName.Contains("Unlit")) unlitCount++;
+                else otherCount++;
+            }
+            Debug.Log($"{PREFIX}-L8 SpriteRenderer: Lit={litCount} (⚠️ требует Light2D), " +
+                $"Unlit={unlitCount} (✅), Other={otherCount}");
         }
 
         // ====================================================================
