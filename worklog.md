@@ -84,3 +84,23 @@ Stage Summary:
 - Чекпоинт: checkpoints/04_25_scene_builder_audit.md
 - Коммит: 6c09f48
 - Требуется пересоздание сцены на локальном ПК: удалить Assets → Build All → Play
+
+---
+Task ID: 4
+Agent: main
+Task: Исправление ошибок компиляции Phase00URPSetup.cs
+
+Work Log:
+- Прочитан Phase00URPSetup.cs — найдены 5 ошибок компиляции
+- CS0103 (x3): GraphicsSettings не существует — отсутствует using UnityEngine.Rendering
+- CS0136 (x2): Переменные so и rendererListProp конфликтуют (nested scope)
+- Исправление 1: Добавлен using UnityEngine.Rendering;
+- Исправление 2: currentRenderPipeline → customRenderPipeline (Unity 6.3 API)
+- Исправление 3: Переименованы конфликтующие переменные: so→existingSo/urpSo, rendererListProp→existingRendererList/urpRendererList
+- Также переименована переменная в EnsureRenderer2DAsset: so→rendererSo для консистентности
+
+Stage Summary:
+- 5 ошибок компиляции исправлены в Phase00URPSetup.cs
+- GraphicsSettings теперь доступен через UnityEngine.Rendering
+- customRenderPipeline — актуальное свойство Unity 6.3 (замена устаревшего currentRenderPipeline)
+- Нет конфликта имён с CultivationGame.Core.GraphicsSettings (другой namespace)

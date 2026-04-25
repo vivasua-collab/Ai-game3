@@ -9,11 +9,16 @@
 // Unity fallback на Built-in renderer → спрайты рендерятся неправильно.
 //
 // Создано: 2026-04-25 13:45:00 UTC
+// Редактировано: 2026-04-26 — FIX: CS0103 GraphicsSettings + CS0136 variable conflicts
+//   - Добавлен using UnityEngine.Rendering (GraphicsSettings находится там)
+//   - currentRenderPipeline → customRenderPipeline (Unity 6.3 API)
+//   - Переименованы конфликтующие переменные so/rendererListProp
 // ============================================================================
 
 #if UNITY_EDITOR
 using UnityEngine;
 using UnityEditor;
+using UnityEngine.Rendering;
 using UnityEngine.Rendering.Universal;
 
 namespace CultivationGame.Editor.SceneBuilder
@@ -34,7 +39,7 @@ namespace CultivationGame.Editor.SceneBuilder
             // или если GraphicsSettings не назначен
             bool hasURPAsset = AssetDatabase.LoadAssetAtPath<UniversalRenderPipelineAsset>(URP_ASSET_PATH) != null;
             bool hasRenderer2D = AssetDatabase.LoadAssetAtPath<Renderer2DData>(RENDERER2D_PATH) != null;
-            bool hasGraphicsSettings = GraphicsSettings.currentRenderPipeline != null;
+            bool hasGraphicsSettings = GraphicsSettings.customRenderPipeline != null;
 
             return !hasURPAsset || !hasRenderer2D || !hasGraphicsSettings;
         }
@@ -76,26 +81,26 @@ namespace CultivationGame.Editor.SceneBuilder
 
             // Настройки по умолчанию (совпадают с существующим Renderer2D.asset)
             // m_DefaultMaterialType = 0 (Lit) — чтобы Light2D работал
-            var so = new SerializedObject(rendererData);
+            var rendererSo = new SerializedObject(rendererData);
 
             // m_DefaultMaterialType: 0 = Lit, 1 = Unlit, 2 = Custom
-            var defaultMatTypeProp = so.FindProperty("m_DefaultMaterialType");
+            var defaultMatTypeProp = rendererSo.FindProperty("m_DefaultMaterialType");
             if (defaultMatTypeProp != null)
                 defaultMatTypeProp.intValue = 0; // Lit — Light2D будет освещать спрайты
 
             // m_HDREmulationScale
-            var hdrProp = so.FindProperty("m_HDREmulationScale");
+            var hdrProp = rendererSo.FindProperty("m_HDREmulationScale");
             if (hdrProp != null) hdrProp.floatValue = 1f;
 
             // m_LightRenderTextureScale
-            var lightRTScale = so.FindProperty("m_LightRenderTextureScale");
+            var lightRTScale = rendererSo.FindProperty("m_LightRenderTextureScale");
             if (lightRTScale != null) lightRTScale.floatValue = 0.5f;
 
             // m_UseDepthStencilBuffer
-            var depthProp = so.FindProperty("m_UseDepthStencilBuffer");
+            var depthProp = rendererSo.FindProperty("m_UseDepthStencilBuffer");
             if (depthProp != null) depthProp.boolValue = true;
 
-            so.ApplyModifiedProperties();
+            rendererSo.ApplyModifiedProperties();
 
             AssetDatabase.CreateAsset(rendererData, RENDERER2D_PATH);
             Debug.Log($"[Phase00] Создан Renderer2D.asset: {RENDERER2D_PATH}");
@@ -112,16 +117,16 @@ namespace CultivationGame.Editor.SceneBuilder
             var existing = AssetDatabase.LoadAssetAtPath<UniversalRenderPipelineAsset>(URP_ASSET_PATH);
             if (existing != null)
             {
-                // Проверяем, что renderer2D назначен
-                var so = new SerializedObject(existing);
-                var rendererListProp = so.FindProperty("m_RendererDataList");
-                if (rendererListProp != null && rendererListProp.arraySize > 0)
+                // Проверяем, что renderer2D назначен в существующий ассет
+                var existingSo = new SerializedObject(existing);
+                var existingRendererList = existingSo.FindProperty("m_RendererDataList");
+                if (existingRendererList != null && existingRendererList.arraySize > 0)
                 {
-                    var firstRenderer = rendererListProp.GetArrayElementAtIndex(0);
+                    var firstRenderer = existingRendererList.GetArrayElementAtIndex(0);
                     if (firstRenderer.objectReferenceValue == null && renderer2DData != null)
                     {
                         firstRenderer.objectReferenceValue = renderer2DData;
-                        so.ApplyModifiedProperties();
+                        existingSo.ApplyModifiedProperties();
                         Debug.Log("[Phase00] Renderer2D назначен в существующий UniversalRP.asset");
                     }
                 }
@@ -132,48 +137,48 @@ namespace CultivationGame.Editor.SceneBuilder
             // Создаём UniversalRenderPipelineAsset
             var urpAsset = ScriptableObject.CreateInstance<UniversalRenderPipelineAsset>();
 
-            var so = new SerializedObject(urpAsset);
+            var urpSo = new SerializedObject(urpAsset);
 
             // Renderer Type = 1 (2D Renderer)
-            var rendererTypeProp = so.FindProperty("m_RendererType");
+            var rendererTypeProp = urpSo.FindProperty("m_RendererType");
             if (rendererTypeProp != null)
                 rendererTypeProp.intValue = 1; // 1 = 2D Renderer
 
             // Назначить Renderer2D в список рендереров
-            var rendererListProp = so.FindProperty("m_RendererDataList");
-            if (rendererListProp != null && renderer2DData != null)
+            var urpRendererList = urpSo.FindProperty("m_RendererDataList");
+            if (urpRendererList != null && renderer2DData != null)
             {
-                rendererListProp.ClearArray();
-                rendererListProp.InsertArrayElementAtIndex(0);
-                rendererListProp.GetArrayElementAtIndex(0).objectReferenceValue = renderer2DData;
+                urpRendererList.ClearArray();
+                urpRendererList.InsertArrayElementAtIndex(0);
+                urpRendererList.GetArrayElementAtIndex(0).objectReferenceValue = renderer2DData;
             }
 
             // Default renderer index = 0
-            var defaultRendererProp = so.FindProperty("m_DefaultRendererIndex");
+            var defaultRendererProp = urpSo.FindProperty("m_DefaultRendererIndex");
             if (defaultRendererProp != null)
                 defaultRendererProp.intValue = 0;
 
             // SRP Batcher
-            var srpBatcherProp = so.FindProperty("m_UseSRPBatcher");
+            var srpBatcherProp = urpSo.FindProperty("m_UseSRPBatcher");
             if (srpBatcherProp != null)
                 srpBatcherProp.boolValue = true;
 
             // MSAA = 1 (disabled for 2D)
-            var msaaProp = so.FindProperty("m_MSAA");
+            var msaaProp = urpSo.FindProperty("m_MSAA");
             if (msaaProp != null)
                 msaaProp.intValue = 1;
 
             // Render Scale = 1
-            var renderScaleProp = so.FindProperty("m_RenderScale");
+            var renderScaleProp = urpSo.FindProperty("m_RenderScale");
             if (renderScaleProp != null)
                 renderScaleProp.floatValue = 1f;
 
             // HDR
-            var hdrProp = so.FindProperty("m_SupportsHDR");
+            var hdrProp = urpSo.FindProperty("m_SupportsHDR");
             if (hdrProp != null)
                 hdrProp.boolValue = true;
 
-            so.ApplyModifiedProperties();
+            urpSo.ApplyModifiedProperties();
 
             AssetDatabase.CreateAsset(urpAsset, URP_ASSET_PATH);
             Debug.Log($"[Phase00] Создан UniversalRP.asset: {URP_ASSET_PATH}");
@@ -184,6 +189,9 @@ namespace CultivationGame.Editor.SceneBuilder
         /// <summary>
         /// Назначить UniversalRenderPipelineAsset как текущий Render Pipeline.
         /// Без этого Unity использует Built-in renderer.
+        ///
+        /// Unity 6.3: customRenderPipeline заменяет устаревший currentRenderPipeline.
+        /// Используем SerializedObject как fallback для совместимости.
         /// </summary>
         private void AssignToGraphicsSettings(UniversalRenderPipelineAsset urpAsset)
         {
@@ -193,14 +201,15 @@ namespace CultivationGame.Editor.SceneBuilder
                 return;
             }
 
-            if (GraphicsSettings.currentRenderPipeline == urpAsset)
+            // Способ 1: Прямое назначение через customRenderPipeline (Unity 6+)
+            if (GraphicsSettings.customRenderPipeline == urpAsset)
             {
                 Debug.Log("[Phase00] GraphicsSettings уже назначен");
                 return;
             }
 
-            GraphicsSettings.currentRenderPipeline = urpAsset;
-            Debug.Log($"[Phase00] ✅ GraphicsSettings.currentRenderPipeline назначен: {urpAsset.name}");
+            GraphicsSettings.customRenderPipeline = urpAsset;
+            Debug.Log($"[Phase00] ✅ GraphicsSettings.customRenderPipeline назначен: {urpAsset.name}");
 
             // Также проверить QualitySettings
             int qualityLevel = QualitySettings.GetQualityLevel();
