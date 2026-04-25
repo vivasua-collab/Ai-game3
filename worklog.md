@@ -53,3 +53,34 @@ Stage Summary:
 - 5 файлов изменено: Phase04, Phase07, Phase17, GameInitializer, InventoryScreen
 - Чекпоинт обновлён: checkpoints/04_25_inventory_I_key_fix.md (статус: complete)
 - Требуется пересоздание сцены (Build All) на локальном ПК
+
+---
+Task ID: 3
+Agent: main
+Task: Детальный аудит Scene Builder Phase00-18 + исправление чёрных terrain спрайтов
+
+Work Log:
+- Прочитаны ВСЕ 18 фаз Scene Builder + runtime файлы (UIManager, HUDController, MenuUI, PlayerVisual, HarvestableSpawner, RenderPipelineLogger, GameInitializer)
+- Найдено 5 новых багов (2 критических)
+- БАГ #1 (КРИТИЧЕСКИЙ): Phase04 Light2D reflection не находит тип в Unity 6.3 — отсутствует сборка Unity.RenderPipeline.Universal.Runtime
+- БАГ #2: RenderPipelineLogger.LogLightState() проверяет только 1 сборку
+- БАГ #3 (КРИТИЧЕСКИЙ): URP Assets не пересоздаются при удалении Assets/ — нужна Phase00
+- БАГ #4: HUDController SerializeField ссылки не подключены (healthBar, qiBar, timeText, и т.д.)
+- БАГ #5: SceneBuilderConstants не содержит Assets/Settings папку
+- ROOT CAUSE чёрных спрайтов: TilemapRenderer использует Sprite-Lit-Default (требует Light2D), а PlayerVisual/HarvestableSpawner используют Sprite-Unlit-Default
+- Создан чекпоинт: checkpoints/04_25_scene_builder_audit.md
+
+Исправления:
+- Phase04CameraLight.cs: Добавлена 4-я сборка + short-name fallback + LogAssemblyDiagnostics
+- RenderPipelineLogger.cs: Multi-assembly Light2D поиск + LogRendererMaterialState + LogLight2DDiagnostics
+- Phase00URPSetup.cs: NEW — создаёт UniversalRP.asset + Renderer2D.asset + назначает GraphicsSettings
+- FullSceneBuilder.cs: Зарегистрирована Phase00 (Order=0), обновлены индексы меню
+- Phase07UI.cs: WireHUDControllerReferences + WirePropertyByName helper + CultivationGame.World using
+- SceneBuilderConstants.cs: Добавлена Assets/Settings в REQUIRED_FOLDERS
+
+Stage Summary:
+- 5 багов исправлено + 1 новая фаза создана
+- 6 файлов изменено: Phase04, RenderPipelineLogger, Phase00(new), FullSceneBuilder, Phase07, SceneBuilderConstants
+- Чекпоинт: checkpoints/04_25_scene_builder_audit.md
+- Коммит: 6c09f48
+- Требуется пересоздание сцены на локальном ПК: удалить Assets → Build All → Play
