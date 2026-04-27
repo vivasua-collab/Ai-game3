@@ -4,6 +4,7 @@
 // ============================================================================
 // Создано: 2026-04-18 20:00:00 UTC
 // Редактировано: 2026-04-25 10:38:00 UTC — FIX: Убрана двойная обработка I, UIManager.Instance
+// Редактировано: 2026-04-27 18:15:00 UTC — строчная модель инвентаря
 // ============================================================================
 // Объединяет все панели инвентаря в один экран:
 // - BodyDollPanel (7 видимых слотов экипировки)
@@ -237,7 +238,7 @@ namespace CultivationGame.UI.Inventory
             if (!isInitialized) return;
 
             if (backpackPanel != null)
-                backpackPanel.RebuildGrid();
+                backpackPanel.RefreshList();
 
             if (bodyDollPanel != null)
                 bodyDollPanel.RefreshAllSlots();
@@ -301,7 +302,7 @@ namespace CultivationGame.UI.Inventory
             inventoryController.SortInventory();
 
             if (backpackPanel != null)
-                backpackPanel.RebuildGrid();
+                backpackPanel.RefreshList();
         }
 
         #endregion

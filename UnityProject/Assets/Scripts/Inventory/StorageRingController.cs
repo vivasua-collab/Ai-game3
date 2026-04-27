@@ -3,6 +3,7 @@
 // Cultivation World Simulator
 // ============================================================================
 // Создано: 2026-04-19 14:00:00 UTC
+// Редактировано: 2026-04-27 18:15:00 UTC — строчная модель инвентаря
 // Редактировано: 2026-04-20 06:50:00 UTC — StorageRingData теперь наследует от EquipmentData
 // ============================================================================
 // Кольцо хранения — объём-ограниченное хранилище, экипируется на слот
@@ -438,7 +439,7 @@ namespace CultivationGame.Inventory
             // Проверяем место в инвентаре
             if (inventoryController != null)
             {
-                if (!inventoryController.HasFreeSpace(entry.ItemData.sizeWidth, entry.ItemData.sizeHeight))
+                if (!inventoryController.CanFitItem(entry.ItemData, count))
                     return false;
             }
 
@@ -582,7 +583,7 @@ namespace CultivationGame.Inventory
             // Проверяем место в инвентаре
             if (inventoryController != null)
             {
-                if (!inventoryController.HasFreeSpace(entry.ItemData.sizeWidth, entry.ItemData.sizeHeight))
+                if (!inventoryController.CanFitItem(entry.ItemData, actualCount))
                 {
                     // Возвращаем Qi
                     if (qiController != null) qiController.AddQi(cost);

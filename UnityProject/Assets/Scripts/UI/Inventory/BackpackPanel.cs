@@ -1,20 +1,19 @@
 // ============================================================================
-// BackpackPanel.cs — Панель рюкзака (динамическая Diablo-style сетка)
+// BackpackPanel.cs — Панель рюкзака (v3.0 — строчная модель)
 // Cultivation World Simulator
 // ============================================================================
 // Создано: 2026-04-18 20:00:00 UTC
-// Редактировано: 2026-04-20 06:27:21 UTC — +using UnityEngine.EventSystems (FIX CS0246)
+// Редактировано: 2026-04-27 18:10:00 UTC — ПЕРЕПИСЬ: сетка → строчный список
 // ============================================================================
-// Отображает сетку инвентаря, размер которой определяется BackpackData.
-// Стартовый рюкзак: 3×4 (12 ячеек). При смене рюкзака — пересоздаётся.
-// Поддерживает: предметы 1×1, 2×1, 1×2, 2×2, вес, стак, перетаскивание.
+// Строчная модель: VerticalLayoutGroup + ScrollRect.
+// Каждая строка = 1 предмет (иконка + название + кол-во + вес + объём).
+// Ограничители: масса (кг) + объём (литры).
 // ============================================================================
 
 using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
-using UnityEngine.EventSystems;
 using TMPro;
 using CultivationGame.Core;
 using CultivationGame.Inventory;
@@ -23,31 +22,24 @@ using CultivationGame.Data.ScriptableObjects;
 namespace CultivationGame.UI.Inventory
 {
     /// <summary>
-    /// Панель рюкзака — Diablo-style сетка инвентаря.
-    /// Размер определяется текущим BackpackData.
+    /// Панель рюкзака — строчный список предметов (v3.0).
+    /// Вместо сетки ячеек — список с ограничителями массы и объёма.
     /// </summary>
     public class BackpackPanel : MonoBehaviour
     {
         #region Configuration
 
-        [Header("Grid Settings")]
-        [SerializeField] private int cellSize = 50;
-        [SerializeField] private int cellSpacing = 2;
-        [SerializeField] private int padding = 8;
-
         [Header("Prefabs")]
-        [SerializeField] private GameObject slotUIPrefab;
+        [SerializeField] private GameObject slotRowPrefab;
 
         [Header("UI References")]
-        [SerializeField] private Transform gridContainer;
-        [SerializeField] private RectTransform gridBackground;
+        [SerializeField] private Transform listContainer;
         [SerializeField] private TMP_Text backpackNameText;
         [SerializeField] private TMP_Text weightText;
         [SerializeField] private Slider weightBar;
-        [SerializeField] private TMP_Text slotsText;
-
-        [Header("Visual")]
-        [SerializeField] private Color gridLineColor = new Color(0.3f, 0.3f, 0.3f, 0.3f);
+        [SerializeField] private TMP_Text volumeText;
+        [SerializeField] private Slider volumeBar;
+        [SerializeField] private TMP_Text countText;
 
         #endregion
 
@@ -56,21 +48,13 @@ namespace CultivationGame.UI.Inventory
         private InventoryController inventoryController;
         private DragDropHandler dragDropHandler;
 
-        /// <summary>Все ячейки сетки: ключ = "x,y"</summary>
-        private Dictionary<string, InventorySlotUI> gridCells = new Dictionary<string, InventorySlotUI>();
-
-        /// <summary>Визуальные слоты с предметами: slotId → InventorySlotUI</summary>
-        private Dictionary<int, InventorySlotUI> itemSlotUIs = new Dictionary<int, InventorySlotUI>();
-
-        private int currentWidth;
-        private int currentHeight;
+        /// <summary>Визуальные строки: slotId → InventorySlotUI</summary>
+        private Dictionary<int, InventorySlotUI> rowUIs = new Dictionary<int, InventorySlotUI>();
 
         #endregion
 
         #region Properties
 
-        public int GridWidth => currentWidth;
-        public int GridHeight => currentHeight;
         public InventoryController Controller => inventoryController;
 
         #endregion
@@ -86,7 +70,7 @@ namespace CultivationGame.UI.Inventory
             dragDropHandler = dragHandler;
 
             SubscribeToEvents();
-            RebuildGrid();
+            RefreshList();
         }
 
         private void OnDestroy()
@@ -101,8 +85,9 @@ namespace CultivationGame.UI.Inventory
             inventoryController.OnItemAdded += OnItemAdded;
             inventoryController.OnItemRemoved += OnItemRemoved;
             inventoryController.OnItemStackChanged += OnItemStackChanged;
-            inventoryController.OnWeightChanged += OnWeightChanged;
+            inventoryController.OnWeightVolumeChanged += OnWeightVolumeChanged;
             inventoryController.OnBackpackChanged += OnBackpackChanged;
+            inventoryController.OnInventoryRebuilt += OnInventoryRebuilt;
         }
 
         private void UnsubscribeFromEvents()
@@ -112,236 +97,88 @@ namespace CultivationGame.UI.Inventory
             inventoryController.OnItemAdded -= OnItemAdded;
             inventoryController.OnItemRemoved -= OnItemRemoved;
             inventoryController.OnItemStackChanged -= OnItemStackChanged;
-            inventoryController.OnWeightChanged -= OnWeightChanged;
+            inventoryController.OnWeightVolumeChanged -= OnWeightVolumeChanged;
             inventoryController.OnBackpackChanged -= OnBackpackChanged;
+            inventoryController.OnInventoryRebuilt -= OnInventoryRebuilt;
         }
 
         #endregion
 
-        #region Grid Building
+        #region List Management
 
         /// <summary>
-        /// Полностью перестраивает сетку. Вызывается при инициализации и смене рюкзака.
+        /// Полностью перестраивает список. Вызывается при инициализации, загрузке, смене рюкзака.
         /// </summary>
-        public void RebuildGrid()
+        public void RefreshList()
         {
             if (inventoryController == null) return;
 
-            currentWidth = inventoryController.GridWidth;
-            currentHeight = inventoryController.GridHeight;
-
-            ClearGrid();
-            CreateGridCells();
-            PlaceItems();
-            UpdateWeightDisplay(inventoryController.EffectiveWeight, inventoryController.MaxWeight);
+            ClearList();
+            CreateAllRows();
+            UpdateIndicators();
             UpdateBackpackInfo();
-            UpdateGridBackground();
         }
 
-        private void ClearGrid()
+        private void ClearList()
         {
-            // Удаляем все дочерние объекты
-            if (gridContainer != null)
+            if (listContainer != null)
             {
-                for (int i = gridContainer.childCount - 1; i >= 0; i--)
+                for (int i = listContainer.childCount - 1; i >= 0; i--)
                 {
-                    Destroy(gridContainer.GetChild(i).gameObject);
+                    Destroy(listContainer.GetChild(i).gameObject);
                 }
             }
 
-            gridCells.Clear();
-            itemSlotUIs.Clear();
+            rowUIs.Clear();
         }
 
-        private void CreateGridCells()
+        private void CreateAllRows()
         {
-            if (gridContainer == null || slotUIPrefab == null) return;
-
-            for (int y = 0; y < currentHeight; y++)
-            {
-                for (int x = 0; x < currentWidth; x++)
-                {
-                    var cellGO = Instantiate(slotUIPrefab, gridContainer);
-                    var cellUI = cellGO.GetComponent<InventorySlotUI>();
-
-                    if (cellUI == null)
-                        cellUI = cellGO.AddComponent<InventorySlotUI>();
-
-                    cellUI.InitializeEmpty(x, y, this);
-                    cellUI.SetPosition(CalculateCellPosition(x, y));
-                    cellUI.SetSize(new Vector2(cellSize, cellSize));
-
-                    // Подписка на события
-                    cellUI.OnSlotHover += OnCellHover;
-                    cellUI.OnSlotExit += OnCellExit;
-                    cellUI.OnSlotRightClicked += OnCellRightClicked;
-
-                    gridCells[$"{x},{y}"] = cellUI;
-                }
-            }
-        }
-
-        private void PlaceItems()
-        {
-            if (inventoryController == null) return;
+            if (listContainer == null || slotRowPrefab == null) return;
 
             foreach (var slot in inventoryController.Slots)
             {
-                PlaceItemInGrid(slot);
+                CreateRowUI(slot);
             }
         }
 
         /// <summary>
-        /// Размещает предмет в сетке, перекрывая фоновые ячейки.
+        /// Создаёт визуальную строку для одного предмета.
         /// </summary>
-        private void PlaceItemInGrid(InventorySlot slot)
+        private InventorySlotUI CreateRowUI(InventorySlot slot)
         {
-            if (slot == null || slot.ItemData == null) return;
-            // Редактировано: 2026-04-25 14:34:00 MSK — null guard: предотвращает crash
-            if (slotUIPrefab == null || gridContainer == null) return;
+            if (slotRowPrefab == null || listContainer == null) return null;
 
-            // Создаём визуальный слот для предмета
-            var itemGO = Instantiate(slotUIPrefab, gridContainer);
-            var itemUI = itemGO.GetComponent<InventorySlotUI>();
+            var rowGO = Instantiate(slotRowPrefab, listContainer);
+            var rowUI = rowGO.GetComponent<InventorySlotUI>();
 
-            if (itemUI == null)
-                itemUI = itemGO.AddComponent<InventorySlotUI>();
+            if (rowUI == null)
+                rowUI = rowGO.AddComponent<InventorySlotUI>();
 
-            itemUI.SetSlot(slot, this);
-            itemUI.SetPosition(CalculateCellPosition(slot.GridX, slot.GridY));
-            itemUI.SetSize(CalculateItemSize(slot.ItemWidth, slot.ItemHeight));
+            rowUI.SetSlot(slot, this);
 
             // Подписка на drag & контекстное меню
-            itemUI.OnDragBegin += OnItemDragBegin;
-            itemUI.OnDragging += OnItemDragging;
-            itemUI.OnDragEnd += OnItemDragEnd;
-            itemUI.OnSlotRightClicked += OnItemRightClicked;
-            itemUI.OnSlotHover += OnItemHover;
-            itemUI.OnSlotExit += OnItemExit;
+            rowUI.OnDragBegin += OnRowDragBegin;
+            rowUI.OnDragging += OnRowDragging;
+            rowUI.OnDragEnd += OnRowDragEnd;
+            rowUI.OnSlotRightClicked += OnRowRightClicked;
+            rowUI.OnSlotHover += OnRowHover;
+            rowUI.OnSlotExit += OnRowExit;
 
-            itemSlotUIs[slot.SlotId] = itemUI;
-
-            // Скрываем фоновые ячейки под предметом
-            for (int x = slot.GridX; x < slot.GridX + slot.ItemWidth; x++)
-            {
-                for (int y = slot.GridY; y < slot.GridY + slot.ItemHeight; y++)
-                {
-                    string key = $"{x},{y}";
-                    if (gridCells.TryGetValue(key, out var cell))
-                    {
-                        cell.gameObject.SetActive(false);
-                    }
-                }
-            }
+            rowUIs[slot.SlotId] = rowUI;
+            return rowUI;
         }
 
         /// <summary>
-        /// Убирает визуальный слот предмета из сетки.
+        /// Удаляет визуальную строку предмета.
         /// </summary>
-        private void RemoveItemFromGrid(InventorySlot slot)
+        private void RemoveRowUI(int slotId)
         {
-            if (slot == null) return;
-
-            if (itemSlotUIs.TryGetValue(slot.SlotId, out var itemUI))
+            if (rowUIs.TryGetValue(slotId, out var rowUI))
             {
-                // Показываем фоновые ячейки обратно
-                for (int x = slot.GridX; x < slot.GridX + slot.ItemWidth; x++)
-                {
-                    for (int y = slot.GridY; y < slot.GridY + slot.ItemHeight; y++)
-                    {
-                        string key = $"{x},{y}";
-                        if (gridCells.TryGetValue(key, out var cell))
-                        {
-                            cell.gameObject.SetActive(true);
-                        }
-                    }
-                }
-
-                Destroy(itemUI.gameObject);
-                itemSlotUIs.Remove(slot.SlotId);
+                Destroy(rowUI.gameObject);
+                rowUIs.Remove(slotId);
             }
-        }
-
-        private void UpdateGridBackground()
-        {
-            if (gridBackground == null) return;
-
-            float totalWidth = padding * 2 + currentWidth * cellSize + (currentWidth - 1) * cellSpacing;
-            float totalHeight = padding * 2 + currentHeight * cellSize + (currentHeight - 1) * cellSpacing;
-
-            gridBackground.sizeDelta = new Vector2(totalWidth, totalHeight);
-        }
-
-        #endregion
-
-        #region Position Calculations
-
-        private Vector2 CalculateCellPosition(int gridX, int gridY)
-        {
-            return new Vector2(
-                padding + gridX * (cellSize + cellSpacing),
-                -(padding + gridY * (cellSize + cellSpacing))
-            );
-        }
-
-        private Vector2 CalculateItemSize(int width, int height)
-        {
-            return new Vector2(
-                width * cellSize + (width - 1) * cellSpacing,
-                height * cellSize + (height - 1) * cellSpacing
-            );
-        }
-
-        /// <summary>
-        /// Определяет позицию в сетке по экранной координате.
-        /// </summary>
-        public Vector2Int? ScreenToGridPosition(Vector2 screenPosition)
-        {
-            if (gridContainer == null) return null;
-
-            var rect = gridContainer as RectTransform;
-            if (rect == null) return null;
-
-            if (!RectTransformUtility.ScreenPointToLocalPointInRectangle(
-                rect, screenPosition, null, out Vector2 localPoint))
-                return null;
-
-            // Инвертируем Y (сетка идёт сверху вниз)
-            localPoint.y = -localPoint.y;
-
-            int gridX = Mathf.FloorToInt((localPoint.x - padding) / (cellSize + cellSpacing));
-            int gridY = Mathf.FloorToInt((localPoint.y - padding) / (cellSize + cellSpacing));
-
-            if (gridX < 0 || gridX >= currentWidth || gridY < 0 || gridY >= currentHeight)
-                return null;
-
-            return new Vector2Int(gridX, gridY);
-        }
-
-        /// <summary>
-        /// Проверяет, свободна ли область для предмета заданного размера.
-        /// </summary>
-        public bool IsAreaFree(int gridX, int gridY, int width, int height, int excludeSlotId = -1)
-        {
-            if (inventoryController == null) return false;
-
-            // Проверяем границы
-            if (gridX < 0 || gridY < 0 ||
-                gridX + width > currentWidth || gridY + height > currentHeight)
-                return false;
-
-            // Проверяем через контроллер — есть ли предмет в этой области
-            for (int x = gridX; x < gridX + width; x++)
-            {
-                for (int y = gridY; y < gridY + height; y++)
-                {
-                    var slotAtPos = inventoryController.GetSlotAtPosition(x, y);
-                    if (slotAtPos != null && slotAtPos.SlotId != excludeSlotId)
-                        return false;
-                }
-            }
-
-            return true;
         }
 
         #endregion
@@ -350,79 +187,70 @@ namespace CultivationGame.UI.Inventory
 
         private void OnItemAdded(InventorySlot slot)
         {
-            PlaceItemInGrid(slot);
+            CreateRowUI(slot);
+            UpdateIndicators();
         }
 
         private void OnItemRemoved(InventorySlot slot)
         {
-            RemoveItemFromGrid(slot);
+            RemoveRowUI(slot.SlotId);
+            UpdateIndicators();
         }
 
         private void OnItemStackChanged(InventorySlot slot, int newCount)
         {
-            if (itemSlotUIs.TryGetValue(slot.SlotId, out var itemUI))
+            if (rowUIs.TryGetValue(slot.SlotId, out var rowUI))
             {
-                itemUI.UpdateCount(newCount);
+                rowUI.UpdateCount(newCount);
             }
+            UpdateIndicators();
         }
 
-        private void OnWeightChanged(float current, float max)
+        private void OnWeightVolumeChanged(float effWeight, float maxWeight, float totalVolume, float maxVolume)
         {
-            UpdateWeightDisplay(current, max);
+            UpdateIndicators();
         }
 
         private void OnBackpackChanged(BackpackData newBackpack)
         {
-            RebuildGrid();
+            RefreshList();
+        }
+
+        private void OnInventoryRebuilt()
+        {
+            RefreshList();
         }
 
         #endregion
 
-        #region UI Event Handlers (from SlotUI)
+        #region UI Event Handlers (from RowUI)
 
-        // Фоновые ячейки
-        private void OnCellHover(InventorySlotUI slotUI)
+        private void OnRowDragBegin(InventorySlotUI rowUI, UnityEngine.EventSystems.PointerEventData eventData)
         {
-            dragDropHandler?.OnCellHover(slotUI);
+            dragDropHandler?.BeginDrag(rowUI, eventData);
         }
 
-        private void OnCellExit(InventorySlotUI slotUI)
+        private void OnRowDragging(InventorySlotUI rowUI, UnityEngine.EventSystems.PointerEventData eventData)
         {
-            dragDropHandler?.OnCellExit(slotUI);
+            dragDropHandler?.UpdateDrag(rowUI, eventData);
         }
 
-        private void OnCellRightClicked(InventorySlotUI slotUI)
+        private void OnRowDragEnd(InventorySlotUI rowUI, UnityEngine.EventSystems.PointerEventData eventData)
         {
-            // Пустая ячейка — нет контекстного меню
+            dragDropHandler?.EndDrag(rowUI, eventData);
         }
 
-        // Предметы
-        private void OnItemDragBegin(InventorySlotUI slotUI, PointerEventData eventData)
+        private void OnRowRightClicked(InventorySlotUI rowUI)
         {
-            dragDropHandler?.BeginDrag(slotUI, eventData);
+            dragDropHandler?.ShowContextMenu(rowUI);
         }
 
-        private void OnItemDragging(InventorySlotUI slotUI, PointerEventData eventData)
+        private void OnRowHover(InventorySlotUI rowUI)
         {
-            dragDropHandler?.UpdateDrag(slotUI, eventData);
+            dragDropHandler?.ShowTooltip(rowUI);
         }
 
-        private void OnItemDragEnd(InventorySlotUI slotUI, PointerEventData eventData)
-        {
-            dragDropHandler?.EndDrag(slotUI, eventData);
-        }
-
-        private void OnItemRightClicked(InventorySlotUI slotUI)
-        {
-            dragDropHandler?.ShowContextMenu(slotUI);
-        }
-
-        private void OnItemHover(InventorySlotUI slotUI)
-        {
-            dragDropHandler?.ShowTooltip(slotUI);
-        }
-
-        private void OnItemExit(InventorySlotUI slotUI)
+        private void OnRowExit(InventorySlotUI rowUI)
         {
             dragDropHandler?.HideTooltip();
         }
@@ -431,23 +259,44 @@ namespace CultivationGame.UI.Inventory
 
         #region Visual Updates
 
-        private void UpdateWeightDisplay(float current, float max)
+        private void UpdateIndicators()
         {
+            if (inventoryController == null) return;
+
+            // Вес
             if (weightText != null)
-                weightText.text = $"{current:F1} / {max:F1} кг";
-
-            if (weightBar != null)
             {
-                weightBar.maxValue = max > 0 ? max : 1f;
-                weightBar.value = current;
-            }
-
-            // Подсветка перегруза
-            if (inventoryController != null && weightText != null)
-            {
+                weightText.text = $"{inventoryController.EffectiveWeight:F1} / {inventoryController.MaxWeight:F1} кг";
                 weightText.color = inventoryController.IsOverencumbered
                     ? new Color(1f, 0.3f, 0.3f)
                     : Color.white;
+            }
+
+            if (weightBar != null)
+            {
+                weightBar.maxValue = inventoryController.MaxWeight > 0 ? inventoryController.MaxWeight : 1f;
+                weightBar.value = inventoryController.EffectiveWeight;
+            }
+
+            // Объём
+            if (volumeText != null)
+            {
+                volumeText.text = $"{inventoryController.TotalVolume:F1} / {inventoryController.MaxVolume:F1} л";
+                volumeText.color = inventoryController.IsOverVolume
+                    ? new Color(1f, 0.3f, 0.3f)
+                    : Color.white;
+            }
+
+            if (volumeBar != null)
+            {
+                volumeBar.maxValue = inventoryController.MaxVolume > 0 ? inventoryController.MaxVolume : 1f;
+                volumeBar.value = inventoryController.TotalVolume;
+            }
+
+            // Количество предметов
+            if (countText != null)
+            {
+                countText.text = $"{inventoryController.UsedSlots} предм.";
             }
         }
 
@@ -459,44 +308,6 @@ namespace CultivationGame.UI.Inventory
 
             if (backpackNameText != null)
                 backpackNameText.text = backpack != null ? backpack.nameRu : "Тканевая сумка";
-
-            if (slotsText != null)
-            {
-                int total = inventoryController.TotalSlots;
-                int used = inventoryController.UsedCells;
-                slotsText.text = $"{used}/{total}";
-            }
-        }
-
-        /// <summary>
-        /// Подсвечивает ячейки, куда можно положить предмет.
-        /// </summary>
-        public void HighlightValidDrop(int itemWidth, int itemHeight, int excludeSlotId = -1)
-        {
-            for (int y = 0; y < currentHeight; y++)
-            {
-                for (int x = 0; x < currentWidth; x++)
-                {
-                    string key = $"{x},{y}";
-                    if (gridCells.TryGetValue(key, out var cell) && cell.gameObject.activeSelf)
-                    {
-                        bool free = IsAreaFree(x, y, itemWidth, itemHeight, excludeSlotId);
-                        cell.SetDropHighlight(free);
-                    }
-                }
-            }
-        }
-
-        /// <summary>
-        /// Сбрасывает всю подсветку.
-        /// </summary>
-        public void ClearAllHighlights()
-        {
-            foreach (var cell in gridCells.Values)
-            {
-                if (cell != null && cell.gameObject.activeSelf)
-                    cell.ClearDropHighlight();
-            }
         }
 
         #endregion

@@ -3,7 +3,7 @@
 // Cultivation World Simulator
 // Версия: 1.0
 // Создано: 2026-03-30 14:00:00 UTC
-// Редактировано: 2026-03-31 10:08:52 UTC
+// Редактировано: 2026-04-27 18:15:00 UTC — строчная модель инвентаря
 // ============================================================================
 
 using System;
@@ -333,8 +333,7 @@ namespace CultivationGame.Inventory
             }
 
             // Проверяем место в инвентаре
-            int freeSlots = playerInventory.FreeCells;
-            if (freeSlots < recipe.resultItem.sizeWidth * recipe.resultItem.sizeHeight)
+            if (!playerInventory.CanFitItem(recipe.resultItem, recipe.resultAmount * count))
             {
                 validation.canCraft = false;
                 validation.failReason = "Inventory full";

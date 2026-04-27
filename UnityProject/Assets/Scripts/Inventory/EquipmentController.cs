@@ -5,6 +5,7 @@
 // Создано: 2026-04-03
 // Редактировано: 2026-04-18 19:00:00 UTC — ПОЛНАЯ ПЕРЕРАБОТКА по INVENTORY_UI_DRAFT.md v2.0
 // Редактировано: 2026-04-20 06:50:00 UTC — StorageRingData наследует от EquipmentData (FIX CS0184)
+// Редактировано: 2026-04-27 18:15:00 UTC — строчная модель инвентаря
 // ============================================================================
 // Изменения v2.0:
 // - Убрана система слоёв («матрёшка») для видимых слотов — 1 предмет на слот
@@ -332,10 +333,11 @@ namespace CultivationGame.Inventory
                 return false;
 
             // Получаем уровень культивации, если не передан
+            // BUG-8 fix: кэшируем ServiceLocator.GetOrFind вместо повторного вызова
             if (playerCultivationLevel < 0)
             {
                 var qiCtrl = ServiceLocator.GetOrFind<QiController>();
-                playerCultivationLevel = qiCtrl != null ? qiCtrl.CultivationLevel : 0;
+                playerCultivationLevel = (qiCtrl != null) ? qiCtrl.CultivationLevel : 0;
             }
 
             // Получаем статы игрока, если не переданы
@@ -761,60 +763,6 @@ namespace CultivationGame.Inventory
             if (percent >= 40f) return DurabilityCondition.Worn;
             if (percent >= 20f) return DurabilityCondition.Damaged;
             return DurabilityCondition.Broken;
-        }
-    }
-
-    // ============================================================================
-    // EquipmentSlotsUI — Визуальные слоты (оставлен для совместимости с UI)
-    // ============================================================================
-
-    [Serializable]
-    public class EquipmentSlotsUI
-    {
-        public EquipmentSlot slotType;
-        public RectTransform slotTransform;
-        public UnityEngine.UI.Image iconImage;
-        public UnityEngine.UI.Image durabilityBar;
-
-        private EquipmentInstance currentEquipment;
-
-        public void SetEquipment(EquipmentInstance instance)
-        {
-            currentEquipment = instance;
-
-            if (instance != null && instance.equipmentData != null)
-            {
-                if (iconImage != null)
-                {
-                    iconImage.sprite = instance.equipmentData.icon;
-                    iconImage.enabled = true;
-                }
-
-                UpdateDurabilityBar();
-            }
-            else
-            {
-                Clear();
-            }
-        }
-
-        public void UpdateDurabilityBar()
-        {
-            if (durabilityBar != null && currentEquipment != null)
-            {
-                durabilityBar.fillAmount = currentEquipment.DurabilityPercent;
-            }
-        }
-
-        public void Clear()
-        {
-            currentEquipment = null;
-
-            if (iconImage != null)
-                iconImage.enabled = false;
-
-            if (durabilityBar != null)
-                durabilityBar.fillAmount = 1f;
         }
     }
 

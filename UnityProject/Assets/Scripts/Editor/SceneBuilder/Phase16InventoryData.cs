@@ -9,6 +9,7 @@
 // Редактировано: 2026-04-20 06:45:00 UTC — StorageRingData → EquipmentData, +slot
 // Редактировано: 2026-04-25 19:00:00 MSK — +AddTestEquipmentSet() базовый набор шмота
 //   для проверки инвентаря и куклы.
+// Редактировано: 2026-04-27 18:15:00 UTC — строчная модель инвентаря
 // ============================================================================
 
 #if UNITY_EDITOR
@@ -46,23 +47,23 @@ namespace CultivationGame.Editor.SceneBuilder
 
             // Шаг 2: Создать BackpackData .asset файлы (5 пресетов)
             CreateBackpackData("Backpack_ClothSack", "Тканевая сумка",
-                gridWidth: 3, gridHeight: 4, weightReduction: 0f, maxWeightBonus: 0f, beltSlots: 0,
+                maxWeight: 30, maxVolume: 50, weightReduction: 0f, beltSlots: 0, ownWeight: 0.5f,
                 ItemRarity.Common, weight: 0.5f, value: 5);
 
             CreateBackpackData("Backpack_LeatherPack", "Кожаный ранец",
-                gridWidth: 4, gridHeight: 5, weightReduction: 10f, maxWeightBonus: 10f, beltSlots: 1,
+                maxWeight: 50, maxVolume: 80, weightReduction: 10f, beltSlots: 1, ownWeight: 2.0f,
                 ItemRarity.Uncommon, weight: 1.0f, value: 25);
 
             CreateBackpackData("Backpack_IronContainer", "Железный контейнер",
-                gridWidth: 5, gridHeight: 5, weightReduction: 15f, maxWeightBonus: 20f, beltSlots: 2,
+                maxWeight: 80, maxVolume: 120, weightReduction: 15f, beltSlots: 2, ownWeight: 5.0f,
                 ItemRarity.Rare, weight: 3.0f, value: 80);
 
             CreateBackpackData("Backpack_SpiritBag", "Духовный мешок",
-                gridWidth: 6, gridHeight: 6, weightReduction: 25f, maxWeightBonus: 30f, beltSlots: 2,
+                maxWeight: 120, maxVolume: 200, weightReduction: 25f, beltSlots: 2, ownWeight: 3.0f,
                 ItemRarity.Epic, weight: 1.5f, value: 250);
 
             CreateBackpackData("Backpack_SpatialChest", "Межпространственный сундук",
-                gridWidth: 8, gridHeight: 7, weightReduction: 40f, maxWeightBonus: 50f, beltSlots: 4,
+                maxWeight: 200, maxVolume: 500, weightReduction: 40f, beltSlots: 4, ownWeight: 1.0f,
                 ItemRarity.Legendary, weight: 2.0f, value: 1000);
 
             // Шаг 3: Создать StorageRingData .asset файлы (4 пресета)
@@ -100,8 +101,8 @@ namespace CultivationGame.Editor.SceneBuilder
 
         private void CreateBackpackData(
             string fileName, string nameRu,
-            int gridWidth, int gridHeight,
-            float weightReduction, float maxWeightBonus, int beltSlots,
+            float maxWeight, float maxVolume,
+            float weightReduction, int beltSlots, float ownWeight,
             ItemRarity rarity, float weight, int value)
         {
             string assetPath = $"{BACKPACKS_FOLDER}/{fileName}.asset";
@@ -123,24 +124,22 @@ namespace CultivationGame.Editor.SceneBuilder
             data.rarity = rarity;
             data.stackable = false;
             data.maxStack = 1;
-            data.sizeWidth = 2;
-            data.sizeHeight = 2;
             data.weight = weight;
             data.value = value;
             data.hasDurability = false;
             data.volume = weight; // объём рюкзака = его вес
             data.allowNesting = NestingFlag.None; // Рюкзак нельзя вложить в хранилище
 
-            // BackpackData-specific fields
-            data.gridWidth = gridWidth;
-            data.gridHeight = gridHeight;
+            // BackpackData-specific fields (строчная модель)
+            data.maxWeight = maxWeight;
+            data.maxVolume = maxVolume;
             data.weightReduction = weightReduction;
-            data.maxWeightBonus = maxWeightBonus;
             data.beltSlots = beltSlots;
+            data.ownWeight = ownWeight;
 
             AssetDatabase.CreateAsset(data, assetPath);
-            Debug.Log($"[Phase16] Создан {fileName}: grid={gridWidth}×{gridHeight}, " +
-                      $"weightReduction={weightReduction}%, bonus={maxWeightBonus}kg, belt={beltSlots}");
+            Debug.Log($"[Phase16] Создан {fileName}: maxWeight={maxWeight}kg, maxVolume={maxVolume}, " +
+                      $"weightReduction={weightReduction}%, belt={beltSlots}, ownWeight={ownWeight}kg");
         }
 
         // ====================================================================
@@ -171,11 +170,6 @@ namespace CultivationGame.Editor.SceneBuilder
             data.rarity = rarity;
             data.stackable = false;
             data.maxStack = 1;
-            data.sizeWidth = 1;
-            data.sizeHeight = 1;
-            data.weight = weight;
-            data.value = value;
-            data.hasDurability = false;
             data.volume = 0.05f;
             data.allowNesting = NestingFlag.None; // Кольцо нельзя вложить — пространственная нестабильность
 
@@ -308,35 +302,35 @@ namespace CultivationGame.Editor.SceneBuilder
             CreateTestEquipment("Test_IronHelmet", "Железный шлем", "Простой железный шлем.",
                 EquipmentSlot.Head, WeaponHandType.OneHand,
                 damage: 0, defense: 12, coverage: 75f, damageReduction: 8f, dodgeBonus: -5f,
-                weight: 2.5f, value: 60, sizeW: 1, sizeH: 1,
+                weight: 2.5f, value: 60,
                 ItemRarity.Common, EquipmentGrade.Common, "iron", 1,
                 iconColor: new Color(0.6f, 0.6f, 0.7f), iconLetter: "Ш");
 
             CreateTestEquipment("Test_ClothRobe", "Тканевая роба", "Простая роба из ткани.",
                 EquipmentSlot.Torso, WeaponHandType.OneHand,
                 damage: 0, defense: 3, coverage: 60f, damageReduction: 0f, dodgeBonus: 0f,
-                weight: 0.5f, value: 20, sizeW: 1, sizeH: 2,
+                weight: 0.5f, value: 20,
                 ItemRarity.Common, EquipmentGrade.Common, "cloth", 1,
                 iconColor: new Color(0.6f, 0.5f, 0.4f), iconLetter: "Р");
 
             CreateTestEquipment("Test_LeatherBelt", "Кожаный ремень", "Прочный ремень из кожи.",
                 EquipmentSlot.Belt, WeaponHandType.OneHand,
                 damage: 0, defense: 2, coverage: 30f, damageReduction: 0f, dodgeBonus: 0f,
-                weight: 0.3f, value: 15, sizeW: 1, sizeH: 1,
+                weight: 0.3f, value: 15,
                 ItemRarity.Common, EquipmentGrade.Common, "leather", 1,
                 iconColor: new Color(0.5f, 0.35f, 0.2f), iconLetter: "П");
 
             CreateTestEquipment("Test_ClothPants", "Тканевые штаны", "Простые тканевые штаны.",
                 EquipmentSlot.Legs, WeaponHandType.OneHand,
                 damage: 0, defense: 2, coverage: 50f, damageReduction: 0f, dodgeBonus: 0f,
-                weight: 0.4f, value: 15, sizeW: 1, sizeH: 2,
+                weight: 0.4f, value: 15,
                 ItemRarity.Common, EquipmentGrade.Common, "cloth", 1,
                 iconColor: new Color(0.6f, 0.5f, 0.4f), iconLetter: "Н");
 
             CreateTestEquipment("Test_ClothShoes", "Тканевые туфли", "Лёгкие тканевые туфли.",
                 EquipmentSlot.Feet, WeaponHandType.OneHand,
                 damage: 0, defense: 1, coverage: 30f, damageReduction: 0f, dodgeBonus: 0f,
-                weight: 0.2f, value: 10, sizeW: 1, sizeH: 1,
+                weight: 0.2f, value: 10,
                 ItemRarity.Common, EquipmentGrade.Common, "cloth", 1,
                 iconColor: new Color(0.6f, 0.5f, 0.4f), iconLetter: "О");
 
@@ -345,14 +339,14 @@ namespace CultivationGame.Editor.SceneBuilder
             CreateTestEquipment("Test_IronSword", "Железный меч", "Надёжный железный меч.",
                 EquipmentSlot.WeaponMain, WeaponHandType.OneHand,
                 damage: 12, defense: 0, coverage: 0f, damageReduction: 0f, dodgeBonus: 0f,
-                weight: 2.5f, value: 50, sizeW: 1, sizeH: 2,
+                weight: 2.5f, value: 50,
                 ItemRarity.Common, EquipmentGrade.Common, "iron", 1,
                 iconColor: new Color(0.7f, 0.7f, 0.75f), iconLetter: "М");
 
             CreateTestEquipment("Test_IronDagger", "Железный кинжал", "Лёгкий железный кинжал.",
                 EquipmentSlot.WeaponOff, WeaponHandType.OneHand,
                 damage: 6, defense: 0, coverage: 0f, damageReduction: 0f, dodgeBonus: 0f,
-                weight: 0.5f, value: 35, sizeW: 1, sizeH: 1,
+                weight: 0.5f, value: 35,
                 ItemRarity.Common, EquipmentGrade.Common, "iron", 1,
                 iconColor: new Color(0.65f, 0.65f, 0.7f), iconLetter: "К");
 
@@ -361,7 +355,7 @@ namespace CultivationGame.Editor.SceneBuilder
             CreateTestEquipment("Test_IronGreatsword", "Железный двуручник", "Тяжёлый двуручный меч.",
                 EquipmentSlot.WeaponMain, WeaponHandType.TwoHand,
                 damage: 24, defense: 0, coverage: 0f, damageReduction: 0f, dodgeBonus: -5f,
-                weight: 6.0f, value: 120, sizeW: 2, sizeH: 2,
+                weight: 6.0f, value: 120,
                 ItemRarity.Uncommon, EquipmentGrade.Common, "iron", 1,
                 iconColor: new Color(0.7f, 0.65f, 0.7f), iconLetter: "Д");
 
@@ -370,14 +364,14 @@ namespace CultivationGame.Editor.SceneBuilder
             CreateTestEquipment("Test_SpiritRobe", "Духовная роба", "Роба из духовного шёлка.",
                 EquipmentSlot.Torso, WeaponHandType.OneHand,
                 damage: 0, defense: 15, coverage: 75f, damageReduction: 8f, dodgeBonus: 0f,
-                weight: 0.4f, value: 650, sizeW: 1, sizeH: 2,
+                weight: 0.4f, value: 650,
                 ItemRarity.Rare, EquipmentGrade.Refined, "spirit_silk", 3,
                 iconColor: new Color(0.4f, 0.5f, 0.8f), iconLetter: "Д");
 
             CreateTestEquipment("Test_SteelSword", "Стальной меч", "Качественный стальной меч.",
                 EquipmentSlot.WeaponMain, WeaponHandType.OneHand,
                 damage: 18, defense: 0, coverage: 0f, damageReduction: 0f, dodgeBonus: 0f,
-                weight: 2.3f, value: 180, sizeW: 1, sizeH: 2,
+                weight: 2.3f, value: 180,
                 ItemRarity.Uncommon, EquipmentGrade.Refined, "steel", 2,
                 iconColor: new Color(0.75f, 0.75f, 0.8f), iconLetter: "С");
 
@@ -392,7 +386,6 @@ namespace CultivationGame.Editor.SceneBuilder
             EquipmentSlot slot, WeaponHandType handType,
             int damage, int defense, float coverage, float damageReduction, float dodgeBonus,
             float weight, int value,
-            int sizeW, int sizeH,
             ItemRarity rarity, EquipmentGrade grade,
             string materialId, int materialTier,
             Color iconColor, string iconLetter)
@@ -410,8 +403,6 @@ namespace CultivationGame.Editor.SceneBuilder
             data.rarity = rarity;
             data.stackable = false;
             data.maxStack = 1;
-            data.sizeWidth = sizeW;
-            data.sizeHeight = sizeH;
             data.weight = weight;
             data.value = value;
             data.hasDurability = true;

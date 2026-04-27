@@ -1,12 +1,13 @@
 // ============================================================================
-// InventorySlotUI.cs — Визуальный слот предмета (v2.0)
+// InventorySlotUI.cs — Визуальная строка предмета (v3.0 — строчная модель)
 // Cultivation World Simulator
 // ============================================================================
 // Создано: 2026-04-18 20:00:00 UTC
+// Редактировано: 2026-04-27 18:10:00 UTC — ПЕРЕПИСЬ: ячейка сетки → строка списка
 // ============================================================================
-// Визуальная ячейка предмета в сетке инвентаря.
-// Поддерживает: иконка, количество, рамка по редкости, подсветка при наведении,
-//   drag-состояние, контекстное меню по правому клику.
+// Визуальная строка предмета в строчном инвентаре.
+// Формат: [иконка] [название] [кол-во] [вес] [объём]
+// Поддерживает: рамка по редкости, drag, контекстное меню, tooltip.
 // ============================================================================
 
 using UnityEngine;
@@ -19,8 +20,8 @@ using CultivationGame.Inventory;
 namespace CultivationGame.UI.Inventory
 {
     /// <summary>
-    /// Визуальный слот предмета. Может быть пустым (фоновая ячейка сетки)
-    /// или содержать предмет (InventorySlot).
+    /// Визуальная строка предмета в строчном инвентаре (v3.0).
+    /// Формат: иконка + название + кол-во + вес + объём.
     /// </summary>
     public class InventorySlotUI : MonoBehaviour,
         IPointerEnterHandler, IPointerExitHandler,
@@ -33,16 +34,15 @@ namespace CultivationGame.UI.Inventory
         [SerializeField] private Image iconImage;
         [SerializeField] private Image background;
         [SerializeField] private Image border;
+        [SerializeField] private TMP_Text nameText;
         [SerializeField] private TMP_Text countText;
+        [SerializeField] private TMP_Text weightText;
+        [SerializeField] private TMP_Text volumeText;
         [SerializeField] private Image durabilityBar;
-        [SerializeField] private GameObject blockedOverlay;
 
         [Header("Colors")]
-        [SerializeField] private Color emptyColor = new Color(0.1f, 0.1f, 0.18f, 0.8f);
+        [SerializeField] private Color normalColor = new Color(0.1f, 0.1f, 0.18f, 0.8f);
         [SerializeField] private Color hoverColor = new Color(0.2f, 0.2f, 0.35f, 0.9f);
-        [SerializeField] private Color dragValidColor = new Color(0.2f, 0.5f, 0.2f, 0.9f);
-        [SerializeField] private Color dragInvalidColor = new Color(0.5f, 0.2f, 0.2f, 0.9f);
-        [SerializeField] private Color blockedColor = new Color(0.3f, 0.3f, 0.3f, 0.6f);
 
         #endregion
 
@@ -51,7 +51,6 @@ namespace CultivationGame.UI.Inventory
         private InventorySlot slot;
         private BackpackPanel owningPanel;
         private bool isDragging;
-        private bool isBlocked; // Заблокировано двуручным оружием или другим предметом
         private CanvasGroup canvasGroup;
         private Vector2 originalPosition;
         private Transform originalParent;
@@ -60,30 +59,26 @@ namespace CultivationGame.UI.Inventory
 
         #region Properties
 
-        /// <summary>Слот инвентаря (может быть null для пустой ячейки)</summary>
+        /// <summary>Слот инвентаря</summary>
         public InventorySlot Slot => slot;
 
-        /// <summary>Позиция в сетке</summary>
-        public int GridX { get; private set; }
-        public int GridY { get; private set; }
+        /// <summary>Индекс строки в списке</summary>
+        public int RowIndex => slot != null ? slot.rowIndex : -1;
 
-        /// <summary>Ячейка заблокирована (двуручное оружие и т.д.)</summary>
-        public bool IsBlocked => isBlocked;
-
-        /// <summary>Есть ли предмет в ячейке</summary>
+        /// <summary>Есть ли предмет</summary>
         public bool HasItem => slot != null && slot.ItemData != null;
 
         #endregion
 
         #region Events
 
-        /// <summary>Клик по слоту (левый клик)</summary>
+        /// <summary>Клик по строке (левый)</summary>
         public event System.Action<InventorySlotUI> OnSlotClicked;
 
-        /// <summary>Правый клик по слоту (контекстное меню)</summary>
+        /// <summary>Правый клик (контекстное меню)</summary>
         public event System.Action<InventorySlotUI> OnSlotRightClicked;
 
-        /// <summary>Наведение мыши</summary>
+        /// <summary>Наведение мыши (tooltip)</summary>
         public event System.Action<InventorySlotUI> OnSlotHover;
 
         /// <summary>Увод мыши</summary>
@@ -114,52 +109,24 @@ namespace CultivationGame.UI.Inventory
         #region Initialization
 
         /// <summary>
-        /// Инициализирует слот как пустую ячейку сетки.
-        /// </summary>
-        public void InitializeEmpty(int gridX, int gridY, BackpackPanel panel)
-        {
-            GridX = gridX;
-            GridY = gridY;
-            owningPanel = panel;
-            slot = null;
-            isBlocked = false;
-
-            UpdateEmptyDisplay();
-        }
-
-        /// <summary>
-        /// Устанавливает данные предмета в слот.
+        /// Устанавливает данные предмета в строку.
         /// </summary>
         public void SetSlot(InventorySlot inventorySlot, BackpackPanel panel)
         {
             slot = inventorySlot;
             owningPanel = panel;
-            isBlocked = false;
 
             if (inventorySlot != null)
-            {
-                GridX = inventorySlot.GridX;
-                GridY = inventorySlot.GridY;
                 UpdateItemDisplay();
-            }
-            else
-            {
-                UpdateEmptyDisplay();
-            }
         }
 
         /// <summary>
-        /// Устанавливает/снимает блокировку слота.
+        /// Обновляет отображение из данных слота.
         /// </summary>
-        public void SetBlocked(bool blocked)
+        public void RefreshDisplay()
         {
-            isBlocked = blocked;
-
-            if (blockedOverlay != null)
-                blockedOverlay.SetActive(blocked);
-
-            if (background != null && blocked)
-                background.color = blockedColor;
+            if (slot != null)
+                UpdateItemDisplay();
         }
 
         #endregion
@@ -169,10 +136,7 @@ namespace CultivationGame.UI.Inventory
         private void UpdateItemDisplay()
         {
             if (slot == null || slot.ItemData == null)
-            {
-                UpdateEmptyDisplay();
                 return;
-            }
 
             var itemData = slot.ItemData;
 
@@ -184,11 +148,29 @@ namespace CultivationGame.UI.Inventory
                 iconImage.color = Color.white;
             }
 
+            // Название
+            if (nameText != null)
+            {
+                nameText.text = itemData.nameRu ?? itemData.itemId;
+                nameText.color = GetRarityColor(itemData.rarity);
+            }
+
             // Количество
             if (countText != null)
             {
-                countText.text = slot.Count > 1 ? slot.Count.ToString() : "";
-                countText.enabled = true;
+                countText.text = slot.Count > 1 ? $"×{slot.Count}" : "";
+            }
+
+            // Вес
+            if (weightText != null)
+            {
+                weightText.text = $"{slot.TotalWeight:F1}кг";
+            }
+
+            // Объём
+            if (volumeText != null)
+            {
+                volumeText.text = $"{slot.TotalVolume:F1}л";
             }
 
             // Прочность
@@ -207,38 +189,7 @@ namespace CultivationGame.UI.Inventory
 
             // Фон
             if (background != null)
-                background.color = emptyColor;
-
-            // Блокировка
-            if (blockedOverlay != null)
-                blockedOverlay.SetActive(false);
-        }
-
-        private void UpdateEmptyDisplay()
-        {
-            if (iconImage != null)
-            {
-                iconImage.sprite = null;
-                iconImage.enabled = false;
-            }
-
-            if (countText != null)
-                countText.enabled = false;
-
-            if (durabilityBar != null)
-                durabilityBar.gameObject.SetActive(false);
-
-            if (border != null)
-            {
-                border.color = new Color(0.3f, 0.3f, 0.3f, 0.5f);
-                border.enabled = true;
-            }
-
-            if (background != null)
-                background.color = emptyColor;
-
-            if (blockedOverlay != null)
-                blockedOverlay.SetActive(false);
+                background.color = normalColor;
         }
 
         /// <summary>
@@ -248,48 +199,27 @@ namespace CultivationGame.UI.Inventory
         {
             if (countText != null)
             {
-                countText.text = newCount > 1 ? newCount.ToString() : "";
+                countText.text = newCount > 1 ? $"×{newCount}" : "";
+            }
+            if (weightText != null && slot != null)
+            {
+                weightText.text = $"{slot.TotalWeight:F1}кг";
+            }
+            if (volumeText != null && slot != null)
+            {
+                volumeText.text = $"{slot.TotalVolume:F1}л";
             }
         }
 
         /// <summary>
-        /// Устанавливает подсветку для валидной/невалидной цели дропа.
+        /// Устанавливает подсветку при наведении.
         /// </summary>
-        public void SetDropHighlight(bool valid)
+        public void SetHoverHighlight(bool hovered)
         {
-            if (background != null)
+            if (background != null && !isDragging)
             {
-                background.color = valid ? dragValidColor : dragInvalidColor;
+                background.color = hovered ? hoverColor : normalColor;
             }
-        }
-
-        /// <summary>
-        /// Сбрасывает подсветку.
-        /// </summary>
-        public void ClearDropHighlight()
-        {
-            if (background != null)
-            {
-                background.color = emptyColor;
-            }
-        }
-
-        #endregion
-
-        #region Position / Size
-
-        public void SetPosition(Vector2 position)
-        {
-            var rect = GetComponent<RectTransform>();
-            if (rect != null)
-                rect.anchoredPosition = position;
-        }
-
-        public void SetSize(Vector2 size)
-        {
-            var rect = GetComponent<RectTransform>();
-            if (rect != null)
-                rect.sizeDelta = size;
         }
 
         #endregion
@@ -307,30 +237,27 @@ namespace CultivationGame.UI.Inventory
             }
         }
 
+        public bool IsDragging => isDragging;
+
         #endregion
 
         #region Pointer Events
 
         public void OnPointerEnter(PointerEventData eventData)
         {
-            if (!isBlocked)
-            {
-                if (background != null && !isDragging)
-                    background.color = hoverColor;
-            }
+            SetHoverHighlight(true);
             OnSlotHover?.Invoke(this);
         }
 
         public void OnPointerExit(PointerEventData eventData)
         {
-            if (!isDragging)
-                ClearDropHighlight();
+            SetHoverHighlight(false);
             OnSlotExit?.Invoke(this);
         }
 
         public void OnBeginDrag(PointerEventData eventData)
         {
-            if (slot == null || isBlocked) return;
+            if (slot == null) return;
 
             originalPosition = GetComponent<RectTransform>().anchoredPosition;
             originalParent = transform.parent;
@@ -355,8 +282,6 @@ namespace CultivationGame.UI.Inventory
 
         public void OnPointerClick(PointerEventData eventData)
         {
-            if (isBlocked) return;
-
             if (eventData.button == PointerEventData.InputButton.Left)
             {
                 OnSlotClicked?.Invoke(this);

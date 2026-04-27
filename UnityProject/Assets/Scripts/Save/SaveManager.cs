@@ -5,7 +5,7 @@
 //               cache miss, validation, encryption comments
 // ============================================================================
 // Создано: 2026-03-30 14:00:00 UTC
-// Редактировано: 2026-04-11 Fix-08
+// Редактировано: 2026-04-27 — строчная модель: инвентарь+экипировка+крафт в сохранении
 //
 // ИЗМЕНЕНИЯ В ВЕРСИИ 1.2:
 // - FIX SAV-C01: GetSlotFilePath — валидация slotId (regex) от path traversal
@@ -72,6 +72,11 @@ namespace CultivationGame.Save
         
         // StorageRing reference (added 2026-04-19)
         private StorageRingController storageRingController;
+        
+        // Inventory+Equipment+Crafting references (added 2026-04-27)
+        private InventoryController inventoryController;
+        private EquipmentController equipmentController;
+        private CraftingController craftingController;
         
         // === State ===
         private string currentSaveSlot = "";
@@ -160,6 +165,11 @@ namespace CultivationGame.Save
             
             // StorageRing (added 2026-04-19)
             storageRingController = FindFirstObjectByType<StorageRingController>();
+            
+            // Inventory+Equipment+Crafting (added 2026-04-27)
+            inventoryController = FindFirstObjectByType<InventoryController>();
+            equipmentController = FindFirstObjectByType<EquipmentController>();
+            craftingController = FindFirstObjectByType<CraftingController>();
         }
         
         private void EnsureSaveDirectory()
@@ -372,6 +382,25 @@ namespace CultivationGame.Save
             {
                 data.StorageRingData = storageRingController.GetSaveData();
             }
+            
+            // Инвентарь (added 2026-04-27 — BUG-1 фикс)
+            if (inventoryController != null)
+            {
+                data.InventoryData = inventoryController.GetSaveData();
+            }
+            
+            // Экипировка (added 2026-04-27 — BUG-1 фикс)
+            if (equipmentController != null)
+            {
+                var equipDict = equipmentController.GetSaveData();
+                data.EquipmentDataArray = EquipmentDictToArray(equipDict);
+            }
+            
+            // Крафт (added 2026-04-27)
+            if (craftingController != null)
+            {
+                data.CraftingData = craftingController.GetSaveData();
+            }
             return data;
         }
         
@@ -505,20 +534,38 @@ namespace CultivationGame.Save
             // LoadSaveData methods on those controllers. For now, data is saved
             // and will be restored when those methods are implemented.
             
+            // BUG-2 фикс: Строим РЕАЛЬНЫЙ itemDatabase из загруженных ассетов (2026-04-27)
+            var realItemDatabase = BuildItemDatabase();
+            
             // SpiritStorage (added 2026-04-19)
             if (spiritStorageController != null && data.SpiritStorageData != null)
             {
-                // Note: itemDatabase must be built from loaded ItemData assets
-                // For now, pass empty dict — real implementation needs asset loading
-                var itemDatabase = new Dictionary<string, Data.ScriptableObjects.ItemData>();
-                spiritStorageController.LoadSaveData(data.SpiritStorageData, itemDatabase);
+                spiritStorageController.LoadSaveData(data.SpiritStorageData, realItemDatabase);
             }
             
             // StorageRing (added 2026-04-19)
             if (storageRingController != null && data.StorageRingData != null)
             {
-                var itemDatabase = new Dictionary<string, Data.ScriptableObjects.ItemData>();
-                storageRingController.LoadSaveData(data.StorageRingData, itemDatabase);
+                storageRingController.LoadSaveData(data.StorageRingData, realItemDatabase);
+            }
+            
+            // Инвентарь (added 2026-04-27 — BUG-1 фикс)
+            if (inventoryController != null && data.InventoryData != null)
+            {
+                inventoryController.LoadSaveData(data.InventoryData, realItemDatabase);
+            }
+            
+            // Экипировка (added 2026-04-27 — BUG-1 фикс)
+            if (equipmentController != null && data.EquipmentDataArray != null)
+            {
+                var equipDict = EquipmentArrayToDict(data.EquipmentDataArray);
+                equipmentController.LoadSaveData(equipDict, realItemDatabase);
+            }
+            
+            // Крафт (added 2026-04-27)
+            if (craftingController != null && data.CraftingData != null)
+            {
+                craftingController.LoadSaveData(data.CraftingData, realItemDatabase);
             }
         }
         
@@ -738,6 +785,70 @@ namespace CultivationGame.Save
             return new string(chars);
         }
         
+        // === Item Database ===
+        
+        /// <summary>
+        /// Строит словарь ItemData из всех загруженных ScriptableObject ассетов.
+        /// BUG-2 фикс: вместо пустого Dictionary передаём реальные данные (2026-04-27)
+        /// </summary>
+        private Dictionary<string, Data.ScriptableObjects.ItemData> BuildItemDatabase()
+        {
+            var database = new Dictionary<string, Data.ScriptableObjects.ItemData>();
+            var allItems = Resources.FindObjectsOfTypeAll<Data.ScriptableObjects.ItemData>();
+            foreach (var item in allItems)
+            {
+                if (item != null && !string.IsNullOrEmpty(item.itemId))
+                {
+                    database[item.itemId] = item;
+                }
+            }
+            Debug.Log($"[SaveManager] ItemDatabase построен: {database.Count} предметов");
+            return database;
+        }
+        
+        /// <summary>
+        /// Конвертирует Dictionary экипировки в сериализуемый массив (2026-04-27).
+        /// JsonUtility не поддерживает Dictionary.
+        /// </summary>
+        private EquipmentSaveEntry[] EquipmentDictToArray(Dictionary<string, EquipmentSaveData> dict)
+        {
+            if (dict == null) return new EquipmentSaveEntry[0];
+            var array = new EquipmentSaveEntry[dict.Count];
+            int i = 0;
+            foreach (var kvp in dict)
+            {
+                array[i++] = new EquipmentSaveEntry
+                {
+                    slotName = kvp.Key,
+                    itemId = kvp.Value.itemId,
+                    grade = kvp.Value.grade,
+                    durability = kvp.Value.durability,
+                    isTwoHandBlocking = kvp.Value.isTwoHandBlocking
+                };
+            }
+            return array;
+        }
+        
+        /// <summary>
+        /// Конвертирует сериализуемый массив обратно в Dictionary (2026-04-27).
+        /// </summary>
+        private Dictionary<string, EquipmentSaveData> EquipmentArrayToDict(EquipmentSaveEntry[] array)
+        {
+            var dict = new Dictionary<string, EquipmentSaveData>();
+            if (array == null) return dict;
+            foreach (var entry in array)
+            {
+                dict[entry.slotName] = new EquipmentSaveData
+                {
+                    itemId = entry.itemId,
+                    grade = entry.grade,
+                    durability = entry.durability,
+                    isTwoHandBlocking = entry.isTwoHandBlocking
+                };
+            }
+            return dict;
+        }
+        
         // === New Game ===
         
         /// <summary>
@@ -823,11 +934,39 @@ namespace CultivationGame.Save
         
         // StorageRing (added 2026-04-19)
         public StorageRingSaveData StorageRingData;
+        
+        // Инвентарь (added 2026-04-27 — BUG-1 фикс)
+        public List<InventorySlotSaveData> InventoryData;
+        
+        // Экипировка (added 2026-04-27 — BUG-1 фикс)
+        // JsonUtility не поддерживает Dictionary — используем сериализуемый массив
+        public EquipmentSaveEntry[] EquipmentDataArray;
+        
+        // Крафт (added 2026-04-27)
+        public CraftingSaveData CraftingData;
     }
     
     /// <summary>
     /// Данные игрока для сохранения (заглушка).
     /// </summary>
+    
+    // ============================================================================
+    // Сериализуемые обёртки для JsonUtility (2026-04-27)
+    // ============================================================================
+    
+    /// <summary>
+    /// Запись экипировки для сериализации (JsonUtility не поддерживает Dictionary).
+    /// Создано: 2026-04-27
+    /// </summary>
+    [Serializable]
+    public class EquipmentSaveEntry
+    {
+        public string slotName;   // EquipmentSlot.ToString()
+        public string itemId;
+        public EquipmentGrade grade;
+        public int durability;
+        public bool isTwoHandBlocking;
+    }
     [Serializable]
     public class PlayerSaveData
     {

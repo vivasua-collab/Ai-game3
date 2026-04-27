@@ -17,6 +17,7 @@
 // Редактировано: 2026-04-25 16:00:00 MSK — BodyDollPanel internals.
 // Редактировано: 2026-04-25 18:30:00 MSK — РЕДИЗАЙН куклы: двухколоночный
 //   layout, квадратные 50×50 слоты, процедурный силуэт тела, ширина 300px.
+// Редактировано: 2026-04-27 18:15:00 UTC — строчная модель инвентаря
 // ============================================================================
 
 #if UNITY_EDITOR
@@ -196,26 +197,28 @@ namespace CultivationGame.Editor.SceneBuilder
         /// </summary>
         private void WireBackpackPanelReferences(
             BackpackPanel panel,
-            GameObject slotUIPrefab,
-            Transform gridContainer,
-            RectTransform gridBackground,
+            GameObject slotRowPrefab,
+            Transform listContainer,
             TMP_Text backpackNameText,
             TMP_Text weightText,
             Slider weightBar,
-            TMP_Text slotsText)
+            TMP_Text volumeText,
+            Slider volumeBar,
+            TMP_Text countText)
         {
             SerializedObject so = new SerializedObject(panel);
 
-            so.FindProperty("slotUIPrefab").objectReferenceValue = slotUIPrefab;
-            so.FindProperty("gridContainer").objectReferenceValue = gridContainer;
-            so.FindProperty("gridBackground").objectReferenceValue = gridBackground;
+            so.FindProperty("slotRowPrefab").objectReferenceValue = slotRowPrefab;
+            so.FindProperty("listContainer").objectReferenceValue = listContainer;
             so.FindProperty("backpackNameText").objectReferenceValue = backpackNameText;
             so.FindProperty("weightText").objectReferenceValue = weightText;
             so.FindProperty("weightBar").objectReferenceValue = weightBar;
-            so.FindProperty("slotsText").objectReferenceValue = slotsText;
+            so.FindProperty("volumeText").objectReferenceValue = volumeText;
+            so.FindProperty("volumeBar").objectReferenceValue = volumeBar;
+            so.FindProperty("countText").objectReferenceValue = countText;
 
             so.ApplyModifiedProperties();
-            Debug.Log("[Phase17] BackpackPanel SerializeField ссылки подключены (7 полей)");
+            Debug.Log("[Phase17] BackpackPanel SerializeField ссылки подключены (8 полей: строчная модель)");
         }
 
         // ====================================================================
@@ -330,23 +333,33 @@ namespace CultivationGame.Editor.SceneBuilder
         // ====================================================================
 
         /// <summary>
-        /// Создаёт префаб InventorySlotUI — шаблон для Instantiate в BackpackPanel.
+        /// Создаёт префаб InventorySlotUI — горизонтальная строка (строчная модель v3.0).
+        /// Строка: иконка + название + количество + вес + объём.
         /// Префаб НЕАКТИВЕН (шаблон для Instantiate).
         /// </summary>
         private GameObject CreateSlotUIPrefab()
         {
-            // Корневой объект — SlotUIPrefab
-            GameObject slotGO = new GameObject("SlotUIPrefab");
+            // Корневой объект — SlotRowPrefab
+            GameObject slotGO = new GameObject("SlotRowPrefab");
             var slotRect = slotGO.AddComponent<RectTransform>();
             slotRect.anchorMin = new Vector2(0f, 1f);
             slotRect.anchorMax = new Vector2(0f, 1f);
             slotRect.pivot = new Vector2(0f, 1f);
-            slotRect.sizeDelta = new Vector2(50f, 50f);
+            slotRect.sizeDelta = new Vector2(0f, 28f);
 
             // Фон (background) — тёмно-синий
             var bgImage = slotGO.AddComponent<Image>();
             bgImage.color = new Color(0.1f, 0.1f, 0.18f, 0.8f);
             bgImage.raycastTarget = true;
+
+            // HorizontalLayoutGroup для строки
+            var hLayout = slotGO.AddComponent<HorizontalLayoutGroup>();
+            hLayout.spacing = 4f;
+            hLayout.padding = new RectOffset(2, 2, 2, 2);
+            hLayout.childControlWidth = false;
+            hLayout.childControlHeight = false;
+            hLayout.childForceExpandWidth = false;
+            hLayout.childForceExpandHeight = false;
 
             // Компонент InventorySlotUI
             var slotUI = slotGO.AddComponent<InventorySlotUI>();
@@ -357,80 +370,54 @@ namespace CultivationGame.Editor.SceneBuilder
             GameObject iconGO = new GameObject("Icon");
             iconGO.transform.SetParent(slotGO.transform, false);
             var iconRect = iconGO.AddComponent<RectTransform>();
-            iconRect.anchorMin = Vector2.zero;
-            iconRect.anchorMax = Vector2.one;
-            iconRect.offsetMin = new Vector2(4, 4);
-            iconRect.offsetMax = new Vector2(-4, -4);
+            iconRect.sizeDelta = new Vector2(24f, 24f);
             var iconImage = iconGO.AddComponent<Image>();
             iconImage.color = Color.white;
             iconImage.raycastTarget = false;
 
-            // Border (рамка по редкости) → border
-            GameObject borderGO = new GameObject("Border");
-            borderGO.transform.SetParent(slotGO.transform, false);
-            var borderRect = borderGO.AddComponent<RectTransform>();
-            borderRect.anchorMin = Vector2.zero;
-            borderRect.anchorMax = Vector2.one;
-            borderRect.offsetMin = Vector2.zero;
-            borderRect.offsetMax = Vector2.zero;
-            var borderImage = borderGO.AddComponent<Image>();
-            borderImage.color = new Color(0.5f, 0.5f, 0.5f, 0.5f); // Серая рамка
-            borderImage.raycastTarget = false;
+            // NameText → nameText
+            var nameTMP = SceneBuilderUtils.CreateTMPText(slotGO, "NameText", "",
+                new Vector2(0, 0), 11, FontStyles.Normal, Color.white);
+            var nameRect = nameTMP.GetComponent<RectTransform>();
+            nameRect.sizeDelta = new Vector2(100f, 20f);
+            nameTMP.alignment = TextAlignmentOptions.Left;
 
-            // CountText (количество в стаке) → countText
+            // CountText → countText
             var countTMP = SceneBuilderUtils.CreateTMPText(slotGO, "CountText", "",
-                new Vector2(25, -2), 12, FontStyles.Bold, Color.white);
-            // Переопределяем привязку — правый нижний угол
+                new Vector2(0, 0), 11, FontStyles.Bold, Color.white);
             var countRect = countTMP.GetComponent<RectTransform>();
-            countRect.anchorMin = new Vector2(1f, 0f);
-            countRect.anchorMax = new Vector2(1f, 0f);
-            countRect.pivot = new Vector2(1f, 0f);
-            countRect.anchoredPosition = new Vector2(-3, 2);
-            countRect.sizeDelta = new Vector2(30, 16);
-            countTMP.alignment = TextAlignmentOptions.BottomRight;
+            countRect.sizeDelta = new Vector2(40f, 20f);
+            countTMP.alignment = TextAlignmentOptions.MiddleRight;
 
-            // DurabilityBar (полоска прочности) → durabilityBar
-            GameObject durBarGO = new GameObject("DurabilityBar");
-            durBarGO.transform.SetParent(slotGO.transform, false);
-            var durBarRect = durBarGO.AddComponent<RectTransform>();
-            durBarRect.anchorMin = new Vector2(0f, 0f);
-            durBarRect.anchorMax = new Vector2(1f, 0f);
-            durBarRect.pivot = new Vector2(0f, 0f);
-            durBarRect.offsetMin = new Vector2(3, 2);
-            durBarRect.offsetMax = new Vector2(-3, 5);
-            var durBarImage = durBarGO.AddComponent<Image>();
-            durBarImage.color = new Color(0.3f, 0.9f, 0.3f, 0.9f); // Зелёная полоска
-            durBarImage.raycastTarget = false;
+            // WeightText → weightText
+            var weightTMP = SceneBuilderUtils.CreateTMPText(slotGO, "WeightText", "",
+                new Vector2(0, 0), 10, FontStyles.Normal, new Color(0.7f, 0.7f, 0.7f));
+            var weightTMPRect = weightTMP.GetComponent<RectTransform>();
+            weightTMPRect.sizeDelta = new Vector2(50f, 18f);
+            weightTMP.alignment = TextAlignmentOptions.MiddleRight;
 
-            // BlockedOverlay (блокировка слота) → blockedOverlay
-            GameObject blockedGO = new GameObject("BlockedOverlay");
-            blockedGO.transform.SetParent(slotGO.transform, false);
-            var blockedRect = blockedGO.AddComponent<RectTransform>();
-            blockedRect.anchorMin = Vector2.zero;
-            blockedRect.anchorMax = Vector2.one;
-            blockedRect.offsetMin = Vector2.zero;
-            blockedRect.offsetMax = Vector2.zero;
-            var blockedImage = blockedGO.AddComponent<Image>();
-            blockedImage.color = new Color(0.3f, 0.3f, 0.3f, 0.6f); // Полупрозрачный серый
-            blockedImage.raycastTarget = false;
-            blockedGO.SetActive(false);
+            // VolumeText → volumeText
+            var volumeTMP = SceneBuilderUtils.CreateTMPText(slotGO, "VolumeText", "",
+                new Vector2(0, 0), 10, FontStyles.Normal, new Color(0.5f, 0.7f, 0.9f));
+            var volumeTMPRect = volumeTMP.GetComponent<RectTransform>();
+            volumeTMPRect.sizeDelta = new Vector2(50f, 18f);
+            volumeTMP.alignment = TextAlignmentOptions.MiddleRight;
 
             // --- Подключение SerializeField ссылок InventorySlotUI ---
             SerializedObject so = new SerializedObject(slotUI);
 
             so.FindProperty("iconImage").objectReferenceValue = iconImage;
-            so.FindProperty("background").objectReferenceValue = bgImage;
-            so.FindProperty("border").objectReferenceValue = borderImage;
+            so.FindProperty("nameText").objectReferenceValue = nameTMP;
             so.FindProperty("countText").objectReferenceValue = countTMP;
-            so.FindProperty("durabilityBar").objectReferenceValue = durBarImage;
-            so.FindProperty("blockedOverlay").objectReferenceValue = blockedGO;
+            so.FindProperty("weightText").objectReferenceValue = weightTMP;
+            so.FindProperty("volumeText").objectReferenceValue = volumeTMP;
 
             so.ApplyModifiedProperties();
 
             // Префаб НЕАКТИВЕН — шаблон для Instantiate
             slotGO.SetActive(false);
 
-            Debug.Log("[Phase17] SlotUIPrefab создан (InventorySlotUI + 6 дочерних элементов)");
+            Debug.Log("[Phase17] SlotRowPrefab создан (InventorySlotUI v3.0: строка с 5 полями)");
             return slotGO;
         }
 
@@ -761,29 +748,46 @@ namespace CultivationGame.Editor.SceneBuilder
 
             backpackPanelOut = backpackPanel.AddComponent<BackpackPanel>();
 
-            // --- Внутренние элементы BackpackPanel ---
+            // --- Внутренние элементы BackpackPanel (строчная модель v3.0) ---
 
-            // GridBackground — фон сетки
-            GameObject gridBgGO = new GameObject("GridBackground");
-            gridBgGO.transform.SetParent(backpackPanel.transform, false);
-            var gridBgRect = gridBgGO.AddComponent<RectTransform>();
-            gridBgRect.anchorMin = new Vector2(0f, 0f);
-            gridBgRect.anchorMax = new Vector2(1f, 1f);
-            gridBgRect.offsetMin = new Vector2(8, 35);
-            gridBgRect.offsetMax = new Vector2(-8, -30);
-            var gridBgImage = gridBgGO.AddComponent<Image>();
-            gridBgImage.color = new Color(0.08f, 0.08f, 0.1f, 0.5f);
+            // ScrollRect — контейнер с прокруткой для списка предметов
+            GameObject scrollGO = new GameObject("ScrollRect");
+            scrollGO.transform.SetParent(backpackPanel.transform, false);
+            var scrollRect = scrollGO.AddComponent<RectTransform>();
+            scrollRect.anchorMin = new Vector2(0f, 0f);
+            scrollRect.anchorMax = new Vector2(1f, 1f);
+            scrollRect.offsetMin = new Vector2(8, 35);
+            scrollRect.offsetMax = new Vector2(-8, -30);
+            var scrollImage = scrollGO.AddComponent<Image>();
+            scrollImage.color = new Color(0.08f, 0.08f, 0.1f, 0.5f);
+            var scrollRectComp = scrollGO.AddComponent<ScrollRect>();
+            scrollRectComp.horizontal = false;
+            scrollRectComp.vertical = true;
+            scrollRectComp.movementType = ScrollRect.MovementType.Clamped;
+            scrollRectComp.scrollbarVisibility = ScrollRect.ScrollbarVisibility.AutoHide;
 
-            // GridContainer — контейнер для ячеек
-            GameObject gridContGO = new GameObject("GridContainer");
-            gridContGO.transform.SetParent(gridBgGO.transform, false);
-            var gridContRect = gridContGO.AddComponent<RectTransform>();
-            gridContRect.anchorMin = new Vector2(0f, 1f);
-            gridContRect.anchorMax = new Vector2(1f, 1f);
-            gridContRect.pivot = new Vector2(0f, 1f);
-            gridContRect.offsetMin = new Vector2(8, -8);
-            gridContRect.offsetMax = new Vector2(-8, -8);
-            gridContRect.sizeDelta = new Vector2(0f, 0f);
+            // ListContainer — VerticalLayoutGroup для строк-предметов
+            GameObject listContGO = new GameObject("ListContainer");
+            listContGO.transform.SetParent(scrollGO.transform, false);
+            var listContRect = listContGO.AddComponent<RectTransform>();
+            listContRect.anchorMin = new Vector2(0f, 1f);
+            listContRect.anchorMax = new Vector2(1f, 1f);
+            listContRect.pivot = new Vector2(0f, 1f);
+            listContRect.offsetMin = new Vector2(0, 0);
+            listContRect.offsetMax = new Vector2(0, 0);
+            var vertLayout = listContGO.AddComponent<VerticalLayoutGroup>();
+            vertLayout.spacing = 2f;
+            vertLayout.padding = new RectOffset(4, 4, 4, 4);
+            vertLayout.childAlignment = TextAnchor.UpperCenter;
+            vertLayout.childControlWidth = true;
+            vertLayout.childControlHeight = false;
+            vertLayout.childForceExpandWidth = true;
+            vertLayout.childForceExpandHeight = false;
+            var contentSizeFitter = listContGO.AddComponent<ContentSizeFitter>();
+            contentSizeFitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+
+            // Подключаем ScrollRect → ListContainer
+            scrollRectComp.content = listContRect;
 
             // BackpackNameText — название рюкзака
             var bpNameText = SceneBuilderUtils.CreateTMPText(backpackPanel, "BackpackNameText",
@@ -823,20 +827,45 @@ namespace CultivationGame.Editor.SceneBuilder
             weightBarSlider.maxValue = 10f;
             weightBarSlider.value = 0f;
 
-            // SlotsText — занято / всего слотов
-            var slotsTMP = SceneBuilderUtils.CreateTMPText(backpackPanel, "SlotsText",
-                "0/12",
-                new Vector2(0, -25), 11, FontStyles.Normal,
-                new Color(0.7f, 0.7f, 0.7f));
-            var slotsTMPRect = slotsTMP.GetComponent<RectTransform>();
-            slotsTMPRect.anchorMin = new Vector2(1f, 1f);
-            slotsTMPRect.anchorMax = new Vector2(1f, 1f);
-            slotsTMPRect.pivot = new Vector2(1f, 1f);
-            slotsTMPRect.anchoredPosition = new Vector2(-10, -25);
-            slotsTMPRect.sizeDelta = new Vector2(60f, 14f);
-            slotsTMP.alignment = TextAlignmentOptions.Right;
+            // VolumeBar — полоска объёма
+            var volumeBarSlider = SceneBuilderUtils.CreateBar(backpackPanel, "VolumeBar",
+                new Vector2(10, -34), 200f, 6f,
+                new Color(0.3f, 0.5f, 0.8f, 0.9f));
+            var volumeBarRect = volumeBarSlider.GetComponent<RectTransform>();
+            volumeBarRect.anchorMin = new Vector2(0f, 1f);
+            volumeBarRect.anchorMax = new Vector2(1f, 1f);
+            volumeBarRect.pivot = new Vector2(0f, 1f);
+            volumeBarRect.anchoredPosition = new Vector2(10, -34);
+            volumeBarRect.sizeDelta = new Vector2(-20, 6f);
+            volumeBarSlider.maxValue = 50f;
+            volumeBarSlider.value = 0f;
 
-            // SlotUIPrefab — шаблон для ячеек
+            // VolumeText — текущий / максимальный объём
+            var volumeTMP = SceneBuilderUtils.CreateTMPText(backpackPanel, "VolumeText",
+                "0.0 / 50.0 л",
+                new Vector2(0, -34), 10, FontStyles.Normal,
+                new Color(0.5f, 0.7f, 0.9f));
+            var volumeTMPRect = volumeTMP.GetComponent<RectTransform>();
+            volumeTMPRect.anchorMin = new Vector2(1f, 1f);
+            volumeTMPRect.anchorMax = new Vector2(1f, 1f);
+            volumeTMPRect.pivot = new Vector2(1f, 1f);
+            volumeTMPRect.anchoredPosition = new Vector2(-10, -34);
+            volumeTMPRect.sizeDelta = new Vector2(80f, 14f);
+            volumeTMP.alignment = TextAlignmentOptions.Right;
+
+            // CountText — количество предметов
+            var countTMP = SceneBuilderUtils.CreateTMPText(backpackPanel, "CountText",
+                "0 предм.",
+                new Vector2(0, -44), 10, FontStyles.Normal,
+                new Color(0.6f, 0.6f, 0.6f));
+            var countTMPRect = countTMP.GetComponent<RectTransform>();
+            countTMPRect.anchorMin = new Vector2(0f, 1f);
+            countTMPRect.anchorMax = new Vector2(1f, 1f);
+            countTMPRect.pivot = new Vector2(0f, 1f);
+            countTMPRect.anchoredPosition = new Vector2(10, -44);
+            countTMPRect.sizeDelta = new Vector2(-20, 14f);
+
+            // SlotRowPrefab — шаблон для строки предмета
             GameObject slotPrefab = CreateSlotUIPrefab();
             slotPrefab.transform.SetParent(backpackPanel.transform, false);
 
@@ -844,12 +873,13 @@ namespace CultivationGame.Editor.SceneBuilder
             WireBackpackPanelReferences(
                 backpackPanelOut,
                 slotPrefab,
-                gridContGO.transform,
-                gridBgRect,
+                listContGO.transform,
                 bpNameText,
                 weightTMP,
                 weightBarSlider,
-                slotsTMP);
+                volumeTMP,
+                volumeBarSlider,
+                countTMP);
 
             Debug.Log("[Phase17] BackpackPanel внутренние элементы созданы и подключены");
 

@@ -3,6 +3,7 @@
 // Cultivation World Simulator
 // ============================================================================
 // Создано: 2026-04-19 15:00:00 UTC
+// Редактировано: 2026-04-27 18:15:00 UTC — строчная модель инвентаря
 // ============================================================================
 // Отображает содержимое кольца хранения как каталог (список с группировкой).
 // Объём-ограниченное хранилище, стоимость Qi = qiCostBase + volume × qiCostPerUnit.
@@ -485,8 +486,8 @@ namespace CultivationGame.UI.Inventory
             {
                 headerGO = new GameObject("CategoryHeader");
                 headerGO.transform.SetParent(contentContainer, false);
-                var text = headerGO.AddComponent<TMP_Text>();
-                // TMP_Text без prefab — нужен_TMP component
+                var text = headerGO.AddComponent<TextMeshProUGUI>();
+                // BUG-12 fix: TextMeshProUGUI вместо TMP_Text (абстрактный класс)
             }
 
             var headerText = headerGO.GetComponentInChildren<TMP_Text>();
