@@ -497,13 +497,13 @@ head → torso → body_segment_1 → body_segment_2 → tail
 ## 📚 Связанные документы
 
 - [ARCHITECTURE.md](./ARCHITECTURE.md) — Общая архитектура Unity
-- [../docs/body.md](../docs/body.md) — Исходный документ системы тела
-- [../docs/body-development-analysis.md](../docs/body-development-analysis.md) — Анализ развития
-- [../docs/body_review.md](../docs/body_review.md) — Обзор системы
-- [../docs/body_monsters.md](../docs/body_monsters.md) — Тела монстров
+- [ENTITY_TYPES.md](./ENTITY_TYPES.md) — Иерархия типов сущностей
+- [ALGORITHMS.md](./ALGORITHMS.md) — Алгоритмы и формулы
+- [COMBAT_SYSTEM.md](./COMBAT_SYSTEM.md) — Боевая система
 
 ---
 
 *Документ создан: 2026-03-30*  
+*Обновлено: 2026-04-27 — Аудит: М-1 (ссылки)*
 *Статус: Черновик для доработки*  
 *Только теория — код будет в отдельных файлах*

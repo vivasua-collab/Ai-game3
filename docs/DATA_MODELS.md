@@ -3,7 +3,7 @@
 **Версия:** 1.3  
 **Дата:** 2026-04-07 (обновлено)  
 **Статус:** 📋 Дополнено данными из кода  
-**Источники:** prisma/schema.prisma, src/types/body.ts, src/types/entity-types.ts  
+**Источники:** ENTITY_TYPES.md, ARCHITECTURE.md, ALGORITHMS.md  
 > Обновлено: Qi-значения → long (Fix-01, согласно ARCHITECTURE.md)
 
 ---
@@ -423,7 +423,7 @@
 |------|-----|----------|
 | id | string | Уникальный ID |
 | soulType | string | character, creature, spirit, artifact, construct |
-| morphology | string | humanoid, quadruped, bird, serpentine, arthropod, amorphous |
+| morphology | string | humanoid, quadruped, bird, serpentine, arthropod, amorphous, hybrid_centaur, hybrid_mermaid, hybrid_harpy, hybrid_lamia |
 | bodyMaterial | string | organic, scaled, chitin, ethereal, mineral, chaos |
 | **Характеристики (Range)** ||
 | strength | {min, max} | Диапазон силы |
@@ -465,5 +465,6 @@
 ---
 
 *Документ создан: 2026-03-30*  
+*Обновлено: 2026-04-27 — Аудит: С-3 (гибридные морфологии), М-2 (источники)*
 *Статус: Черновик для доработки*  
 *Только теория — код будет в отдельных файлах*
