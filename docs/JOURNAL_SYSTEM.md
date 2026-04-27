@@ -80,7 +80,8 @@ public enum EntryRarity
     Uncommon,       // Необычная
     Rare,           // Редкая
     Epic,           // Эпическая
-    Legendary       // Легендарная
+    Legendary,      // Легендарная
+    Mythic          // Мифическая — см. DATA_MODELS.md §6 (6 уровней редкости)
 }
 ```
 

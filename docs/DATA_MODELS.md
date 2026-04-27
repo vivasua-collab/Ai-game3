@@ -171,7 +171,7 @@
 | posX | int | X в сетке (0-6) |
 | posY | int | Y в сетке (0-6) |
 | location | string | inventory, equipment, storage |
-| equipmentSlot | string | head, torso, left_hand, right_hand... |
+| equipmentSlot | string | Head, Torso, Belt, Legs, Feet, WeaponMain, WeaponOff, Amulet, RingLeft1, RingLeft2, RingRight1, RingRight2, Charger, Hands, Back |
 | **Equipment V2** |||
 | materialId | string | ID материала |
 | materialTier | int | Тир (1-5) |
@@ -183,8 +183,10 @@
 | itemLevel | int | Уровень предмета (1-9) |
 | effectiveDamage | int | Итоговый урон |
 | effectiveDefense | int | Итоговая защита |
-| bonusStats | JSON | Бонусы |
+| bonusStats | JSON | Бонусы (источники: base, grade, material, set, enchant) |
 | specialEffects | JSON | Особые эффекты |
+| enchantId | string | ID зачарования (null = нет) |
+| enchantTier | int | Тир зачарования (1-5) |
 
 ### 7. Equipment — Экипированные предметы
 

@@ -1,7 +1,7 @@
 # 📖 Глоссарий терминологии
 
 **Создано:** 2026-04-27
-**Обновлено:** 2026-04-27 (расширен: +60 терминов из аудита СТ-2)
+**Обновлено:** 2026-04-27 (расширен: +60 терминов из аудита СТ2, обновления М2-3/М2-4/М2-8/М2-10)
 **Статус:** 📋 Черновик для доработки
 
 ---
@@ -71,7 +71,8 @@
 
 | Термин (код) | Русский | Описание | Источник истины |
 |-------------|---------|----------|-----------------|
-| `EquipmentSlot` | Слот экипировки | 15 слотов: 7 активных + 8 заглушек (🔒) | ARCHITECTURE.md, INVENTORY_SYSTEM.md |
+| `EquipmentSlot` | Слот экипировки | 15 слотов: 7 активных + 8 заглушек (🔒). PascalCase: Head, Torso, Belt, Legs, Feet, WeaponMain, WeaponOff, Amulet, RingLeft1, RingLeft2, RingRight1, RingRight2, Charger, Hands, Back | ARCHITECTURE.md, INVENTORY_SYSTEM.md, DATA_MODELS.md |
+| `Enchant` | Зачарование | Магический эффект на предмете. 5-й источник бонусов (base, grade, material, set, enchant). 5 тиров: T1 (+5~10%) → T5 (+40~50%) | EQUIPMENT_SYSTEM.md §5.5 |
 | `Grade` (экипировка) | Грейд экипировки | 5 уровней: Damaged, Common, Refined, Perfect, Transcendent | EQUIPMENT_SYSTEM.md §2 |
 | `Grade` (техника) | Грейд техники | 4 уровня: Common, Refined, Perfect, Transcendent (без Damaged) | TECHNIQUE_SYSTEM.md |
 | `backpack` | Рюкзак | Переменная ёмкость инвентаря (зависит от рюкзака, не фиксирована 49) | INVENTORY_SYSTEM.md |
@@ -141,7 +142,7 @@
 |-------------|---------|----------|-----------------|
 | `Perk` | Перк | Постоянная пассивная способность. Отличается от баффа (временный) и навыка (развивается) | PERK_SYSTEM.md §1 |
 | `PerkCategory` | Категория перка | Enum: Innate (врождённый, вне слотов), Acquired (приобретённый, основные слоты), Cursed (проклятый, отд. слоты до 3) | PERK_SYSTEM.md §3, §7.1 |
-| `conductivityBonus` | Бонус проводимости (перк) | Увеличивает проводимость меридиан от перков: finalConductivity = base × (1 + conductivityBonus) | PERK_SYSTEM.md §4.2 |
+| `environmentMult` | Множитель среды | Множитель концентрации Ци в области. Увеличивается формациями (НЕ проводимость!). absorbedQi = meditationTime × finalConductivity × environmentMult | QI_SYSTEM.md, FORMATION_SYSTEM.md |
 
 ---
 
@@ -149,9 +150,9 @@
 
 | Термин (код) | Русский | Описание | Источник истины |
 |-------------|---------|----------|-----------------|
-| `BuffType` | Тип баффа | Enum категорий: AttackBoost, DefenseBoost, SpeedBoost, ConductivityBoost, Shield, Poison, Burn, Stun, Slow, Silence... | BUFF_MODIFIERS_SYSTEM.md ЧАСТЬ A |
+| `BuffType` | Тип баффа | Enum категорий: AttackBoost, DefenseBoost, SpeedBoost, Shield, Poison, Burn, Stun, Slow, Silence... (⚠️ ConductivityBoost УДАЛЁН) | BUFF_MODIFIERS_SYSTEM.md ЧАСТЬ A |
 | `BuffApplication` | Применение баффа | Enum: Instant, Duration, Permanent, Stacking, Refreshing | BUFF_MODIFIERS_SYSTEM.md ЧАСТЬ A |
-| `ConductivityModifier` | Модификатор проводимости | Особая система: бонус X сек → откат X×3 сек, штраф bonusValue×0.5. Меридианы «растягиваются», затем «сжимаются» | BUFF_MODIFIERS_SYSTEM.md ЧАСТЬ A §«Проводимость» |
+| `ConductivityModifier` | ~~Модификатор проводимости~~ | ❌ УДАЛЕНО. ConductivityBoost бафф удалён. Формации управляют environmentMult вместо проводимости | BUFF_MODIFIERS_SYSTEM.md ЧАСТЬ A §«Проводимость» |
 | `FormationCore` | Ядро формации | Физический носитель: Disk (переносной, L1-L6) или Altar (стационарный, L5-L9). Содержит контур формации | FORMATION_SYSTEM.md §«Физические носители» |
 | `FormationType` | Тип формации | Enum: Barrier, Trap, Amplification, Suppression, Gathering, Detection, Teleportation, Summoning | FORMATION_SYSTEM.md §«Типы формаций» |
 | `FormationSize` | Размер формации | Enum: Small(3×3м), Medium(10×10м), Large(30×30м), Great(100×100м), Heavy(300×300м, L6+) | FORMATION_SYSTEM.md §«Размеры формаций» |
@@ -203,7 +204,7 @@
 | Размерность мира | WORLD_MAP_SYSTEM.md | 🔧 В разработке |
 | Календарь/время | TIME_SYSTEM.md | |
 | Пороги статов | STAT_THRESHOLD_SYSTEM.md | |
-| Пороги культивации | TAT_THRESHOLD_SYSTEM | |
+| Пороги культивации | STAT_THRESHOLD_SYSTEM.md | Раздел «Пороги культивации» внутри файла |
 | Грейды техник | TECHNIQUE_SYSTEM.md | |
 | Лор | LORE_SYSTEM.md | Подчиняется TIME_SYSTEM для календарных фактов |
 
