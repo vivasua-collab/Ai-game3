@@ -17,7 +17,7 @@
 // Редактировано: 2026-04-25 16:00:00 MSK — BodyDollPanel internals.
 // Редактировано: 2026-04-25 18:30:00 MSK — РЕДИЗАЙН куклы: двухколоночный
 //   layout, квадратные 50×50 слоты, процедурный силуэт тела, ширина 300px.
-// Редактировано: 2026-04-27 18:15:00 UTC — строчная модель инвентаря
+// Редактировано: 2026-04-27 18:40 UTC — фикс: MiddleRight→MidlineRight, scrollbarVisibility→verticalScrollbarVisibility
 // ============================================================================
 
 #if UNITY_EDITOR
@@ -387,21 +387,21 @@ namespace CultivationGame.Editor.SceneBuilder
                 new Vector2(0, 0), 11, FontStyles.Bold, Color.white);
             var countRect = countTMP.GetComponent<RectTransform>();
             countRect.sizeDelta = new Vector2(40f, 20f);
-            countTMP.alignment = TextAlignmentOptions.MiddleRight;
+            countTMP.alignment = TextAlignmentOptions.MidlineRight;
 
             // WeightText → weightText
             var weightTMP = SceneBuilderUtils.CreateTMPText(slotGO, "WeightText", "",
                 new Vector2(0, 0), 10, FontStyles.Normal, new Color(0.7f, 0.7f, 0.7f));
             var weightTMPRect = weightTMP.GetComponent<RectTransform>();
             weightTMPRect.sizeDelta = new Vector2(50f, 18f);
-            weightTMP.alignment = TextAlignmentOptions.MiddleRight;
+            weightTMP.alignment = TextAlignmentOptions.MidlineRight;
 
             // VolumeText → volumeText
             var volumeTMP = SceneBuilderUtils.CreateTMPText(slotGO, "VolumeText", "",
                 new Vector2(0, 0), 10, FontStyles.Normal, new Color(0.5f, 0.7f, 0.9f));
             var volumeTMPRect = volumeTMP.GetComponent<RectTransform>();
             volumeTMPRect.sizeDelta = new Vector2(50f, 18f);
-            volumeTMP.alignment = TextAlignmentOptions.MiddleRight;
+            volumeTMP.alignment = TextAlignmentOptions.MidlineRight;
 
             // --- Подключение SerializeField ссылок InventorySlotUI ---
             SerializedObject so = new SerializedObject(slotUI);
@@ -764,7 +764,7 @@ namespace CultivationGame.Editor.SceneBuilder
             scrollRectComp.horizontal = false;
             scrollRectComp.vertical = true;
             scrollRectComp.movementType = ScrollRect.MovementType.Clamped;
-            scrollRectComp.scrollbarVisibility = ScrollRect.ScrollbarVisibility.AutoHide;
+            scrollRectComp.verticalScrollbarVisibility = ScrollRect.ScrollbarVisibility.AutoHide;
 
             // ListContainer — VerticalLayoutGroup для строк-предметов
             GameObject listContGO = new GameObject("ListContainer");

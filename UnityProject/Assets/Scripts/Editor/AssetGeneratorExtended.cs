@@ -4,7 +4,7 @@
 // Версия: 1.1 — Добавлена валидация данных
 // ============================================================================
 // Создан: 2026-04-02
-// Редактировано: 2026-04-18 18:43:19 UTC — EquipmentSlot переписан по v2.0, +handType, +volume, +allowNesting
+// Редактировано: 2026-04-27 18:40 UTC — убраны sizeWidth/sizeHeight (ItemData v2.0 строчная модель)
 // Добавляет генерацию: Techniques, NPCPresets, Equipment, Items, Materials
 // ============================================================================
 
@@ -429,8 +429,7 @@ namespace CultivationGame.Editor
 
             asset.stackable = data.stackable;
             asset.maxStack = data.maxStack;
-            asset.sizeWidth = data.sizeWidth;
-            asset.sizeHeight = data.sizeHeight;
+            // sizeWidth/sizeHeight убраны в ItemData v2.0 — строчная модель (масса + объём)
             asset.weight = data.weight;
             asset.value = data.value;
 
@@ -617,8 +616,7 @@ namespace CultivationGame.Editor
 
             asset.stackable = false;
             asset.maxStack = 1;
-            asset.sizeWidth = 1;
-            asset.sizeHeight = 1;
+            // sizeWidth/sizeHeight убраны в ItemData v2.0 — строчная модель
             asset.weight = weight;
             asset.value = Mathf.RoundToInt(maxVolume * 10);
 
@@ -1144,10 +1142,10 @@ namespace CultivationGame.Editor
                     Debug.LogWarning($"[Validation] {path}: Stackable item with invalid maxStack ({asset.maxStack})");
                 }
 
-                // Проверка размера
-                if (asset.sizeWidth <= 0 || asset.sizeHeight <= 0)
+                // Проверка объёма (строчная модель — размер = объём, не ширина/высота)
+                if (asset.volume <= 0)
                 {
-                    Debug.LogWarning($"[Validation] {path}: Invalid item size ({asset.sizeWidth}x{asset.sizeHeight})");
+                    Debug.LogWarning($"[Validation] {path}: Invalid item volume ({asset.volume})");
                 }
             }
 
@@ -1399,8 +1397,7 @@ namespace CultivationGame.Editor
             public string rarity;
             public bool stackable;
             public int maxStack;
-            public int sizeWidth;
-            public int sizeHeight;
+            // sizeWidth/sizeHeight убраны — строчная модель инвентаря
             public float weight;
             public int value;
             public bool hasDurability;
