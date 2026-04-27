@@ -1,12 +1,77 @@
 # 🐛 Чекпоинт: Исправление ошибок компиляции
 
 **Дата:** 2026-04-27 18:40 UTC
-**Статус:** ✅ complete
-**Цель:** Исправить 12 ошибок компиляции, возникших после переписи ItemData.cs (убраны sizeWidth/sizeHeight) и написания Phase17InventoryUI.cs (некорректные API)
+**Статус:** ✅ complete (2 итерации, UnityEditor запущен успешно)
+**Цель:** Исправить ошибки компиляции после переработки инвентаря на строчную модель (коммит f756a24)
 
 ---
 
-## 📋 СПИСОК ОШИБОК
+## ИТЕРАЦИЯ 1 — первый запуск UnityEditor после переработки
+
+**Коммит:** f838919 (2026-04-27 18:36 UTC)
+**Контекст:** После массовой переработки инвентаря (коммит f756a24 — 4 переписи + 14 редактирований)
+первый запуск UnityEditor выявил 4 ошибки компиляции.
+
+### Ошибки итерации 1
+
+| # | Файл | Ошибка | Причина |
+|---|------|--------|---------|
+| 1 | SaveManager.cs | CS1503: несовместимый тип аргумента — EquipmentData вместо Dictionary | LoadSaveData ожидает Dictionary<string, EquipmentData>, передавался itemDatabase (Dictionary<string, ItemData>) |
+| 2 | DragDropHandler.cs:157 | CS1061: GetEquippedItem не найден | Метод переименован в GetEquipment при переписи EquipmentController |
+| 3 | IntegrationTestScenarios.cs | CS1061: InventorySlotSaveData не содержит gridX/gridY | Поля удалены из SaveData при переходе на строчную модель |
+| 4 | DragDropHandler.cs (ссылка) | CS0246: тип ContextMenuUI не найден | Класс ContextMenuUI ещё не существовал — был в legacy InventoryUI.cs (удалён) |
+
+### Правки итерации 1
+
+#### Правка 1: SaveManager.cs — EquipmentDatabase для LoadSaveData
+**Что:** Добавлен метод `BuildEquipmentDatabase()` и изменён вызов:
+```csharp
+// Было (ломалось):
+equipmentController.LoadSaveData(equipDict, realItemDatabase);
+// realItemDatabase = Dictionary<string, ItemData> — несоответствие типа
+
+// Стало:
+var equipDatabase = BuildEquipmentDatabase(); // Dictionary<string, EquipmentData>
+equipmentController.LoadSaveData(equipDict, equipDatabase);
+```
+**Почему:** EquipmentController.LoadSaveData ожидает `Dictionary<string, EquipmentData>`,
+а передавался `Dictionary<string, ItemData>` (itemDatabase). ItemData — базовый класс,
+EquipmentData — наследник. C# не поддерживает ковариантность в generic-параметрах Dictionary.
+**Риск:** Нет — BuildEquipmentDatabase собирает только EquipmentData-ассеты через Resources.FindObjectsOfTypeAll
+**Откат:** Вернуть itemDatabase + изменить сигнатуру LoadSaveData (хуже — теряет типизацию)
+
+Также: `craftingController.LoadSaveData(data.CraftingData, realItemDatabase)` → `LoadSaveData(data.CraftingData)`
+(убран лишний аргумент — CraftingController.LoadSaveData не принимает itemDatabase)
+
+#### Правка 2: DragDropHandler.cs — GetEquippedItem → GetEquipment
+**Что:** `equipmentController.GetEquippedItem(slot)` → `equipmentController.GetEquipment(slot)`
+**Почему:** Метод переименован при переписи EquipmentController (строчная модель)
+**Риск:** Нет — прямое переименование, семантика идентична
+**Откат:** Вернуть старое имя метода в EquipmentController (НЕ рекомендуется)
+
+#### Правка 3: IntegrationTestScenarios.cs — удалены gridX/gridY
+**Что:** Убраны поля `gridX = 0, gridY = 0` из InventorySlotSaveData в тестовых данных
+**Почему:** InventorySlotSaveData больше не содержит gridX/gridY (сетка удалена)
+**Риск:** Нет — поля не имели смысла в строчной модели
+**Откат:** Вернуть поля в InventorySlotSaveData (НЕ рекомендуется — легаси)
+
+#### Правка 4: ContextMenuUI.cs — новый файл (117 строк)
+**Что:** Создан `Assets/Scripts/UI/ContextMenuUI.cs` — минимальная реализация контекстного меню
+**Почему:** DragDropHandler ссылался на ContextMenuUI, но класс не существовал.
+Он был внутри legacy InventoryUI.cs (874 строки, удалён как часть переработки).
+Выделен как самостоятельный компонент.
+**Риск:** Минимальный — новая реализация упрощённая, но покрывает потребность DragDropHandler
+**Откат:** Удалить файл + восстановить InventoryUI.cs (НЕ рекомендуется — легаси)
+
+---
+
+## ИТЕРАЦИЯ 2 — второй запуск UnityEditor
+
+**Коммит:** f0b5b77 (2026-04-27 18:40 UTC)
+**Контекст:** После фиксов итерации 1 обнаружены ещё 12 ошибок — не обновлённые
+зависимости от sizeWidth/sizeHeight и некорректные API в Phase17InventoryUI.cs.
+
+### Ошибки итерации 2
 
 | # | Файл | Строка | Ошибка | Причина |
 |---|------|-------:|--------|---------|
@@ -74,40 +139,39 @@
 
 ---
 
-## 📝 ИСТОРИЯ ПРАВОК
+### Правки итерации 2
 
-### Правка 1: AssetGeneratorExtended.cs — удаление sizeWidth/sizeHeight (строки 432-433)
+#### Правка 5: AssetGeneratorExtended.cs — удаление sizeWidth/sizeHeight (строки 432-433)
 **Что:** Убрать `asset.sizeWidth = data.sizeWidth;` и `asset.sizeHeight = data.sizeHeight;`
 **Почему:** Поля удалены из ItemData v2.0, volume рассчитывается автоматически
 **Риск:** Нет — volume уже вычисляется на строке 443
 **Откат:** Вернуть строки + вернуть поля в ItemData (НЕ рекомендуется — легаси)
 
-### Правка 2: AssetGeneratorExtended.cs — удаление sizeWidth/sizeHeight для StorageRingData (строки 620-621)
+#### Правка 6: AssetGeneratorExtended.cs — удаление sizeWidth/sizeHeight для StorageRingData (строки 620-621)
 **Что:** Убрать `asset.sizeWidth = 1;` и `asset.sizeHeight = 1;`
 **Почему:** StorageRingData наследует от EquipmentData→ItemData, поля удалены
 **Риск:** Нет — volume уже задаётся на строке 631
 **Откат:** Вернуть строки + вернуть поля в ItemData (НЕ рекомендуется)
 
-### Правка 3: AssetGeneratorExtended.cs — удаление валидации размера (строки 1147-1151)
+#### Правка 7: AssetGeneratorExtended.cs — удаление валидации размера (строки 1147-1151)
 **Что:** Убрать блок проверки `if (asset.sizeWidth <= 0 || asset.sizeHeight <= 0)`
-**Почему:** Поля не существуют, валидация бессмысленна. Вместо этого добавим
-валидацию volume (если <= 0)
+**Почему:** Поля не существуют, валидация бессмысленна. Заменена на валидацию volume (если <= 0)
 **Риск:** Нет — потерянная валидация компенсируется проверкой volume
 **Откат:** Вернуть блок + вернуть поля (НЕ рекомендуется)
 
-### Правка 4: AssetGeneratorExtended.cs — удаление полей ItemJson DTO (строки 1402-1403)
+#### Правка 8: AssetGeneratorExtended.cs — удаление полей ItemJson DTO (строки 1402-1403)
 **Что:** Убрать `public int sizeWidth;` и `public int sizeHeight;` из ItemJson
 **Почему:** DTO должен соответствовать актуальной модели данных
 **Риск:** Нет — JSON без этих полей будет десериализован корректно (default 0)
 **Откат:** Вернуть поля (безвредно, но бессмысленно)
 
-### Правка 5: Phase17InventoryUI.cs — MiddleRight → MidlineRight (строки 390, 397, 404)
+#### Правка 9: Phase17InventoryUI.cs — MiddleRight → MidlineRight (строки 390, 397, 404)
 **Что:** Заменить `TextAlignmentOptions.MiddleRight` → `TextAlignmentOptions.MidlineRight`
 **Почему:** MiddleRight не существует в TMP API, MidlineRight — правильное значение
 **Риск:** Нет — визуально идентичный результат
 **Откат:** Если нужен другой вариант выравнивания — использовать BaselineRight или Right
 
-### Правка 6: Phase17InventoryUI.cs — scrollbarVisibility → verticalScrollbarVisibility (строка 767)
+#### Правка 10: Phase17InventoryUI.cs — scrollbarVisibility → verticalScrollbarVisibility (строка 767)
 **Что:** Заменить `scrollRectComp.scrollbarVisibility` → `scrollRectComp.verticalScrollbarVisibility`
 **Почему:** ScrollRect не имеет scrollbarVisibility, только vertical/horizontalScrollbarVisibility
 **Риск:** Нет — поведение идентичное (AutoHide для вертикального скроллбара)
@@ -124,3 +188,4 @@
 ---
 
 *Создано: 2026-04-27 18:40 UTC*
+*Редактировано: 2026-04-27 18:50 UTC — добавлена итерация 1 (фиксы f838919)*
