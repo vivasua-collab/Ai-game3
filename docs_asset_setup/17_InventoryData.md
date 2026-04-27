@@ -1,16 +1,19 @@
 # Настройка данных инвентаря (Вручную)
 
-**Категория:** Инвентарь
-**Спецификация:** `docs_temp/INVENTORY_UI_DRAFT.md` v2.0
+**Категория:** Инвентарь  
+**Спецификация:** `docs_temp/INVENTORY_UI_DRAFT.md` v2.0  
+**Редактировано:** 2026-04-27
 
 ---
 
 ## Обзор
 
 Система инвентаря требует три типа данных:
-1. **BackpackData** — рюкзаки (определяют размер сетки)
+1. **BackpackData** — рюкзаки (ограничения по массе и объёму)
 2. **StorageRingData** — кольца хранения (объём-ограниченные)
-3. **Обновление ItemData** — поля `volume` и `allowNesting`
+3. **Обновление ItemData** — поле `volume` (поле `allowNesting` сохранено)
+
+> ⚠️ **Строчная модель (2026-04-27):** BackpackData переведён с сеточной модели (gridWidth×gridHeight) на строчную (maxWeight / maxVolume / ownWeight). Поля sizeWidth/sizeHeight удалены из ItemData.
 
 ---
 
@@ -41,18 +44,18 @@ Assets/Data/StorageRings/
 | category | Misc |
 | rarity | Common |
 | stackable | ✗ |
-| sizeWidth | 2 |
-| sizeHeight | 2 |
+| ~~sizeWidth~~ | ~~2~~ ⚠️ Удалено |
+| ~~sizeHeight~~ | ~~2~~ ⚠️ Удалено |
 | weight | 0.5 |
 | value | 10 |
 | hasDurability | ✗ |
 | volume | 2.0 |
 | allowNesting | Any |
-| **gridWidth** | **3** |
-| **gridHeight** | **4** |
+| **maxWeight** | **30** |
+| **maxVolume** | **50** |
 | **weightReduction** | **0** |
-| **maxWeightBonus** | **0** |
 | **beltSlots** | **0** |
+| **ownWeight** | **0.5** |
 
 ### 2.2 Кожаный ранец
 
@@ -66,18 +69,18 @@ Assets/Data/StorageRings/
 | category | Misc |
 | rarity | Uncommon |
 | stackable | ✗ |
-| sizeWidth | 2 |
-| sizeHeight | 2 |
-| weight | 1.5 |
+| ~~sizeWidth~~ | ~~2~~ ⚠️ Удалено |
+| ~~sizeHeight~~ | ~~2~~ ⚠️ Удалено |
+| weight | 2.0 |
 | value | 100 |
 | hasDurability | ✗ |
 | volume | 3.0 |
 | allowNesting | Any |
-| **gridWidth** | **4** |
-| **gridHeight** | **5** |
+| **maxWeight** | **50** |
+| **maxVolume** | **80** |
 | **weightReduction** | **10** |
-| **maxWeightBonus** | **10** |
 | **beltSlots** | **1** |
+| **ownWeight** | **2.0** |
 
 ### 2.3 Железный контейнер
 
@@ -91,19 +94,19 @@ Assets/Data/StorageRings/
 | category | Misc |
 | rarity | Rare |
 | stackable | ✗ |
-| sizeWidth | 2 |
-| sizeHeight | 2 |
+| ~~sizeWidth~~ | ~~2~~ ⚠️ Удалено |
+| ~~sizeHeight~~ | ~~2~~ ⚠️ Удалено |
 | weight | 5.0 |
 | value | 500 |
 | hasDurability | ✓ |
 | maxDurability | 200 |
 | volume | 4.0 |
 | allowNesting | Any |
-| **gridWidth** | **5** |
-| **gridHeight** | **5** |
+| **maxWeight** | **80** |
+| **maxVolume** | **120** |
 | **weightReduction** | **15** |
-| **maxWeightBonus** | **20** |
 | **beltSlots** | **2** |
+| **ownWeight** | **5.0** |
 
 ### 2.4 Духовный мешок
 
@@ -117,18 +120,43 @@ Assets/Data/StorageRings/
 | category | Misc |
 | rarity | Epic |
 | stackable | ✗ |
-| sizeWidth | 2 |
-| sizeHeight | 2 |
-| weight | 1.0 |
+| ~~sizeWidth~~ | ~~2~~ ⚠️ Удалено |
+| ~~sizeHeight~~ | ~~2~~ ⚠️ Удалено |
+| weight | 3.0 |
 | value | 2000 |
 | hasDurability | ✗ |
 | volume | 5.0 |
 | allowNesting | Any |
-| **gridWidth** | **6** |
-| **gridHeight** | **6** |
+| **maxWeight** | **120** |
+| **maxVolume** | **200** |
 | **weightReduction** | **25** |
-| **maxWeightBonus** | **30** |
 | **beltSlots** | **2** |
+| **ownWeight** | **3.0** |
+
+### 2.5 Пространственный сундук
+
+| Поле | Значение |
+|------|----------|
+| fileName | `Backpack_SpatialChest` |
+| itemId | `backpack_spatial_chest` |
+| nameRu | Пространственный сундук |
+| nameEn | Spatial Chest |
+| description | Мифический сундук с пространственным карманом. Огромная вместимость при минимальном весе. |
+| category | Misc |
+| rarity | Legendary |
+| stackable | ✗ |
+| ~~sizeWidth~~ | ~~—~~ ⚠️ Удалено |
+| ~~sizeHeight~~ | ~~—~~ ⚠️ Удалено |
+| weight | 1.0 |
+| value | 10000 |
+| hasDurability | ✗ |
+| volume | 5.0 |
+| allowNesting | Any |
+| **maxWeight** | **200** |
+| **maxVolume** | **500** |
+| **weightReduction** | **40** |
+| **beltSlots** | **4** |
+| **ownWeight** | **1.0** |
 
 ---
 
@@ -148,8 +176,8 @@ Assets/Data/StorageRings/
 | category | Accessory |
 | rarity | Uncommon |
 | stackable | ✗ |
-| sizeWidth | 1 |
-| sizeHeight | 1 |
+| ~~sizeWidth~~ | ~~1~~ ⚠️ Удалено |
+| ~~sizeHeight~~ | ~~1~~ ⚠️ Удалено |
 | weight | 0.1 |
 | value | 200 |
 | volume | 0.3 |
@@ -171,8 +199,8 @@ Assets/Data/StorageRings/
 | category | Accessory |
 | rarity | Rare |
 | stackable | ✗ |
-| sizeWidth | 1 |
-| sizeHeight | 1 |
+| ~~sizeWidth~~ | ~~1~~ ⚠️ Удалено |
+| ~~sizeHeight~~ | ~~1~~ ⚠️ Удалено |
 | weight | 0.1 |
 | value | 800 |
 | volume | 0.3 |
@@ -194,8 +222,8 @@ Assets/Data/StorageRings/
 | category | Accessory |
 | rarity | Epic |
 | stackable | ✗ |
-| sizeWidth | 1 |
-| sizeHeight | 1 |
+| ~~sizeWidth~~ | ~~1~~ ⚠️ Удалено |
+| ~~sizeHeight~~ | ~~1~~ ⚠️ Удалено |
 | weight | 0.1 |
 | value | 3000 |
 | volume | 0.3 |
@@ -217,8 +245,8 @@ Assets/Data/StorageRings/
 | category | Accessory |
 | rarity | Legendary |
 | stackable | ✗ |
-| sizeWidth | 1 |
-| sizeHeight | 1 |
+| ~~sizeWidth~~ | ~~1~~ ⚠️ Удалено |
+| ~~sizeHeight~~ | ~~1~~ ⚠️ Удалено |
 | weight | 0.1 |
 | value | 10000 |
 | volume | 0.3 |
@@ -282,7 +310,8 @@ Assets/Data/Backpacks/
 ├── Backpack_ClothSack.asset
 ├── Backpack_LeatherPack.asset
 ├── Backpack_IronContainer.asset
-└── Backpack_SpiritBag.asset
+├── Backpack_SpiritBag.asset
+└── Backpack_SpatialChest.asset
 
 Assets/Data/StorageRings/
 ├── StorageRing_Slit.asset
@@ -293,4 +322,5 @@ Assets/Data/StorageRings/
 
 ---
 
-*Документ создано: 2026-04-19 06:25:00 UTC*
+*Документ создано: 2026-04-19 06:25:00 UTC*  
+*Редактировано: 2026-04-27 — Переход на строчную модель (grid→maxWeight/maxVolume), удаление sizeWidth/sizeHeight, добавление SpatialChest*

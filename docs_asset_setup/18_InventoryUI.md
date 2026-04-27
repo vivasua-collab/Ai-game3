@@ -1,8 +1,9 @@
 # Настройка UI инвентаря (Вручную)
 
-**Категория:** Инвентарь
-**Спецификация:** `docs_temp/INVENTORY_UI_DRAFT.md` v2.0
-**Зависимости:** Phase07UI (Canvas), Phase16InventoryData (ассеты), Phase06Player (Player)
+**Категория:** Инвентарь  
+**Спецификация:** `docs_temp/INVENTORY_UI_DRAFT.md` v2.0  
+**Зависимости:** Phase07UI (Canvas), Phase16InventoryData (ассеты), Phase06Player (Player)  
+**Редактировано:** 2026-04-27
 
 ---
 
@@ -11,7 +12,7 @@
 Создание UI инвентаря вручную включает:
 1. Создание InventoryScreen в GameUI Canvas
 2. Настройка BodyDollPanel с 7 слотами экипировки
-3. Настройка BackpackPanel с динамической сеткой
+3. Настройка BackpackPanel со списком строк (VerticalLayoutGroup + ScrollRect)
 4. Добавление TooltipPanel, DragDropHandler, ContextMenu
 5. Настройка TabBar для переключения между хранилищами
 6. Добавление SpiritStoragePanel и StorageRingPanel
@@ -131,28 +132,38 @@ TMP Text: «КУКЛА», шрифт 18, bold
 
 ### 5.1 BackpackHeader
 
-TMP Text: «Тканевая сумка (3×4)» — шрифт 16, цвет: коричневый
+TMP Text: «Тканевая сумка — 30 кг / 50 л» — шрифт 16, цвет: коричневый
 
-### 5.2 GridContainer
+> ⚠️ Старый формат «Тканевая сумка (3×4)» — устарел, заменён на массу/объём.
 
-1. Создайте пустой объект `GridContainer`
-2. Добавьте `GridLayoutGroup`:
-   - Cell Size: 50×50
-   - Spacing: 2, 2
-   - Start Corner: Upper Left
-   - Start Axis: Horizontal
-   - Child Alignment: Upper Left
-3. Для стартового рюкзака 3×4 = 12 ячеек — создайте 12 пустых Image объектов:
-   - Цвет: `rgba(26, 26, 46, 255)` (тёмный фон)
-   - Рамка: `rgba(68, 68, 68, 255)` (серая)
-4. Добавьте `InventorySlotUI` скрипт к каждой ячейке
+### 5.2 ListContainer (строчная модель)
 
-### 5.3 WeightBar
+1. Создайте пустой объект `ListContainer`
+2. Добавьте `ScrollRect`:
+   - Horizontal: отключено
+   - Vertical: включено
+   - Movement Type: Elastic
+   - Inertia: ✓
+   - Scrollbar: создать вертикальную полосу прокрутки
+3. Внутри Content (Viewport/Content) добавьте `VerticalLayoutGroup`:
+   - Spacing: 2
+   - Child Alignment: Upper Center
+   - Child Force Expand: Width ✓, Height ✗
+   - Padding: 4, 4, 4, 4
+4. Строки создаются динамически из префаба `SlotRowPrefab` (скрипт `InventorySlotUI`)
+5. Каждая строка содержит: nameText, weightText, volumeText
+
+> ⚠️ Старый GridLayoutGroup с ячейками 50×50 — устарел. Теперь используется VerticalLayoutGroup + ScrollRect (Phase17).
+
+### 5.3 WeightBar + VolumeBar
 
 1. Создайте Slider «WeightBar»
 2. Background: тёмно-серый
 3. Fill: жёлтый (переход в красный при >80%)
 4. TMP Text: «Вес: 0 / 30 кг»
+5. Создайте Slider «VolumeBar»
+6. Fill: голубой (переход в красный при >80%)
+7. TMP Text: «Объём: 0 / 50 л»
 
 ---
 
@@ -337,8 +348,10 @@ GameUI (Canvas)
     │   │   │   └── WeaponOffSlot
     │   │   └── BackpackPanel
     │   │       ├── BackpackHeader
-    │   │       ├── GridContainer (3×4 ячеек)
-    │   │       └── WeightBar
+    │   │       ├── ListContainer (ScrollRect + VerticalLayoutGroup)
+    │   │       │   └── SlotRowPrefab (динамические строки)
+    │   │       ├── WeightBar
+    │   │       └── VolumeBar
     │   ├── BeltPanel
     │   └── TabBar
     │       ├── BackpackTab
@@ -353,4 +366,5 @@ GameUI (Canvas)
 
 ---
 
-*Документ создано: 2026-04-19 06:25:00 UTC*
+*Документ создано: 2026-04-19 06:25:00 UTC*  
+*Редактировано: 2026-04-27 — Переход на строчную модель: GridLayoutGroup → VerticalLayoutGroup+ScrollRect, строковый UI (nameText/weightText/volumeText), добавление VolumeBar*
