@@ -1,7 +1,7 @@
 # 🛠️ Unity Setup Guide — Cultivation World Simulator
 
-**Версия:** 1.0
-**Дата:** 2026-03-30
+**Версия:** 1.1
+**Дата:** 2026-04-27 (обновлено)
 **Unity:** 6000.3 (6000.3.0f1)
 
 ---
@@ -128,20 +128,21 @@
 | Qi Density | 1 |
 | Aging Multiplier | 1.0 |
 | Regeneration Multiplier | 1.1 |
-| Conductivity Multiplier | 1.0 |
+| ~~Conductivity Multiplier~~ | ❌ Удалено — проводимость = `coreCapacity / 360` (производная) |
 
-4. Повторите для всех 10 уровней
+4. Повторите для всех 9 уровней (10 = Вознесение, конец игры)
 
 ### 4.2 Elements
 
 1. `Assets → Create → Cultivation → Element Data`
-2. Создайте 7 элементов:
+2. Создайте 8 элементов:
    - Fire (Огонь)
    - Water (Вода)
    - Earth (Земля)
    - Air (Воздух)
    - Lightning (Молния)
    - Void (Пустота)
+   - Light (Свет)
    - Neutral (Нейтральный)
 
 ### 4.3 Technique Types
@@ -157,7 +158,7 @@
    - Sensory
    - Curse
    - Poison
-   - Formation
+   - ~~Formation~~ ❌ Формации — отдельная система, см. [FORMATION_SYSTEM.md](./FORMATION_SYSTEM.md)
 
 ### 4.4 Materials
 

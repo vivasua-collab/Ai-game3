@@ -335,7 +335,7 @@ public static class TestRunnerHelper
 
 - [ALGORITHMS.md](./ALGORITHMS.md) — Формулы для верификации
 - [COMBAT_SYSTEM.md](./COMBAT_SYSTEM.md) — Логика боевой системы
-- [docs/examples/RunningTests.md](./examples/RunningTests.md) — Инструкция запуска
+- [docs_temp/RunningTests.md](../docs_temp/RunningTests.md) — Инструкция запуска
 
 ---
 

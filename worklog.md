@@ -22,3 +22,29 @@ Stage Summary:
 - Total audit progress: 59 findings across 3 iterations, 44 fixed, 15 remaining (4 deferred, 11 awaiting user decisions)
 - Key architectural decisions made: ConductivityBoost removed, formations handle environmentMult, enchantment system added as §5.5
 - Remaining A3 items needing user decisions: С3-1 (TILE_SYSTEM entityType), С3-4 (SETUP_GUIDE Formation type), С3-5 (SETUP_GUIDE ConductivityMultiplier), М3-1/М3-3/М3-5/М3-7 (minor terminology issues), СТ3-1/СТ3-3/СТ3-4/СТ3-5 (cross-references)
+
+---
+Task ID: 7
+Agent: glossary-links
+Task: Add GLOSSARY.md links to 13 documentation files
+
+Work Log:
+- NPC_AI_SYSTEM.md — added glossary link after ⚠️ Важно block
+- MORTAL_DEVELOPMENT.md — added glossary link after ⚠️ Проблема block
+- SAVE_SYSTEM.md — added glossary link after ⚠️ Важно block
+- TILE_SYSTEM.md — added glossary link after ⚠️ Важно block
+- WORLD_MAP_SYSTEM.md — added glossary link after ⚠️ Важно block
+- LOCATION_MAP_SYSTEM.md — added glossary link after ⚠️ Важно block
+- FORMATION_SYSTEM.md — added glossary link after first --- separator (no Важно block)
+- FACTION_SYSTEM.md — added glossary link after ⚠️ Важно block
+- WORLD_SAVE_SYSTEM.md — added glossary link after ⚠️ Важно block
+- TRANSITION_SYSTEM.md — added glossary link after ⚠️ Важно block
+- DEVELOPMENT_PLAN.md — added glossary link after first --- separator (no Важно block)
+- CONFIGURATIONS.md — added glossary link after ⚠️ Важно block
+- STAT_THRESHOLD_SYSTEM.md — added glossary link after ⚠️ Важно block
+
+Stage Summary:
+- All 13 files modified with glossary link: `> **📖 Глоссарий:** [GLOSSARY.md](./GLOSSARY.md) — единый справочник терминологии проекта`
+- Link inserted after ⚠️ Важно/Проблема block closing separator (11 files) or after first --- separator (2 files: FORMATION_SYSTEM, DEVELOPMENT_PLAN)
+- No duplicates — verified none of the 13 files had existing GLOSSARY references
+- Timestamp: 2026-04-27 13:55:12 UTC
