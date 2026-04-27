@@ -499,7 +499,7 @@ public class PerkController
 public void RecalculateStats()
 {
     // Базовая проводимость
-    float baseConductivity = maxQiCapacity / 360f;
+    float baseConductivity = coreCapacity / 360f;
     
     // Бонус от перков
     float perkBonus = perkController.GetConductivityBonus();

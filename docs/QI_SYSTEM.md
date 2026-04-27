@@ -57,7 +57,7 @@
 │   │                                                                      │   │
 │   │   Core                                                               │   │
 │   │   ├── currentQi: long         // Текущее количество Ци (long с Fix-01)     │   │
-│   │   ├── maxQi: long              // Максимальная ёмкость (long с Fix-01)     │   │
+│   │   ├── coreCapacity: long       // Ёмкость ядра (long с Fix-01)             │   │
 │   │   ├── density: int            // Плотность (по уровню)              │   │
 │   │   ├── quality: float          // Качество ядра                      │   │
 │   │   └── conductivity: float     // Проводимость меридиан               │   │

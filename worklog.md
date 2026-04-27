@@ -162,3 +162,56 @@ Stage Summary:
 - Добавлены ссылки на SoT грейдов в 5 документах
 - Индексация аудита обновлена: А1/А2, К2-1..К2-5, С2-1..С2-14, М2-1..М2-12, СТ2-1..СТ2-5
 - Дата: 2026-04-27
+
+---
+Task ID: 6-b
+Agent: Pipeline update agent
+Task: Add Formation layer + ARCHITECTURE brief overview
+
+Work Log:
+- Прочитан worklog.md предыдущих задач (1-5)
+- Прочитаны COMBAT_SYSTEM.md, ALGORITHMS.md, ARCHITECTURE.md
+- М2-6: Добавлен СЛОЙ 3b «Бафф/Дебафф формаций» в пайплайн COMBAT_SYSTEM.md (между СЛОЙ 3 и СЛОЙ 4)
+- М2-6: Добавлен СЛОЙ 3b «Бафф/Дебафф формаций» в пайплайн ALGORITHMS.md §5.1 (между СЛОЙ 3 и СЛОЙ 4)
+- М2-6: Обновлён счётчик слоёв 10→11 в заголовках и диаграммах обоих файлов
+- М2-6: Обновлён счётчик 10→11 в !LISTING.md (описание COMBAT_SYSTEM.md)
+- М2-7: Добавлен «Краткий обзор» и ссылка на ALGORITHMS.md §5 в ARCHITECTURE.md (секция «Порядок применения защит»)
+
+Stage Summary:
+- М2-6 выполнен: СЛОЙ 3b добавлен в COMBAT_SYSTEM.md и ALGORITHMS.md; счётчик обновлён 10→11 в 3 файлах
+- М2-7 выполнен: ARCHITECTURE.md — добавлен блок «Краткий обзор» со ссылкой на ALGORITHMS.md §5
+- Изменено 4 файла: COMBAT_SYSTEM.md, ALGORITHMS.md, ARCHITECTURE.md, !LISTING.md
+
+---
+Task ID: 6-a
+Agent: Naming unification agent
+Task: Unify coreCapacity and qiRestoration naming
+
+Work Log:
+- Прочитан worklog.md предыдущих задач (1-6b)
+- Прочитан GLOSSARY.md — подтверждены авторитетные имена: `coreCapacity`, `qiRegen` (базовая), `qiRestoration`, `qi_restoration_buff`
+- Grep-поиск всех .md в docs/ по: core_capacity, MaxQi, maxQi, qiMax, qi_regen, QiRegen, qiRegen
+- `core_capacity` — 0 вхождений (уже не используется)
+- М2-1 (coreCapacity): найдены и заменены устаревшие варианты MaxQi/maxQi/qiMax:
+  - QI_SYSTEM.md: `maxQi: long // Максимальная ёмкость` → `coreCapacity: long // Ёмкость ядра` (определение поля в диаграмме)
+  - PERK_SYSTEM.md: `maxQiCapacity / 360f` → `coreCapacity / 360f` (переменная в коде)
+  - BUFF_MODIFIERS_SYSTEM.md: `WRONG_max_qi_boost | MaxQiBoost` → `WRONG_core_capacity_boost | coreCapacityBoost` (пример запрета с корректным именованием)
+  - EQUIPMENT_SYSTEM.md: `qiMax — Макс. Ци` → `coreCapacity — Ёмкость ядра` (идентификатор модификатора экипировки)
+- М2-2 (qiRestoration): найдены и заменены qiRegen/QiRegen когда НЕ относится к базовой регенерации:
+  - EQUIPMENT_SYSTEM.md: `qiRegen — Регенерация Ци` → `qiRestoration — Восстановление Ци` (модификатор экипировки, модифицируемый)
+  - ALGORITHMS.md: `QiRegen в FormationBuffType` → `QiRestoration в FormationBuffType` (тип баффа формации)
+  - BUFF_MODIFIERS_SYSTEM.md: `FormationBuffType.QiRegen` → `FormationBuffType.QiRestoration` (в диаграмме параметров ядра)
+- Сохранены без изменений (корректные использования qiRegen для БАЗОВОЙ регенерации):
+  - GLOSSARY.md: `qiRegen` (базовая) — авторитетное определение
+  - BUFF_MODIFIERS_SYSTEM.md: `qiRegen (Базовая регенерация Ци)` в таблице и диаграмме — корректно
+  - BUFF_MODIFIERS_SYSTEM.md: `WRONG_qi_regen_boost | QiRegenBoost` — пример запрета буста базовой регенерации
+  - GLOSSARY.md: `~~qi_regen_buff~~` — устаревший термин (зачёркнут)
+- Верификация: повторный grep подтвердил отсутствие остаточных вхождений maxQi/MaxQi/qiMax; qiRegen остаётся только в корректных контекстах
+
+Stage Summary:
+- М2-1 выполнен: все MaxQi/maxQi/qiMax → coreCapacity (4 замены в 4 файлах)
+- М2-2 выполнен: qiRegen/QiRegen → qiRestoration в контекстах модифицируемого восстановления (3 замены в 3 файлах)
+- qiRegen сохранён в 4 местах для БАЗОВОЙ регенерации (10%/сутки, немодифицируемая) — корректно по GLOSSARY
+- Изменено 5 файлов: QI_SYSTEM.md, PERK_SYSTEM.md, BUFF_MODIFIERS_SYSTEM.md, EQUIPMENT_SYSTEM.md, ALGORITHMS.md
+- GLOSSARY.md — без изменений (уже авторитетен)
+- Дата: 2026-04-27

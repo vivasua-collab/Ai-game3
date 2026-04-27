@@ -264,8 +264,8 @@
 - healthMax — Макс. HP
 
 **Qi:**
-- qiMax — Макс. Ци
-- qiRegen — Регенерация Ци
+- coreCapacity — Ёмкость ядра
+- qiRestoration — Восстановление Ци
 - qiConductivity — Проводимость
 - qiCostReduction — Снижение стоимости
 

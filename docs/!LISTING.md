@@ -52,7 +52,7 @@
 
 | Файл | Описание | Размер | Токены ≈ | |
 |------|----------|--------|----------|-|
-| [COMBAT_SYSTEM.md](./COMBAT_SYSTEM.md) | Боевая система, пайплайн урона 10 слоёв | 27 KB | 9.0K | ⚠️ |
+| [COMBAT_SYSTEM.md](./COMBAT_SYSTEM.md) | Боевая система, пайплайн урона 11 слоёв | 27 KB | 9.0K | ⚠️ |
 | [TECHNIQUE_SYSTEM.md](./TECHNIQUE_SYSTEM.md) | Система техник культивации | 11 KB | 3.7K | ✅ |
 | [QI_SYSTEM.md](./QI_SYSTEM.md) | Система Ци: накопление, проводимость, плотность, прорывы | 18 KB | 6.0K | ⚠️ |
 | [BODY_SYSTEM.md](./BODY_SYSTEM.md) | Kenshi-style система тела, двойная HP | 23 KB | 7.6K | ⚠️ |
