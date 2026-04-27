@@ -92,7 +92,7 @@ Data/JSON/
 
 **Задачи:**
 ```
-□ CultivationLevelData — 10 уровней культивации (Asset Generator)
+□ CultivationLevelData — 9 уровней культивации (99 с подуровнями). При переходе на 10 уровень — игра заканчивается (Вознесение).
 □ MortalStageData — 6 этапов смертных (Asset Generator)
 □ ElementData — 8 элементов (Asset Generator)
 □ SpeciesData — базовые виды (вручную или расширить AssetGenerator)

@@ -156,7 +156,7 @@
 | nameId | string | ID для поиска пресета |
 | type | string | weapon_sword, armor_torso, consumable_pill... |
 | category | string | weapon, armor, accessory, consumable, material |
-| rarity | string | common, uncommon, rare, epic, legendary |
+| rarity | string | common, uncommon, rare, epic, legendary, mythic |
 | icon | string | Эмодзи или путь к иконке |
 | **Количество** |||
 | quantity | int | Количество |
@@ -206,14 +206,14 @@
 | Feet | Body Zone | Обувь |
 | WeaponMain | Weapon | Основное оружие |
 | WeaponOff | Weapon | Вторичное оружие |
-| Amulet | Accessory | Амулет (макс. 1) |
-| RingLeft1 | Ring | Кольцо левое 1 |
-| RingLeft2 | Ring | Кольцо левое 2 |
-| RingRight1 | Ring | Кольцо правое 1 |
-| RingRight2 | Ring | Кольцо правое 2 |
-| Charger | Charger | Зарядное устройство (макс. 1) |
-| Hands | Future | Руки (резерв) |
-| Back | Future | Спина (резерв) |
+| Amulet | Accessory 🔒 | Амулет (макс. 1) — ЗАГЛУШКА |
+| RingLeft1 | Ring 🔒 | Кольцо левое 1 — ЗАГЛУШКА |
+| RingLeft2 | Ring 🔒 | Кольцо левое 2 — ЗАГЛУШКА |
+| RingRight1 | Ring 🔒 | Кольцо правое 1 — ЗАГЛУШКА |
+| RingRight2 | Ring 🔒 | Кольцо правое 2 — ЗАГЛУШКА |
+| Charger | Charger 🔒 | Зарядное устройство (макс. 1) — ЗАГЛУШКА |
+| Hands | 🔒 Заглушка | Руки (резерв) |
+| Back | 🔒 Заглушка | Спина (резерв) |
 
 > **Head/Torso/Legs/Feet** = body zones; **Belt** = для зарядов/зелий; **WeaponMain/Off** = оружие; **Rings** = макс. 4; **Amulet** = 1; **Charger** = 1; **Hands/Back** = будущее расширение.
 

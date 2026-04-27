@@ -315,6 +315,10 @@ dissipatedQi = excessQi
 │  СЛОЙ 1: Исходный урон                                                               │
 │  rawDamage = capacity × gradeMult × ultimateMult                                     │
 │                                      ↓                                               │
+│  СЛОЙ 1b: Урон оружия (melee_weapon)                                                 │
+│  // Для атак с оружием: weaponDamage добавляется к rawDamage                         │
+│  // > См. EQUIPMENT_SYSTEM.md §7.3-7.4                                               │
+│                                      ↓                                               │
 │  СЛОЙ 2: Level Suppression                                                           │
 │  damage ×= suppressionMultiplier                                                     │
 │                                      ↓                                               │
@@ -324,8 +328,8 @@ dissipatedQi = excessQi
 │  СЛОЙ 4: Активная защита                                                             │
 │  dodge/parry/block → снижение урона                                                 │
 │                                      ↓                                               │
-│  СЛОЙ 5: Qi Buffer (только для техник Ци)                                           │
-│  90% поглощение сырой Ци / 100% щит                                                  │
+│  СЛОЙ 5: Qi Buffer (для ЛЮБОГО урона — техники Ци и физический)                    │
+│  90%/80% поглощение (Ци/физика) / 100% щит                                           │
 │                                      ↓                                               │
 │  СЛОЙ 6: Покрытие брони                                                              │
 │  if (random() < coverage) → СЛОЙ 7                                                   │
@@ -508,10 +512,15 @@ damage = 0.3 × totalDamage  // Чёрная HP
 | earth | Земля | air | fire |
 | air | Воздух | earth | fire, lightning |
 | lightning | Молния | **void** | water, air |
-| void | Пустота | **lightning** | — |
+| void | Пустота | **lightning, light** | — |
+| light | Свет | **void** | water, air |
 | neutral | Нейтральный | — | — |
 
-> **Вариант А (принят 2026-04-10):** Lightning ↔ Void — двусторонняя противоположность.
+> **Противоположности (обновлено 2026-04-27):**
+> - Fire ↔ Water — двусторонняя противоположность
+> - Earth ↔ Air — двусторонняя противоположность
+> - Lightning ↔ Void — двусторонняя противоположность (Вариант А, принят 2026-04-10)
+> - Light ↔ Void — двусторонняя противоположность (добавлено 2026-04-27)
 > Ранее: lightning → earth (одностороннее). Теперь Lightning и Void взаимно противоположны.
 
 > **Poison (Яд)** — НЕ стихия, а состояние Ци. Не имеет противоположностей.
@@ -524,9 +533,11 @@ damage = 0.3 × totalDamage  // Чёрная HP
 - Fire ↔ Water: атакующий Fire по Water = ×1.5, Water по Fire = ×1.5; сродство ×0.8
 - Earth ↔ Air: атакующий Earth по Air = ×1.5, Air по Earth = ×1.5; сродство ×0.8
 - Lightning ↔ Void: атакующий Lightning по Void = ×1.5, Void по Lightning = ×1.5; сродство ×0.8
+- Light ↔ Void: атакующий Light по Void = ×1.5, Void по Light = ×1.5; сродство ×0.8
 
 **Односторонние:**
 - Fire → Poison: ×1.2 (выжигание токсинов)
+- Light → Poison: ×1.2 (очищение)
 - Void → All: ×1.2 (поглощение)
 - Neutral → All: ×1.0 (без бонусов)
 
@@ -540,6 +551,7 @@ damage = 0.3 × totalDamage  // Чёрная HP
 | air | knockback, slow, speed, lightness |
 | lightning | stun, pierce, chain |
 | void | pierce, leech, debuff, drain |
+| light | healing, purification, barrier |
 | neutral | — |
 
 ---

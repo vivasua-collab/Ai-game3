@@ -48,6 +48,15 @@
 │  ╚═════════════════════════════════════════════════════════════════════════════╝    │
 │                                      ↓                                               │
 │  ╔═════════════════════════════════════════════════════════════════════════════╗    │
+│  ║  СЛОЙ 1b: ДОБАВЛЕНИЕ УРОНА ОРУЖИЯ (для melee_weapon атак)                   ║    │
+│  ║  // Для атак с оружием (melee_weapon):                                       ║    │
+│  ║  // baseDamage = max(handDamage, weaponDamage × 0.5)                         ║    │
+│  ║  // bonusDamage = weaponDamage × statScaling                                 ║    │
+│  ║  // rawDamage += bonusDamage                                                 ║    │
+│  ║  // > Источник истины: EQUIPMENT_SYSTEM.md §7.3-7.4                          ║    │
+│  ╚═════════════════════════════════════════════════════════════════════════════╝    │
+│                                      ↓                                               │
+│  ╔═════════════════════════════════════════════════════════════════════════════╗    │
 │  ║  СЛОЙ 2: ПОДАВЛЕНИЕ УРОВНЕМ (Level Suppression)                               ║    │
 │  ║  suppressionMult = getSuppression(attackerLevel, targetLevel, attackType)    ║    │
 │  ║  damage ×= suppressionMult                                                   ║    │
@@ -119,7 +128,7 @@
 │  ╔═════════════════════════════════════════════════════════════════════════════╗    │
 │  ║  СЛОЙ 7: СНИЖЕНИЕ УРОНА БРОНЁЙ                                               ║    │
 │  ║  // Процентное снижение                                                      ║    │
-│  ║  damageReduction = armor.damageReduction + materialBonus + gradeBonus         ║    │
+│  ║  damageReduction = min(0.8, armor.damageReduction + materialBonus + gradeBonus)  // Кап 80%         ║    │
 │  ║  damage ×= (1 - damageReduction)                                             ║    │
 │  ║                                                                              ║    │
 │  ║  // Плоское вычитание (пробитие)                                             ║    │
@@ -282,6 +291,7 @@ dodgeChance = 5% + (AGI-10) × 0.5% - armorDodgePenalty
 | 1 | ×0.5 | ×0.75 | ×1.0 |
 | 2 | ×0.1 | ×0.25 | ×0.5 |
 | 3 | ×0.0 | ×0.05 | ×0.25 |
+| 4 | ×0.0 | ×0.0 | ×0.1 |
 | 5+ | ×0.0 | ×0.0 | ×0.0 |
 
 Полная таблица и формулы — в ALGORITHMS.md.
