@@ -86,3 +86,79 @@ Stage Summary:
 - Все 11 существенных правок (С-1..С-12, без С-4) выполнены
 - Изменено 14 файлов: MODIFIERS_SYSTEM.md, COMBAT_SYSTEM.md, INVENTORY_SYSTEM.md, EQUIPMENT_SYSTEM.md, DATA_MODELS.md, BODY_SYSTEM.md, ALGORITHMS.md, WORLD_MAP_SYSTEM.md, TRANSITION_SYSTEM.md, WORLD_SYSTEM.md, CONFIGURATIONS.md, DEVELOPMENT_PLAN.md, LORE_SYSTEM.md, TIME_SYSTEM.md
 - Дата: 2026-04-27
+
+---
+Task ID: 4-a
+Agent: GLOSSARY preparation agent
+Task: Scan docs/ for missing GLOSSARY terms
+
+Work Log:
+- Прочитан worklog предыдущих задач (1, 2, 3-a, 3-b)
+- Прочитан текущий GLOSSARY.md — 18 терминов в 4 категориях
+- Прочитаны ВСЕ 35 документов docs/ (ARCHITECTURE, ALGORITHMS, QI_SYSTEM, COMBAT_SYSTEM, BUFF_SYSTEM, MODIFIERS_SYSTEM, ELEMENTS_SYSTEM, TECHNIQUE_SYSTEM, INVENTORY_SYSTEM, EQUIPMENT_SYSTEM, ENTITY_TYPES, BODY_SYSTEM, DATA_MODELS, CONFIGURATIONS, DEVELOPMENT_PLAN, TIME_SYSTEM, LORE_SYSTEM, WORLD_SYSTEM, WORLD_MAP_SYSTEM, LOCATION_MAP_SYSTEM, TILE_SYSTEM, TRANSITION_SYSTEM, FORMATION_SYSTEM, CHARGER_SYSTEM, PERK_SYSTEM, FACTION_SYSTEM, JOURNAL_SYSTEM, NPC_AI_SYSTEM, MORTAL_DEVELOPMENT, STAT_THRESHOLD_SYSTEM, SAVE_SYSTEM, WORLD_SAVE_SYSTEM, GENERATORS_SYSTEM, SPRITE_INDEX, SORTING_LAYERS)
+- Извлечены все технические термины, идентификаторы кода, enum-значения, игровые концепции
+- Перекрёстная проверка: выявлены термины, отсутствующие в GLOSSARY
+- 18 терминов из аудита подтверждены + 42 дополнительных найдено = 60 отсутствующих терминов
+- Организованы по 10 категориям: Мир, Время, Фракции, Перки, Ци (доп.), Бой (доп.), Техники, Баффы/Формации/Зарядники, Развитие, Прочее
+
+Stage Summary:
+- Подготовлена таблица из 60 отсутствующих терминов для добавления в GLOSSARY.md
+- Категории: Мир(11), Время(4), Фракции(6), Перки(3), Ци-доп(6), Бой-доп(4), Техники(6), Баффы/Формации/Зарядники(9), Развитие(5), Прочее(6)
+- Наиболее критичные пропуски: cultivationLevel, tick, Season, Faction, Perk, PerkCategory, Charger, FormationCore — фундаментальные термины, упоминаемые в 5+ документах
+
+---
+Task ID: 4-b
+Agent: Grade analysis agent
+Task: Analyze grade duplication across docs
+
+Work Log:
+- Прочитан worklog предыдущих задач (1, 2, 3-a, 3-b, 4-a)
+- Прочитан EQUIPMENT_SYSTEM.md — источник истины по грейдам экипировки (§2.1 таблица, §2.2 распределение, §2.3 изменение, архитектура «Матрёшка» lines 50-56, §5.3 генерация бонусов)
+- Прочитан CHARGER_SYSTEM.md — источник для зарядников (§6.2 влияние редкости, §2.3 проводимость по грейдам)
+- Grep-поиск по всем docs/ по ключевым словам: грейд, grade, Damaged, Common, Refined, Perfect, Transcendent, ×0.5, ×1.0, ×1.3, ×1.6, ×2.0, множитель, Повреждён, Улучшен, Совершен, Превосход
+- Найдено 14 документов с контентом по грейдам (помимо EQUIPMENT_SYSTEM и CHARGER_SYSTEM)
+- Детально прочитаны все релевантные секции каждого документа
+- Классифицировано: дублирование vs уникальная информация vs уже есть ссылка на источник истины
+
+Stage Summary:
+- **8 документов** содержат дублирующую информацию о грейдах экипировки (нужна замена ссылкой на EQUIPMENT_SYSTEM.md)
+- **4 документа** содержат информацию о грейдах ТЕХНИК (уникальная, не дублирует EQUIPMENT_SYSTEM — TECHNIQUE_SYSTEM.md является своим собственным источником истины)
+- **3 документа** уже имеют корректные ссылки на источник истины (INVENTORY_SYSTEM.md, CONFIGURATIONS.md, ARCHITECTURE.md §Грейды)
+- **2 документа** полностью дублируют таблицу грейдов зарядников без ссылки (QI_SYSTEM.md — но уже имеет ссылку после правки К-2)
+- Подробный отчёт с рекомендациями подготовлен
+
+---
+Task ID: 5
+Agent: Main
+Task: Выполнение структурных правок СТ2-1 через СТ2-5 + обновление индексации аудита
+
+Work Log:
+- Прочитан worklog предыдущих задач (1-4b)
+- Прочитаны BUFF_SYSTEM.md и MODIFIERS_SYSTEM.md полностью
+- Прочитан GLOSSARY.md
+- СТ2-1: Создан объединённый файл BUFF_MODIFIERS_SYSTEM.md с двумя частями:
+  - ЧАСТЬ A: Баффы и дебаффы (типы, ограничения, структуры данных, UI)
+  - ЧАСТЬ B: Модификаторы и перки (формулы, капы, переменные, источники)
+  - Старые файлы перемещены в docs_old/
+  - Обновлены ссылки в ARCHITECTURE.md, EQUIPMENT_SYSTEM.md, PERK_SYSTEM.md
+- СТ2-2: GLOSSARY.md обновлён — добавлено 60 терминов в 10 категориях (данные от субагента 4-a)
+  - Мир(11), Время(4+ESM), Фракции(6), Перки(3), Ци-доп(6+innateElement), Бой-доп(4), Техники(5+Matryoshka), Баффы/Формации/Зарядники(9), Развитие(5), Журнал/Прочее(3+rarity+durability)
+  - Обновлены ссылки BUFF_SYSTEM.md → BUFF_MODIFIERS_SYSTEM.md
+- СТ2-3: В GLOSSARY.md добавлена таблица «Специализированные источники истины» с WORLD_MAP_SYSTEM.md (🔧 В разработке), TIME_SYSTEM.md, STAT_THRESHOLD_SYSTEM.md, TAT_THRESHOLD_SYSTEM, TECHNIQUE_SYSTEM.md
+- СТ2-4: Отложено на несколько дней (не критично)
+- СТ2-5: Добавлены ссылки на источник истины грейдов в 5 документов:
+  - COMBAT_SYSTEM.md → TECHNIQUE_SYSTEM.md (грейды техник)
+  - ALGORITHMS.md → TECHNIQUE_SYSTEM.md (грейды техник)
+  - DATA_MODELS.md → EQUIPMENT_SYSTEM.md + TECHNIQUE_SYSTEM.md (грейды экипировки и техник)
+  - GENERATORS_SYSTEM.md → TECHNIQUE_SYSTEM.md + EQUIPMENT_SYSTEM.md
+  - CHARGER_SYSTEM.md → EQUIPMENT_SYSTEM.md (опционально, базовые множители)
+- Обновлена индексация аудита: К→К2-N, С→С2-N, М→М2-N, СТ→СТ2-N
+- Обновлён аудит-документ AUDIT_DOCS_CONTRADICTIONS_2026-04-27.md
+
+Stage Summary:
+- СТ2-1..СТ2-3, СТ2-5 выполнены ✅. СТ2-4 отложен ⏳
+- Создан BUFF_MODIFIERS_SYSTEM.md (объединение BUFF_SYSTEM + MODIFIERS_SYSTEM)
+- GLOSSARY.md: 18 → 78 терминов (+60)
+- Добавлены ссылки на SoT грейдов в 5 документах
+- Индексация аудита обновлена: А1/А2, К2-1..К2-5, С2-1..С2-14, М2-1..М2-12, СТ2-1..СТ2-5
+- Дата: 2026-04-27

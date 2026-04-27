@@ -190,6 +190,8 @@ finalDamage = capacity × gradeMultiplier × ultimateMultiplier
 - `gradeMultiplier` = множитель Grade (common:1.0, refined:1.3, perfect:1.6, transcendent:2.0)
 - `ultimateMultiplier` = isUltimate ? 2.0 : 1.0
 
+> **Источник множителей грейдов техник:** [TECHNIQUE_SYSTEM.md](./TECHNIQUE_SYSTEM.md) §«Система Grade (Качество)»
+
 > ⚠️ **Устаревшие формулы удалены:** формулы с `qiDensity × statMultiplier × masteryBonus` или `qiInvested` как базой — НЕВЕРНЫ. Единственная правильная формула использует `capacity`.
 
 ---

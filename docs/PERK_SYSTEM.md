@@ -515,7 +515,7 @@ public void RecalculateStats()
 
 - [QI_SYSTEM.md](./QI_SYSTEM.md) — Система Ци
 - [BODY_SYSTEM.md](./BODY_SYSTEM.md) — Система тела
-- [BUFF_SYSTEM.md](./BUFF_SYSTEM.md) — Система баффов (временные эффекты)
+- [BUFF_MODIFIERS_SYSTEM.md](./BUFF_MODIFIERS_SYSTEM.md) — Система баффов и модификаторов
 - [ARCHITECTURE.md](./ARCHITECTURE.md) — Общая архитектура
 
 ---

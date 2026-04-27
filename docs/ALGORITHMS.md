@@ -280,6 +280,8 @@ gradeMultiplier = GRADE_DAMAGE_MULTIPLIERS[grade]
 // common: 1.0, refined: 1.3, perfect: 1.6, transcendent: 2.0
 ```
 
+> **Источник множителей:** [TECHNIQUE_SYSTEM.md](./TECHNIQUE_SYSTEM.md) §«Система Grade (Качество)»
+
 **Ultimate Multiplier:**
 ```
 ultimateMultiplier = isUltimate ? 2.0 : 1.0

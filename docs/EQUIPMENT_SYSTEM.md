@@ -473,7 +473,7 @@ totalDamage = baseDamage + bonusDamage
 - [ARCHITECTURE.md](./ARCHITECTURE.md) — Общая архитектура Unity
 - [BODY_SYSTEM.md](./BODY_SYSTEM.md) — Система тела
 - [COMBAT_SYSTEM.md](./COMBAT_SYSTEM.md) — Боевая система
-- [MODIFIERS_SYSTEM.md](./MODIFIERS_SYSTEM.md) — Система модификаторов
+- [BUFF_MODIFIERS_SYSTEM.md](./BUFF_MODIFIERS_SYSTEM.md) — Система баффов и модификаторов
 
 ---
 

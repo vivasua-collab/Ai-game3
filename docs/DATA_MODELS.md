@@ -176,6 +176,7 @@
 | materialId | string | ID материала |
 | materialTier | int | Тир (1-5) |
 | grade | string | damaged, common, refined, perfect, transcendent |
+| | | > Грейды экипировки: [EQUIPMENT_SYSTEM.md](./EQUIPMENT_SYSTEM.md) §2.1 |
 | durabilityCurrent | int | Текущая прочность |
 | durabilityMax | int | Макс. прочность |
 | durabilityCondition | string | pristine, good, worn, damaged, broken |
@@ -234,6 +235,7 @@
 | subtype | string | melee_strike, melee_weapon, ranged_projectile... |
 | element | string | fire, water, earth, air, void, neutral |
 | grade | string | common, refined, perfect, transcendent |
+| | | > Грейды техник: [TECHNIQUE_SYSTEM.md](./TECHNIQUE_SYSTEM.md) §«Система Grade» |
 | level | int | Уровень техники (1-9) |
 | **Параметры** |||
 | baseCapacity | long | Базовая ёмкость |
