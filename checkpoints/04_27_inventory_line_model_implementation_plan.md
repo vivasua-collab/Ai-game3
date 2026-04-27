@@ -1,9 +1,9 @@
 # 📐 Чекпоинт: План внедрения строчной модели инвентаря
 
-**Дата:** 2026-05-20
+**Дата:** 2026-04-27
 **Статус:** 📋 План (код НЕ писать до отдельной задачи)
 **Цель:** Перевести рюкзак с сеточной (grid posX/posY, sizeWidth×sizeHeight) на строчную модель (список + масса/объём)
-**Предпосылка:** checkpoints/04_27_inventory_line_model_plan.md + checkpoints/04_20_inventory_code_audit.md
+**Предпосылка:** checkpoints/04_27_inventory_line_model_plan.md + checkpoints/04_27_inventory_code_audit.md
 
 ---
 
@@ -377,6 +377,7 @@ InventorySlotSaveData:
 
 ---
 
-*Создано: 2026-05-20*
-*Аудит кода: 04_20_inventory_code_audit.md*
+*Создано: 2026-04-27 17:45 UTC*
+*Редактировано: 2026-04-27 17:52 UTC — переименование 04_20→04_27, исправление даты и ссылок*
+*Аудит кода: 04_27_inventory_code_audit.md*
 *Предпосылка: 04_27_inventory_line_model_plan.md*
