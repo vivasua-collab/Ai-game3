@@ -559,13 +559,16 @@ namespace CultivationGame.Save
             if (equipmentController != null && data.EquipmentDataArray != null)
             {
                 var equipDict = EquipmentArrayToDict(data.EquipmentDataArray);
-                equipmentController.LoadSaveData(equipDict, realItemDatabase);
+                // EquipmentController.LoadSaveData ожидает Dictionary<string, EquipmentData>
+                // Строим отдельную базу экипировки из EquipmentData ассетов
+                var equipDatabase = BuildEquipmentDatabase();
+                equipmentController.LoadSaveData(equipDict, equipDatabase);
             }
             
             // Крафт (added 2026-04-27)
             if (craftingController != null && data.CraftingData != null)
             {
-                craftingController.LoadSaveData(data.CraftingData, realItemDatabase);
+                craftingController.LoadSaveData(data.CraftingData);
             }
         }
         
@@ -803,6 +806,23 @@ namespace CultivationGame.Save
                 }
             }
             Debug.Log($"[SaveManager] ItemDatabase построен: {database.Count} предметов");
+            return database;
+        }
+        
+        /// <summary>
+        /// Строит словарь EquipmentData из загруженных ScriptableObject ассетов (2026-04-27).
+        /// </summary>
+        private Dictionary<string, Data.ScriptableObjects.EquipmentData> BuildEquipmentDatabase()
+        {
+            var database = new Dictionary<string, Data.ScriptableObjects.EquipmentData>();
+            var allItems = Resources.FindObjectsOfTypeAll<Data.ScriptableObjects.EquipmentData>();
+            foreach (var item in allItems)
+            {
+                if (item != null && !string.IsNullOrEmpty(item.itemId))
+                {
+                    database[item.itemId] = item;
+                }
+            }
             return database;
         }
         

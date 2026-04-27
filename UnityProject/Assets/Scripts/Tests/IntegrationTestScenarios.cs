@@ -470,16 +470,12 @@ namespace CultivationGame.Tests
                         {
                             itemId = "item_sword_001",
                             count = 1,
-                            gridX = 0,
-                            gridY = 0,
                             durability = 100
                         },
                         new InventorySlotSaveData
                         {
                             itemId = "item_potion_hp",
                             count = 10,
-                            gridX = 2,
-                            gridY = 0,
                             durability = -1
                         }
                     };

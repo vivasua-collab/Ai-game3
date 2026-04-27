@@ -154,7 +154,7 @@ namespace CultivationGame.UI.Inventory
 
             if (equipmentController != null)
             {
-                var instance = equipmentController.GetEquippedItem(slot);
+                var instance = equipmentController.GetEquipment(slot);
                 if (instance != null)
                 {
                     SetupDragVisual(instance.equipmentData);
