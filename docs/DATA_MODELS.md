@@ -14,6 +14,8 @@
 > Документ будет перерабатываться в процессе разработки.  
 > **НЕТ КОДА** — только теоретические описания структур данных.
 >
+> **🔧 Переработка инвентаря:** Поля sizeWidth, sizeHeight, posX, posY — УСТАРЕЛИ, будут удалены при переходе на строчную модель. Ограничители: weight (масса) + volume (объём).
+>
 > **📌 Размерность мира:** См. [WORLD_MAP_SYSTEM.md](./WORLD_MAP_SYSTEM.md) — §0.1, §0.2
 
 ---
@@ -163,13 +165,13 @@
 | maxStack | int | Макс. в стаке |
 | stackable | bool | Можно стакать |
 | **Размер в сетке** |||
-| sizeWidth | int | 1-2 |
-| sizeHeight | int | 1-3 |
+| sizeWidth | int | ⚠️ 1-2 — УСТАРЕЛО, будет удалено при переходе на строчную модель |
+| sizeHeight | int | ⚠️ 1-3 — УСТАРЕЛО, будет удалено при переходе на строчную модель |
 | **Физика** |||
-| weight | float | Вес (кг) |
+| weight | float | Вес (кг) — КЛЮЧЕВОЙ параметр в строчной модели |
 | **Позиция** |||
-| posX | int | X в сетке (0-6) |
-| posY | int | Y в сетке (0-6) |
+| posX | int | ⚠️ X в сетке (0-6) — УСТАРЕЛО, будет удалено при переходе на строчную модель |
+| posY | int | ⚠️ Y в сетке (0-6) — УСТАРЕЛО, будет удалено при переходе на строчную модель |
 | location | string | inventory, equipment, storage |
 | equipmentSlot | string | Head, Torso, Belt, Legs, Feet, WeaponMain, WeaponOff, Amulet, RingLeft1, RingLeft2, RingRight1, RingRight2, Charger, Hands, Back |
 | **Equipment V2** |||
