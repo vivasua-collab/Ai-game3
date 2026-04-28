@@ -215,9 +215,11 @@ InventoryController:
 ```
 EquipmentController:
 ├── === Equipment Settings ===
-├── useLayerSystem: ☑ true
-└── maxLayersPerSlot: 2
+├── enforceRequirements: ☑ true
+└── (система слоёв useLayerSystem/maxLayersPerSlot — УПРАЗДНЕНА в v2.0)
 ```
+
+> **Примечание:** Поля `useLayerSystem` и `maxLayersPerSlot` были удалены из EquipmentController v2.0. Принцип: 1 слот = 1 предмет (без слоёв экипировки). См. `EQUIPPED_SPRITES_DRAFT.md` §6.
 
 ---
 
@@ -313,7 +315,7 @@ Player (GameObject)
 │   ├── useWeightLimit: true
 │   └── useVolumeLimit: true
 ├── EquipmentController
-│   └── useLayerSystem: true
+│   └── enforceRequirements: true  (useLayerSystem упразднён v2.0)
 ├── TechniqueController
 │   ├── maxQuickSlots: 10
 │   └── maxUltimates: 1
@@ -368,7 +370,7 @@ Player (GameObject)
 | BodyController | bodyMaterial, vitality |
 | QiController | cultivationLevel, coreQuality, currentQi |
 | InventoryController | baseMaxWeight, defaultMaxVolume, useWeightLimit, useVolumeLimit |
-| EquipmentController | useLayerSystem |
+| EquipmentController | enforceRequirements (useLayerSystem — упразднён в v2.0) |
 | TechniqueController | maxQuickSlots, maxUltimates |
 | StatDevelopment | enableSleepConsolidation |
 | SleepSystem | defaultSleepHours |

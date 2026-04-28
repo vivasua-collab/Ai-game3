@@ -89,7 +89,7 @@
 | `TechniqueSubtype` | Подтип техники | Уточнение типа: melee_strike, melee_weapon, ranged_projectile, ranged_beam, ranged_aoe, shield, block, dodge, reflect, dash, teleport, flight... | TECHNIQUE_SYSTEM.md, CONFIGURATIONS.md |
 | `baseCapacity` | Базовая ёмкость техники | Зависит от типа: Formation=80, Defense=72, Combat=64/48/32, Support/Healing=56, Movement=40... | TECHNIQUE_SYSTEM.md §«Структурная ёмкость» |
 | `capacity` (техника) | Ёмкость техники | Макс. базовое Ци, которое техника обрабатывает: baseCapacity × 2^(level-1) × (1 + mastery/100 × 0.5) | TECHNIQUE_SYSTEM.md §«Структурная ёмкость» |
-| `Matryoshka` | Матрёшка | Архитектура генерации: 3 слоя (База×Грейд×Специализация). Применяется к экипировке, техникам, расходникам | ARCHITECTURE.md §«Принцип Матрёшка» |
+| `Matryoshka` | Матрёшка | Архитектура **генерации**: 3 слоя (База×Грейд×Специализация). Применяется к экипировке, техникам, расходникам. **Не** система слоёв экипировки (Матрёшка v1 упразднена, см. EQUIPPED_SPRITES_DRAFT.md §6) | ARCHITECTURE.md §«Принцип Матрёшка» |
 
 ---
 

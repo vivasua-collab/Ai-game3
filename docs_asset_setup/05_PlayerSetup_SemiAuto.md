@@ -355,7 +355,7 @@ Passive Regen:      ☑ true
 | BodyController | bodyMaterial, vitality |
 | QiController | cultivationLevel, coreQuality |
 | InventoryController | baseMaxWeight: 30, defaultMaxVolume: 50, useWeightLimit: true, useVolumeLimit: true |
-| EquipmentController | useLayerSystem: true |
+| EquipmentController | enforceRequirements: true (useLayerSystem — упразднён в v2.0) |
 | TechniqueController | maxQuickSlots: 10 |
 | StatDevelopment | enableSleepConsolidation: true |
 | SleepSystem | defaultSleepHours: 8 |
