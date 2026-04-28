@@ -1,8 +1,8 @@
 # 🔍 Чекпоинт: План аудита генераторов на соответствие строчной модели инвентаря
 
 **Дата:** 2026-04-28 06:20 UTC
-**Статус:** 📋 план (аудит не начат)
-**Цель:** Проверить ВСЕ генераторы предметов на соответствие требованиям строчной модели инвентаря: корректные volume, weight, stackable/maxStack, allowNesting.
+**Статус:** ✅ аудит завершён (код + документация)
+**Цель:** Проверить ВСЕ генераторы и документацию на соответствие строчной модели инвентаря: корректные ОБА ограничителя — weight (масса) И volume (объём).
 
 ---
 
@@ -247,3 +247,164 @@ volume = 0.1f  // Все расходники — 0.1 литра
 ---
 
 *Создано: 2026-04-28 06:20 UTC*
+*Редактировано: 2026-04-28 07:25 UTC — добавлен полный аудит документации*
+
+---
+
+## 📚 АУДИТ ДОКУМЕНТАЦИИ (2026-04-28 07:25 UTC)
+
+### Принцип: ДВА ограничителя — weight И volume
+
+Строчная модель инвентаря определяет **ДВА** ограничителя вместимости:
+1. **weight (масса, кг)** — сколько весит содержимое
+2. **volume (объём, литры)** — сколько места занимает содержимое
+
+Это НЕ взаимоисключающие параметры. Предмет ДОЛЖЕН иметь ОБА поля > 0.
+Инвентарь ограничен И по массе, И по объёму одновременно.
+
+**Источник истины:**
+- `checkpoints/04_27_inventory_line_model_plan.md` → «Два ограничителя: масса (weight) и объём (volume)»
+- `checkpoints/04_27_inventory_line_model_implementation_plan.md` → «Два ограничителя: масса (weight) и объём (volume) — определяют вместимость»
+- `InventoryController.cs` → CanFitItem проверяет ОБА: rawWeight + addedWeight > MaxWeight И rawVolume + addedVolume > MaxVolume
+- `ItemData.cs` → поля weight И volume существуют рядом
+
+### Результаты проверки по документам
+
+| # | Документ | weight упоминается | volume упоминается | ОБА рядом | Проблема |
+|---|----------|:------------------:|:------------------:|:---------:|----------|
+| D1 | docs/INVENTORY_SYSTEM.md | ✅ строка 120 | ✅ строка 121 | ✅ Оба в таблице Item | Нет — корректно |
+| D2 | docs/DATA_MODELS.md | ✅ строка 169 | ✅ строка 170 | ✅ Оба в таблице Item | Нет — корректно |
+| D3 | docs/EQUIPMENT_SYSTEM.md | ✅ строка 190 | ❌ НЕ УПОМЯНУТ | ❌ | 🔴 volume отсутствует в таблице свойств материалов |
+| D4 | docs_asset_setup/17_InventoryData.md | ✅ | ✅ | ✅ | Нет — корректно |
+| D5 | checkpoints/04_27_inventory_line_model_plan.md | ✅ | ✅ | ✅ | Нет — корректно |
+| D6 | checkpoints/04_27_inventory_line_model_implementation_plan.md | ✅ | ✅ | ✅ | Нет — корректно |
+
+### 🔴 D3: EQUIPMENT_SYSTEM.md — отсутствует volume у материалов
+
+**Файл:** `docs/EQUIPMENT_SYSTEM.md`, §3.2 «Свойства материалов» (строки 187-194)
+
+**Текущее состояние:**
+| Свойство | Описание | Диапазон |
+|----------|----------|----------|
+| baseDurability | Базовая прочность | 20-600 |
+| weight | Вес (кг) | 0.1-10.0 |
+| hardness | Твёрдость (1-10) | 1-10 |
+| flexibility | Гибкость (0-1) | 0-1.0 |
+| qiConductivity | Проводимость Ци | 0.3-5.0 |
+| qiRetention | Сохранение Ци (%/час) | 75-100 |
+
+**Проблема:** Нет поля `volume` (объём). Материалы — это предметы, которые ложатся
+в инвентарь. Каждый материал ДОЛЖЕН иметь объём для CanFitItem().
+
+**Формула volume для материалов:** `max(0.5, weight × 0.5)` (из CalculateVolume).
+
+**Примеры:**
+| Материал | weight | volume (расчётный) |
+|----------|--------|-------------------|
+| Iron Ingot (T1) | 1.0 кг | 0.5 л (min) |
+| Steel Bar (T2) | 2.0 кг | 1.0 л |
+| Spirit Iron (T3) | 3.0 кг | 1.5 л |
+| Star Metal (T4) | 5.0 кг | 2.5 л |
+| Void Matter (T5) | 8.0 кг | 4.0 л |
+
+**Решение:** Добавить в §3.2 строку:
+```
+| volume | Объём (литры) | 0.5-4.0 |  // Формула: max(0.5, weight × 0.5)
+```
+
+### 🟡 D7: EQUIPMENT_SYSTEM.md — отсутствует volume у экипировки
+
+**Проблема:** В разделе свойств экипировки (§8) нет упоминания volume.
+Экипировка — это предметы, которые лежат в инвентаре до экипировки.
+Без volume предмет невозможно поместить в рюкзак.
+
+**Формулы:**
+- Оружие: `clamp(weight, 1, 4)` л
+- Броня: `clamp(weight, 1, 4)` л
+- Аксессуар: `0.2` л
+
+**Примеры:**
+| Предмет | weight | volume |
+|---------|--------|--------|
+| Кинжал | 0.5 кг | 1.0 л (min) |
+| Меч | 2.5 кг | 2.5 л |
+| Двуручник | 6.0 кг | 4.0 л (max) |
+| Тканевая роба | 0.5 кг | 1.0 л (min) |
+| Латный доспех | 8.0 кг | 4.0 л (max) |
+| Кольцо | 0.05 кг | 0.2 л |
+
+**Решение:** Добавить в §8 «Свойства экипировки» таблицу volume по типам.
+
+---
+
+## 🔍 АУДИТ КОДА — проверка ОБЕИХ ограничителей (weight + volume)
+
+### InventoryController.cs — ✅ ПРАВИЛЬНО
+
+Оба ограничителя реализованы корректно:
+- `CanFitItem()`: проверяет `rawWeight + addedWeight > MaxWeight` И `rawVolume + addedVolume > MaxVolume`
+- `MaxFittingCount()`: считает минимум из `byWeight` и `byVolume`
+- `IsOverVolume`: отдельный флаг для перегруза по объёму
+- `OnWeightVolumeChanged`: событие с 4 параметрами (effWeight, maxWeight, curVolume, maxVolume)
+
+### ItemData.cs — ✅ ПРАВИЛЬНО
+
+Оба поля присутствуют:
+- `public float weight = 0.1f;` — вес (кг)
+- `public float volume = 1.0f;` — объём (литры)
+
+### BackpackData.cs — ✅ ПРАВИЛЬНО
+
+Оба ограничителя рюкзака:
+- `public float maxWeight = 30f;` — максимальная масса
+- `public float maxVolume = 50f;` — максимальный объём
+
+### AssetGeneratorExtended.CalculateVolume — ✅ ПРАВИЛЬНО
+
+Все категории рассчитывают volume на основе weight (или константой):
+- Consumable: 0.1 (константа)
+- Material: max(0.5, weight×0.5) — ЗАВИСИТ ОТ ВЕСА
+- Weapon: clamp(weight, 1, 4) — ЗАВИСИТ ОТ ВЕСА
+- Armor: clamp(weight, 1, 4) — ЗАВИСИТ ОТ ВЕСА
+- Accessory: 0.2 (константа)
+
+**Важно:** Для Weapon/Armor/Material volume ЗАВИСИТ ОТ weight — тяжёлый предмет
+занимает больше места. Это логично и корректно.
+
+---
+
+## 📊 ИТОГОВАЯ СВОДКА АУДИТА
+
+### Проблемы КОДА (7 шт.)
+
+| # | Серьёзность | Проблема |
+|---|-------------|----------|
+| P1 | 🔴 | WeaponGenerator DTO — нет volume/weight (для инвентаря) |
+| P2 | 🔴 | ArmorGenerator DTO — нет volume/weight (для инвентаря) |
+| P3 | 🟡 | ConsumableGenerator DTO — sizeWidth/sizeHeight вместо volume |
+| P4 | 🟡 | Phase16 CreateTestEquipment — volume=2.0 для всех |
+| P5 | 🟢 | ConsumableGenerator — вес не масштабируется с уровнем |
+| P6 | 🟢 | AssetGeneratorExtended ItemJson DTO — нет volume |
+| P7 | 🟡 | ConsumableGenerator.SizeByType → VolumeByType |
+
+### Проблемы ДОКУМЕНТАЦИИ (2 шт.)
+
+| # | Серьёзность | Документ | Проблема |
+|---|-------------|----------|----------|
+| D3 | 🔴 | EQUIPMENT_SYSTEM.md §3.2 | Нет volume у свойств материалов |
+| D7 | 🟡 | EQUIPMENT_SYSTEM.md §8 | Нет volume у свойств экипировки |
+
+### Что ПРАВИЛЬНО (не требует изменений)
+
+| Компонент | Статус |
+|-----------|--------|
+| InventoryController.cs — оба ограничителя | ✅ |
+| ItemData.cs — оба поля | ✅ |
+| BackpackData.cs — оба лимита | ✅ |
+| AssetGeneratorExtended.CalculateVolume | ✅ |
+| AssetGeneratorExtended.CalculateNestingFlag | ✅ |
+| Phase16 BackpackData creation | ✅ |
+| Phase16 UpdateExistingItemData | ✅ |
+| docs/INVENTORY_SYSTEM.md | ✅ |
+| docs/DATA_MODELS.md | ✅ |
+| docs_asset_setup/17_InventoryData.md | ✅ |
