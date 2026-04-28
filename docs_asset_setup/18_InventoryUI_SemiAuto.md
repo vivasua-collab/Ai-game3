@@ -1,7 +1,7 @@
 # Настройка UI инвентаря (Полуавтомат)
 
 **Инструмент:** `Tools → Full Scene Builder → Phase 17: Inventory UI`
-**Спецификация:** `docs_temp/INVENTORY_UI_DRAFT.md` v2.0
+**Спецификация:** `docs_temp/INVENTORY_UI_DRAFT.md` v3.0
 **Зависимости:** Phase07UI (Canvas), Phase16InventoryData (ассеты)
 
 ---
@@ -21,10 +21,10 @@
 | Создание RingStorageIndicator (скрыт) | ✅ Автоматически |
 | Wiring BodyDollPanel: 17 SerializeField | ✅ Автоматически |
 | Wiring каждого DollSlotUI: 8 SerializeField | ✅ Автоматически |
-| Создание BackpackPanel (450px, GridContainer) | ✅ Автоматически |
+| Создание BackpackPanel (450px, ListContainer) | ✅ Автоматически |
 | Создание InventorySlotUI prefab (6 дочерних) | ✅ Автоматически |
-| Создание WeightBar, BackpackNameText, WeightText, SlotsText | ✅ Автоматически |
-| Wiring BackpackPanel: 7 SerializeField | ✅ Автоматически |
+| Создание WeightBar, VolumeBar, BackpackNameText, WeightText, VolumeText | ✅ Автоматически |
+| Wiring BackpackPanel: 9 SerializeField | ✅ Автоматически |
 | Создание BeltPanel | ✅ Автоматически |
 | Создание TabBar (3 вкладки) | ✅ Автоматически |
 | Создание TooltipPanel (24 SerializeField wiring) | ✅ Автоматически |
@@ -77,11 +77,11 @@ GameUI/
     │   │   │       └── RingVolumeText
     │   │   └── BackpackPanel (450px)
     │   │       ├── BackpackNameText "Тканевая сумка"
-    │   │       ├── WeightText "0.0 / 10.0 кг"
+    │   │       ├── WeightText "0.0 / 15.0 кг"
     │   │       ├── WeightBar (Slider)
-    │   │       ├── SlotsText "0/12"
-    │   │       ├── GridBackground
-    │   │       │   └── GridContainer
+    │   │       ├── VolumeText "0.0 / 20.0 л"
+    │   │       ├── VolumeBar (Slider)
+    │   │       ├── ListContainer (VerticalLayoutGroup + ScrollRect)
     │   │       └── SlotUIPrefab (неактивен, шаблон)
     │   ├── SpiritStoragePanel (скрыт)
     │   ├── BeltPanel
@@ -118,12 +118,12 @@ GameUI/
 1. Запустите Play Mode
 2. Нажмите **I** — инвентарь должен открыться
 3. Левая сторона — кукла с 7 пустыми слотами
-4. Правая сторона — сетка 3×4 (пустая, если нет предметов)
+4. Правая сторона — список предметов с полосами веса и объёма (пустой, если нет предметов)
 5. Нажмите **ESC** или **I** — инвентарь закрывается
 
 ### Как добавить тестовые предметы
 
-Для проверки отображения предметов в сетке можно добавить их через код:
+Для проверки отображения предметов в списке можно добавить их через код:
 1. Найдите `InventoryController` на Player
 2. В Play Mode вызовите через Inspector или скрипт:
 ```csharp
@@ -169,7 +169,7 @@ inventoryController.AddItem(itemData, 1); // ItemData из Assets/Data/
 | Фон слота куклы | rgba(51, 51, 68, 255) |
 | Рамка слота куклы | rgba(68, 68, 68, 255) → цвет по редкости |
 | Фон BackpackPanel | rgba(34, 34, 51, 255) + коричневый |
-| Пустой слот сетки | rgba(26, 26, 46, 255) + рамка #444 |
+| Строка предмета (пустая) | rgba(26, 26, 46, 255) + рамка #444 |
 | Common рамка | #6b7280 |
 | Uncommon рамка | #22c55e |
 | Rare рамка | #3b82f6 |
@@ -185,16 +185,16 @@ inventoryController.AddItem(itemData, 1); // ItemData из Assets/Data/
 | Компонент | SerializeField полей | Статус |
 |-----------|---------------------|--------|
 | InventoryScreen | 10 (панели, кнопки, вкладки) | ✅ Автоматически |
-| BackpackPanel | 7 (prefab, container, bar, texts) | ✅ Автоматически |
+| BackpackPanel | 9 (prefab, listContainer, weightBar, volumeBar, nameText, weightText, volumeText, scrollRect, layoutGroup) | ✅ Автоматически |
 | InventorySlotUI prefab | 6 (icon, bg, border, count, dur, blocked) | ✅ Автоматически |
 | DragDropHandler | 5 (dragIcon, transform, menu, container, tooltip) | ✅ Автоматически |
 | TooltipPanel | 24 (все разделы) | ✅ Автоматически |
 | BodyDollPanel | 17 (11 слотов + indicator + volume + stats + silhouette) | ✅ Автоматически |
 | DollSlotUI × 11 | 8 × 11 = 88 (icon, border, label, name, dur, blocked, empty, slotType) | ✅ Автоматически |
 | UIManager | 2 (inventoryPanel, inventoryScreen) | ✅ Автоматически |
-| **ИТОГО** | **~150 wiring операций** | ✅ Все автоматически |
+| **ИТОГО** | **~152 wiring операций** | ✅ Все автоматически |
 
 ---
 
 *Документ создано: 2026-04-19 06:25:00 UTC*
-*Редактировано: 2026-04-25 16:10:00 MSK — Обновлено: все wiring теперь автоматически, DollSlotUI иерархия, полный wiring-отчёт*
+*Редактировано: 2026-04-27 18:00:00 MSK — Миграция на линейную модель инвентаря: ListContainer вместо GridContainer, добавлены VolumeBar/VolumeText, удалены SlotsText/GridBackground*

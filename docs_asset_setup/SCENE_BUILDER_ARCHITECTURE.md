@@ -1,8 +1,8 @@
 # Архитектура генерации сцены — Оркестратор + фазовые файлы
 
 **Создано:** 2026-04-17 13:49:14 UTC
-**Редактировано:** 2026-04-25 16:15:00 MSK
-**Версия:** 2.2
+**Редактировано:** 2026-04-28 14:50 UTC
+**Версия:** 2.3
 
 ---
 
@@ -214,10 +214,11 @@ ScenePatchBuilder.cs перенаправляет пользователя к `T
 
 | Ассет | Класс | Параметры |
 |-------|-------|----------|
-| Backpack_ClothSack | BackpackData | grid=3×4, weightReduction=0%, beltSlots=0 |
-| Backpack_LeatherPack | BackpackData | grid=4×5, weightReduction=10%, beltSlots=1 |
-| Backpack_IronContainer | BackpackData | grid=5×5, weightReduction=15%, beltSlots=2 |
-| Backpack_SpiritBag | BackpackData | grid=6×6, weightReduction=25%, beltSlots=2 |
+| Backpack_ClothSack | BackpackData | maxWeight=15, maxVolume=20, weightReduction=0%, beltSlots=0 |
+| Backpack_LeatherPack | BackpackData | maxWeight=25, maxVolume=35, weightReduction=10%, beltSlots=1 |
+| Backpack_IronChest | BackpackData | maxWeight=50, maxVolume=60, weightReduction=15%, beltSlots=2 |
+| Backpack_SpiritBag | BackpackData | maxWeight=80, maxVolume=100, weightReduction=25%, beltSlots=2 |
+| Backpack_SpatialChest | BackpackData | maxWeight=150, maxVolume=200, weightReduction=30%, beltSlots=3 |
 | StorageRing_Slit | StorageRingData | maxVolume=5, qiCostBase=5 |
 | StorageRing_Pocket | StorageRingData | maxVolume=15, qiCostBase=5 |
 | StorageRing_Vault | StorageRingData | maxVolume=30, qiCostBase=5 |
@@ -235,7 +236,7 @@ ScenePatchBuilder.cs перенаправляет пользователя к `T
   - StatsPanel (DamageText, DefenseText, StatsSummaryText)
   - RingStorageIndicator (скрыт, RingVolumeText)
 - Подключает 17 SerializeField BodyDollPanel + 88 SerializeField DollSlotUI (11×8)
-- Добавляет панель `BackpackPanel` с динамической сеткой 3×4 + 7 SerializeField
+- Добавляет панель `BackpackPanel` со списком предметов с полосами веса и объёма + 7 SerializeField
 - Создаёт InventorySlotUI prefab (6 дочерних + 6 SerializeField)
 - Добавляет `TooltipPanel` (24 SerializeField wiring)
 - Добавляет `DragDropHandler` (5 SerializeField wiring)
@@ -264,9 +265,9 @@ GameUI/
     │   │   │   ├── StatsPanel
     │   │   │   └── RingStorageIndicator
     │   │   └── BackpackPanel (450px)
-    │   │       ├── BackpackNameText, WeightText, WeightBar, SlotsText
-    │   │       ├── GridBackground → GridContainer
-    │   │       └── SlotUIPrefab (неактивен)
+    │   │       ├── BackpackNameText, WeightText, WeightBar, VolumeBar
+    │   │       ├── ListContainer
+    │   │       └── InventorySlotUI (row prefab, неактивен)
     │   ├── SpiritStoragePanel
     │   ├── BeltPanel
     │   └── TabBar

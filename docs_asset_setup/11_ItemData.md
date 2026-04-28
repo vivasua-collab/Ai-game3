@@ -1,5 +1,7 @@
 # Настройка ItemData
 
+// Редактировано: 2026-04-28 14:45 UTC
+
 **Путь:** `Assets/Data/Items/`
 
 **Создание:** `Create → Cultivation → Item`
@@ -30,11 +32,15 @@
 | stackable | bool | Можно стакать |
 | maxStack | int | Максимум в стаке |
 
-### Size
+### Volume
 | Поле | Тип | Описание |
 |------|-----|----------|
-| sizeWidth | int (1-2) | Ширина в сетке |
-| sizeHeight | int (1-3) | Высота в сетке |
+| volume | float (литры) | Объём предмета. По умолчанию 1.0. Формула зависит от категории (см. AssetGeneratorExtended.CalculateVolume): Consumable=0.1, Material=max(0.5, weight×0.5), Technique=0.1, Quest=1.0, Weapon=clamp(weight,1,4), Armor=clamp(weight,1,4), Accessory=0.2 |
+
+### Nesting
+| Поле | Тип | Описание |
+|------|-----|----------|
+| allowNesting | NestingFlag | Флаг вложенности. Значения: None, Spirit, Ring, Any. По умолчанию Any (исключения: Quest=None, Technique=Spirit) |
 
 ### Physical
 | Поле | Тип | Описание |
@@ -80,6 +86,14 @@
 | Legendary | Оранжевый | 1% |
 | Mythic | Золотой | 0.1% |
 
+### NestingFlag
+| Значение | Описание |
+|----------|----------|
+| None | Вложенность запрещена |
+| Spirit | Только духовные предметы |
+| Ring | Только кольца |
+| Any | Любые предметы |
+
 ### ItemEffect (helper class)
 | Поле | Тип | Описание |
 |------|-----|----------|
@@ -109,9 +123,11 @@ rarity: Common
 stackable: true
 maxStack: 99
 
-=== Size ===
-sizeWidth: 1
-sizeHeight: 1
+=== Volume ===
+volume: 0.1
+
+=== Nesting ===
+allowNesting: Any
 
 === Physical ===
 weight: 0.05
@@ -152,9 +168,11 @@ rarity: Common
 stackable: true
 maxStack: 99
 
-=== Size ===
-sizeWidth: 1
-sizeHeight: 1
+=== Volume ===
+volume: 0.1
+
+=== Nesting ===
+allowNesting: Any
 
 === Physical ===
 weight: 0.05
@@ -195,9 +213,11 @@ rarity: Common
 stackable: true
 maxStack: 99
 
-=== Size ===
-sizeWidth: 1
-sizeHeight: 1
+=== Volume ===
+volume: 0.1
+
+=== Nesting ===
+allowNesting: Any
 
 === Physical ===
 weight: 0.05
@@ -238,9 +258,11 @@ rarity: Rare
 stackable: true
 maxStack: 20
 
-=== Size ===
-sizeWidth: 1
-sizeHeight: 1
+=== Volume ===
+volume: 0.1
+
+=== Nesting ===
+allowNesting: Any
 
 === Physical ===
 weight: 0.1
@@ -282,9 +304,11 @@ rarity: Common
 stackable: true
 maxStack: 20
 
-=== Size ===
-sizeWidth: 1
-sizeHeight: 1
+=== Volume ===
+volume: 0.1
+
+=== Nesting ===
+allowNesting: Any
 
 === Physical ===
 weight: 0.3
@@ -325,9 +349,11 @@ rarity: Common
 stackable: true
 maxStack: 20
 
-=== Size ===
-sizeWidth: 1
-sizeHeight: 1
+=== Volume ===
+volume: 0.1
+
+=== Nesting ===
+allowNesting: Any
 
 === Physical ===
 weight: 0.5
@@ -368,9 +394,11 @@ rarity: Uncommon
 stackable: true
 maxStack: 30
 
-=== Size ===
-sizeWidth: 1
-sizeHeight: 1
+=== Volume ===
+volume: 0.1
+
+=== Nesting ===
+allowNesting: Any
 
 === Physical ===
 weight: 0.1
@@ -411,9 +439,11 @@ rarity: Uncommon
 stackable: false
 maxStack: 1
 
-=== Size ===
-sizeWidth: 1
-sizeHeight: 2
+=== Volume ===
+volume: 0.1
+
+=== Nesting ===
+allowNesting: Spirit
 
 === Physical ===
 weight: 0.2
@@ -436,23 +466,23 @@ statRequirements: (пусто)
 
 ## Сводная таблица расходников (7 предметов)
 
-| ID | Название | Тип | Эффект | Значение | Стак | Вес | Цена |
-|----|----------|-----|--------|----------|------|-----|------|
-| item_healing_pill | Лечебная пилюля | pill | heal | 20 HP | 99 | 0.05 | 50 |
-| item_qi_pill | Пилюля Ци | pill | restore_qi | 100 Ци | 99 | 0.05 | 80 |
-| item_stamina_pill | Пилюля выносливости | pill | reduce_fatigue | 30% | 99 | 0.05 | 40 |
-| item_breakthrough_pill | Пилюля прорыва | pill | breakthrough_bonus | +20% (60 сек) | 20 | 0.1 | 500 |
-| item_food_bread | Хлеб | food | reduce_hunger | 30 | 20 | 0.3 | 5 |
-| item_food_meat | Мясо | food | reduce_hunger | 60 | 20 | 0.5 | 15 |
-| item_antidote | Противоядие | medicine | remove_poison | 1 | 30 | 0.1 | 100 |
+| ID | Название | Тип | Эффект | Значение | Стак | Объём | Вложенность | Вес | Цена |
+|----|----------|-----|--------|----------|------|-------|-------------|-----|------|
+| item_healing_pill | Лечебная пилюля | pill | heal | 20 HP | 99 | 0.1 | Any | 0.05 | 50 |
+| item_qi_pill | Пилюля Ци | pill | restore_qi | 100 Ци | 99 | 0.1 | Any | 0.05 | 80 |
+| item_stamina_pill | Пилюля выносливости | pill | reduce_fatigue | 30% | 99 | 0.1 | Any | 0.05 | 40 |
+| item_breakthrough_pill | Пилюля прорыва | pill | breakthrough_bonus | +20% (60 сек) | 20 | 0.1 | Any | 0.1 | 500 |
+| item_food_bread | Хлеб | food | reduce_hunger | 30 | 20 | 0.1 | Any | 0.3 | 5 |
+| item_food_meat | Мясо | food | reduce_hunger | 60 | 20 | 0.1 | Any | 0.5 | 15 |
+| item_antidote | Противоядие | medicine | remove_poison | 1 | 30 | 0.1 | Any | 0.1 | 100 |
 
 ---
 
 ## Сводная таблица свитков (1 предмет)
 
-| ID | Название | Размер | Вес | Цена |
-|----|----------|--------|-----|------|
-| scroll_technique_common | Свиток техники | 1×2 | 0.2 | 200 |
+| ID | Название | Объём | Вложенность | Вес | Цена |
+|----|----------|-------|-------------|-----|------|
+| scroll_technique_common | Свиток техники | 0.1 | Spirit | 0.2 | 200 |
 
 ---
 
@@ -475,10 +505,12 @@ statRequirements: (пусто)
 1. **Стакаемые предметы** (stackable=true) не могут иметь уникальных модификаторов
 2. **duration=0** означает мгновенный эффект
 3. **duration>0** означает эффект на время (в секундах)
-4. **Размер 1×2** для свитков (вертикальный формат)
-5. **requiredCultivationLevel=0** доступен с начала игры
+4. **Объём (volume)** рассчитывается по формуле в зависимости от категории (см. AssetGeneratorExtended.CalculateVolume)
+5. **allowNesting** по умолчанию Any; исключения: Quest=None, Technique=Spirit
+6. **requiredCultivationLevel=0** доступен с начала игры
 
 ---
 
 *Документ создан: 2026-04-01*
+*Обновлено: 2026-04-28 — миграция на линейную модель инвентаря (вес + объём вместо сетки)*
 *Источник данных: UnityProject/Assets/Data/JSON/items.json*

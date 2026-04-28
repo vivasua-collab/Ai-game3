@@ -102,8 +102,8 @@
 | 13 | Save Scene | Сохранение сцены |
 | 14 | Tile Assets | TerrainTile + ObjectTile для 15+ типов |
 | 15 | Test Location | Камера + коллайдеры + HarvestableSpawner |
-| 16 | Inventory Data | BackpackData (4 рюкзака) + StorageRingData (4 кольца) + volume/allowNesting для ItemData |
-| 17 | Inventory UI | InventoryScreen + BodyDoll (7 слотов + wiring) + BackpackPanel (3×4 + wiring) + Tooltip + DragDrop + ContextMenu + SpiritStorage + StorageRing — ~150 wiring операций автоматически |
+| 16 | Inventory Data | BackpackData (5 рюкзаков) + StorageRingData (4 кольца) + volume/allowNesting для ItemData |
+| 17 | Inventory UI | InventoryScreen + BodyDoll (7 слотов + wiring) + BackpackPanel (список + вес/объём + wiring) + Tooltip + DragDrop + ContextMenu + SpiritStorage + StorageRing — ~152 wiring операции автоматически |
 | 18 | Inventory Components | SpiritStorageController + StorageRingController на Player + подключение UI |
 
 #### Как использовать

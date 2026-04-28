@@ -44,7 +44,7 @@ using CultivationGame.Interaction;
 /// Совместимость: Unity 6.3+
 /// 
 /// Создано: 2026-03-31
-/// Редактировано: 2026-04-11 14:33:20 UTC — Fix: Player.StatDevelopment→Core.StatDevelopment (not a Component)
+/// Редактировано: 2026-04-28 14:45 UTC — grid→line: удалены defaultGridWidth/Height, добавлены defaultMaxVolume/useVolumeLimit
 /// </summary>
 public class SceneSetupTools : EditorWindow
 {
@@ -338,7 +338,7 @@ public class SceneSetupTools : EditorWindow
         
         // StatDevelopment - NOT a Component (plain C# class in CultivationGame.Core)
         // It's managed by PlayerController as a field, not as a separate MonoBehaviour
-        // Редактировано: 2026-04-11 14:33:20 UTC
+        // Редактировано: 2026-04-28 14:45 UTC
         
         player.AddComponent<SleepSystem>();
         player.AddComponent<InteractionController>();
@@ -403,13 +403,13 @@ public class SceneSetupTools : EditorWindow
         var ic = player.GetComponent<InventoryController>();
         if (ic == null) return;
         
-        // v2.0: gridWidth/gridHeight заменены на defaultGridWidth/defaultGridHeight
-        // размер сетки теперь определяется рюкзаком (BackpackData)
+        // v3.0: строчная модель — weight + volume (gridWidth/gridHeight удалены)
+        // размер определяется рюкзаком (BackpackData.maxWeight/maxVolume)
         SerializedObject so = new SerializedObject(ic);
-        SetProperty(so, "defaultGridWidth", 3);
-        SetProperty(so, "defaultGridHeight", 4);
         SetProperty(so, "baseMaxWeight", 30f);
+        SetProperty(so, "defaultMaxVolume", 50f);
         SetProperty(so, "useWeightLimit", true);
+        SetProperty(so, "useVolumeLimit", true);
         so.ApplyModifiedProperties();
     }
     

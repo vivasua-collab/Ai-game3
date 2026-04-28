@@ -199,10 +199,10 @@ enablePassiveRegen: true
 ```
 InventoryController:
 ├── === Inventory Settings ===
-├── gridWidth: 8
-├── gridHeight: 6
-├── maxWeight: 100
+├── baseMaxWeight: 30           ← максимальная масса без рюкзака
+├── defaultMaxVolume: 50        ← максимальный объём без рюкзака
 ├── useWeightLimit: ☑ true
+├── useVolumeLimit: ☑ true
 ├──
 ├── === References ===
 └── owner: None                ← можно оставить пустым
@@ -308,8 +308,10 @@ Player (GameObject)
 │   ├── currentQi: 100
 │   └── enablePassiveRegen: true
 ├── InventoryController
-│   ├── gridWidth: 8
-│   └── gridHeight: 6
+│   ├── baseMaxWeight: 30
+│   ├── defaultMaxVolume: 50
+│   ├── useWeightLimit: true
+│   └── useVolumeLimit: true
 ├── EquipmentController
 │   └── useLayerSystem: true
 ├── TechniqueController
@@ -365,7 +367,7 @@ Player (GameObject)
 | PlayerController | playerId, playerName, moveSpeed |
 | BodyController | bodyMaterial, vitality |
 | QiController | cultivationLevel, coreQuality, currentQi |
-| InventoryController | gridWidth, gridHeight |
+| InventoryController | baseMaxWeight, defaultMaxVolume, useWeightLimit, useVolumeLimit |
 | EquipmentController | useLayerSystem |
 | TechniqueController | maxQuickSlots, maxUltimates |
 | StatDevelopment | enableSleepConsolidation |
@@ -424,4 +426,5 @@ public enum BodyMaterial
 ---
 
 *Документ создан: 2026-03-30*
-*Обновлено: 2026-04-11 15:43:14 UTC — исправлена дата (2025→2026)*
+*Обновлено: 2026-04-11 15:43:14 UTC — исправлена дата (2025→2026)*  
+*Обновлено: миграция инвентаря с сеточной на линейную модель (вес + объём)*

@@ -354,7 +354,7 @@ Passive Regen:      ☑ true
 | PlayerController | playerName, moveSpeed |
 | BodyController | bodyMaterial, vitality |
 | QiController | cultivationLevel, coreQuality |
-| InventoryController | gridWidth: 8, gridHeight: 6 |
+| InventoryController | baseMaxWeight: 30, defaultMaxVolume: 50, useWeightLimit: true, useVolumeLimit: true |
 | EquipmentController | useLayerSystem: true |
 | TechniqueController | maxQuickSlots: 10 |
 | StatDevelopment | enableSleepConsolidation: true |
@@ -363,4 +363,5 @@ Passive Regen:      ☑ true
 ---
 
 *Документ создан: 2026-04-01*  
-*Редактировано: 2026-04-03 07:35:34 UTC*
+*Редактировано: 2026-04-03 07:35:34 UTC*  
+*Обновлено: миграция инвентаря с сеточной на линейную модель (вес + объём)*

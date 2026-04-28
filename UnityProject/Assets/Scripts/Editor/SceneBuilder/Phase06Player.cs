@@ -3,6 +3,7 @@
 // Cultivation World Simulator
 // ============================================================================
 // Объединяет: Phase 06 (FullSceneBuilder) + PATCH-003
+// Редактировано: 2026-04-28 14:45 UTC — grid→line: удалены defaultGridWidth/Height, добавлены defaultMaxVolume/useVolumeLimit
 // ============================================================================
 
 #if UNITY_EDITOR
@@ -139,13 +140,13 @@ namespace CultivationGame.Editor.SceneBuilder
         {
             SceneBuilderUtils.SetupComponent<InventoryController>(player, ic =>
             {
-                // v2.0: gridWidth/gridHeight заменены на defaultGridWidth/defaultGridHeight
-                // размер сетки теперь определяется рюкзаком (BackpackData)
+                // v3.0: строчная модель — weight + volume (gridWidth/gridHeight удалены)
+                // размер определяется рюкзаком (BackpackData.maxWeight/maxVolume)
                 SerializedObject so = new SerializedObject(ic);
-                SceneBuilderUtils.SetProperty(so, "defaultGridWidth", 3);
-                SceneBuilderUtils.SetProperty(so, "defaultGridHeight", 4);
                 SceneBuilderUtils.SetProperty(so, "baseMaxWeight", 30f);
+                SceneBuilderUtils.SetProperty(so, "defaultMaxVolume", 50f);
                 SceneBuilderUtils.SetProperty(so, "useWeightLimit", true);
+                SceneBuilderUtils.SetProperty(so, "useVolumeLimit", true);
                 so.ApplyModifiedProperties();
             });
         }

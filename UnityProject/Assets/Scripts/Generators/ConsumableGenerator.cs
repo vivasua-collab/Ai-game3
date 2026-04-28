@@ -3,7 +3,7 @@
 // Cultivation World Simulator
 // Версия: 1.0
 // Создано: 2026-03-31 10:22:36 UTC
-// Редактировано: 2026-03-31 10:22:36 UTC
+// Редактировано: 2026-04-28 14:40 UTC — удалены sizeWidth/sizeHeight, добавлены volume/allowNesting, SizeByType→VolumeByType, вес×уровень
 // ============================================================================
 //
 // Источник: docs/INVENTORY_SYSTEM.md, docs/QI_SYSTEM.md

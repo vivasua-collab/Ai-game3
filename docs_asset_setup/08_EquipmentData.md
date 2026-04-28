@@ -21,7 +21,9 @@
 | stackable | bool | false для экипировки |
 | maxStack | int | 1 |
 | weight | float | Вес (кг) |
+| volume | float | Объём: Оружие/Броня = clamp(weight, 1, 4); Аксессуар = 0.2 |
 | value | int | Стоимость (духовные камни) |
+| allowNesting | NestingFlag | Флаг вложенности: всегда NestingFlag.Any для экипировки |
 
 ### Equipment
 | Поле | Тип | Описание |
@@ -116,6 +118,8 @@ stackable: false
 maxStack: 1
 weight: 0.0
 value: 0
+volume: 1.0
+allowNesting: NestingFlag.Any
 
 === Equipment ===
 slot: hands
@@ -154,6 +158,8 @@ stackable: false
 maxStack: 1
 weight: 2.5
 value: 50
+volume: 2.5
+allowNesting: NestingFlag.Any
 
 === Equipment ===
 slot: weapon_main
@@ -194,6 +200,8 @@ stackable: false
 maxStack: 1
 weight: 2.0
 value: 850
+volume: 2.0
+allowNesting: NestingFlag.Any
 
 === Equipment ===
 slot: weapon_main
@@ -236,6 +244,8 @@ stackable: false
 maxStack: 1
 weight: 0.5
 value: 20
+volume: 1.0
+allowNesting: NestingFlag.Any
 
 === Equipment ===
 slot: torso_clothing
@@ -274,6 +284,8 @@ stackable: false
 maxStack: 1
 weight: 0.4
 value: 650
+volume: 1.0
+allowNesting: NestingFlag.Any
 
 === Equipment ===
 slot: torso_clothing
@@ -315,6 +327,8 @@ stackable: false
 maxStack: 1
 weight: 10.0
 value: 220
+volume: 4.0
+allowNesting: NestingFlag.Any
 
 === Equipment ===
 slot: torso_armor
@@ -342,54 +356,54 @@ specialEffects: (пусто)
 
 ## Сводная таблица оружия (20 предметов)
 
-| ID | Название | Тип | Урон | Слот | Вес |
-|----|----------|-----|------|------|-----|
-| weapon_unarmed_fists | Кулаки | unarmed | 1-3 | hands | 0 |
-| weapon_unarmed_claws | Когти | unarmed | 3-6 | hands_armor | 0.3 |
-| weapon_dagger_iron | Железный кинжал | dagger | 4-8 | weapon_main/off | 0.5 |
-| weapon_dagger_dragon | Кинжал из кости дракона | dagger | 8-15 | weapon_main/off | 0.4 |
-| weapon_sword_iron | Железный меч | sword | 8-14 | weapon_main | 2.5 |
-| weapon_sword_steel | Стальной меч | sword | 12-20 | weapon_main | 2.3 |
-| weapon_sword_spirit | Духовный меч | sword | 18-30 | weapon_main | 2.0 |
-| weapon_greatsword_iron | Железный двуручник | greatsword | 18-30 | weapon_twohanded | 6.0 |
-| weapon_greatsword_starmetal | Звёздный двуручник | greatsword | 35-55 | weapon_twohanded | 5.5 |
-| weapon_axe_iron | Железный топор | axe | 10-18 | weapon_main | 3.5 |
-| weapon_axe_spirit | Духовный топор | axe | 20-35 | weapon_main | 3.2 |
-| weapon_spear_iron | Железное копьё | spear | 12-20 | weapon_twohanded | 3.0 |
-| weapon_spear_dragon | Копьё из кости дракона | spear | 25-40 | weapon_twohanded | 2.5 |
-| weapon_bow_wood | Деревянный лук | bow | 6-12 | weapon_twohanded | 1.2 |
-| weapon_bow_spiritwood | Лук из духовного дерева | bow | 15-28 | weapon_twohanded | 1.0 |
-| weapon_staff_wood | Деревянный посох | staff | 3-7 | weapon_twohanded | 1.5 |
-| weapon_staff_jade | Нефритовый посох | staff | 8-15 | weapon_twohanded | 1.8 |
-| weapon_maul_iron | Железный молот | axe | 16-28 | weapon_twohanded | 7.0 |
-| weapon_whip_leather | Кожаный хлыст | dagger | 4-10 | weapon_main | 0.8 |
-| weapon_crossbow_iron | Железный арбалет | bow | 15-25 | weapon_twohanded | 4.0 |
+| ID | Название | Тип | Урон | Слот | Вес | Объём |
+|----|----------|-----|------|------|-----|-------|
+| weapon_unarmed_fists | Кулаки | unarmed | 1-3 | hands | 0 | 1 |
+| weapon_unarmed_claws | Когти | unarmed | 3-6 | hands_armor | 0.3 | 1 |
+| weapon_dagger_iron | Железный кинжал | dagger | 4-8 | weapon_main/off | 0.5 | 1 |
+| weapon_dagger_dragon | Кинжал из кости дракона | dagger | 8-15 | weapon_main/off | 0.4 | 1 |
+| weapon_sword_iron | Железный меч | sword | 8-14 | weapon_main | 2.5 | 2.5 |
+| weapon_sword_steel | Стальной меч | sword | 12-20 | weapon_main | 2.3 | 2.3 |
+| weapon_sword_spirit | Духовный меч | sword | 18-30 | weapon_main | 2.0 | 2.0 |
+| weapon_greatsword_iron | Железный двуручник | greatsword | 18-30 | weapon_twohanded | 6.0 | 4 |
+| weapon_greatsword_starmetal | Звёздный двуручник | greatsword | 35-55 | weapon_twohanded | 5.5 | 4 |
+| weapon_axe_iron | Железный топор | axe | 10-18 | weapon_main | 3.5 | 3.5 |
+| weapon_axe_spirit | Духовный топор | axe | 20-35 | weapon_main | 3.2 | 3.2 |
+| weapon_spear_iron | Железное копьё | spear | 12-20 | weapon_twohanded | 3.0 | 3.0 |
+| weapon_spear_dragon | Копьё из кости дракона | spear | 25-40 | weapon_twohanded | 2.5 | 2.5 |
+| weapon_bow_wood | Деревянный лук | bow | 6-12 | weapon_twohanded | 1.2 | 1.2 |
+| weapon_bow_spiritwood | Лук из духовного дерева | bow | 15-28 | weapon_twohanded | 1.0 | 1.0 |
+| weapon_staff_wood | Деревянный посох | staff | 3-7 | weapon_twohanded | 1.5 | 1.5 |
+| weapon_staff_jade | Нефритовый посох | staff | 8-15 | weapon_twohanded | 1.8 | 1.8 |
+| weapon_maul_iron | Железный молот | axe | 16-28 | weapon_twohanded | 7.0 | 4 |
+| weapon_whip_leather | Кожаный хлыст | dagger | 4-10 | weapon_main | 0.8 | 1 |
+| weapon_crossbow_iron | Железный арбалет | bow | 15-25 | weapon_twohanded | 4.0 | 4 |
 
 ---
 
 ## Сводная таблица брони (19 предметов)
 
-| ID | Название | Слот | Защита | Покрытие | Вес |
-|----|----------|------|--------|----------|-----|
-| armor_helmet_iron | Железный шлем | head_armor | 12 | 75% | 2.5 |
-| armor_helmet_spirit | Духовный шлем | head_armor | 20 | 85% | 2.0 |
-| armor_hood_cloth | Тканевый капюшон | head_clothing | 2 | 40% | 0.2 |
-| armor_torso_cloth_robe | Тканевая роба | torso_clothing | 3 | 60% | 0.5 |
-| armor_torso_leather_vest | Кожаный жилет | torso_armor | 10 | 70% | 2.0 |
-| armor_torso_iron_plate | Железный нагрудник | torso_armor | 25 | 80% | 10.0 |
-| armor_torso_spirit_robe | Духовная роба | torso_clothing | 15 | 75% | 0.4 |
-| armor_torso_chainmail | Кольчуга | torso_armor | 18 | 85% | 6.0 |
-| armor_legs_cloth_pants | Тканевые штаны | legs_clothing | 2 | 50% | 0.4 |
-| armor_legs_leather | Кожаные поножи | legs_armor | 8 | 55% | 1.5 |
-| armor_legs_iron_greaves | Железные поножи | legs_armor | 15 | 65% | 5.0 |
-| armor_feet_cloth_shoes | Тканевые туфли | feet_clothing | 1 | 30% | 0.2 |
-| armor_feet_leather_boots | Кожаные сапоги | feet_armor | 5 | 45% | 0.8 |
-| armor_feet_iron_sabatons | Железные сабатоны | feet_armor | 10 | 55% | 3.0 |
-| armor_hands_cloth_gloves | Тканевые перчатки | hands_clothing | 1 | 35% | 0.1 |
-| armor_hands_leather_gloves | Кожаные перчатки | hands_armor | 4 | 45% | 0.3 |
-| armor_hands_iron_gauntlets | Железные перчатки | hands_armor | 8 | 55% | 1.5 |
-| armor_hands_spirit_gloves | Духовные перчатки | hands_armor | 12 | 65% | 0.5 |
-| armor_full_iron | Железный доспех | torso_armor | 35 | 90% | 18.0 |
+| ID | Название | Слот | Защита | Покрытие | Вес | Объём |
+|----|----------|------|--------|----------|-----|-------|
+| armor_helmet_iron | Железный шлем | head_armor | 12 | 75% | 2.5 | 2.5 |
+| armor_helmet_spirit | Духовный шлем | head_armor | 20 | 85% | 2.0 | 2.0 |
+| armor_hood_cloth | Тканевый капюшон | head_clothing | 2 | 40% | 0.2 | 1 |
+| armor_torso_cloth_robe | Тканевая роба | torso_clothing | 3 | 60% | 0.5 | 1 |
+| armor_torso_leather_vest | Кожаный жилет | torso_armor | 10 | 70% | 2.0 | 2.0 |
+| armor_torso_iron_plate | Железный нагрудник | torso_armor | 25 | 80% | 10.0 | 4 |
+| armor_torso_spirit_robe | Духовная роба | torso_clothing | 15 | 75% | 0.4 | 1 |
+| armor_torso_chainmail | Кольчуга | torso_armor | 18 | 85% | 6.0 | 4 |
+| armor_legs_cloth_pants | Тканевые штаны | legs_clothing | 2 | 50% | 0.4 | 1 |
+| armor_legs_leather | Кожаные поножи | legs_armor | 8 | 55% | 1.5 | 1.5 |
+| armor_legs_iron_greaves | Железные поножи | legs_armor | 15 | 65% | 5.0 | 4 |
+| armor_feet_cloth_shoes | Тканевые туфли | feet_clothing | 1 | 30% | 0.2 | 1 |
+| armor_feet_leather_boots | Кожаные сапоги | feet_armor | 5 | 45% | 0.8 | 1 |
+| armor_feet_iron_sabatons | Железные сабатоны | feet_armor | 10 | 55% | 3.0 | 3.0 |
+| armor_hands_cloth_gloves | Тканевые перчатки | hands_clothing | 1 | 35% | 0.1 | 1 |
+| armor_hands_leather_gloves | Кожаные перчатки | hands_armor | 4 | 45% | 0.3 | 1 |
+| armor_hands_iron_gauntlets | Железные перчатки | hands_armor | 8 | 55% | 1.5 | 1.5 |
+| armor_hands_spirit_gloves | Духовные перчатки | hands_armor | 12 | 65% | 0.5 | 1 |
+| armor_full_iron | Железный доспех | torso_armor | 35 | 90% | 18.0 | 4 |
 
 ---
 
@@ -401,8 +415,11 @@ specialEffects: (пусто)
 4. **qiFlowPenalty** — штраф к проводимости Ци (отрицательный = бонус)
 5. **coverage** — процент защиты части тела
 6. **spirit_ материалы** дают бонус к проводимости Ци
+7. **volume** — объём предмета: Оружие/Броня = clamp(weight, 1, 4), Аксессуар = 0.2
+8. **allowNesting** — флаг вложенности: для экипировки всегда NestingFlag.Any
 
 ---
 
 *Документ создан: 2026-04-01*
 *Обновлено: 2026-04-11 15:43:14 UTC — EquipmentSlot (9 слотов из Enums.cs), DamageType (5 типов), EquipmentGrade (множители из EQUIPMENT_SYSTEM.md)*
+*Обновлено: 2026-04-28 — Миграция инвентаря (сетка→строка): добавлены поля volume (clamp(weight,1,4)/0.2) и allowNesting (NestingFlag.Any) в ItemData*
