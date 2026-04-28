@@ -19,7 +19,7 @@ Work Log:
 - D7: EQUIPMENT_SYSTEM.md §8.4 — добавлен раздел «Объём экипировки» с формулами и примерами
 
 - Проверено отсутствие ссылок на удалённые поля (sizeWidth, sizeHeight, SizeByType) в других файлах
-- Создан чекпоинт: checkpoints/04_29_object_system_rework_complete.md
+- Создан чекпоинт: checkpoints/04_28_object_system_rework_complete.md
 
 Stage Summary:
 - Все 7 проблем кода (P1-P7) и 2 проблемы документации (D3, D7) исправлены
