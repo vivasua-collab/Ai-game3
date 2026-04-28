@@ -128,6 +128,14 @@ namespace CultivationGame.Generators
         public int maxDurability;
         public int currentDurability;
 
+        // Inventory (строчная модель v2.0)
+        public float weight;                         // Вес (кг)
+        public float volume;                         // Объём (литры) = clamp(weight, 1, 4)
+        public bool stackable = false;               // Оружие не стакается
+        public int maxStack = 1;
+        public NestingFlag allowNesting = NestingFlag.Any;
+        public ItemCategory category = ItemCategory.Weapon;
+
         // Bonuses
         public List<StatBonus> bonuses = new List<StatBonus>();
 
@@ -176,6 +184,28 @@ namespace CultivationGame.Generators
         // | Transcendent| 4-6     |
         private static readonly int[] MinBonusesByGrade = { 0, 0, 1, 2, 4 };
         private static readonly int[] MaxBonusesByGrade = { 0, 1, 2, 4, 6 };
+
+        // === БАЗОВЫЙ ВЕС ПО ПОДТИПУ (источник: EQUIPMENT_SYSTEM.md §7) ===
+        private static readonly Dictionary<WeaponSubtype, float> BaseWeightBySubtype = new Dictionary<WeaponSubtype, float>
+        {
+            { WeaponSubtype.Unarmed,     0.3f },   // Кастеты
+            { WeaponSubtype.Dagger,      0.5f },   // Кинжал
+            { WeaponSubtype.Sword,       2.5f },   // Меч
+            { WeaponSubtype.Greatsword,  6.0f },   // Двуручник
+            { WeaponSubtype.Axe,         3.0f },   // Топор
+            { WeaponSubtype.Spear,       2.8f },   // Копьё
+            { WeaponSubtype.Bow,         1.2f },   // Лук
+            { WeaponSubtype.Staff,       2.0f },   // Посох
+            { WeaponSubtype.Hammer,      5.0f },   // Молот
+            { WeaponSubtype.Mace,        3.5f },   // Булава
+            { WeaponSubtype.Crossbow,    3.0f },   // Арбалет
+            { WeaponSubtype.Wand,        0.2f }    // Жезл
+        };
+
+        // === МНОЖИТЕЛЬ ВЕСА МАТЕРИАЛА (источник: EQUIPMENT_SYSTEM.md §3.1) ===
+        // T1 (Iron): 1.0, T2 (Steel): 1.0, T3 (Spirit Iron): 0.8,
+        // T4 (Star Metal): 0.7, T5 (Void Matter): 0.5
+        private static readonly float[] MaterialWeightMult = { 1.0f, 1.0f, 0.8f, 0.7f, 0.5f };
 
         // === ХАРАКТЕРИСТИКИ ПОДТИПОВ (источник: EQUIPMENT_SYSTEM.md §1.3) ===
         private static readonly Dictionary<WeaponSubtype, WeaponClass> WeaponClassBySubtype = new Dictionary<WeaponSubtype, WeaponClass>
@@ -288,6 +318,17 @@ namespace CultivationGame.Generators
             weapon.itemLevel = Mathf.Clamp(parameters.itemLevel, 1, 9);
             weapon.materialTier = Mathf.Clamp(parameters.materialTier, 1, 5);
             weapon.materialCategory = parameters.materialCategory;
+
+            // Вес (строчная модель инвентаря)
+            float baseWeight = BaseWeightBySubtype.ContainsKey(weapon.subtype)
+                ? BaseWeightBySubtype[weapon.subtype] : 2.0f;
+            float matWMult = MaterialWeightMult[weapon.materialTier - 1];
+            weapon.weight = baseWeight * matWMult * (1f + (weapon.itemLevel - 1) * 0.05f);
+            weapon.volume = Mathf.Clamp(weapon.weight, 1f, 4f);
+            weapon.stackable = false;
+            weapon.maxStack = 1;
+            weapon.allowNesting = NestingFlag.Any;
+            weapon.category = ItemCategory.Weapon;
 
             // Material
             weapon.materialId = GetMaterialName(weapon.materialCategory, weapon.materialTier, rng);
@@ -611,6 +652,7 @@ namespace CultivationGame.Generators
                 sb.AppendLine($"  Дальность: {weapon.range:F1}м");
                 sb.AppendLine($"  Крит: {weapon.critChance}% / {weapon.critDamage:F1}x");
                 sb.AppendLine($"  Прочность: {weapon.currentDurability}/{weapon.maxDurability}");
+                sb.AppendLine($"  Вес: {weapon.weight:F2}кг, Объём: {weapon.volume:F1}л");
                 sb.AppendLine($"  Требования: СИЛ {weapon.requiredStrength}, ЛОВ {weapon.requiredAgility}, Ур.{weapon.requiredCultivationLevel}+");
                 sb.AppendLine($"  Проводимость Ци: {weapon.qiConductivity:F2}");
                 if (weapon.bonuses.Count > 0)

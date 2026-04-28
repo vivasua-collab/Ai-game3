@@ -115,6 +115,14 @@ namespace CultivationGame.Generators
         public int requiredStrength;
         public int requiredCultivationLevel;
 
+        // Inventory (строчная модель v2.0)
+        public float weight;                         // Вес (кг)
+        public float volume;                         // Объём (литры) = clamp(weight, 1, 4)
+        public bool stackable = false;               // Броня не стакается
+        public int maxStack = 1;
+        public NestingFlag allowNesting = NestingFlag.Any;
+        public ItemCategory category = ItemCategory.Armor;
+
         // Bonuses
         public List<ArmorBonus> bonuses = new List<ArmorBonus>();
 
@@ -148,6 +156,41 @@ namespace CultivationGame.Generators
         // === БОНУСЫ ОТ GRADE (источник: EQUIPMENT_SYSTEM.md §2.1) ===
         private static readonly int[] MinBonusesByGrade = { 0, 0, 1, 2, 4 };
         private static readonly int[] MaxBonusesByGrade = { 0, 1, 2, 4, 6 };
+
+        // === БАЗОВЫЙ ВЕС БРОНИ ПО (подтип, весовой класс) в кг ===
+        // Источник: EQUIPMENT_SYSTEM.md §8 — вес брони зависит от типа и материала
+        private static readonly Dictionary<(ArmorSubtype, ArmorWeightClass), float> BaseWeightBySubtypeAndClass = new Dictionary<(ArmorSubtype, ArmorWeightClass), float>
+        {
+            // Light
+            { (ArmorSubtype.Head,  ArmorWeightClass.Light), 0.3f },
+            { (ArmorSubtype.Torso, ArmorWeightClass.Light), 0.5f },
+            { (ArmorSubtype.Arms,  ArmorWeightClass.Light), 0.2f },
+            { (ArmorSubtype.Hands, ArmorWeightClass.Light), 0.1f },
+            { (ArmorSubtype.Legs,  ArmorWeightClass.Light), 0.3f },
+            { (ArmorSubtype.Feet,  ArmorWeightClass.Light), 0.2f },
+            { (ArmorSubtype.Full,  ArmorWeightClass.Light), 1.5f },
+            // Medium
+            { (ArmorSubtype.Head,  ArmorWeightClass.Medium), 2.5f },
+            { (ArmorSubtype.Torso, ArmorWeightClass.Medium), 5.0f },
+            { (ArmorSubtype.Arms,  ArmorWeightClass.Medium), 2.0f },
+            { (ArmorSubtype.Hands, ArmorWeightClass.Medium), 0.8f },
+            { (ArmorSubtype.Legs,  ArmorWeightClass.Medium), 3.0f },
+            { (ArmorSubtype.Feet,  ArmorWeightClass.Medium), 1.5f },
+            { (ArmorSubtype.Full,  ArmorWeightClass.Medium), 8.0f },
+            // Heavy
+            { (ArmorSubtype.Head,  ArmorWeightClass.Heavy), 4.0f },
+            { (ArmorSubtype.Torso, ArmorWeightClass.Heavy), 8.0f },
+            { (ArmorSubtype.Arms,  ArmorWeightClass.Heavy), 3.5f },
+            { (ArmorSubtype.Hands, ArmorWeightClass.Heavy), 1.5f },
+            { (ArmorSubtype.Legs,  ArmorWeightClass.Heavy), 5.0f },
+            { (ArmorSubtype.Feet,  ArmorWeightClass.Heavy), 3.0f },
+            { (ArmorSubtype.Full,  ArmorWeightClass.Heavy), 12.0f }
+        };
+
+        // === МНОЖИТЕЛЬ ВЕСА МАТЕРИАЛА (источник: EQUIPMENT_SYSTEM.md §3.1) ===
+        // T1 (Iron): 1.0, T2 (Steel): 1.0, T3 (Spirit Iron): 0.8,
+        // T4 (Star Metal): 0.7, T5 (Void Matter): 0.5
+        private static readonly float[] MaterialWeightMult = { 1.0f, 1.0f, 0.8f, 0.7f, 0.5f };
 
         // === ПОКРЫТИЕ ПО ПОДТИПАМ (источник: EQUIPMENT_SYSTEM.md §1.4) ===
         private static readonly Dictionary<ArmorSubtype, (float min, float max)> CoverageBySubtype = new Dictionary<ArmorSubtype, (float, float)>
@@ -257,6 +300,18 @@ namespace CultivationGame.Generators
             armor.itemLevel = Mathf.Clamp(parameters.itemLevel, 1, 9);
             armor.materialTier = Mathf.Clamp(parameters.materialTier, 1, 5);
             armor.materialCategory = parameters.materialCategory;
+
+            // Вес (строчная модель инвентаря)
+            var weightKey = (armor.subtype, armor.weightClass);
+            float baseWeight = BaseWeightBySubtypeAndClass.ContainsKey(weightKey)
+                ? BaseWeightBySubtypeAndClass[weightKey] : 3.0f;
+            float matWMult = MaterialWeightMult[armor.materialTier - 1];
+            armor.weight = baseWeight * matWMult * (1f + (armor.itemLevel - 1) * 0.05f);
+            armor.volume = Mathf.Clamp(armor.weight, 1f, 4f);
+            armor.stackable = false;
+            armor.maxStack = 1;
+            armor.allowNesting = NestingFlag.Any;
+            armor.category = ItemCategory.Armor;
 
             // Material
             armor.materialId = GetMaterialName(armor.materialCategory, armor.materialTier, rng);
@@ -619,6 +674,7 @@ namespace CultivationGame.Generators
                 sb.AppendLine($"  Покрытие: {armor.coverage:F0}%");
                 sb.AppendLine($"  Защищаемые части: {string.Join(", ", armor.protectedParts)}");
                 sb.AppendLine($"  Прочность: {armor.currentDurability}/{armor.maxDurability}");
+                sb.AppendLine($"  Вес: {armor.weight:F2}кг, Объём: {armor.volume:F1}л");
                 sb.AppendLine($"  Проводимость Ци: {armor.qiFlowPenalty:+0;-0;0}%");
                 sb.AppendLine($"  Требования: СИЛ {armor.requiredStrength}, Ур.{armor.requiredCultivationLevel}+");
                 if (armor.elementalResistances.Count > 0)

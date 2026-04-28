@@ -407,7 +407,8 @@ namespace CultivationGame.Editor.SceneBuilder
             data.value = value;
             data.hasDurability = true;
             data.maxDurability = 100;
-            data.volume = (damage > 0) ? 2f : 2f;
+            // Объём по формуле строчной модели (Источник: AssetGeneratorExtended.CalculateVolume)
+            data.volume = Mathf.Clamp(weight, 1f, 4f);
             data.allowNesting = NestingFlag.Any;
             data.icon = GenerateTestIcon(fileName, iconColor, iconLetter, rarity);
 

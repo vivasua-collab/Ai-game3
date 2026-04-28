@@ -438,9 +438,12 @@ namespace CultivationGame.Editor
 
             asset.requiredCultivationLevel = data.requiredCultivationLevel;
 
-            // Новые поля хранилища
-            asset.volume = CalculateVolume(ParseItemCategory(data.category), data.weight);
-            asset.allowNesting = CalculateNestingFlag(ParseItemCategory(data.category));
+            // Новые поля хранилища (P6: поддержка явных значений из JSON)
+            asset.volume = data.volume >= 0f ? data.volume
+                : CalculateVolume(ParseItemCategory(data.category), data.weight);
+            asset.allowNesting = !string.IsNullOrEmpty(data.allowNesting)
+                ? ParseNestingFlag(data.allowNesting)
+                : CalculateNestingFlag(ParseItemCategory(data.category));
 
             if (data.effects != null)
             {
@@ -871,6 +874,24 @@ namespace CultivationGame.Editor
                 case "mythic": return ItemRarity.Mythic;
                 default: return ItemRarity.Common;
             }
+        }
+
+        /// <summary>
+        /// Парсинг флага вложения из JSON.
+        /// Создано: 2026-04-29 — P6: поддержка явного allowNesting в ItemJson
+        /// </summary>
+        private static NestingFlag ParseNestingFlag(string value)
+        {
+            if (string.IsNullOrEmpty(value)) return NestingFlag.Any;
+
+            return value.ToLower() switch
+            {
+                "none" => NestingFlag.None,
+                "spirit" => NestingFlag.Spirit,
+                "ring" => NestingFlag.Ring,
+                "any" => NestingFlag.Any,
+                _ => NestingFlag.Any
+            };
         }
 
         private static MaterialCategory ParseMaterialCategory(string value)
@@ -1404,6 +1425,12 @@ namespace CultivationGame.Editor
             public int maxDurability;
             public List<ItemEffectJson> effects;
             public int requiredCultivationLevel;
+
+            // Опциональные поля инвентаря (P6)
+            // volume < 0 = вычислить по CalculateVolume; иначе использовать как есть
+            public float volume = -1f;
+            // allowNesting пустое = вычислить по CalculateNestingFlag
+            public string allowNesting;
         }
 
         [System.Serializable]

@@ -88,9 +88,10 @@ namespace CultivationGame.Generators
         public int maxStack;
         public bool stackable;
 
-        // Size
-        public int sizeWidth;
-        public int sizeHeight;
+        // Inventory (строчная модель v2.0)
+        public float volume;                         // Объём (литры) = 0.1 для всех расходников
+        public NestingFlag allowNesting = NestingFlag.Any;
+        public ItemCategory category = ItemCategory.Consumable;
 
         // Value
         public int value;                       // Стоимость в духовных камнях
@@ -198,16 +199,17 @@ namespace CultivationGame.Generators
             { ConsumableType.Talisman, 150 }
         };
 
-        // Размеры по типу
-        private static readonly Dictionary<ConsumableType, (int w, int h)> SizeByType = new Dictionary<ConsumableType, (int, int)>
+        // Объём расходников по типу (строчная модель v2.0)
+        // Источник: AssetGeneratorExtended.CalculateVolume → Consumable = 0.1
+        private static readonly Dictionary<ConsumableType, float> VolumeByType = new Dictionary<ConsumableType, float>
         {
-            { ConsumableType.Pill, (1, 1) },
-            { ConsumableType.Elixir, (1, 1) },
-            { ConsumableType.Food, (1, 1) },
-            { ConsumableType.Drink, (1, 2) },
-            { ConsumableType.Poison, (1, 1) },
-            { ConsumableType.Scroll, (1, 2) },
-            { ConsumableType.Talisman, (1, 1) }
+            { ConsumableType.Pill,     0.1f },
+            { ConsumableType.Elixir,   0.1f },
+            { ConsumableType.Food,     0.1f },
+            { ConsumableType.Drink,    0.1f },
+            { ConsumableType.Poison,   0.1f },
+            { ConsumableType.Scroll,   0.1f },
+            { ConsumableType.Talisman, 0.1f }
         };
 
         // Максимальный стек по типу
@@ -242,10 +244,10 @@ namespace CultivationGame.Generators
             consumable.stackable = true;
             consumable.maxStack = MaxStackByType.ContainsKey(consumable.type) ? MaxStackByType[consumable.type] : 10;
 
-            // Size
-            var (w, h) = SizeByType.ContainsKey(consumable.type) ? SizeByType[consumable.type] : (1, 1);
-            consumable.sizeWidth = w;
-            consumable.sizeHeight = h;
+            // Объём (строчная модель инвентаря)
+            consumable.volume = VolumeByType.ContainsKey(consumable.type) ? VolumeByType[consumable.type] : 0.1f;
+            consumable.allowNesting = NestingFlag.Any;
+            consumable.category = ItemCategory.Consumable;
 
             // Weight
             consumable.weight = consumable.type switch
@@ -258,6 +260,9 @@ namespace CultivationGame.Generators
                 ConsumableType.Talisman => 0.05f,
                 _ => 0.1f
             };
+
+            // Масштабирование веса по уровню (P5)
+            consumable.weight *= 1f + (consumable.itemLevel - 1) * 0.1f;
 
             // Value
             int baseValue = BaseValueByType.ContainsKey(consumable.type) ? BaseValueByType[consumable.type] : 50;
@@ -611,7 +616,7 @@ namespace CultivationGame.Generators
                 sb.AppendLine($"  ID: {consumable.id}");
                 sb.AppendLine($"  Уровень: {consumable.itemLevel}");
                 sb.AppendLine($"  Стоимость: {consumable.value} духовных камней");
-                sb.AppendLine($"  Размер: {consumable.sizeWidth}x{consumable.sizeHeight}, Стек: {consumable.maxStack}");
+                sb.AppendLine($"  Вес: {consumable.weight:F3}кг, Объём: {consumable.volume:F1}л, Стек: {consumable.maxStack}");
 
                 foreach (var e in consumable.effects)
                 {
