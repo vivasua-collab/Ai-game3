@@ -1,71 +1,63 @@
-# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+# ============================================================================
+# .gitignore — Cultivation World Simulator (Unity 6.3)
+# Редактировано: 2026-04-28 12:58:00 UTC — зачистка от Next.js окружения
+# ============================================================================
 
-# dependencies
-node_modules
-/.pnp
-.pnp.*
-.yarn/*
-!.yarn/patches
-!.yarn/plugins
-!.yarn/releases
-!.yarn/versions
-
-# testing
-/coverage
-
-# next.js
-/.next/
-/out/
-
-# production
-/build
-
-# misc
-.DS_Store
-*.pem
-
-# debug
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-.pnpm-debug.log*
-
-# env files (can opt-in for committing if needed)
-.env*
-
-# vercel
-.vercel
-
-
-# typescript
-*.tsbuildinfo
+# === ЗАПРЕЩЕНО: Next.js / Node.js / Dev-сервер ===
+# Это Unity проект — НИКАКОГО Next.js dev-сервера
+node_modules/
+.next/
+src/
+package.json
+package-lock.json
+bun.lock
+bun.lockb
+next.config.ts
+next.config.js
 next-env.d.ts
-local-*
-.claude
-.z-ai-config
-*.log
+tsconfig.json
+tailwind.config.ts
+postcss.config.mjs
+eslint.config.mjs
+components.json
+Caddyfile
+prisma/
+db/
+public/
+mini-services/
+examples/
+agent-ctx/
+.zscripts/
+skills/
+.env
 dev.log
 dev.out.log
+
+# === Unity ===
+# ProjectSettings/ удалены намеренно (см. SESSION_SUMMARY.md)
+UnityProject/Temp/
+UnityProject/Build/
+UnityProject/Library/
+UnityProject/Obj/
+UnityProject/Logs/
+UnityProject/UserSettings/
+UnityProject/Local/
+
+# === OS / Misc ===
+.DS_Store
+*.pem
+*.log
+server.log
+.claude
+.z-ai-config
+local-*
 test
 prompt
-
-server.log
-# Skills directory
-/skills/
-
-# User-requested exclusions
-db/
-examples/
-prisma/
-public/
-src/
-bun.lock
-Caddyfile
-components.json
-eslint.config.mjs
-next.config.ts
-package.json
-postcss.config.mjs
-tailwind.config.ts
-tsconfig.json
-.zscripts/
+coverage/
+build/
+out/
+.pnp
+.pnp.*
+.yarn/*
+.vercel
+*.tsbuildinfo
