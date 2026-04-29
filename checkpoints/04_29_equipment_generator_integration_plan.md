@@ -1,7 +1,7 @@
 # 🔧 Чекпоинт: План внедрения генераторов экипировки
 
 **Дата:** 2026-04-29 07:11 UTC  
-**Редактировано:** 2026-04-29 08:30 UTC — полный аудит кода, детализация плана  
+**Редактировано:** 2026-04-29 07:53 UTC — цветовая дифференциация грейда/тира, интеграция в фабрику
 **Статус:** 📋 План готов к выполнению  
 **Цель:** Подключить runtime-генераторы (WeaponGenerator, ArmorGenerator) к конвейеру создания ScriptableObject, чтобы экипировка генерировалась процедурно и попадала в инвентарь/экипировку персонажа.
 
@@ -766,5 +766,355 @@ public Sprite equippedSprite;
 
 ---
 
+## 🎨 ЦВЕТОВАЯ ДИФФЕРЕНЦИАЦИЯ ГРЕЙДА И ТИРА
+
+**Дата решения:** 2026-04-29  
+**Контекст:** Предметы имеют 3 визуальные оси: Grade (качество), Tier (материал), Rarity (редкость). Каждая ось должна иметь свою цветовую систему, чтобы игрок мгновенно понимал ценность предмета.
+
+### Проблема
+
+**Сейчас в коде:**
+- `ItemRarity` → `InventorySlotUI.GetRarityColor()` ✅ 6 цветов (серый → красный)
+- `EquipmentGrade` → цветов НЕТ ❌ (только emoji в EQUIPMENT_SYSTEM.md: 🔴⚪🟢🔵🟡)
+- `MaterialTier` → цветов НЕТ ❌
+- `Phase16InventoryData.GetRarityBorderColor()` → дублирует ItemRarity цвета ✅
+
+**Grade ≠ Rarity.** Grade — качество предмета (Damaged→Transcendent), Rarity — общая редкость (Common→Mythic). Они маппятся друг в друга (MapRarityFromGrade), но это **разные оси восприятия**. Для UI нужно ЧЁТКО разделять:
+- **Рамка слота** = Rarity (уже работает)
+- **Фон иконки / текст грейда** = Grade (НОВОЕ)
+- **Яркость / свечение** = Tier (НОВОЕ)
+
+### Д9: Цветовая палитра Grade (Грейд = качество предмета)
+
+**Статус:** ✅ Утверждено
+
+Источник: EQUIPMENT_SYSTEM.md §2.1 — цвета из документа (🔴⚪🟢🔵🟡) + уточнение для UI
+
+| Grade | Emoji | Hex | Unity Color | RGB (0-1) | Применение |
+|-------|-------|-----|-------------|-----------|------------|
+| **Damaged** | 🔴 | `#8B4513` | Коричнево-красный | (0.545, 0.271, 0.075) | Фон иконки, текст грейда, худший предмет |
+| **Common** | ⚪ | `#9CA3AF` | Серый | (0.612, 0.639, 0.686) | Фон иконки, базовый предмет |
+| **Refined** | 🟢 | `#22C55E` | Зелёный | (0.133, 0.773, 0.369) | Фон иконки, рамка текста |
+| **Perfect** | 🔵 | `#3B82F6` | Синий | (0.231, 0.510, 0.965) | Фон иконки, подсветка |
+| **Transcendent** | 🟡 | `#F59E0B` | Золотой | (0.961, 0.620, 0.043) | Фон иконки, свечение |
+
+**Обоснование цветов:**
+- **Damaged = коричнево-красный**, не чистый красный (красный = Mythic rarity). Коричневый = ржавчина, повреждение
+- **Common = серый** — стандартный, ничем не выделяющийся
+- **Refined = зелёный** — улучшенный, позитивный сигнал
+- **Perfect = синий** — мастерский, премиальный
+- **Transcendent = золотой** — высший, сияющий (xianxia: золотое ядро = высшая ступень)
+
+**Отличие от Rarity-цветов:**
+| Ось | Damaged | Common | Refined | Perfect | Transcendent |
+|-----|---------|--------|---------|---------|--------------|
+| **Grade** | Коричневый | Серый | Зелёный | Синий | Золотой |
+| **Rarity** | — | Серый | Зелёный | Синий/Фиол. | Фиолет./Золот. |
+
+Grade и Rarity **частично совпадают** (серый→зелёный→синий), но Grade не имеет фиолетового и красного — высший грейд = золотой, высшая редкость = красный.
+
+### Д10: Цветовая палитра Tier (Тир = уровень материала)
+
+**Статус:** ✅ Утверждено
+
+Источник: EQUIPMENT_SYSTEM.md §3.1 — 5 тиров материалов
+
+| Tier | Материалы | Hex | Unity Color | RGB (0-1) | Значение |
+|------|-----------|-----|-------------|-----------|----------|
+| **T1** | Iron, Leather, Cloth, Wood, Bone | `#8B9DAF` | Стальной серый | (0.545, 0.616, 0.686) | Обычный |
+| **T2** | Steel, Silk, Silver | `#4ADE80` | Светло-зелёный | (0.290, 0.871, 0.502) | Качественный |
+| **T3** | Spirit Iron, Jade, Cold Iron | `#60A5FA` | Голубой | (0.376, 0.647, 0.980) | Духовный |
+| **T4** | Star Metal, Dragon Bone, Elemental Core | `#A78BFA` | Фиолетовый | (0.655, 0.545, 0.980) | Небесный |
+| **T5** | Void Matter, Chaos Matter, Primordial | `#F472B6` | Розовый | (0.957, 0.447, 0.714) | Первородный |
+
+**Обоснование:** Тир материала определяет «магический уровень» — от простого железа до первородной материи. Палитра идёт по спектру: серый → зелёный → голубой → фиолетовый → розовый. Это НЕ совпадает с Grade и Rarity, позволяя ортогональную дифференциацию.
+
+**Применение Tier-цвета:**
+- Маленький индикатор/точка на иконке предмета
+- Цвет подстроки «T1»-«T5» в тултипе
+- Свечение (glow) для T4-T5 (для привлечения внимания к редким материалам)
+
+### Д11: Комбинированная формула цвета иконки
+
+**Статус:** ✅ Утверждено
+
+Для программных иконок (fallback, когда нет sprite) — фон иконки = Grade-цвет, затемнённый по Tier.
+
+```
+iconBgColor = GradeColor[grade] × (0.7 + 0.3 × (tier / 5))
+```
+
+- T1: 70% яркости Grade-цвета (тусклый)
+- T3: 88% яркости
+- T5: 100% яркости (полный)
+
+Рамка иконки = Rarity-цвет (существующая система).
+
+**Пример:**
+- Iron Sword, Common grade, T1: фон = серый × 0.76 = тёмно-серый, рамка = серый
+- Spirit Sword, Refined grade, T3: фон = зелёный × 0.88, рамка = зелёный
+- Dragon Bone Sword, Perfect grade, T4: фон = синий × 0.94, рамка = синий
+- Void Matter Sword, Transcendent, T5: фон = золотой × 1.0, рамка = фиолетовый
+
+### Д12: Статический класс GradeColors — единая точка доступа
+
+**Статус:** ✅ Утверждено
+
+**Новый файл:** `UnityProject/Assets/Scripts/Core/GradeColors.cs`
+
+```csharp
+// ============================================================================
+// GradeColors.cs — Цветовая палитра грейдов и тиров (единая точка доступа)
+// Cultivation World Simulator
+// Создано: 2026-04-29 07:53 UTC
+// ============================================================================
+//
+// ТРИ ОСИ ЦВЕТА:
+//   1. Grade  → фон иконки, текст грейда   (Д9)
+//   2. Tier   → индикатор материала, яркость (Д10)
+//   3. Rarity → рамка слота (существующая система InventorySlotUI.GetRarityColor)
+//
+// Grade ≠ Rarity. Grade = качество предмета, Rarity = редкость.
+// ============================================================================
+
+using UnityEngine;
+using CultivationGame.Core;
+
+namespace CultivationGame.Core
+{
+    /// <summary>
+    /// Цветовая палитра грейдов и тиров.
+    /// Единая точка доступа для всех UI-компонентов.
+    /// </summary>
+    public static class GradeColors
+    {
+        // === GRADE COLORS (Д9) ===
+        
+        /// Цвет фона иконки по грейду
+        public static Color GetGradeColor(EquipmentGrade grade) => grade switch
+        {
+            EquipmentGrade.Damaged      => new Color(0.545f, 0.271f, 0.075f), // Коричнево-красный
+            EquipmentGrade.Common       => new Color(0.612f, 0.639f, 0.686f), // Серый
+            EquipmentGrade.Refined      => new Color(0.133f, 0.773f, 0.369f), // Зелёный
+            EquipmentGrade.Perfect      => new Color(0.231f, 0.510f, 0.965f), // Синий
+            EquipmentGrade.Transcendent => new Color(0.961f, 0.620f, 0.043f), // Золотой
+            _ => Color.gray
+        };
+        
+        /// Hex-строка для грейда (для отладки и логов)
+        public static string GetGradeHex(EquipmentGrade grade) => grade switch
+        {
+            EquipmentGrade.Damaged      => "#8B4513",
+            EquipmentGrade.Common       => "#9CA3AF",
+            EquipmentGrade.Refined      => "#22C55E",
+            EquipmentGrade.Perfect      => "#3B82F6",
+            EquipmentGrade.Transcendent => "#F59E0B",
+            _ => "#808080"
+        };
+        
+        /// Название грейда на русском
+        public static string GetGradeNameRu(EquipmentGrade grade) => grade switch
+        {
+            EquipmentGrade.Damaged      => "Повреждённый",
+            EquipmentGrade.Common       => "Обычный",
+            EquipmentGrade.Refined      => "Улучшенный",
+            EquipmentGrade.Perfect      => "Совершенный",
+            EquipmentGrade.Transcendent => "Превосходящий",
+            _ => "???"
+        };
+        
+        // === TIER COLORS (Д10) ===
+        
+        /// Цвет индикатора тира материала
+        public static Color GetTierColor(int tier) => tier switch
+        {
+            1 => new Color(0.545f, 0.616f, 0.686f), // Стальной серый (T1)
+            2 => new Color(0.290f, 0.871f, 0.502f), // Светло-зелёный (T2)
+            3 => new Color(0.376f, 0.647f, 0.980f), // Голубой (T3)
+            4 => new Color(0.655f, 0.545f, 0.980f), // Фиолетовый (T4)
+            5 => new Color(0.957f, 0.447f, 0.714f), // Розовый (T5)
+            _ => Color.gray
+        };
+        
+        /// Hex-строка для тира
+        public static string GetTierHex(int tier) => tier switch
+        {
+            1 => "#8B9DAF",
+            2 => "#4ADE80",
+            3 => "#60A5FA",
+            4 => "#A78BFA",
+            5 => "#F472B6",
+            _ => "#808080"
+        };
+        
+        /// Название тира на русском
+        public static string GetTierNameRu(int tier) => tier switch
+        {
+            1 => "Обычный",
+            2 => "Качественный",
+            3 => "Духовный",
+            4 => "Небесный",
+            5 => "Первородный",
+            _ => "???"
+        };
+        
+        // === COMBINED FORMULA (Д11) ===
+        
+        /// Цвет фона иконки = Grade × яркость по Tier
+        public static Color GetIconBgColor(EquipmentGrade grade, int tier)
+        {
+            Color gradeColor = GetGradeColor(grade);
+            float brightness = 0.7f + 0.3f * (Mathf.Clamp(tier, 1, 5) / 5f);
+            return gradeColor * brightness;
+        }
+        
+        /// Цвет рамки иконки = Rarity (делегирует в InventorySlotUI)
+        /// Использование: InventorySlotUI.GetRarityColor(item.rarity)
+    }
+}
+```
+
+### Интеграция в EquipmentSOFactory
+
+Программная иконка теперь использует **GradeColors**:
+
+```csharp
+// Было (в EquipmentSOFactory.CreateProceduralIcon):
+return CreateProceduralIcon(dto.subtype.ToString()[0], new Color(0.8f, 0.3f, 0.2f));
+
+// Стало:
+Color bgColor = GradeColors.GetIconBgColor(dto.grade, dto.materialTier);
+Color borderColor = InventorySlotUI.GetRarityColor(MapRarityFromGrade(dto.grade));
+return CreateProceduralIcon(dto.subtype.ToString()[0], bgColor, borderColor);
+```
+
+### Интеграция в TooltipPanel
+
+```csharp
+// В TooltipPanel — показать грейд + тир цветом:
+if (equipmentData != null)
+{
+    gradeText.color = GradeColors.GetGradeColor(equipmentData.grade);
+    tierText.color = GradeColors.GetTierColor(equipmentData.materialTier);
+}
+```
+
+### Интеграция в InventorySlotUI
+
+```csharp
+// Фон слота — подсветка по грейду (слабая, 15% прозрачности):
+if (equipmentData != null)
+{
+    Color gradeTint = GradeColors.GetGradeColor(equipmentData.grade);
+    gradeTint.a = 0.15f;
+    background.color = gradeTint;
+}
+```
+
+---
+
+## 📐 УТВЕРЖДЁННЫЕ РЕШЕНИЯ — ПОЛНЫЙ СПИСОК
+
+### Д1–Д8: (без изменений, см. выше)
+
+### Д9: Цветовая палитра Grade
+- **Статус:** ✅ Утверждено 2026-04-29
+- 5 цветов: Коричневый → Серый → Зелёный → Синий → Золотой
+- Отличается от Rarity (нет фиолетового/красного)
+- Применение: фон иконки, текст грейда
+
+### Д10: Цветовая палитра Tier
+- **Статус:** ✅ Утверждено 2026-04-29
+- 5 цветов: Стальной → Зелёный → Голубой → Фиолетовый → Розовый
+- Ортогональна Grade и Rarity
+- Применение: индикатор материала, яркость иконки, glow T4-T5
+
+### Д11: Комбинированная формула цвета иконки
+- **Статус:** ✅ Утверждено 2026-04-29
+- `iconBg = GradeColor × (0.7 + 0.3 × tier/5)`
+- Рамка = Rarity-цвет (существующая система)
+- Результат: Damaged T1 = тёмный коричневый, Transcendent T5 = яркий золотой
+
+### Д12: Статический класс GradeColors
+- **Статус:** ✅ Утверждено 2026-04-29
+- Новый файл `Core/GradeColors.cs`
+- Единая точка доступа для всех UI-компонентов
+- Методы: GetGradeColor, GetTierColor, GetIconBgColor, GetGradeNameRu, GetTierNameRu
+
+---
+
+## 📊 ОБНОВЛЁННАЯ МАТРИЦА ИЗМЕНЕНИЙ
+
+| Файл | Что делаем | Строк | Этап |
+|------|-----------|-------|------|
+| `EquipmentData.cs` | +moveSpeedPenalty, +qiFlowPenalty, +equippedSprite | ~12 | Подготовка |
+| `GradeColors.cs` | НОВЫЙ: цветовая палитра Grade+Tier | ~90 | Подготовка |
+| `EquipmentSOFactory.cs` | НОВЫЙ: конвертер DTO→SO (Editor + Runtime), GradeColors в иконках | ~220 | 1 |
+| `EquipmentGeneratorMenu.cs` | НОВЫЙ: Editor-меню генерации | ~150 | 2 |
+| `LootGenerator.cs` | НОВЫЙ: Runtime генерация лута | ~60 | 3 |
+| `Phase16InventoryData.cs` | Переписать CreateTestEquipment, GradeColors в иконках | ~60 | 5 |
+| `InventorySlotUI.cs` | Добавить GradeColors подсветку фона | ~8 | UI |
+| `TooltipPanel.cs` | Добавить Grade+Tier цвет текста | ~10 | UI |
+| `EquipmentVisualController.cs` | НОВЫЙ: Overlay Layering (отдельно) | ~80 | 4.6 |
+
+**Итого:** ~690 строк нового кода, 4 файла изменений.
+
+---
+
+## 🔄 ОБНОВЛЁННЫЕ ЗАВИСИМОСТИ
+
+```
+Подготовка ─────────────────────────────────────────────────────┐
+  ├── 4.1-4.3: EquipmentData поля                              │
+  └── GradeColors.cs (Д12) ─────────────────── НОВАЯ           │
+         │                                                      │
+Этап 1 (EquipmentSOFactory) ──── ФУНДАМЕНТ                    │
+  ├── использует GradeColors.GetIconBgColor()                   │
+  └── зависит от EquipmentData полей                            │
+         │                                                      │
+         ├── Этап 2 (Editor-меню) ─── зависит от 1             │
+         ├── Этап 3 (LootGenerator) ── зависит от 1            │
+         ├── Этап 5 (Phase16 замена) ── зависит от 1           │
+         ├── UI: InventorySlotUI+TooltipPanel ── от GradeColors │
+         └── Этап 4.5-4.6 (спрайты+визуал) ── отдельно        │
+```
+
+**Обновлённый порядок:**
+1. **Подготовка** → EquipmentData поля + GradeColors.cs
+2. **Этап 1** → EquipmentSOFactory (с GradeColors)
+3. **Этап 5** → Phase16 (видимый результат)
+4. **UI** → InventorySlotUI + TooltipPanel (подсветка Grade/Tier)
+5. **Этап 2** → Editor-меню
+6. **Этап 3** → Runtime LootGenerator
+7. **Этап 4.5-4.6** → equipped-спрайты + EquipmentVisualController
+
+---
+
+## ⚠️ ОТКРЫТЫЕ ВОПРОСЫ — РЕШЁННЫЕ
+
+### В1–В4: (без изменений, см. выше)
+
+### В5: Цвет грейда = цвет редкости?
+- ✅ **РЕШЕНО:** НЕТ, разные палитры (Д9 vs ItemRarity). Grade = коричневый/серый/зелёный/синий/золотой. Rarity = серый/зелёный/синий/фиолет/золотой/красный.
+- Grade НЕ имеет фиолетового и красного (это Rarity).
+- Grade ИМЕЕТ коричневый (Damaged), которого нет в Rarity.
+
+### В6: Нужен ли отдельный индикатор Tier на иконке?
+- ✅ **РЕШЕНО:** Да — маленькая точка/квадрат 4×4px в правом нижнем углу иконки, цвет = Tier. Реализуется в CreateProceduralIcon.
+
+---
+
+## ✅ ОБНОВЛЁННЫЕ КРИТЕРИИ ПРИЁМКИ
+
+1–11. (без изменений, см. выше)
+12. **GradeColors.cs** предоставляет GetGradeColor/GetTierColor/GetIconBgColor
+13. Программная иконка использует GradeColors.GetIconBgColor(grade, tier) для фона
+14. Тир-индикатор (4×4px точка) отображается на программной иконке
+15. TooltipPanel показывает грейд цветом GradeColors.GetGradeColor()
+16. TooltipPanel показывает тир цветом GradeColors.GetTierColor()
+17. InventorySlotUI подсвечивает фон слота цветом грейда (15% прозрачности)
+
+---
+
 *Создано: 2026-04-29 07:11 UTC*  
-*Редактировано: 2026-04-29 08:30 UTC — полный аудит кода, детализация маппингов, уточнение полей EquipmentData*
+*Редактировано: 2026-04-29 07:53 UTC — цветовая дифференциация грейда/тира (Д9-Д12), интеграция в фабрику и UI, обновлённая матрица изменений*
