@@ -3,7 +3,7 @@
 // Cultivation World Simulator
 // ============================================================================
 // Объединяет: Phase 06 (FullSceneBuilder) + PATCH-003
-// Редактировано: 2026-04-28 14:45 UTC — grid→line: удалены defaultGridWidth/Height, добавлены defaultMaxVolume/useVolumeLimit
+// Редактировано: 2026-04-29 — удалён using DebugTools + AddComponent<EquipmentDebugPanel> (класс не существует)
 // ============================================================================
 
 #if UNITY_EDITOR
@@ -16,7 +16,6 @@ using CultivationGame.Body;
 using CultivationGame.Inventory;
 using CultivationGame.Combat;
 using CultivationGame.Interaction;
-using CultivationGame.DebugTools;
 
 namespace CultivationGame.Editor.SceneBuilder
 {
@@ -79,9 +78,6 @@ namespace CultivationGame.Editor.SceneBuilder
 
             // PlayerVisual создаёт дочерний "Visual" со SpriteRenderer
             player.AddComponent<PlayerVisual>();
-
-            // Debug: EquipmentDebugPanel (F2 — отладочная панель инвентаря/генератора)
-            player.AddComponent<EquipmentDebugPanel>();
 
             // Настройка компонентов
             ConfigurePlayerController(player);
