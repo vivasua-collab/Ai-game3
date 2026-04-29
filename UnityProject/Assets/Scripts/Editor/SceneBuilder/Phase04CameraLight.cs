@@ -97,7 +97,7 @@ namespace CultivationGame.Editor.SceneBuilder
         /// PATCH-004: Global Light2D для URP 2D Renderer.
         /// Без Light2D все спрайты рендерятся как чёрные при Sprite-Lit-Default.
         ///
-        /// Редактировано: 2026-04-25 v2 — Расширен поиск Light2D типа:
+        /// Расширен поиск Light2D типа:
         ///   Unity 2022.3: Unity.2D.RenderPipeline.Runtime
         ///   Unity 6.x (old): Unity.RenderPipeline.Universal.2D.Runtime
         ///   Unity 6.3 (NEW): Unity.RenderPipeline.Universal.Runtime  ← ДОБАВЛЕНО

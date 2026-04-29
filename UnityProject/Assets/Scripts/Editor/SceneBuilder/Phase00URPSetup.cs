@@ -9,11 +9,12 @@
 // Unity fallback на Built-in renderer → спрайты рендерятся неправильно.
 //
 // Создано: 2026-04-25 13:45:00 UTC
-// Редактировано: 2026-04-26 — FIX: CS0103 GraphicsSettings + CS0136 variable conflicts
+// Редактировано: 2026-04-25 14:33:00 MSK — m_DefaultMaterialType = 1 (Unlit); CS0103/CS0136 fix
 //   - Добавлен using UnityEngine.Rendering (GraphicsSettings находится там)
 //   - currentRenderPipeline — read-only в Unity 6.3, назначение через SerializedObject
 //   - Переименованы конфликтующие переменные so/rendererListProp
 //   - FIX-v2: GraphicsSettings.currentRenderPipeline read-only → SerializedObject подход
+// Редактировано: 2026-04-29 12:05:54 UTC — аудит: убрана инлайн-отметка из тела файла
 // ============================================================================
 
 #if UNITY_EDITOR
@@ -81,8 +82,7 @@ namespace CultivationGame.Editor.SceneBuilder
             var rendererData = ScriptableObject.CreateInstance<Renderer2DData>();
 
             // Настройки по умолчанию
-            // Редактировано: 2026-04-25 14:33:00 MSK — m_DefaultMaterialType = 1 (Unlit)
-            // Причина: Lit default рендерит ЧЁРНЫМ без Light2D в сцене.
+            // m_DefaultMaterialType = 1 (Unlit): Lit default рендерит ЧЁРНЫМ без Light2D в сцене.
             // Unlit не требует Light2D — спрайты видны сразу.
             // Если Light2D будет добавлен позже — переключить обратно на 0 (Lit).
             var rendererSo = new SerializedObject(rendererData);

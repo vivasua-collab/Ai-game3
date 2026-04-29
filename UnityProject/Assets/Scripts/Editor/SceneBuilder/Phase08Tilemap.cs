@@ -182,7 +182,6 @@ namespace CultivationGame.Editor.SceneBuilder
         /// Назначает Sprite-Unlit-Default материал на TilemapRenderer.
         /// Без этого TilemapRenderer наследует Sprite-Lit-Default от Renderer2D,
         /// который рендерит ЧЁРНЫМ без Light2D в сцене.
-        /// Редактировано: 2026-04-25 14:32:00 MSK
         /// </summary>
         private static void AssignUnlitMaterial(TilemapRenderer renderer)
         {

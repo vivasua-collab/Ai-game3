@@ -268,7 +268,6 @@ namespace CultivationGame.Editor.SceneBuilder
         /// <summary>
         /// Подключение HUDController SerializeField ссылок.
         /// Без этого HUD не обновляется в runtime (показывает статический текст).
-        /// Редактировано: 2026-04-25
         /// </summary>
         private void WireHUDControllerReferences(GameObject hud, HUDController hudController)
         {

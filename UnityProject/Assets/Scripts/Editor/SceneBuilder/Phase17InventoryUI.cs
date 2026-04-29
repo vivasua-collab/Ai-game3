@@ -560,7 +560,6 @@ namespace CultivationGame.Editor.SceneBuilder
 
             // ================================================================
             // BodyDollPanel (левая часть) — ДВУХКОЛОНОЧНЫЙ LAYOUT v2
-            // Редактировано: 2026-04-25 18:30:00 MSK
             // ================================================================
             // Layout: Силуэт тела по центру, квадратные слоты 50×50 по бокам
             // Левая колонка: одежда (Head, Torso, Belt, Legs, Feet)
@@ -1341,11 +1340,9 @@ namespace CultivationGame.Editor.SceneBuilder
         // ====================================================================
         //  DollSlotUI — создание и подключение
         // ====================================================================
-        // Редактировано: 2026-04-25 16:00:00 MSK
-
         /// <summary>
         /// Создаёт один DollSlotUI — квадратный слот экипировки 50×50.
-        /// Редактировано: 2026-04-25 18:30:00 MSK — редизайн: 180×40 → 50×50
+        /// Редизайн: 180×40 → 50×50
         /// 
         /// Слот квадратный, якоря задаются параметрами.
         /// Дочерние: IconImage, SlotBorder, SlotLabel, ItemNameText, DurabilityBar,
@@ -1480,7 +1477,6 @@ namespace CultivationGame.Editor.SceneBuilder
             GameObject blockedOverlay, GameObject emptyIcon,
             EquipmentSlot slotType)
         {
-            // Редактировано: 2026-04-25 16:00:00 MSK
             SerializedObject so = new SerializedObject(slotUI);
 
             so.FindProperty("iconImage").objectReferenceValue = iconImage;
@@ -1511,7 +1507,6 @@ namespace CultivationGame.Editor.SceneBuilder
             TMP_Text damageText, TMP_Text defenseText, TMP_Text statsSummaryText,
             Image bodySilhouette)
         {
-            // Редактировано: 2026-04-25 16:00:00 MSK
             SerializedObject so = new SerializedObject(panel);
 
             // 1-5: видимые слоты экипировки
@@ -1571,7 +1566,6 @@ namespace CultivationGame.Editor.SceneBuilder
         /// <summary>
         /// Генерирует процедурный силуэт тела персонажа (80×220px).
         /// Сохраняет как PNG в Assets/Sprites/UI/BodySilhouette.png и импортирует как Sprite.
-        /// Редактировано: 2026-04-25 18:30:00 MSK
         /// </summary>
         private Sprite GenerateBodySilhouetteSprite()
         {
