@@ -21,8 +21,7 @@ namespace CultivationGame.Editor.SceneBuilder
 
         public bool IsNeeded()
         {
-            SceneBuilderUtils.EnsureSceneOpen();
-
+            // Если сцена не открыта — Camera.main вернёт null → return true
             var cam = Camera.main;
             if (cam == null) return true;
 

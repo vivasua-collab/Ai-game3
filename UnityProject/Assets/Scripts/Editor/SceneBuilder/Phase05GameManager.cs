@@ -22,7 +22,7 @@ namespace CultivationGame.Editor.SceneBuilder
 
         public bool IsNeeded()
         {
-            SceneBuilderUtils.EnsureSceneOpen();
+            // Если сцена не открыта — FindObjectOfType вернёт null → return true
             return UnityEngine.Object.FindFirstObjectByType<GameManager>() == null;
         }
 

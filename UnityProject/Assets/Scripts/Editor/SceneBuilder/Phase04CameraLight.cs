@@ -23,7 +23,7 @@ namespace CultivationGame.Editor.SceneBuilder
 
         public bool IsNeeded()
         {
-            SceneBuilderUtils.EnsureSceneOpen();
+            // Если сцена не открыта — объекты не найдены → return true (фаза требуется)
             var cam = Camera.main;
             bool hasLight2D = GameObject.Find("GlobalLight2D") != null;
             return cam == null || !hasLight2D;

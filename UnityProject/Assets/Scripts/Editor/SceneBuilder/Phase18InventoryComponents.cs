@@ -10,6 +10,7 @@
 // Зависимости: Phase06Player (Player), Phase17InventoryUI (UI)
 //
 // Редактировано: 2026-04-27 18:15:00 UTC — строчная модель инвентаря
+// Редактировано: 2026-04-29 12:13:35 UTC — аудит: IsNeeded() возвращает true при отсутствии зависимости
 // ============================================================================
 
 #if UNITY_EDITOR
@@ -27,9 +28,13 @@ namespace CultivationGame.Editor.SceneBuilder
 
         public bool IsNeeded()
         {
-            SceneBuilderUtils.EnsureSceneOpen();
             var player = GameObject.Find("Player");
-            if (player == null) return false;
+            if (player == null)
+            {
+                // Зависимость отсутствует — фаза требуется, но Execute() выдаст ошибку
+                Debug.LogWarning("[Phase18] Player не найден! Сначала выполните Phase 06.");
+                return true;
+            }
 
             // Фаза нужна, если SpiritStorageController ещё не добавлен
             return player.GetComponent<SpiritStorageController>() == null;

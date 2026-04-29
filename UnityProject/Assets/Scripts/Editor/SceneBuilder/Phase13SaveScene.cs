@@ -2,6 +2,9 @@
 // Phase13SaveScene.cs — Фаза 13: Сохранение сцены
 // Cultivation World Simulator
 // ============================================================================
+// Создано: 2026-04-09
+// Редактировано: 2026-04-29 12:13:35 UTC — аудит: добавлен EnsureSceneOpen перед сохранением
+// ============================================================================
 
 #if UNITY_EDITOR
 using UnityEngine;
@@ -25,6 +28,8 @@ namespace CultivationGame.Editor.SceneBuilder
 
         public void Execute()
         {
+            SceneBuilderUtils.EnsureSceneOpen();
+
             var activeScene = SceneManager.GetActiveScene();
 
             if (string.IsNullOrEmpty(activeScene.path))

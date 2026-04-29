@@ -26,7 +26,7 @@ namespace CultivationGame.Editor.SceneBuilder
             bool objectAssetsExist = SceneBuilderUtils.HasAssetsInFolder("Assets/Tiles/Objects");
             if (!terrainAssetsExist || !objectAssetsExist) return true;
 
-            SceneBuilderUtils.EnsureSceneOpen();
+            // Проверка TileMapController — если сцена не открыта, FindObjectOfType вернёт null → return true
             var controller = UnityEngine.Object.FindFirstObjectByType<TileMapController>();
             if (controller == null) return true;
 

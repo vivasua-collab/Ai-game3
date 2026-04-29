@@ -18,6 +18,7 @@
 // Редактировано: 2026-04-25 18:30:00 MSK — РЕДИЗАЙН куклы: двухколоночный
 //   layout, квадратные 50×50 слоты, процедурный силуэт тела, ширина 300px.
 // Редактировано: 2026-04-27 18:40 UTC — фикс: MiddleRight→MidlineRight, scrollbarVisibility→verticalScrollbarVisibility
+// Редактировано: 2026-04-29 12:13:35 UTC — аудит: IsNeeded() возвращает true при отсутствии зависимости
 // ============================================================================
 
 #if UNITY_EDITOR
@@ -39,9 +40,13 @@ namespace CultivationGame.Editor.SceneBuilder
 
         public bool IsNeeded()
         {
-            SceneBuilderUtils.EnsureSceneOpen();
             var canvas = GameObject.Find("GameUI");
-            if (canvas == null) return false;
+            if (canvas == null)
+            {
+                // Зависимость отсутствует — фаза требуется, но Execute() выдаст ошибку
+                Debug.LogWarning("[Phase17] Canvas 'GameUI' не найден! Сначала выполните Phase 07.");
+                return true;
+            }
             return canvas.transform.Find("InventoryScreen") == null;
         }
 

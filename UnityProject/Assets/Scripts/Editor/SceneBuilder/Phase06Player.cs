@@ -28,7 +28,7 @@ namespace CultivationGame.Editor.SceneBuilder
 
         public bool IsNeeded()
         {
-            SceneBuilderUtils.EnsureSceneOpen();
+            // Если сцена не открыта — Find вернёт null → return true
             return GameObject.Find("Player") == null;
         }
 

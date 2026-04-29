@@ -14,6 +14,7 @@
 // Редактировано: 2026-04-29 09:30:00 UTC — Этап 5: замена CreateTestEquipment на генераторы
 //   WeaponGenerator + ArmorGenerator + EquipmentSOFactory вместо хардкода
 // Редактировано: 2026-04-29 12:03:16 UTC — исправление некорректных дат (05-01 → 04-29)
+// Редактировано: 2026-04-29 12:13:35 UTC — аудит: IsNeeded() расширена, EnsureSceneOpen убран из Execute
 // ============================================================================
 
 #if UNITY_EDITOR
@@ -38,13 +39,18 @@ namespace CultivationGame.Editor.SceneBuilder
 
         public bool IsNeeded()
         {
-            // Проверяем наличие папки Backpacks — если нет, фаза нужна
-            return !AssetDatabase.IsValidFolder(BACKPACKS_FOLDER);
+            // Проверяем все создаваемые ресурсы
+            if (!AssetDatabase.IsValidFolder(BACKPACKS_FOLDER)) return true;
+            if (!AssetDatabase.IsValidFolder(STORAGERINGS_FOLDER)) return true;
+            // Тестовый набор экипировки
+            if (!AssetDatabase.IsValidFolder(BASIC_FOLDER)) return true;
+            if (AssetDatabase.LoadAssetAtPath<EquipmentData>($"{BASIC_FOLDER}/weapon_Sword_T1_Common.asset") == null) return true;
+            return false;
         }
 
         public void Execute()
         {
-            SceneBuilderUtils.EnsureSceneOpen();
+            // Фаза не модифицирует сцену — EnsureSceneOpen не нужен
 
             // Шаг 1: Создать папки
             SceneBuilderUtils.EnsureDirectory(BACKPACKS_FOLDER);

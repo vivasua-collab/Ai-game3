@@ -1,8 +1,8 @@
 # Архитектура генерации сцены — Оркестратор + фазовые файлы
 
 **Создано:** 2026-04-17 13:49:14 UTC
-**Редактировано:** 2026-04-28 14:50 UTC
-**Версия:** 2.3
+**Редактировано:** 2026-04-29 12:13 UTC
+**Версия:** 2.4
 
 ---
 
@@ -21,6 +21,7 @@ Assets/Scripts/Editor/
     ├── IScenePhase.cs                   # Интерфейс фазы
     ├── SceneBuilderConstants.cs         # Общие константы
     ├── SceneBuilderUtils.cs             # Общие утилиты
+    ├── Phase00URPSetup.cs              # Фаза 00: URP Asset Setup
     ├── Phase01Folders.cs                # Фаза 01: Папки
     ├── Phase02TagsLayers.cs             # Фаза 02: Теги и слои
     ├── Phase03SceneCreation.cs          # Фаза 03: Создание сцены
@@ -52,7 +53,7 @@ Assets/Scripts/Editor/
 
 ### Что делает
 
-- Регистрирует 18 фаз в массиве `PHASES`
+- Регистрирует 19 фаз в массиве `PHASES`
 - Управляет запуском: `IsNeeded()` → `Execute()` → логирование
 - Обрабатывает ошибки: try/catch с диалогом продолжения
 - Предоставляет меню: `Tools → Full Scene Builder → Build All` и отдельные фазы
@@ -113,6 +114,7 @@ public interface IScenePhase
 
 | # | Класс | Имя | Описание | Объединённые патчи |
 |---|-------|-----|----------|-------------------|
+| 00 | Phase00URPSetup | URP Setup | URP Asset + Renderer2D Data + GraphicsSettings | — |
 | 01 | Phase01Folders | Folders | Создание 33 папок | — |
 | 02 | Phase02TagsLayers | Tags & Layers | Теги, Physics Layers, Sorting Layers | PATCH-001, PATCH-011, PATCH-012 |
 | 03 | Phase03SceneCreation | Scene Creation | Создание сцены, удаление дефолтной камеры | — |

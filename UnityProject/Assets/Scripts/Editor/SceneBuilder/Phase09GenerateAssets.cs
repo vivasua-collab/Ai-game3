@@ -2,6 +2,9 @@
 // Phase09GenerateAssets.cs — Фаза 09: Генерация ассетов из JSON
 // Cultivation World Simulator
 // ============================================================================
+// Создано: 2026-04-09
+// Редактировано: 2026-04-29 12:13:35 UTC — аудит: IsNeeded() расширена для всех типов ассетов
+// ============================================================================
 
 #if UNITY_EDITOR
 using UnityEngine;
@@ -18,9 +21,19 @@ namespace CultivationGame.Editor.SceneBuilder
 
         public bool IsNeeded()
         {
-            return !SceneBuilderUtils.HasAssetsInFolder("Assets/Data/CultivationLevels") ||
-                   !SceneBuilderUtils.HasAssetsInFolder("Assets/Data/Elements") ||
-                   !SceneBuilderUtils.HasAssetsInFolder("Assets/Data/MortalStages");
+            // Базовые ассеты
+            if (!SceneBuilderUtils.HasAssetsInFolder("Assets/Data/CultivationLevels")) return true;
+            if (!SceneBuilderUtils.HasAssetsInFolder("Assets/Data/Elements")) return true;
+            if (!SceneBuilderUtils.HasAssetsInFolder("Assets/Data/MortalStages")) return true;
+            // Расширенные ассеты
+            if (!SceneBuilderUtils.HasAssetsInFolder("Assets/Data/Techniques")) return true;
+            if (!SceneBuilderUtils.HasAssetsInFolder("Assets/Data/NPCPresets")) return true;
+            if (!SceneBuilderUtils.HasAssetsInFolder("Assets/Data/Equipment")) return true;
+            if (!SceneBuilderUtils.HasAssetsInFolder("Assets/Data/Items")) return true;
+            if (!SceneBuilderUtils.HasAssetsInFolder("Assets/Data/Materials")) return true;
+            // Формации
+            if (!SceneBuilderUtils.HasAssetsInFolder("Assets/Data/Formations")) return true;
+            return false;
         }
 
         public void Execute()
