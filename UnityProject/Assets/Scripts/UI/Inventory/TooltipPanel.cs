@@ -4,6 +4,7 @@
 // ============================================================================
 // Создано: 2026-04-18 20:00:00 UTC
 // Редактировано: 2026-04-27 18:15:00 UTC — строчная модель инвентаря
+// Редактировано: 2026-04-29 08:55:00 UTC — GradeColors в грейде и тире (UI.2, UI.3)
 // ============================================================================
 // Расширенная карточка предмета по INVENTORY_UI_DRAFT.md §5.4:
 // - Редкость (цвет рамки)
@@ -334,7 +335,22 @@ namespace CultivationGame.UI.Inventory
                 materialText.text = !string.IsNullOrEmpty(equip.materialId) ? $"Материал: {equip.materialId}" : "";
 
             if (gradeText != null)
-                gradeText.text = equip.grade != EquipmentGrade.Common ? $"Грейд: {GetGradeName(equip.grade)}" : "";
+            {
+                gradeText.text = equip.grade != EquipmentGrade.Common ? $"Грейд: {GradeColors.GetGradeNameRu(equip.grade)}" : "";
+                // Цвет текста грейда через GradeColors (UI.2, Д9)
+                gradeText.color = equip.grade != EquipmentGrade.Common
+                    ? GradeColors.GetGradeColor(equip.grade)
+                    : Color.white;
+            }
+
+            // Тир материала — цвет через GradeColors (UI.3, Д10)
+            if (materialText != null)
+            {
+                string matInfo = !string.IsNullOrEmpty(equip.materialId) ? $"Материал: {equip.materialId}" : "";
+                string tierInfo = equip.materialTier > 1 ? $" [{GradeColors.GetTierNameRu(equip.materialTier)}]" : "";
+                materialText.text = matInfo + tierInfo;
+                materialText.color = GradeColors.GetTierColor(equip.materialTier);
+            }
         }
 
         private void HideMaterialFields()

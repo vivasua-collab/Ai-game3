@@ -4,6 +4,7 @@
 // ============================================================================
 // Создано: 2026-04-18 20:00:00 UTC
 // Редактировано: 2026-04-27 18:10:00 UTC — ПЕРЕПИСЬ: ячейка сетки → строка списка
+// Редактировано: 2026-04-29 08:55:00 UTC — подсветка фона по Grade через GradeColors (UI.1)
 // ============================================================================
 // Визуальная строка предмета в строчном инвентаре.
 // Формат: [иконка] [название] [кол-во] [вес] [объём]
@@ -16,6 +17,7 @@ using UnityEngine.EventSystems;
 using TMPro;
 using CultivationGame.Core;
 using CultivationGame.Inventory;
+using CultivationGame.Data.ScriptableObjects;
 
 namespace CultivationGame.UI.Inventory
 {
@@ -187,9 +189,20 @@ namespace CultivationGame.UI.Inventory
                 border.enabled = true;
             }
 
-            // Фон
+            // Фон — подсветка по Grade (UI.1, Д9)
             if (background != null)
-                background.color = normalColor;
+            {
+                if (itemData is EquipmentData eqData)
+                {
+                    Color gradeTint = GradeColors.GetGradeColor(eqData.grade);
+                    gradeTint.a = 0.15f;
+                    background.color = gradeTint;
+                }
+                else
+                {
+                    background.color = normalColor;
+                }
+            }
         }
 
         /// <summary>

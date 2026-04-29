@@ -2,7 +2,7 @@
 // EquipmentData.cs — Данные экипировки (оружие, броня, аксессуары)
 // Cultivation World Simulator
 // Создано: 2026-04-13 14:03:25 UTC
-// Редактировано: 2026-04-27 18:06:00 UTC — убрано поле layers (легаси Матрёшка v1)
+// Редактировано: 2026-04-29 08:55:00 UTC — добавлены moveSpeedPenalty, qiFlowPenalty, equippedSprite (Д6, Д7)
 // ============================================================================
 //
 // ВЫНЕСЕН ИЗ ItemData.cs — Unity требует совпадение имени файла и класса
@@ -48,6 +48,19 @@ namespace CultivationGame.Data.ScriptableObjects
         [Tooltip("Бонус к уклонению (%)")]
         [Range(-50f, 50f)]
         public float dodgeBonus = 0f;
+
+        [Header("Penalties")]
+        [Tooltip("Штраф скорости перемещения (%) — отрицательный")]
+        [Range(-50f, 0f)]
+        public float moveSpeedPenalty = 0f;
+
+        [Tooltip("Штраф проводимости Ци (%) — может быть отрицательным или положительным")]
+        [Range(-30f, 30f)]
+        public float qiFlowPenalty = 0f;
+
+        [Header("Visuals")]
+        [Tooltip("Спрайт надетой экипировки (overlay на персонаже)")]
+        public Sprite equippedSprite;
 
         [Header("Material")]
         [Tooltip("ID материала")]

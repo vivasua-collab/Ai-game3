@@ -10,6 +10,7 @@
 // Редактировано: 2026-04-25 19:00:00 MSK — +AddTestEquipmentSet() базовый набор шмота
 //   для проверки инвентаря и куклы.
 // Редактировано: 2026-04-27 18:15:00 UTC — строчная модель инвентаря
+// Редактировано: 2026-04-29 08:55:00 UTC — интеграция GradeColors (Д9, Д10, Д11)
 // ============================================================================
 
 #if UNITY_EDITOR
@@ -17,6 +18,7 @@ using UnityEngine;
 using UnityEditor;
 using CultivationGame.Core;
 using CultivationGame.Data.ScriptableObjects;
+// GradeColors — единая точка доступа к цветам Grade/Tier (Д12)
 
 namespace CultivationGame.Editor.SceneBuilder
 {
@@ -299,40 +301,41 @@ namespace CultivationGame.Editor.SceneBuilder
 
             // === ОДЕЖДА (левая колонка куклы) ===
 
+            // Иконки теперь используют GradeColors (Д9, Д10, Д11)
             CreateTestEquipment("Test_IronHelmet", "Железный шлем", "Простой железный шлем.",
                 EquipmentSlot.Head, WeaponHandType.OneHand,
                 damage: 0, defense: 12, coverage: 75f, damageReduction: 8f, dodgeBonus: -5f,
                 weight: 2.5f, value: 60,
                 ItemRarity.Common, EquipmentGrade.Common, "iron", 1,
-                iconColor: new Color(0.6f, 0.6f, 0.7f), iconLetter: "Ш");
+                iconLetter: "Ш");
 
             CreateTestEquipment("Test_ClothRobe", "Тканевая роба", "Простая роба из ткани.",
                 EquipmentSlot.Torso, WeaponHandType.OneHand,
                 damage: 0, defense: 3, coverage: 60f, damageReduction: 0f, dodgeBonus: 0f,
                 weight: 0.5f, value: 20,
                 ItemRarity.Common, EquipmentGrade.Common, "cloth", 1,
-                iconColor: new Color(0.6f, 0.5f, 0.4f), iconLetter: "Р");
+                iconLetter: "Р");
 
             CreateTestEquipment("Test_LeatherBelt", "Кожаный ремень", "Прочный ремень из кожи.",
                 EquipmentSlot.Belt, WeaponHandType.OneHand,
                 damage: 0, defense: 2, coverage: 30f, damageReduction: 0f, dodgeBonus: 0f,
                 weight: 0.3f, value: 15,
                 ItemRarity.Common, EquipmentGrade.Common, "leather", 1,
-                iconColor: new Color(0.5f, 0.35f, 0.2f), iconLetter: "П");
+                iconLetter: "П");
 
             CreateTestEquipment("Test_ClothPants", "Тканевые штаны", "Простые тканевые штаны.",
                 EquipmentSlot.Legs, WeaponHandType.OneHand,
                 damage: 0, defense: 2, coverage: 50f, damageReduction: 0f, dodgeBonus: 0f,
                 weight: 0.4f, value: 15,
                 ItemRarity.Common, EquipmentGrade.Common, "cloth", 1,
-                iconColor: new Color(0.6f, 0.5f, 0.4f), iconLetter: "Н");
+                iconLetter: "Н");
 
             CreateTestEquipment("Test_ClothShoes", "Тканевые туфли", "Лёгкие тканевые туфли.",
                 EquipmentSlot.Feet, WeaponHandType.OneHand,
                 damage: 0, defense: 1, coverage: 30f, damageReduction: 0f, dodgeBonus: 0f,
                 weight: 0.2f, value: 10,
                 ItemRarity.Common, EquipmentGrade.Common, "cloth", 1,
-                iconColor: new Color(0.6f, 0.5f, 0.4f), iconLetter: "О");
+                iconLetter: "О");
 
             // === ОРУЖИЕ (правая колонка куклы) ===
 
@@ -341,14 +344,14 @@ namespace CultivationGame.Editor.SceneBuilder
                 damage: 12, defense: 0, coverage: 0f, damageReduction: 0f, dodgeBonus: 0f,
                 weight: 2.5f, value: 50,
                 ItemRarity.Common, EquipmentGrade.Common, "iron", 1,
-                iconColor: new Color(0.7f, 0.7f, 0.75f), iconLetter: "М");
+                iconLetter: "М");
 
             CreateTestEquipment("Test_IronDagger", "Железный кинжал", "Лёгкий железный кинжал.",
                 EquipmentSlot.WeaponOff, WeaponHandType.OneHand,
                 damage: 6, defense: 0, coverage: 0f, damageReduction: 0f, dodgeBonus: 0f,
                 weight: 0.5f, value: 35,
                 ItemRarity.Common, EquipmentGrade.Common, "iron", 1,
-                iconColor: new Color(0.65f, 0.65f, 0.7f), iconLetter: "К");
+                iconLetter: "К");
 
             // === Двуручное (для теста блокировки WeaponOff) ===
 
@@ -357,7 +360,7 @@ namespace CultivationGame.Editor.SceneBuilder
                 damage: 24, defense: 0, coverage: 0f, damageReduction: 0f, dodgeBonus: -5f,
                 weight: 6.0f, value: 120,
                 ItemRarity.Uncommon, EquipmentGrade.Common, "iron", 1,
-                iconColor: new Color(0.7f, 0.65f, 0.7f), iconLetter: "Д");
+                iconLetter: "Д");
 
             // === Редкие предметы для разнообразия ===
 
@@ -366,20 +369,21 @@ namespace CultivationGame.Editor.SceneBuilder
                 damage: 0, defense: 15, coverage: 75f, damageReduction: 8f, dodgeBonus: 0f,
                 weight: 0.4f, value: 650,
                 ItemRarity.Rare, EquipmentGrade.Refined, "spirit_silk", 3,
-                iconColor: new Color(0.4f, 0.5f, 0.8f), iconLetter: "Д");
+                iconLetter: "Д");
 
             CreateTestEquipment("Test_SteelSword", "Стальной меч", "Качественный стальной меч.",
                 EquipmentSlot.WeaponMain, WeaponHandType.OneHand,
                 damage: 18, defense: 0, coverage: 0f, damageReduction: 0f, dodgeBonus: 0f,
                 weight: 2.3f, value: 180,
                 ItemRarity.Uncommon, EquipmentGrade.Refined, "steel", 2,
-                iconColor: new Color(0.75f, 0.75f, 0.8f), iconLetter: "С");
+                iconLetter: "С");
 
             Debug.Log("[Phase16] ✅ Test Equipment Set создан: 10 предметов (7 слотов + 2 редких + 1 двуручник)");
         }
 
         /// <summary>
         /// Создаёт один тестовый предмет экипировки с процедурной иконкой.
+        /// Иконка использует GradeColors для фона (Д9) и Tier-индикатор (Д10, Д11).
         /// </summary>
         private void CreateTestEquipment(
             string fileName, string nameRu, string description,
@@ -388,7 +392,7 @@ namespace CultivationGame.Editor.SceneBuilder
             float weight, int value,
             ItemRarity rarity, EquipmentGrade grade,
             string materialId, int materialTier,
-            Color iconColor, string iconLetter)
+            string iconLetter)
         {
             string assetPath = $"{TEST_EQUIP_FOLDER}/{fileName}.asset";
 
@@ -407,10 +411,14 @@ namespace CultivationGame.Editor.SceneBuilder
             data.value = value;
             data.hasDurability = true;
             data.maxDurability = 100;
-            // Объём по формуле строчной модели (Источник: AssetGeneratorExtended.CalculateVolume)
+            // Объём по формуле строчной модели
             data.volume = Mathf.Clamp(weight, 1f, 4f);
             data.allowNesting = NestingFlag.Any;
-            data.icon = GenerateTestIcon(fileName, iconColor, iconLetter, rarity);
+            // Иконка через GradeColors (Д9, Д10, Д11)
+            Color iconBg = GradeColors.GetIconBgColor(grade, materialTier);
+            Color iconBorder = GetRarityBorderColor(rarity);
+            Color tierIndicator = GradeColors.GetTierColor(materialTier);
+            data.icon = GenerateTestIcon(fileName, iconBg, iconBorder, tierIndicator, iconLetter);
 
             // EquipmentData fields
             data.slot = slot;
@@ -430,9 +438,9 @@ namespace CultivationGame.Editor.SceneBuilder
 
         /// <summary>
         /// Генерирует тестовую иконку предмета — цветной квадрат с буквой.
-        /// Размер 32×32px, фон по редкости, буква по типу.
+        /// Размер 32×32px. Фон = GradeColors (Д9, Д11), рамка = Rarity, Tier-индикатор 4×4 (Д10).
         /// </summary>
-        private Sprite GenerateTestIcon(string fileName, Color bgColor, string letter, ItemRarity rarity)
+        private Sprite GenerateTestIcon(string fileName, Color bgColor, Color borderColor, Color tierColor, string letter)
         {
             const string iconDir = "Assets/Sprites/UI/ItemIcons";
             string iconPath = $"{iconDir}/{fileName}.png";
@@ -447,16 +455,16 @@ namespace CultivationGame.Editor.SceneBuilder
             var tex = new Texture2D(size, size, TextureFormat.RGBA32, false);
             var pixels = new Color32[size * size];
 
-            // Фон — цвет предмета с затемнением по редкости
-            Color32 bg = Color32.Lerp(bgColor, Color.black, 0.2f);
-            Color32 border = GetRarityBorderColor(rarity);
+            // Фон — Grade-цвет (затемнённый по Tier через GradeColors.GetIconBgColor)
+            Color32 bg = bgColor;
+            Color32 border = borderColor;
             Color32 letterColor = new Color32(255, 255, 255, 220);
 
             for (int y = 0; y < size; y++)
             {
                 for (int x = 0; x < size; x++)
                 {
-                    // Рамка 2px
+                    // Рамка 2px — Rarity-цвет
                     if (x < 2 || x >= size - 2 || y < 2 || y >= size - 2)
                         pixels[y * size + x] = border;
                     else
@@ -464,7 +472,12 @@ namespace CultivationGame.Editor.SceneBuilder
                 }
             }
 
-            // Буква — простая 5×7 пиксельная сетка (uppercase)
+            // Tier-индикатор 4×4 в правом нижнем углу (Д10)
+            for (int y = 2; y < 6; y++)
+                for (int x = size - 6; x < size - 2; x++)
+                    pixels[y * size + x] = tierColor;
+
+            // Буква — простая 5×7 пиксельная сетка
             DrawPixelLetter(pixels, size, letter, 13, 12, letterColor);
 
             tex.SetPixels32(pixels);
