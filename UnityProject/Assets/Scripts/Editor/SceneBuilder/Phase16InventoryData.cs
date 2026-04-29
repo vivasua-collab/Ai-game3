@@ -11,8 +11,9 @@
 //   для проверки инвентаря и куклы.
 // Редактировано: 2026-04-27 18:15:00 UTC — строчная модель инвентаря
 // Редактировано: 2026-04-29 08:55:00 UTC — интеграция GradeColors (Д9, Д10, Д11)
-// Редактировано: 2026-04-29 — Этап 5: замена CreateTestEquipment на генераторы
+// Редактировано: 2026-04-29 09:30:00 UTC — Этап 5: замена CreateTestEquipment на генераторы
 //   WeaponGenerator + ArmorGenerator + EquipmentSOFactory вместо хардкода
+// Редактировано: 2026-04-29 12:03:16 UTC — исправление некорректных дат (05-01 → 04-29)
 // ============================================================================
 
 #if UNITY_EDITOR
@@ -282,9 +283,8 @@ namespace CultivationGame.Editor.SceneBuilder
         // ====================================================================
         //  Test Equipment Set — процедурная генерация через Weapon/Armor генераторы
         // ====================================================================
-        // Редактировано: 2026-04-25 19:00:00 MSK — первоначальный хардкод
-        // Редактировано: 2026-04-29 — Этап 5: замена на WeaponGenerator + ArmorGenerator
-        //   + EquipmentSOFactory.CreateFromWeapon/CreateFromArmor
+        // Первоначальный хардкод заменён на генераторы (Этап 5)
+        // WeaponGenerator + ArmorGenerator + EquipmentSOFactory
 
         private const string TEST_EQUIP_FOLDER = "Assets/Data/Equipment/TestSet";
         private const string BASIC_FOLDER = "Assets/Data/Equipment/TestSet/Basic";    // T1 Common

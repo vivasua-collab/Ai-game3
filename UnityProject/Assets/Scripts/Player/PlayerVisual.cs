@@ -3,7 +3,14 @@
 // Cultivation World Simulator
 // Версия: 1.0
 // Создано: 2026-03-30 14:00:00 UTC
-// Редактировано: 2026-04-17 12:38 UTC — FIX-SORT: EnsureCorrectSortingLayer() теперь проверяет ПОРЯДОК слоёв + fallback на Y-сортировку
+// Редактировано: 2026-04-15 11:20:00 UTC — программный гуманоид вместо круга (CreateCircleSprite, FillCircle, FillRect)
+// Редактировано: 2026-04-15 16:53:48 UTC — Unlit шейдер как приоритетный (виден без Light2D)
+// Редактировано: 2026-04-15 17:31:49 UTC — AI-спрайт загрузка, PPU=64, playerColor красно-оранжевый, size=1.0
+// Редактировано: 2026-04-15 17:51:32 UTC — EnsurePlayerSpritePPU: alphaIsTransparency + принудительный реимпорт
+// Редактировано: 2026-04-16 11:37:00 UTC — Sorting Layer «Player», тень на слое Player
+// Редактировано: 2026-04-17 12:38:00 UTC — FIX-SORT: EnsureCorrectSortingLayer() проверяет ПОРЯДОК слоёв + fallback
+// Редактировано: 2026-04-18 00:00:00 UTC — Start(): повторная проверка Sorting Layer после всех Awake()
+// Редактировано: 2026-04-29 12:03:16 UTC — FIX SPRITE-01: EnsurePlayerSpritePPU до LoadAssetAtPath; исправление даты (05-02 → 04-29)
 // ============================================================================
 
 using UnityEngine;
@@ -21,12 +28,10 @@ namespace CultivationGame.Player
         [Header("Visual Settings")]
         [Tooltip("Цвет игрока")]
         // FIX 2C: Красно-оранжевый — контрастный на любом фоне
-        // Редактировано: 2026-04-15 17:31:49 UTC
         public Color playerColor = new Color(1f, 0.3f, 0.15f);
         
         [Tooltip("Размер игрока")]
         // FIX: size=1.0 — при PPU=64, 128/64=2.0 юнита × 1.0 = 2.0 юнита (1 тайл)
-        // Редактировано: 2026-04-15 17:31:49 UTC
         public float size = 1.0f;
         
         [Tooltip("Создать тень")]
@@ -75,7 +80,6 @@ namespace CultivationGame.Player
             mainSprite = visualObj.AddComponent<SpriteRenderer>();
             
             // FIX 1A: Загружаем обработанный AI-спрайт (128×128 RGBA, без белого фона)
-            // Редактировано: 2026-04-15 17:31:49 UTC
             Sprite loadedSprite = LoadPlayerSprite();
             if (loadedSprite != null)
             {
@@ -92,14 +96,12 @@ namespace CultivationGame.Player
             // FIX-V2-5: Sorting layer "Player" — игрок на собственном слое, выше всех объектов.
             // При sortingLayerName="Objects" (когда слой не существовал) Unity 6+ игнорировал →
             // спрайт НЕ рендерился. Теперь Sorting Layer "Player" создаётся в FullSceneBuilder.
-            // Редактировано: 2026-04-16 11:37 UTC
             mainSprite.sortingLayerName = "Player";
             mainSprite.sortingOrder = 0;
 
             // FIX 2A-alt: Сначала пробуем Unlit шейдер — рендерит БЕЗ Light2D (гарантированно виден).
             // Sprite-Lit-Default требует Light2D для видимости — без него спрайт чёрный.
             // Sprite-Unlit-Default рендерит без освещения — всегда виден.
-            // Редактировано: 2026-04-15 16:53:48 UTC
             Shader spriteShader = Shader.Find("Universal Render Pipeline/2D/Sprite-Unlit-Default");
             if (spriteShader == null)
                 spriteShader = Shader.Find("Universal Render Pipeline/2D/Sprite-Lit-Default");
@@ -122,7 +124,6 @@ namespace CultivationGame.Player
                 shadowSprite.sprite = CreateCircleSprite();
                 shadowSprite.color = shadowColor;
                 // FIX-V2-5: Тень на слое "Player", ниже основного спрайта (order=-1 < 0)
-                // Редактировано: 2026-04-16 11:37 UTC
                 shadowSprite.sortingLayerName = "Player";
                 shadowSprite.sortingOrder = -1;
 
@@ -131,7 +132,6 @@ namespace CultivationGame.Player
             }
             
             // FIX-V2-6: Диагностика Player Visual
-            // Редактировано: 2026-04-16 11:37 UTC
             CultivationGame.Core.RenderPipelineLogger.LogPlayerVisualState(mainSprite, shadowSprite);
             
             Debug.Log($"Player visual created: Color={playerColor}, Size={size}");
@@ -140,7 +140,6 @@ namespace CultivationGame.Player
         /// <summary>
         /// Создаёт спрайт гуманоида программно (fallback, если AI-спрайт не найден)
         /// FIX: Замена простого круга на фигуру персонажа с прозрачным фоном
-        /// Редактировано: 2026-04-15 11:20:00 UTC
         /// </summary>
         private Sprite CreateCircleSprite()
         {
@@ -192,7 +191,6 @@ namespace CultivationGame.Player
             texture.Apply();
             
             // FIX: PPU=64 — персонаж = 1 юнит, sprite pivot = центр снизу
-            // Редактировано: 2026-04-15 17:31:49 UTC
             return Sprite.Create(
                 texture,
                 new Rect(0, 0, resolution, resolution),
@@ -203,7 +201,6 @@ namespace CultivationGame.Player
         
         /// <summary>
         /// Залить круг на массиве пикселей.
-        /// Редактировано: 2026-04-15 11:20:00 UTC
         /// </summary>
         private void FillCircle(Color[] pixels, int resolution, int cx, int cy, int radius, Color color)
         {
@@ -224,7 +221,6 @@ namespace CultivationGame.Player
         
         /// <summary>
         /// Залить прямоугольник на массиве пикселей.
-        /// Редактировано: 2026-04-15 11:20:00 UTC
         /// </summary>
         private void FillRect(Color[] pixels, int resolution, int rx, int ry, int rw, int rh, Color color)
         {
@@ -245,7 +241,6 @@ namespace CultivationGame.Player
         /// В Editor: загрузка из Assets/Sprites/Characters/Player/ с автонастройкой PPU=64
         /// В Build: загрузка из Resources/Sprites/
         /// Fallback: программный круг
-        /// Редактировано: 2026-04-15 17:31:49 UTC
         /// </summary>
         private Sprite LoadPlayerSprite()
         {
@@ -265,7 +260,6 @@ namespace CultivationGame.Player
                 // Причина: при первом импорте Unity создаёт .meta с textureType=Default,
                 // LoadAssetAtPath<Sprite> возвращает null, EnsurePlayerSpritePPU НЕ вызывался —
                 // спрайт навсегда оставался «неспрайтом».
-                // Редактировано: 2026-04-29
                 if (!System.IO.File.Exists(System.IO.Path.Combine(System.IO.Directory.GetCurrentDirectory(), path)))
                     continue;
 
@@ -298,7 +292,6 @@ namespace CultivationGame.Player
         /// При первом запуске Unity может использовать дефолтный PPU=100 и отсутствующий alpha.
         /// FIX: Принудительный реимпорт ВСЕГДА (не только при PPU!=64) — гарантирует
         /// правильные настройки даже если только alphaIsTransparency был сброшен.
-        /// Редактировано: 2026-04-15 17:51:32 UTC
         /// </summary>
         private void EnsurePlayerSpritePPU(string assetPath)
         {
@@ -307,7 +300,6 @@ namespace CultivationGame.Player
 
             // FIX: Проверяем ВСЕ настройки, не только PPU.
             // alphaIsTransparency критичен для RGBA спрайтов — без него белый фон!
-            // Редактировано: 2026-04-15 17:51:32 UTC
             bool needsReimport = importer.spritePixelsPerUnit != 64
                 || importer.alphaIsTransparency != true
                 || importer.textureType != UnityEditor.TextureImporterType.Sprite
@@ -321,13 +313,11 @@ namespace CultivationGame.Player
                 importer.filterMode = FilterMode.Bilinear;
                 // FIX: alphaIsTransparency = true — КРИТИЧНО для RGBA спрайтов!
                 // Без этого Unity игнорирует альфа-канал → белый фон.
-                // Редактировано: 2026-04-15 17:51:32 UTC
                 importer.alphaIsTransparency = true;
                 importer.textureCompression = UnityEditor.TextureImporterCompression.Uncompressed;
                 importer.wrapMode = TextureWrapMode.Clamp;
                 UnityEditor.AssetDatabase.ImportAsset(assetPath, UnityEditor.ImportAssetOptions.ForceUpdate | UnityEditor.ImportAssetOptions.DontDownloadFromCacheServer);
                 // FIX: Refresh + задержка для корректной перезагрузки спрайта
-                // Редактировано: 2026-04-15 17:51:32 UTC
                 UnityEditor.AssetDatabase.Refresh(UnityEditor.ImportAssetOptions.ForceUpdate);
                 Debug.Log($"[PlayerVisual] Спрайт реимпортирован: {assetPath} → PPU=64, alphaIsTransparency=true");
             }
@@ -427,7 +417,6 @@ namespace CultivationGame.Player
             // слой "Player" ещё не существовал → Unity 6+ молча игнорирует невалидное имя →
             // спрайт остаётся на "Default" (id=0), который НИЖЕ "Terrain" (id=2) и "Objects" (id=3).
             // Start() выполняется ПОСЛЕ всех Awake() → сортировочные слои уже созданы.
-            // Редактировано: 2026-04-18 UTC
             EnsureCorrectSortingLayer();
 
             // FIX-V2-7: Runtime диагностика Camera и Light.
@@ -443,7 +432,6 @@ namespace CultivationGame.Player
         /// Корневая причина бага: если слой "Player" не существует в момент Awake(),
         /// или если порядок слоёв неправильный (Player ниже Terrain),
         /// игрок рендерится ПОЗАДИ terrain → спрайт поверхности поверх персонажа.
-        /// Редактировано: 2026-04-17 12:38 UTC
         /// </summary>
         private void EnsureCorrectSortingLayer()
         {
