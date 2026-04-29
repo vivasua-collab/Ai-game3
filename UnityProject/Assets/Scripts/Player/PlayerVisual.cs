@@ -265,7 +265,7 @@ namespace CultivationGame.Player
                 // Причина: при первом импорте Unity создаёт .meta с textureType=Default,
                 // LoadAssetAtPath<Sprite> возвращает null, EnsurePlayerSpritePPU НЕ вызывался —
                 // спрайт навсегда оставался «неспрайтом».
-                // Редактировано: 2026-05-02
+                // Редактировано: 2026-04-29
                 if (!System.IO.File.Exists(System.IO.Path.Combine(System.IO.Directory.GetCurrentDirectory(), path)))
                     continue;
 

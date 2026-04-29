@@ -3,7 +3,7 @@
 // Cultivation World Simulator
 // Создано: 2026-04-29 08:55:00 UTC
 // Редактировано: 2026-04-29 09:30 UTC — рефакторинг: вынос runtime-методов из #if UNITY_EDITOR
-// Редактировано: 2026-05-01 — FIX: перенос из Editor/ → Generators/ (namespace CultivationGame.Editor → .Generators)
+// Редактировано: 2026-04-29 — FIX: перенос из Editor/ → Generators/ (namespace CultivationGame.Editor → .Generators)
 //   Причина: Editor/ папка компилируется в Assembly-CSharp-Editor, недоступный в runtime.
 // ============================================================================
 //
