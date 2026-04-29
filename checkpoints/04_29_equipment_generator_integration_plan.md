@@ -1,8 +1,8 @@
 # 🔧 Чекпоинт: План внедрения генераторов экипировки
 
 **Дата:** 2026-04-29 07:11 UTC  
-**Редактировано:** 2026-04-29 09:45 UTC — реализация: Этап 3 (LootGenerator + EquipmentSOFactory рефакторинг + GeneratorRegistry)
-**Статус:** 🔄 В процессе (Этапы 1,2,3,4,UI ✅ | Этап 5 ❌)  
+**Редактировано:** 2026-05-01 — аудит + fix: EquipmentSOFactory перенесён в Generators/ (namespace); Этап 5 завершён
+**Статус:** ✅ Завершён (Этапы 1,2,3,4,5,UI ✅ | 4.5-4.6 отдельно)  
 **Цель:** Подключить runtime-генераторы (WeaponGenerator, ArmorGenerator) к конвейеру создания ScriptableObject, чтобы экипировка генерировалась процедурно и попадала в инвентарь/экипировку персонажа.
 
 **📎 Кодовая база:** [04_29_equipment_generator_integration_code.md](./04_29_equipment_generator_integration_code.md)
@@ -282,9 +282,9 @@ Phase16InventoryData           → CreateTestEquipment() → EquipmentData (SO) 
 **Стало:** Вызов `WeaponGenerator.Generate()` + `ArmorGenerator.Generate()` + `EquipmentSOFactory.CreateFromWeapon/Armor()`
 
 **Подзадачи:**
-- [ ] 5.1 Переписать `CreateTestEquipment()` — использовать генераторы (ЧАСТИЧНО: GradeColors интегрированы)
-- [ ] 5.2 Сгенерировать базовый набор: 5 оружия + 5 брони (T1, Common, Level 1)
-- [ ] 5.3 Сгенерировать улучшенный набор: 3 оружия + 3 брони (T3, Refined, Level 3-5)
+- [x] 5.1 Переписать `AddTestEquipmentSet()` — использовать генераторы (EquipmentSOFactory.CreateFromWeapon/Armor)
+- [x] 5.2 Сгенерировать базовый набор: 5 оружия + 5 брони (T1, Common, Level 1)
+- [x] 5.3 Сгенерировать улучшенный набор: 3 оружия + 3 брони (T3, Refined, Level 3-5)
 - [x] 5.4 Сгенерировать 5 рюкзаков + 4 кольца (оставить как есть — они не через генераторы)
 
 ### UI: Интеграция GradeColors в интерфейс
