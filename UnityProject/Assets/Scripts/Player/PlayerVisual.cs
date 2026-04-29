@@ -260,20 +260,23 @@ namespace CultivationGame.Player
             };
             foreach (var path in editorPaths)
             {
+                // FIX SPRITE-01: Сначала проверяем, существует ли файл вообще.
+                // Затем вызываем EnsurePlayerSpritePPU ВНЕ зависимости от LoadAssetAtPath<Sprite>.
+                // Причина: при первом импорте Unity создаёт .meta с textureType=Default,
+                // LoadAssetAtPath<Sprite> возвращает null, EnsurePlayerSpritePPU НЕ вызывался —
+                // спрайт навсегда оставался «неспрайтом».
+                // Редактировано: 2026-05-02
+                if (!System.IO.File.Exists(System.IO.Path.Combine(System.IO.Directory.GetCurrentDirectory(), path)))
+                    continue;
+
+                // Всегда пытаемся исправить настройки импорта
+                EnsurePlayerSpritePPU(path);
+
                 var sprite = UnityEditor.AssetDatabase.LoadAssetAtPath<Sprite>(path);
                 if (sprite != null)
                 {
-                    // FIX 1A: Убеждаемся, что PPU=64 для правильного размера спрайта
-                    // 128×128 при PPU=64 = 2.0 юнита × size=1.0 = 2.0 юнита
-                    // Редактировано: 2026-04-15 17:31:49 UTC
-                    EnsurePlayerSpritePPU(path);
-                    // Перезагружаем после возможного реимпорта
-                    sprite = UnityEditor.AssetDatabase.LoadAssetAtPath<Sprite>(path);
-                    if (sprite != null)
-                    {
-                        Debug.Log($"[PlayerVisual] AI-спрайт загружен: {path}, PPU={sprite.pixelsPerUnit}, bounds={sprite.bounds.size}");
-                        return sprite;
-                    }
+                    Debug.Log($"[PlayerVisual] AI-спрайт загружен: {path}, PPU={sprite.pixelsPerUnit}, bounds={sprite.bounds.size}");
+                    return sprite;
                 }
             }
             Debug.LogWarning("[PlayerVisual] AI-спрайт не найден, используется программный fallback");

@@ -16,6 +16,7 @@ using CultivationGame.Body;
 using CultivationGame.Inventory;
 using CultivationGame.Combat;
 using CultivationGame.Interaction;
+using CultivationGame.DebugTools;
 
 namespace CultivationGame.Editor.SceneBuilder
 {
@@ -78,6 +79,9 @@ namespace CultivationGame.Editor.SceneBuilder
 
             // PlayerVisual создаёт дочерний "Visual" со SpriteRenderer
             player.AddComponent<PlayerVisual>();
+
+            // Debug: EquipmentDebugPanel (F2 — отладочная панель инвентаря/генератора)
+            player.AddComponent<EquipmentDebugPanel>();
 
             // Настройка компонентов
             ConfigurePlayerController(player);
