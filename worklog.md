@@ -73,3 +73,38 @@ Stage Summary:
 - Новый файл: EquipmentGeneratorMenu.cs (210 строк)
 - 7/7 подзадач этапа 2 выполнены
 - Статус проекта: Этапы 1,2,4,UI ✅ | Этапы 3,5 ❌
+
+---
+Task ID: 3
+Agent: main
+Task: Этап 3 — LootGenerator.cs + EquipmentSOFactory рефакторинг + GeneratorRegistry интеграция
+
+Work Log:
+- Обнаружена критическая проблема: EquipmentSOFactory.cs целиком в #if UNITY_EDITOR → LootGenerator (runtime) не мог вызывать CreateRuntimeFrom*
+- Рефакторинг EquipmentSOFactory.cs:
+  - Убран внешний #if UNITY_EDITOR с namespace и класса
+  - #if UNITY_EDITOR оставлен только вокруг using UnityEditor и CreateFromWeapon/CreateFromArmor (editor-only с .asset)
+  - Runtime-методы (CreateRuntime*, Apply*, CreateProceduralIcon, маппинги) теперь доступны везде
+  - FindOrCreateWeaponIcon/FindOrCreateArmorIcon → ResolveWeaponIcon/ResolveArmorIcon с внутренним #if для AssetDatabase.LoadAssetAtPath
+  - Добавлены CreateRuntimeWeaponIcon/CreateRuntimeArmorIcon — программные иконки без AssetDatabase
+- Создан LootGenerator.cs (~170 строк):
+  - GenerateRandomEquipment(playerLevel, rng) — 50/50 оружие/броня
+  - GenerateRandomWeapon/GenerateRandomArmor — специфичные генераторы
+  - GenerateLoot(playerLevel, count) — массив случайных предметов
+  - GenerateMixedLoot(playerLevel, weaponCount, armorCount) — контроль состава + shuffle
+  - GenerateConsumableLoot — заглушка (TODO: ConsumableSOFactory)
+- Обновлён GeneratorRegistry.cs:
+  - Добавлены поля: cachedEquipment, cacheOrderEquipment (bounded LRU кэш)
+  - Добавлен region "Equipment Loot Generation": GenerateRandomEquipmentSO, GenerateEquipmentLoot, GetCachedEquipment, CachedEquipmentCount
+  - Добавлен AddToEquipmentCache() — bounded LRU eviction (как NPC/Technique)
+  - Initialize() и ClearCache() очищают equipment кэш
+  - GeneratorStatistics.TotalEquipmentCached + обновлён ToString()
+  - using CultivationGame.Data.ScriptableObjects добавлен
+- Обновлён чекпоинт: 3.1-3.4 [x], статус → Этапы 1,2,3,4,UI ✅ | Этап 5 ❌
+
+Stage Summary:
+- LootGenerator.cs — новый файл (170 строк), runtime генерация лута
+- EquipmentSOFactory.cs — рефакторинг: runtime-методы доступны вне Editor
+- GeneratorRegistry.cs — Equipment Loot region + bounded LRU кэш
+- 4/6 подзадач этапа 3 выполнены (3.5-3.6 отложены как ОТДЕЛЬНО)
+- Статус: Этапы 1,2,3,4,UI ✅ | Этап 5 ❌

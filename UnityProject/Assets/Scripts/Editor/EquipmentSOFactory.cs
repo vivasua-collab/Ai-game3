@@ -2,46 +2,52 @@
 // EquipmentSOFactory.cs — Фабрика создания EquipmentData SO из DTO генераторов
 // Cultivation World Simulator
 // Создано: 2026-04-29 08:55:00 UTC
+// Редактировано: 2026-04-29 09:30 UTC — рефакторинг: вынос runtime-методов из #if UNITY_EDITOR
 // ============================================================================
 //
 // Мост DTO → EquipmentData SO:
 //   GeneratedWeapon  → EquipmentData (через CreateFromWeapon / CreateRuntimeFromWeapon)
 //   GeneratedArmor   → EquipmentData (через CreateFromArmor  / CreateRuntimeFromArmor)
 //
-// Editor-методы создают .asset файлы. Runtime-методы — только в памяти.
-// Программная иконка использует GradeColors (Д9, Д10, Д11).
+// Runtime-методы (CreateRuntime*, Apply*, CreateProceduralIcon) доступны ВЕЗДЕ.
+// Editor-методы (CreateFrom* с .asset) — только в Unity Editor.
+//
+// Иконки:
+//   Editor: поиск AssetDatabase.LoadAssetAtPath → fallback CreateProceduralIcon
+//   Runtime: всегда CreateProceduralIcon (GradeColors)
 // ============================================================================
 
-#if UNITY_EDITOR
 using UnityEngine;
-using UnityEditor;
 using System.Collections.Generic;
 using CultivationGame.Core;
 using CultivationGame.Data.ScriptableObjects;
 using CultivationGame.Generators;
 
+#if UNITY_EDITOR
+using UnityEditor;
+#endif
+
 namespace CultivationGame.Editor
 {
     /// <summary>
     /// Фабрика конвертации DTO генераторов в EquipmentData ScriptableObject.
-    /// Editor-версия — создаёт .asset файлы через AssetDatabase.
+    /// Runtime-методы работают без UnityEditor. Editor-методы создают .asset файлы.
     /// </summary>
     public static class EquipmentSOFactory
     {
         // ================================================================
-        //  WEAPON → EquipmentData
+        //  RUNTIME: WEAPON → EquipmentData (доступны везде)
         // ================================================================
 
-        /// Создать EquipmentData SO из DTO оружия (с сохранением .asset)
-        public static EquipmentData CreateFromWeapon(GeneratedWeapon dto, string assetPath)
+        /// Создать runtime EquipmentData из DTO оружия (без сохранения на диск)
+        public static EquipmentData CreateRuntimeFromWeapon(GeneratedWeapon dto)
         {
             var so = ScriptableObject.CreateInstance<EquipmentData>();
             ApplyWeaponToSO(so, dto);
-            AssetDatabase.CreateAsset(so, assetPath);
             return so;
         }
 
-        /// Заполнить поля EquipmentData из DTO оружия (без сохранения)
+        /// Заполнить поля EquipmentData из DTO оружия
         public static void ApplyWeaponToSO(EquipmentData so, GeneratedWeapon dto)
         {
             // Поля ItemData
@@ -79,27 +85,26 @@ namespace CultivationGame.Editor
             so.statBonuses = ConvertBonuses(dto.bonuses);
             so.specialEffects = ConvertSpecialEffects(dto.specialEffects);
 
-            // Иконка (программная генерация с GradeColors)
-            so.icon = FindOrCreateWeaponIcon(dto);
+            // Иконка (runtime: программная; editor: поиск + fallback)
+            so.icon = ResolveWeaponIcon(dto);
 
             // Визуал
             so.equippedSprite = null; // Пока нет equipped-спрайтов
         }
 
         // ================================================================
-        //  ARMOR → EquipmentData
+        //  RUNTIME: ARMOR → EquipmentData (доступны везде)
         // ================================================================
 
-        /// Создать EquipmentData SO из DTO брони (с сохранением .asset)
-        public static EquipmentData CreateFromArmor(GeneratedArmor dto, string assetPath)
+        /// Создать runtime EquipmentData из DTO брони (без сохранения на диск)
+        public static EquipmentData CreateRuntimeFromArmor(GeneratedArmor dto)
         {
             var so = ScriptableObject.CreateInstance<EquipmentData>();
             ApplyArmorToSO(so, dto);
-            AssetDatabase.CreateAsset(so, assetPath);
             return so;
         }
 
-        /// Заполнить поля EquipmentData из DTO брони (без сохранения)
+        /// Заполнить поля EquipmentData из DTO брони
         public static void ApplyArmorToSO(EquipmentData so, GeneratedArmor dto)
         {
             // Поля ItemData
@@ -138,34 +143,38 @@ namespace CultivationGame.Editor
             so.statBonuses = ConvertArmorBonuses(dto.bonuses);
 
             // Иконка
-            so.icon = FindOrCreateArmorIcon(dto);
+            so.icon = ResolveArmorIcon(dto);
 
             // Визуал
             so.equippedSprite = null;
         }
 
         // ================================================================
-        //  RUNTIME (без AssetDatabase)
+        //  EDITOR-ONLY: .asset файлы (AssetDatabase)
         // ================================================================
 
-        /// Создать runtime EquipmentData из DTO оружия (без сохранения на диск)
-        public static EquipmentData CreateRuntimeFromWeapon(GeneratedWeapon dto)
+#if UNITY_EDITOR
+        /// Создать EquipmentData SO из DTO оружия (с сохранением .asset)
+        public static EquipmentData CreateFromWeapon(GeneratedWeapon dto, string assetPath)
         {
             var so = ScriptableObject.CreateInstance<EquipmentData>();
             ApplyWeaponToSO(so, dto);
+            AssetDatabase.CreateAsset(so, assetPath);
             return so;
         }
 
-        /// Создать runtime EquipmentData из DTO брони (без сохранения на диск)
-        public static EquipmentData CreateRuntimeFromArmor(GeneratedArmor dto)
+        /// Создать EquipmentData SO из DTO брони (с сохранением .asset)
+        public static EquipmentData CreateFromArmor(GeneratedArmor dto, string assetPath)
         {
             var so = ScriptableObject.CreateInstance<EquipmentData>();
             ApplyArmorToSO(so, dto);
+            AssetDatabase.CreateAsset(so, assetPath);
             return so;
         }
+#endif
 
         // ================================================================
-        //  МАППИНГ СЛОТОВ (Д2, Д8)
+        //  МАППИНГ СЛОТОВ (Д2, Д8) — runtime
         // ================================================================
 
         /// Маппинг WeaponSubtype → EquipmentSlot (все → WeaponMain)
@@ -211,31 +220,45 @@ namespace CultivationGame.Editor
         };
 
         // ================================================================
-        //  ИКОНКИ (Д9, Д10, Д11)
+        //  ИКОНКИ (Д9, Д10, Д11) — runtime + editor
         // ================================================================
 
-        /// Попытка найти существующую иконку оружия, либо создать программную
-        private static Sprite FindOrCreateWeaponIcon(GeneratedWeapon dto)
+        /// Разрешение иконки оружия: editor → поиск AssetDatabase, runtime → программная
+        private static Sprite ResolveWeaponIcon(GeneratedWeapon dto)
         {
-            // Попытка найти готовую иконку по имени
+#if UNITY_EDITOR
+            // Попытка найти готовую иконку по имени (только в Editor)
             string iconPath = $"Assets/Sprites/Equipment/Icons/weapon_{dto.subtype.ToString().ToLower()}.png";
             var existing = AssetDatabase.LoadAssetAtPath<Sprite>(iconPath);
             if (existing != null) return existing;
-
+#endif
             // Fallback: программная иконка (GradeColors + Tier-индикатор)
+            return CreateRuntimeWeaponIcon(dto);
+        }
+
+        /// Разрешение иконки брони: editor → поиск AssetDatabase, runtime → программная
+        private static Sprite ResolveArmorIcon(GeneratedArmor dto)
+        {
+#if UNITY_EDITOR
+            string iconPath = $"Assets/Sprites/Equipment/Icons/armor_{dto.subtype.ToString().ToLower()}.png";
+            var existing = AssetDatabase.LoadAssetAtPath<Sprite>(iconPath);
+            if (existing != null) return existing;
+#endif
+            return CreateRuntimeArmorIcon(dto);
+        }
+
+        /// Runtime-иконка оружия (GradeColors, без AssetDatabase)
+        private static Sprite CreateRuntimeWeaponIcon(GeneratedWeapon dto)
+        {
             Color bgColor = GradeColors.GetIconBgColor(dto.grade, dto.materialTier);
             Color borderColor = GetRarityBorderColor(MapRarityFromGrade(dto.grade));
             Color tierColor = GradeColors.GetTierColor(dto.materialTier);
             return CreateProceduralIcon(dto.subtype.ToString()[0], bgColor, borderColor, tierColor);
         }
 
-        /// Попытка найти существующую иконку брони, либо создать программную
-        private static Sprite FindOrCreateArmorIcon(GeneratedArmor dto)
+        /// Runtime-иконка брони (GradeColors, без AssetDatabase)
+        private static Sprite CreateRuntimeArmorIcon(GeneratedArmor dto)
         {
-            string iconPath = $"Assets/Sprites/Equipment/Icons/armor_{dto.subtype.ToString().ToLower()}.png";
-            var existing = AssetDatabase.LoadAssetAtPath<Sprite>(iconPath);
-            if (existing != null) return existing;
-
             Color bgColor = GradeColors.GetIconBgColor(dto.grade, dto.materialTier);
             Color borderColor = GetRarityBorderColor(MapRarityFromGrade(dto.grade));
             Color tierColor = GradeColors.GetTierColor(dto.materialTier);
@@ -274,7 +297,7 @@ namespace CultivationGame.Editor
             return Sprite.Create(tex, new Rect(0, 0, size, size), new Vector2(0.5f, 0.5f), 64f);
         }
 
-        /// Цвет рамки по Rarity (дублирует Phase16 для Editor-контекста)
+        /// Цвет рамки по Rarity
         private static Color GetRarityBorderColor(ItemRarity rarity) => rarity switch
         {
             ItemRarity.Common    => new Color(0.6f, 0.6f, 0.6f),    // Серый
@@ -287,7 +310,7 @@ namespace CultivationGame.Editor
         };
 
         // ================================================================
-        //  ВСПОМОГАТЕЛЬНЫЕ МЕТОДЫ
+        //  ВСПОМОГАТЕЛЬНЫЕ МЕТОДЫ — runtime
         // ================================================================
 
         /// Маппинг EquipmentGrade → ItemRarity (для совместимости с существующей системой)
@@ -349,4 +372,3 @@ namespace CultivationGame.Editor
         }
     }
 }
-#endif

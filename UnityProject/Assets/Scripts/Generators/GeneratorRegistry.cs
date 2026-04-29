@@ -4,12 +4,14 @@
 // Версия: 1.0
 // ============================================================================
 // Создан: 2026-03-31 14:22:00 UTC
+// Редактирован: 2026-04-29 09:35 UTC — добавлен Equipment Loot region + кэш
 // ============================================================================
 
 using System;
 using System.Collections.Generic;
 using UnityEngine;
 using CultivationGame.Core;
+using CultivationGame.Data.ScriptableObjects;
 
 namespace CultivationGame.Generators
 {
@@ -51,6 +53,10 @@ namespace CultivationGame.Generators
         private Dictionary<string, GeneratedTechnique> cachedTechniques = new Dictionary<string, GeneratedTechnique>();
         private LinkedList<string> cacheOrderNPCs = new LinkedList<string>();
         private LinkedList<string> cacheOrderTechniques = new LinkedList<string>();
+
+        // === Equipment Cache ===
+        private Dictionary<string, EquipmentData> cachedEquipment = new Dictionary<string, EquipmentData>();
+        private LinkedList<string> cacheOrderEquipment = new LinkedList<string>();
 
         #endregion
 
@@ -111,8 +117,10 @@ namespace CultivationGame.Generators
             // Очищаем кэш
             cachedNPCs.Clear();
             cachedTechniques.Clear();
+            cachedEquipment.Clear();
             cacheOrderNPCs.Clear();
             cacheOrderTechniques.Clear();
+            cacheOrderEquipment.Clear();
 
             OnInitialized?.Invoke(worldSeed);
 
@@ -356,6 +364,49 @@ namespace CultivationGame.Generators
 
         #endregion
 
+        #region Equipment Loot Generation
+
+        /// <summary>
+        /// Сгенерировать случайную экипировку как runtime EquipmentData SO.
+        /// Редактировано: 2026-04-29 09:35 UTC
+        /// </summary>
+        public EquipmentData GenerateRandomEquipmentSO(int playerLevel)
+        {
+            EnsureInitialized();
+            var equipment = LootGenerator.GenerateRandomEquipment(playerLevel, worldRng);
+            AddToEquipmentCache(equipment.itemId, equipment);
+            return equipment;
+        }
+
+        /// <summary>
+        /// Сгенерировать массив лута как runtime EquipmentData SO.
+        /// </summary>
+        public List<EquipmentData> GenerateEquipmentLoot(int playerLevel, int count)
+        {
+            EnsureInitialized();
+            var loot = LootGenerator.GenerateLoot(playerLevel, count, worldRng);
+            foreach (var eq in loot)
+                AddToEquipmentCache(eq.itemId, eq);
+            return loot;
+        }
+
+        /// <summary>
+        /// Получить сгенерированную экипировку из кэша.
+        /// </summary>
+        public EquipmentData GetCachedEquipment(string id)
+        {
+            if (cachedEquipment.TryGetValue(id, out var eq))
+                return eq;
+            return null;
+        }
+
+        /// <summary>
+        /// Количество экипировки в кэше.
+        /// </summary>
+        public int CachedEquipmentCount => cachedEquipment.Count;
+
+        #endregion
+
         #region Utility
 
         /// <summary>
@@ -374,8 +425,10 @@ namespace CultivationGame.Generators
         {
             cachedNPCs.Clear();
             cachedTechniques.Clear();
+            cachedEquipment.Clear();
             cacheOrderNPCs.Clear();
             cacheOrderTechniques.Clear();
+            cacheOrderEquipment.Clear();
         }
 
         // FIX GEN-M06: Bounded cache helper methods (2026-04-11)
@@ -407,6 +460,23 @@ namespace CultivationGame.Generators
             cacheOrderTechniques.AddLast(id);
         }
 
+        /// <summary>
+        /// Добавить экипировку в кэш (bounded, LRU eviction).
+        /// Редактировано: 2026-04-29 09:35 UTC
+        /// </summary>
+        private void AddToEquipmentCache(string id, EquipmentData eq)
+        {
+            if (cachedEquipment.Count >= MaxCacheSize && !cachedEquipment.ContainsKey(id))
+            {
+                string oldestId = cacheOrderEquipment.First.Value;
+                cacheOrderEquipment.RemoveFirst();
+                cachedEquipment.Remove(oldestId);
+            }
+            cachedEquipment[id] = eq;
+            cacheOrderEquipment.Remove(id);
+            cacheOrderEquipment.AddLast(id);
+        }
+
         private void EnsureInitialized()
         {
             if (!isInitialized)
@@ -430,6 +500,7 @@ namespace CultivationGame.Generators
                 Seed = currentSeed,
                 TotalNPCsGenerated = cachedNPCs.Count,
                 TotalTechniquesGenerated = cachedTechniques.Count,
+                TotalEquipmentCached = cachedEquipment.Count,
                 IsInitialized = isInitialized
             };
         }
@@ -445,11 +516,12 @@ namespace CultivationGame.Generators
         public long Seed;
         public int TotalNPCsGenerated;
         public int TotalTechniquesGenerated;
+        public int TotalEquipmentCached;
         public bool IsInitialized;
 
         public override string ToString()
         {
-            return $"Seed: {Seed}, NPCs: {TotalNPCsGenerated}, Techniques: {TotalTechniquesGenerated}";
+            return $"Seed: {Seed}, NPCs: {TotalNPCsGenerated}, Techniques: {TotalTechniquesGenerated}, Equipment: {TotalEquipmentCached}";
         }
     }
 }

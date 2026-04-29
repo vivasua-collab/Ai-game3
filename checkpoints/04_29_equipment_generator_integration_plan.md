@@ -1,8 +1,8 @@
 # 🔧 Чекпоинт: План внедрения генераторов экипировки
 
 **Дата:** 2026-04-29 07:11 UTC  
-**Редактировано:** 2026-04-29 09:25 UTC — реализация: Этап 2 (EquipmentGeneratorMenu)  
-**Статус:** 🔄 В процессе (Этапы 1,2,4,UI ✅ | Этапы 3,5 ❌)  
+**Редактировано:** 2026-04-29 09:45 UTC — реализация: Этап 3 (LootGenerator + EquipmentSOFactory рефакторинг + GeneratorRegistry)
+**Статус:** 🔄 В процессе (Этапы 1,2,3,4,UI ✅ | Этап 5 ❌)  
 **Цель:** Подключить runtime-генераторы (WeaponGenerator, ArmorGenerator) к конвейеру создания ScriptableObject, чтобы экипировка генерировалась процедурно и попадала в инвентарь/экипировку персонажа.
 
 **📎 Кодовая база:** [04_29_equipment_generator_integration_code.md](./04_29_equipment_generator_integration_code.md)
@@ -247,10 +247,10 @@ Phase16InventoryData           → CreateTestEquipment() → EquipmentData (SO) 
 Иконка = программная (GradeColors). Для MVP достаточно.
 
 **Подзадачи:**
-- [ ] 3.1 Создать `LootGenerator.cs` с методами GenerateRandomEquipment/GenerateLoot
-- [ ] 3.2 Runtime-методы в EquipmentSOFactory (CreateRuntimeFromWeapon/Armor) — БЕЗ AssetDatabase
-- [ ] 3.3 Программная иконка для runtime SO (переделать CreateProceduralIcon для runtime)
-- [ ] 3.4 Интеграция с GeneratorRegistry — добавить кэш equipment SO
+- [x] 3.1 Создать `LootGenerator.cs` с методами GenerateRandomEquipment/GenerateLoot/GenerateMixedLoot
+- [x] 3.2 Рефакторинг EquipmentSOFactory — вынос runtime-методов из #if UNITY_EDITOR (CreateRuntime*, Apply*, CreateProceduralIcon теперь доступны в runtime)
+- [x] 3.3 Программная иконка для runtime SO (ResolveWeaponIcon/ResolveArmorIcon с #if для AssetDatabase.LoadAssetAtPath)
+- [x] 3.4 Интеграция с GeneratorRegistry — Equipment Loot region + bounded LRU кэш + GenerateRandomEquipmentSO/GenerateEquipmentLoot
 - [ ] 3.5 (ОТДЕЛЬНО) LootTable ScriptableObject — таблица лута (предметы + шансы)
 - [ ] 3.6 (ОТДЕЛЬНО) Интеграция с CombatManager: после боя → GenerateLoot → добавить в инвентарь
 
