@@ -180,14 +180,14 @@ private static readonly Dictionary<ConsumableType, float> VolumeByType = new()
 ## 📋 ПЛАН ПРОВЕРКИ (чек-лист)
 
 ### Этап 1: Runtime DTO — добавить инвентарные поля
-- [ ] **P1:** WeaponGenerator.GeneratedWeapon +volume/+allowNesting/+stackable/+maxStack
-- [ ] **P2:** ArmorGenerator.GeneratedArmor +volume/+allowNesting/+stackable/+maxStack
-- [ ] **P3:** ConsumableGenerator.GeneratedConsumable -sizeWidth/-sizeHeight +volume/+allowNesting
-- [ ] **P7:** ConsumableGenerator.SizeByType → VolumeByType
+- [x] **P1:** WeaponGenerator.GeneratedWeapon +volume/+allowNesting/+stackable/+maxStack ✅ (аудит 2026-04-29)
+- [x] **P2:** ArmorGenerator.GeneratedArmor +volume/+allowNesting/+stackable/+maxStack ✅ (аудит 2026-04-29)
+- [x] **P3:** ConsumableGenerator.GeneratedConsumable -sizeWidth/-sizeHeight +volume/+allowNesting ✅ (аудит 2026-04-29)
+- [x] **P7:** ConsumableGenerator.SizeByType → VolumeByType ✅ (аудит 2026-04-29)
 
 ### Этап 2: Editor генераторы — исправить формулы
-- [ ] **P4:** Phase16 CreateTestEquipment — volume по формуле вместо 2.0
-- [ ] **P5:** ConsumableGenerator — вес × уровень (опционально)
+- [x] **P4:** Phase16 CreateTestEquipment — volume по формуле вместо 2.0 ✅ (аудит 2026-04-29)
+- [x] **P5:** ConsumableGenerator — вес × уровень ✅ (аудит 2026-04-29)
 
 ### Этап 3: Валидация при генерации (защита от некорректных данных)
 - [ ] Добавить ValidateItemFields() в каждый генератор
@@ -196,9 +196,9 @@ private static readonly Dictionary<ConsumableType, float> VolumeByType = new()
 - [ ] Проверка: allowNesting соответствует категории
 
 ### Этап 4: Обновление примеров/вывода
-- [ ] WeaponGenerator.GenerateExamples() — +volume, +allowNesting
-- [ ] ArmorGenerator.GenerateExamples() — +volume, +allowNesting
-- [ ] ConsumableGenerator.GenerateExamples() — volume вместо sizeWidth×sizeHeight
+- [x] WeaponGenerator.GenerateExamples() — +volume, +allowNesting ✅ (аудит 2026-04-29)
+- [x] ArmorGenerator.GenerateExamples() — +volume, +allowNesting ✅ (аудит 2026-04-29)
+- [x] ConsumableGenerator.GenerateExamples() — volume вместо sizeWidth×sizeHeight ✅ (аудит 2026-04-29)
 
 ---
 
@@ -247,7 +247,7 @@ volume = 0.1f  // Все расходники — 0.1 литра
 ---
 
 *Создано: 2026-04-28 06:20 UTC*
-*Редактировано: 2026-04-28 07:25 UTC — добавлен полный аудит документации*
+*Редактировано: 2026-04-29 06:15 UTC — аудит кода подтверждает P1-P7, P4, P5, P6 выполнены; Этап 3 (ValidateItemFields) ещё не реализован*
 
 ---
 

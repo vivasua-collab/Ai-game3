@@ -417,14 +417,14 @@ private static NestingFlag ParseNestingFlag(string value)
 
 После выполнения плана:
 
-1. **GeneratedWeapon** содержит: weight, volume, stackable, maxStack, allowNesting, category
-2. **GeneratedArmor** содержит: weight, volume, stackable, maxStack, allowNesting, category
-3. **GeneratedConsumable** содержит: weight, volume, stackable, maxStack, allowNesting, category; НЕ содержит sizeWidth, sizeHeight
-4. Все volume рассчитываются по единым формулам из CalculateVolume
-5. Phase16 CreateTestEquipment: volume = Mathf.Clamp(weight, 1f, 4f) вместо 2.0
-6. AssetGeneratorExtended.ItemJson поддерживает явное указание volume/allowNesting из JSON
-7. EQUIPMENT_SYSTEM.md содержит volume в §3.2 и §8
-8. Компиляция без ошибок
+1. ✅ **GeneratedWeapon** содержит: weight, volume, stackable, maxStack, allowNesting, category — АУДИТ 2026-04-29
+2. ✅ **GeneratedArmor** содержит: weight, volume, stackable, maxStack, allowNesting, category — АУДИТ 2026-04-29
+3. ✅ **GeneratedConsumable** содержит: weight, volume, stackable, maxStack, allowNesting, category; НЕ содержит sizeWidth, sizeHeight — АУДИТ 2026-04-29
+4. ✅ Все volume рассчитываются по единым формулам из CalculateVolume — АУДИТ 2026-04-29
+5. ✅ Phase16 CreateTestEquipment: volume = Mathf.Clamp(weight, 1f, 4f) вместо 2.0 — АУДИТ 2026-04-29
+6. ✅ AssetGeneratorExtended.ItemJson поддерживает явное указание volume/allowNesting из JSON — АУДИТ 2026-04-29
+7. ✅ EQUIPMENT_SYSTEM.md содержит volume в §3.2 и §8.4 — АУДИТ 2026-04-29
+8. ⏳ Компиляция — проверяется при следующем запуске Unity
 
 ---
 
@@ -439,3 +439,4 @@ private static NestingFlag ParseNestingFlag(string value)
 ---
 
 *Создано: 2026-04-28 13:00 UTC*
+*Редактировано: 2026-04-29 06:15 UTC — аудит кода подтвердил выполнение всех 7 критериев приёмки (кроме компиляции)*
