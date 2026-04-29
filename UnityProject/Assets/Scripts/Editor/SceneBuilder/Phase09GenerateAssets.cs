@@ -4,6 +4,7 @@
 // ============================================================================
 // Создано: 2026-04-09
 // Редактировано: 2026-04-29 12:13:35 UTC — аудит: IsNeeded() расширена для всех типов ассетов
+// Редактировано: 2026-04-29 12:30:00 UTC — повторный аудит: +FormationCores в IsNeeded()
 // ============================================================================
 
 #if UNITY_EDITOR
@@ -33,6 +34,7 @@ namespace CultivationGame.Editor.SceneBuilder
             if (!SceneBuilderUtils.HasAssetsInFolder("Assets/Data/Materials")) return true;
             // Формации
             if (!SceneBuilderUtils.HasAssetsInFolder("Assets/Data/Formations")) return true;
+            if (!SceneBuilderUtils.HasAssetsInFolder("Assets/Data/FormationCores")) return true;
             return false;
         }
 

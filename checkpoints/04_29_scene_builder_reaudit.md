@@ -173,3 +173,32 @@ Phase17 InvUI ────→ Phase18 (InventoryScreen)
 Критических проблем **НЕТ**.
 
 **Рекомендация:** Исправить Н-С1 (1 строка), Н-Н1 (1 строка), Н-Н3 (1 символ). Н-С2, Н-С3, Н-С4 — по желанию.
+
+---
+
+## 8. Исправления, выполненные по результатам повторного аудита
+
+**Дата правок:** 2026-04-29 12:30:00 UTC
+
+| # | Файл | Правка | Статус |
+|---|------|--------|--------|
+| Н-С1 | Phase09GenerateAssets.cs | Добавлена проверка `HasAssetsInFolder("Assets/Data/FormationCores")` в IsNeeded() | ✅ |
+| Н-Н1 | Phase16InventoryData.cs | Добавлена проверка UPGRADED_FOLDER + weapon_Sword_T3_Refined.asset в IsNeeded() | ✅ |
+| Н-Н3 | IScenePhase.cs | Комментарий Order: «1-18» → «0-18», версия 2.0 → 2.0.1 | ✅ |
+
+### Изменённые файлы
+
+- `Editor/SceneBuilder/Phase09GenerateAssets.cs` — IsNeeded(): +FormationCores проверка
+- `Editor/SceneBuilder/Phase16InventoryData.cs` — IsNeeded(): +UPGRADED_FOLDER + weapon_Sword_T3_Refined проверка
+- `Editor/SceneBuilder/IScenePhase.cs` — Order XML comment: «0-18», версия 2.0.1
+
+### Оставшиеся проблемы (не требуют немедленного исправления)
+
+| # | Приоритет | Описание |
+|---|-----------|----------|
+| Н-С2 | 🟡 | Phase14 IsNeeded() зависит от сцены — средний, некритичный |
+| Н-С3 | 🟡 | Phase08/15 дублирование GameController — средний, не влияет на корректность |
+| Н-С4 | 🟡 | Phase12 интерактивная — Unity limitation |
+| Н-Н2 | 🟢 | Phase13 isDirty краевой случай |
+| Н-Н4 | 🟢 | Phase17 размер файла |
+| Н-Н5 | 🟢 | Orchestrator нет явных deps |

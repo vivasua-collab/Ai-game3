@@ -15,6 +15,7 @@
 //   WeaponGenerator + ArmorGenerator + EquipmentSOFactory вместо хардкода
 // Редактировано: 2026-04-29 12:03:16 UTC — исправление некорректных дат (05-01 → 04-29)
 // Редактировано: 2026-04-29 12:13:35 UTC — аудит: IsNeeded() расширена, EnsureSceneOpen убран из Execute
+// Редактировано: 2026-04-29 12:30:00 UTC — повторный аудит: +UPGRADED_FOLDER в IsNeeded()
 // ============================================================================
 
 #if UNITY_EDITOR
@@ -45,6 +46,8 @@ namespace CultivationGame.Editor.SceneBuilder
             // Тестовый набор экипировки
             if (!AssetDatabase.IsValidFolder(BASIC_FOLDER)) return true;
             if (AssetDatabase.LoadAssetAtPath<EquipmentData>($"{BASIC_FOLDER}/weapon_Sword_T1_Common.asset") == null) return true;
+            if (!AssetDatabase.IsValidFolder(UPGRADED_FOLDER)) return true;
+            if (AssetDatabase.LoadAssetAtPath<EquipmentData>($"{UPGRADED_FOLDER}/weapon_Sword_T3_Refined.asset") == null) return true;
             return false;
         }
 
