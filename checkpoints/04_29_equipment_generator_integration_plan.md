@@ -1,8 +1,8 @@
 # 🔧 Чекпоинт: План внедрения генераторов экипировки
 
 **Дата:** 2026-04-29 07:11 UTC  
-**Редактировано:** 2026-04-29 09:05 UTC — реализация: Подготовка + Этап 1 + Этап 5 (частично) + UI  
-**Статус:** 🔄 В процессе (Этапы 1,4,5,UI ✅ | Этапы 2,3 ❌)  
+**Редактировано:** 2026-04-29 09:25 UTC — реализация: Этап 2 (EquipmentGeneratorMenu)  
+**Статус:** 🔄 В процессе (Этапы 1,2,4,UI ✅ | Этапы 3,5 ❌)  
 **Цель:** Подключить runtime-генераторы (WeaponGenerator, ArmorGenerator) к конвейеру создания ScriptableObject, чтобы экипировка генерировалась процедурно и попадала в инвентарь/экипировку персонажа.
 
 **📎 Кодовая база:** [04_29_equipment_generator_integration_code.md](./04_29_equipment_generator_integration_code.md)
@@ -228,13 +228,13 @@ Phase16InventoryData           → CreateTestEquipment() → EquipmentData (SO) 
 **Код:** → [04_29_equipment_generator_integration_code.md §3](./04_29_equipment_generator_integration_code.md)
 
 **Подзадачи:**
-- [ ] 2.1 Создать `EquipmentGeneratorMenu.cs` с 6 пунктами меню
-- [ ] 2.2 Generate Weapon Set: цикл по подтипам × грейдам × тирам
-- [ ] 2.3 Generate Armor Set: цикл по подтипам × весовым классам × грейдам
-- [ ] 2.4 Generate Full Set: объединение Weapon + Armor
-- [ ] 2.5 Generate Random Loot: случайные предметы по уровню
-- [ ] 2.6 Clear Generated: удаление папки Generated/
-- [ ] 2.7 Структура папок: `Assets/Data/Equipment/Generated/{Weapons,Armor}/T{1-5}/`
+- [x] 2.1 Создать `EquipmentGeneratorMenu.cs` с 7 пунктами меню
+- [x] 2.2 Generate Weapon Set: цикл по подтипам × грейдам × тирам (12×3=36 за T1)
+- [x] 2.3 Generate Armor Set: цикл по подтипам × весовым классам × грейдам (7×3×3=63 за T1)
+- [x] 2.4 Generate Full Set: объединение Weapon + Armor (99 SO за T1)
+- [x] 2.5 Generate Random Loot: 3 случайных предмета уровня 1 (оружие/броня 50/50)
+- [x] 2.6 Clear Generated: AssetDatabase.DeleteAsset(OUTPUT_BASE)
+- [x] 2.7 Структура папок: `Assets/Data/Equipment/Generated/{Weapons,Armor,Loot}/T{1-5}/`
 
 ### Этап 3: Runtime-генерация лута (ИГРОВАЯ ЛОГИКА)
 

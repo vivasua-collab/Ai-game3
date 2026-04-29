@@ -47,3 +47,29 @@ Stage Summary:
 - 5 ключевых находок, 4 открытых вопроса решены
 - План: 5 этапов, ~540 строк нового кода, 2 файла изменений
 - Порядок: Подготовка → EquipmentSOFactory → Phase16 → Editor-меню → LootGenerator
+
+---
+Task ID: 2
+Agent: main
+Task: Этап 2 — EquipmentGeneratorMenu.cs (Editor-меню генерации экипировки)
+
+Work Log:
+- Прочитаны checkpoint plan + code spec, EquipmentSOFactory.cs, WeaponGenerator.cs, ArmorGenerator.cs, SeededRandom.cs, Enums.cs
+- Проверен HEAD: 514d9db (Подготовка + Этап 1,4 + UI выполнены)
+- Создан файл UnityProject/Assets/Scripts/Editor/EquipmentGeneratorMenu.cs (~210 строк)
+- Реализованы все 7 подзадач этапа 2:
+  - 2.1: 7 пунктов меню (Tools/Equipment/...)
+  - 2.2: GenerateWeaponSet(tier) — 12 подтипов × 3 грейда = 36 SO за T1
+  - 2.3: GenerateArmorSet(tier) — 7 подтипов × 3 вес.класс × 3 грейда = 63 SO за T1
+  - 2.4: GenerateFullSetT1() — оружие+броня = 99 SO
+  - 2.5: GenerateRandomLoot() — 3 случайных предмета уровня 1 (50/50 оружие/броня)
+  - 2.6: ClearGenerated() — AssetDatabase.DeleteAsset + Refresh
+  - 2.7: Структура папок Generated/{Weapons,Armor,Loot}/T{1-5}/
+- Добавлен GetMaterialForWeightClass() — категория материала по весовому классу брони и тиру
+- EnsureDirectory() — System.IO.Directory.CreateDirectory + AssetDatabase.Refresh
+- Обновлён чекпоинт: все 2.1-2.7 отмечены [x], статус → Этапы 1,2,4,UI ✅
+
+Stage Summary:
+- Новый файл: EquipmentGeneratorMenu.cs (210 строк)
+- 7/7 подзадач этапа 2 выполнены
+- Статус проекта: Этапы 1,2,4,UI ✅ | Этапы 3,5 ❌
