@@ -3,6 +3,8 @@
 // Cultivation World Simulator
 // Создано: 2026-04-29 08:55:00 UTC
 // Редактировано: 2026-04-29 09:30 UTC — рефакторинг: вынос runtime-методов из #if UNITY_EDITOR
+// Редактировано: 2026-05-01 — FIX: перенос из Editor/ → Generators/ (namespace CultivationGame.Editor → .Generators)
+//   Причина: Editor/ папка компилируется в Assembly-CSharp-Editor, недоступный в runtime.
 // ============================================================================
 //
 // Мост DTO → EquipmentData SO:
@@ -21,13 +23,11 @@ using UnityEngine;
 using System.Collections.Generic;
 using CultivationGame.Core;
 using CultivationGame.Data.ScriptableObjects;
-using CultivationGame.Generators;
-
 #if UNITY_EDITOR
 using UnityEditor;
 #endif
 
-namespace CultivationGame.Editor
+namespace CultivationGame.Generators
 {
     /// <summary>
     /// Фабрика конвертации DTO генераторов в EquipmentData ScriptableObject.

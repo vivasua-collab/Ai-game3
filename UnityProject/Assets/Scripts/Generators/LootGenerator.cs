@@ -18,7 +18,6 @@ using System.Collections.Generic;
 using UnityEngine;
 using CultivationGame.Core;
 using CultivationGame.Data.ScriptableObjects;
-using CultivationGame.Editor;
 
 namespace CultivationGame.Generators
 {
