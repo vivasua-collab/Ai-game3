@@ -11,6 +11,8 @@
 //   для проверки инвентаря и куклы.
 // Редактировано: 2026-04-27 18:15:00 UTC — строчная модель инвентаря
 // Редактировано: 2026-04-29 08:55:00 UTC — интеграция GradeColors (Д9, Д10, Д11)
+// Редактировано: 2026-05-01 — Этап 5: замена CreateTestEquipment на генераторы
+//   WeaponGenerator + ArmorGenerator + EquipmentSOFactory вместо хардкода
 // ============================================================================
 
 #if UNITY_EDITOR
@@ -18,6 +20,7 @@ using UnityEngine;
 using UnityEditor;
 using CultivationGame.Core;
 using CultivationGame.Data.ScriptableObjects;
+using CultivationGame.Generators;
 // GradeColors — единая точка доступа к цветам Grade/Tier (Д12)
 
 namespace CultivationGame.Editor.SceneBuilder
@@ -277,360 +280,154 @@ namespace CultivationGame.Editor.SceneBuilder
         }
 
         // ====================================================================
-        //  Test Equipment Set — базовый набор шмота для проверки куклы
+        //  Test Equipment Set — процедурная генерация через Weapon/Armor генераторы
         // ====================================================================
-        // Редактировано: 2026-04-25 19:00:00 MSK
+        // Редактировано: 2026-04-25 19:00:00 MSK — первоначальный хардкод
+        // Редактировано: 2026-05-01 — Этап 5: замена на WeaponGenerator + ArmorGenerator
+        //   + EquipmentSOFactory.CreateFromWeapon/CreateFromArmor
 
         private const string TEST_EQUIP_FOLDER = "Assets/Data/Equipment/TestSet";
+        private const string BASIC_FOLDER = "Assets/Data/Equipment/TestSet/Basic";    // T1 Common
+        private const string UPGRADED_FOLDER = "Assets/Data/Equipment/TestSet/Upgraded"; // T3 Refined
 
         /// <summary>
-        /// Создаёт базовый набор экипировки для тестирования инвентаря и куклы.
-        /// По одному предмету на каждый видимый слот (7 шт.) + 2 расходника + 2 материала.
-        /// Каждый предмет получает процедурно сгенерированную иконку (цветной квадрат с буквой).
+        /// Создаёт набор экипировки через процедурные генераторы.
+        /// Базовый набор: 5 оружия + 5 брони (T1, Common, Level 1)
+        /// Улучшенный набор: 3 оружия + 3 брони (T3, Refined, Level 3-5)
         /// </summary>
         private void AddTestEquipmentSet()
         {
-            SceneBuilderUtils.EnsureDirectory(TEST_EQUIP_FOLDER);
+            SceneBuilderUtils.EnsureDirectory(BASIC_FOLDER);
+            SceneBuilderUtils.EnsureDirectory(UPGRADED_FOLDER);
 
             // Проверяем — если хоть один тестовый предмет существует, пропускаем
-            if (AssetDatabase.LoadAssetAtPath<EquipmentData>($"{TEST_EQUIP_FOLDER}/Test_IronHelmet.asset") != null)
+            if (AssetDatabase.LoadAssetAtPath<EquipmentData>($"{BASIC_FOLDER}/weapon_Sword_T1_Common.asset") != null)
             {
                 Debug.Log("[Phase16] Test Equipment Set уже существует — пропускаем");
                 return;
             }
 
-            // === ОДЕЖДА (левая колонка куклы) ===
+            var rng = new SeededRandom(42);
+            int totalCreated = 0;
 
-            // Иконки теперь используют GradeColors (Д9, Д10, Д11)
-            CreateTestEquipment("Test_IronHelmet", "Железный шлем", "Простой железный шлем.",
-                EquipmentSlot.Head, WeaponHandType.OneHand,
-                damage: 0, defense: 12, coverage: 75f, damageReduction: 8f, dodgeBonus: -5f,
-                weight: 2.5f, value: 60,
-                ItemRarity.Common, EquipmentGrade.Common, "iron", 1,
-                iconLetter: "Ш");
+            // ============================================================
+            //  БАЗОВЫЙ НАБОР: 5 оружия + 5 брони (T1, Common, Level 1)
+            // ============================================================
 
-            CreateTestEquipment("Test_ClothRobe", "Тканевая роба", "Простая роба из ткани.",
-                EquipmentSlot.Torso, WeaponHandType.OneHand,
-                damage: 0, defense: 3, coverage: 60f, damageReduction: 0f, dodgeBonus: 0f,
-                weight: 0.5f, value: 20,
-                ItemRarity.Common, EquipmentGrade.Common, "cloth", 1,
-                iconLetter: "Р");
-
-            CreateTestEquipment("Test_LeatherBelt", "Кожаный ремень", "Прочный ремень из кожи.",
-                EquipmentSlot.Belt, WeaponHandType.OneHand,
-                damage: 0, defense: 2, coverage: 30f, damageReduction: 0f, dodgeBonus: 0f,
-                weight: 0.3f, value: 15,
-                ItemRarity.Common, EquipmentGrade.Common, "leather", 1,
-                iconLetter: "П");
-
-            CreateTestEquipment("Test_ClothPants", "Тканевые штаны", "Простые тканевые штаны.",
-                EquipmentSlot.Legs, WeaponHandType.OneHand,
-                damage: 0, defense: 2, coverage: 50f, damageReduction: 0f, dodgeBonus: 0f,
-                weight: 0.4f, value: 15,
-                ItemRarity.Common, EquipmentGrade.Common, "cloth", 1,
-                iconLetter: "Н");
-
-            CreateTestEquipment("Test_ClothShoes", "Тканевые туфли", "Лёгкие тканевые туфли.",
-                EquipmentSlot.Feet, WeaponHandType.OneHand,
-                damage: 0, defense: 1, coverage: 30f, damageReduction: 0f, dodgeBonus: 0f,
-                weight: 0.2f, value: 10,
-                ItemRarity.Common, EquipmentGrade.Common, "cloth", 1,
-                iconLetter: "О");
-
-            // === ОРУЖИЕ (правая колонка куклы) ===
-
-            CreateTestEquipment("Test_IronSword", "Железный меч", "Надёжный железный меч.",
-                EquipmentSlot.WeaponMain, WeaponHandType.OneHand,
-                damage: 12, defense: 0, coverage: 0f, damageReduction: 0f, dodgeBonus: 0f,
-                weight: 2.5f, value: 50,
-                ItemRarity.Common, EquipmentGrade.Common, "iron", 1,
-                iconLetter: "М");
-
-            CreateTestEquipment("Test_IronDagger", "Железный кинжал", "Лёгкий железный кинжал.",
-                EquipmentSlot.WeaponOff, WeaponHandType.OneHand,
-                damage: 6, defense: 0, coverage: 0f, damageReduction: 0f, dodgeBonus: 0f,
-                weight: 0.5f, value: 35,
-                ItemRarity.Common, EquipmentGrade.Common, "iron", 1,
-                iconLetter: "К");
-
-            // === Двуручное (для теста блокировки WeaponOff) ===
-
-            CreateTestEquipment("Test_IronGreatsword", "Железный двуручник", "Тяжёлый двуручный меч.",
-                EquipmentSlot.WeaponMain, WeaponHandType.TwoHand,
-                damage: 24, defense: 0, coverage: 0f, damageReduction: 0f, dodgeBonus: -5f,
-                weight: 6.0f, value: 120,
-                ItemRarity.Uncommon, EquipmentGrade.Common, "iron", 1,
-                iconLetter: "Д");
-
-            // === Редкие предметы для разнообразия ===
-
-            CreateTestEquipment("Test_SpiritRobe", "Духовная роба", "Роба из духовного шёлка.",
-                EquipmentSlot.Torso, WeaponHandType.OneHand,
-                damage: 0, defense: 15, coverage: 75f, damageReduction: 8f, dodgeBonus: 0f,
-                weight: 0.4f, value: 650,
-                ItemRarity.Rare, EquipmentGrade.Refined, "spirit_silk", 3,
-                iconLetter: "Д");
-
-            CreateTestEquipment("Test_SteelSword", "Стальной меч", "Качественный стальной меч.",
-                EquipmentSlot.WeaponMain, WeaponHandType.OneHand,
-                damage: 18, defense: 0, coverage: 0f, damageReduction: 0f, dodgeBonus: 0f,
-                weight: 2.3f, value: 180,
-                ItemRarity.Uncommon, EquipmentGrade.Refined, "steel", 2,
-                iconLetter: "С");
-
-            Debug.Log("[Phase16] ✅ Test Equipment Set создан: 10 предметов (7 слотов + 2 редких + 1 двуручник)");
-        }
-
-        /// <summary>
-        /// Создаёт один тестовый предмет экипировки с процедурной иконкой.
-        /// Иконка использует GradeColors для фона (Д9) и Tier-индикатор (Д10, Д11).
-        /// </summary>
-        private void CreateTestEquipment(
-            string fileName, string nameRu, string description,
-            EquipmentSlot slot, WeaponHandType handType,
-            int damage, int defense, float coverage, float damageReduction, float dodgeBonus,
-            float weight, int value,
-            ItemRarity rarity, EquipmentGrade grade,
-            string materialId, int materialTier,
-            string iconLetter)
-        {
-            string assetPath = $"{TEST_EQUIP_FOLDER}/{fileName}.asset";
-
-            var data = ScriptableObject.CreateInstance<EquipmentData>();
-            data.itemId = fileName;
-            data.nameRu = nameRu;
-            data.nameEn = fileName.Replace("Test_", "");
-            data.description = description;
-            data.category = (slot == EquipmentSlot.WeaponMain || slot == EquipmentSlot.WeaponOff)
-                ? ItemCategory.Weapon : ItemCategory.Armor;
-            data.itemType = slot.ToString();
-            data.rarity = rarity;
-            data.stackable = false;
-            data.maxStack = 1;
-            data.weight = weight;
-            data.value = value;
-            data.hasDurability = true;
-            data.maxDurability = 100;
-            // Объём по формуле строчной модели
-            data.volume = Mathf.Clamp(weight, 1f, 4f);
-            data.allowNesting = NestingFlag.Any;
-            // Иконка через GradeColors (Д9, Д10, Д11)
-            Color iconBg = GradeColors.GetIconBgColor(grade, materialTier);
-            Color iconBorder = GetRarityBorderColor(rarity);
-            Color tierIndicator = GradeColors.GetTierColor(materialTier);
-            data.icon = GenerateTestIcon(fileName, iconBg, iconBorder, tierIndicator, iconLetter);
-
-            // EquipmentData fields
-            data.slot = slot;
-            data.handType = handType;
-            data.damage = damage;
-            data.defense = defense;
-            data.coverage = coverage;
-            data.damageReduction = damageReduction;
-            data.dodgeBonus = dodgeBonus;
-            data.materialId = materialId;
-            data.materialTier = materialTier;
-            data.grade = grade;
-            data.itemLevel = 1;
-
-            AssetDatabase.CreateAsset(data, assetPath);
-        }
-
-        /// <summary>
-        /// Генерирует тестовую иконку предмета — цветной квадрат с буквой.
-        /// Размер 32×32px. Фон = GradeColors (Д9, Д11), рамка = Rarity, Tier-индикатор 4×4 (Д10).
-        /// </summary>
-        private Sprite GenerateTestIcon(string fileName, Color bgColor, Color borderColor, Color tierColor, string letter)
-        {
-            const string iconDir = "Assets/Sprites/UI/ItemIcons";
-            string iconPath = $"{iconDir}/{fileName}.png";
-
-            SceneBuilderUtils.EnsureDirectory(iconDir);
-
-            // Если уже существует — загружаем
-            var existing = AssetDatabase.LoadAssetAtPath<Sprite>(iconPath);
-            if (existing != null) return existing;
-
-            int size = 32;
-            var tex = new Texture2D(size, size, TextureFormat.RGBA32, false);
-            var pixels = new Color32[size * size];
-
-            // Фон — Grade-цвет (затемнённый по Tier через GradeColors.GetIconBgColor)
-            Color32 bg = bgColor;
-            Color32 border = borderColor;
-            Color32 letterColor = new Color32(255, 255, 255, 220);
-
-            for (int y = 0; y < size; y++)
+            // Оружие — по одному каждого типа для проверки слотов
+            var basicWeapons = new (WeaponSubtype subtype, string fileName)[]
             {
-                for (int x = 0; x < size; x++)
+                (WeaponSubtype.Sword,       "weapon_Sword_T1_Common"),
+                (WeaponSubtype.Dagger,      "weapon_Dagger_T1_Common"),
+                (WeaponSubtype.Greatsword,  "weapon_Greatsword_T1_Common"),   // двуручное
+                (WeaponSubtype.Axe,         "weapon_Axe_T1_Common"),
+                (WeaponSubtype.Mace,        "weapon_Mace_T1_Common"),
+            };
+
+            foreach (var (subtype, fileName) in basicWeapons)
+            {
+                var dto = WeaponGenerator.Generate(new WeaponGenerationParams
                 {
-                    // Рамка 2px — Rarity-цвет
-                    if (x < 2 || x >= size - 2 || y < 2 || y >= size - 2)
-                        pixels[y * size + x] = border;
-                    else
-                        pixels[y * size + x] = bg;
-                }
+                    subtype = subtype,
+                    itemLevel = 1,
+                    grade = EquipmentGrade.Common,
+                    materialTier = 1,
+                    materialCategory = MaterialCategory.Metal,
+                    seed = rng.Next()
+                }, new SeededRandom(rng.Next()));
+
+                string path = $"{BASIC_FOLDER}/{fileName}.asset";
+                EquipmentSOFactory.CreateFromWeapon(dto, path);
+                totalCreated++;
             }
 
-            // Tier-индикатор 4×4 в правом нижнем углу (Д10)
-            for (int y = 2; y < 6; y++)
-                for (int x = size - 6; x < size - 2; x++)
-                    pixels[y * size + x] = tierColor;
-
-            // Буква — простая 5×7 пиксельная сетка
-            DrawPixelLetter(pixels, size, letter, 13, 12, letterColor);
-
-            tex.SetPixels32(pixels);
-            tex.Apply();
-
-            var png = tex.EncodeToPNG();
-            System.IO.File.WriteAllBytes(iconPath, png);
-            Object.DestroyImmediate(tex);
-
-            AssetDatabase.ImportAsset(iconPath);
-            var importer = AssetImporter.GetAtPath(iconPath) as TextureImporter;
-            if (importer != null)
+            // Броня — по одному на каждый слот
+            var basicArmors = new (ArmorSubtype subtype, ArmorWeightClass weightClass, MaterialCategory matCat, string fileName)[]
             {
-                importer.textureType = TextureImporterType.Sprite;
-                importer.spritePixelsPerUnit = 32;
-                importer.filterMode = FilterMode.Point;
-                importer.SaveAndReimport();
-            }
+                (ArmorSubtype.Head,  ArmorWeightClass.Medium, MaterialCategory.Metal,   "armor_Head_Medium_T1_Common"),
+                (ArmorSubtype.Torso, ArmorWeightClass.Light,  MaterialCategory.Cloth,   "armor_Torso_Light_T1_Common"),
+                (ArmorSubtype.Arms,  ArmorWeightClass.Light,  MaterialCategory.Leather, "armor_Arms_Light_T1_Common"),   // → Hands
+                (ArmorSubtype.Legs,  ArmorWeightClass.Light,  MaterialCategory.Cloth,   "armor_Legs_Light_T1_Common"),
+                (ArmorSubtype.Feet,  ArmorWeightClass.Light,  MaterialCategory.Leather, "armor_Feet_Light_T1_Common"),
+            };
 
-            return AssetDatabase.LoadAssetAtPath<Sprite>(iconPath);
-        }
-
-        /// <summary>Цвет рамки по редкости</summary>
-        private Color32 GetRarityBorderColor(ItemRarity rarity)
-        {
-            switch (rarity)
+            foreach (var (subtype, weightClass, matCat, fileName) in basicArmors)
             {
-                case ItemRarity.Common: return new Color32(107, 114, 128, 255);    // Серый
-                case ItemRarity.Uncommon: return new Color32(34, 197, 94, 255);     // Зелёный
-                case ItemRarity.Rare: return new Color32(59, 130, 246, 255);        // Синий
-                case ItemRarity.Epic: return new Color32(168, 85, 247, 255);        // Фиолетовый
-                case ItemRarity.Legendary: return new Color32(251, 191, 36, 255);   // Золотой
-                case ItemRarity.Mythic: return new Color32(239, 68, 68, 255);       // Красный
-                default: return new Color32(107, 114, 128, 255);
-            }
-        }
-
-        /// <summary>Рисует пиксельную букву 5×7 в массив</summary>
-        private void DrawPixelLetter(Color32[] pixels, int texSize, string letter, int ox, int oy, Color32 color)
-        {
-            // Упрощённая пиксельная сетка для русских букв
-            bool[,] grid = GetLetterGrid(letter);
-            if (grid == null) return;
-
-            for (int y = 0; y < 7; y++)
-            {
-                for (int x = 0; x < 5; x++)
+                var dto = ArmorGenerator.Generate(new ArmorGenerationParams
                 {
-                    if (!grid[y, x]) continue;
-                    int px = ox + x;
-                    int py = oy + (6 - y); // Инверсия Y
-                    if (px >= 0 && px < texSize && py >= 0 && py < texSize)
-                        pixels[py * texSize + px] = color;
-                }
+                    subtype = subtype,
+                    weightClass = weightClass,
+                    itemLevel = 1,
+                    grade = EquipmentGrade.Common,
+                    materialTier = 1,
+                    materialCategory = matCat,
+                    seed = rng.Next()
+                }, new SeededRandom(rng.Next()));
+
+                string path = $"{BASIC_FOLDER}/{fileName}.asset";
+                EquipmentSOFactory.CreateFromArmor(dto, path);
+                totalCreated++;
             }
+
+            // ============================================================
+            //  УЛУЧШЕННЫЙ НАБОР: 3 оружия + 3 брони (T3, Refined, Level 3-5)
+            // ============================================================
+
+            var upgradedWeapons = new (WeaponSubtype subtype, int itemLevel, string fileName)[]
+            {
+                (WeaponSubtype.Sword,  3, "weapon_Sword_T3_Refined"),
+                (WeaponSubtype.Staff,  4, "weapon_Staff_T3_Refined"),
+                (WeaponSubtype.Spear,  5, "weapon_Spear_T3_Refined"),   // двуручное
+            };
+
+            foreach (var (subtype, itemLevel, fileName) in upgradedWeapons)
+            {
+                var dto = WeaponGenerator.Generate(new WeaponGenerationParams
+                {
+                    subtype = subtype,
+                    itemLevel = itemLevel,
+                    grade = EquipmentGrade.Refined,
+                    materialTier = 3,
+                    materialCategory = MaterialCategory.Metal, // Spirit Iron
+                    seed = rng.Next()
+                }, new SeededRandom(rng.Next()));
+
+                string path = $"{UPGRADED_FOLDER}/{fileName}.asset";
+                EquipmentSOFactory.CreateFromWeapon(dto, path);
+                totalCreated++;
+            }
+
+            var upgradedArmors = new (ArmorSubtype subtype, ArmorWeightClass weightClass, int itemLevel, string fileName)[]
+            {
+                (ArmorSubtype.Head,  ArmorWeightClass.Heavy,  3, "armor_Head_Heavy_T3_Refined"),
+                (ArmorSubtype.Torso, ArmorWeightClass.Medium, 4, "armor_Torso_Medium_T3_Refined"),
+                (ArmorSubtype.Legs,  ArmorWeightClass.Light,  5, "armor_Legs_Light_T3_Refined"),
+            };
+
+            foreach (var (subtype, weightClass, itemLevel, fileName) in upgradedArmors)
+            {
+                var dto = ArmorGenerator.Generate(new ArmorGenerationParams
+                {
+                    subtype = subtype,
+                    weightClass = weightClass,
+                    itemLevel = itemLevel,
+                    grade = EquipmentGrade.Refined,
+                    materialTier = 3,
+                    materialCategory = MaterialCategory.Metal, // Spirit Iron
+                    seed = rng.Next()
+                }, new SeededRandom(rng.Next()));
+
+                string path = $"{UPGRADED_FOLDER}/{fileName}.asset";
+                EquipmentSOFactory.CreateFromArmor(dto, path);
+                totalCreated++;
+            }
+
+            AssetDatabase.SaveAssets();
+            Debug.Log($"[Phase16] ✅ Test Equipment Set создан через генераторы: {totalCreated} предметов " +
+                      "(10 Basic T1 + 6 Upgraded T3)");
         }
 
-        /// <summary>Пиксельная сетка 5×7 для русских букв</summary>
-        private bool[,] GetLetterGrid(string letter)
-        {
-            switch (letter)
-            {
-                // Ш — шлем
-                case "Ш": return new bool[,] {
-                    { true, false, true, false, true },
-                    { true, false, true, false, true },
-                    { true, false, true, false, true },
-                    { true, false, true, false, true },
-                    { true, true, true, true, true },
-                    { false, false, false, false, false },
-                    { false, false, false, false, false } };
-                // Р — роба
-                case "Р": return new bool[,] {
-                    { true, true, true, false, false },
-                    { true, false, false, true, false },
-                    { true, false, false, true, false },
-                    { true, true, true, false, false },
-                    { true, false, false, false, false },
-                    { true, false, false, false, false },
-                    { true, false, false, false, false } };
-                // П — пояс
-                case "П": return new bool[,] {
-                    { true, true, true, true, true },
-                    { true, false, false, false, true },
-                    { true, false, false, false, true },
-                    { true, false, false, false, true },
-                    { true, false, false, false, true },
-                    { false, false, false, false, false },
-                    { false, false, false, false, false } };
-                // Н — ноги
-                case "Н": return new bool[,] {
-                    { true, false, false, false, true },
-                    { true, false, false, false, true },
-                    { true, true, true, true, true },
-                    { true, false, false, false, true },
-                    { true, false, false, false, true },
-                    { false, false, false, false, false },
-                    { false, false, false, false, false } };
-                // О — обувь
-                case "О": return new bool[,] {
-                    { false, true, true, true, false },
-                    { true, false, false, false, true },
-                    { true, false, false, false, true },
-                    { true, false, false, false, true },
-                    { false, true, true, true, false },
-                    { false, false, false, false, false },
-                    { false, false, false, false, false } };
-                // М — меч
-                case "М": return new bool[,] {
-                    { true, false, false, false, true },
-                    { true, true, false, true, true },
-                    { true, false, true, false, true },
-                    { true, false, false, false, true },
-                    { true, false, false, false, true },
-                    { false, false, false, false, false },
-                    { false, false, false, false, false } };
-                // К — кинжал
-                case "К": return new bool[,] {
-                    { true, false, false, true, false },
-                    { true, false, true, false, false },
-                    { true, true, false, false, false },
-                    { true, false, true, false, false },
-                    { true, false, false, true, false },
-                    { false, false, false, false, false },
-                    { false, false, false, false, false } };
-                // Д — двуручник
-                case "Д": return new bool[,] {
-                    { false, true, true, true, false },
-                    { true, false, false, false, true },
-                    { true, false, false, false, true },
-                    { true, false, false, false, true },
-                    { true, true, true, true, true },
-                    { true, false, false, false, false },
-                    { false, true, true, true, false } };
-                // С — стальной
-                case "С": return new bool[,] {
-                    { false, true, true, true, false },
-                    { true, false, false, false, false },
-                    { true, false, false, false, false },
-                    { false, false, false, false, true },
-                    { false, true, true, true, false },
-                    { false, false, false, false, false },
-                    { false, false, false, false, false } };
-                default: return new bool[,] {
-                    { true, true, true, true, true },
-                    { true, false, false, false, true },
-                    { true, false, false, false, true },
-                    { true, false, false, false, true },
-                    { true, true, true, true, true },
-                    { false, false, false, false, false },
-                    { false, false, false, false, false } };
-            }
-        }
+
     }
 }
 #endif
