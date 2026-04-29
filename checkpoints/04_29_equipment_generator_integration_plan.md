@@ -1,8 +1,8 @@
 # 🔧 Чекпоинт: План внедрения генераторов экипировки
 
 **Дата:** 2026-04-29 07:11 UTC  
-**Редактировано:** 2026-04-29 08:10 UTC — разделение на план + кодовую базу  
-**Статус:** 📋 План готов к выполнению  
+**Редактировано:** 2026-04-29 09:05 UTC — реализация: Подготовка + Этап 1 + Этап 5 (частично) + UI  
+**Статус:** 🔄 В процессе (Этапы 1,4,5,UI ✅ | Этапы 2,3 ❌)  
 **Цель:** Подключить runtime-генераторы (WeaponGenerator, ArmorGenerator) к конвейеру создания ScriptableObject, чтобы экипировка генерировалась процедурно и попадала в инвентарь/экипировку персонажа.
 
 **📎 Кодовая база:** [04_29_equipment_generator_integration_code.md](./04_29_equipment_generator_integration_code.md)
@@ -143,16 +143,15 @@ Phase16InventoryData           → CreateTestEquipment() → EquipmentData (SO) 
 - WeaponGenerator: 12 подтипов × 5 тиров × 5 грейдов = 300 комбинаций
 - ArmorGenerator: 7 подтипов × 3 весовых класса × 5 тиров × 5 грейдов = 525 комбинаций
 
-### Д6: equippedSprite — НЕТ в коде, К ДОБАВЛЕНИЮ
-- **Статус:** ⏳ Спецификация готова (EQUIPPED_SPRITES_DRAFT.md)
-- Поле `equippedSprite` нужно добавить в `EquipmentData`
-- Equipped-спрайты = 45 штук (пока не сгенерированы)
+### Д6: equippedSprite — ДОБАВЛЕНО в EquipmentData
+- **Статус:** ✅ Поле добавлено 2026-04-29
+- Поле `equippedSprite` добавлено в EquipmentData.cs
+- Спрайты = 45 штук (пока не сгенерированы, equippedSprite = null по умолчанию)
 
-### Д7: штрафы брони — прямые поля в EquipmentData
-- **Статус:** ✅ Решение принято (Вариант A)
-- Добавить: `moveSpeedPenalty`, `qiFlowPenalty`
+### Д7: штрафы брони — ДОБАВЛЕНЫ в EquipmentData
+- **Статус:** ✅ Поля добавлены 2026-04-29
+- Добавлены: `moveSpeedPenalty` (Range -50..0), `qiFlowPenalty` (Range -30..30)
 - `dodgePenalty` → в существующее поле `dodgeBonus` (отрицательные значения)
-- Обоснование: CombatManager использует coverage/damageReduction как прямые поля
 
 ### Д8: Arms → Hands маппинг
 - **Статус:** ✅ Решение принято
@@ -193,10 +192,10 @@ Phase16InventoryData           → CreateTestEquipment() → EquipmentData (SO) 
 - Рамка = Rarity-цвет (существующая система)
 - Tier-индикатор = 4×4px точка в правом нижнем углу
 
-### Д12: Статический класс GradeColors — единая точка доступа
-- **Статус:** ✅ Утверждено 2026-04-29
-- Новый файл `Core/GradeColors.cs`
-- Методы: GetGradeColor, GetTierColor, GetIconBgColor, GetGradeNameRu, GetTierNameRu
+### Д12: Статический класс GradeColors — СОЗДАН
+- **Статус:** ✅ Создан 2026-04-29
+- Файл `Core/GradeColors.cs` — 110 строк
+- Методы: GetGradeColor, GetTierColor, GetIconBgColor, GetGradeNameRu, GetTierNameRu, GetGradeHex, GetTierHex
 - **Код:** → [04_29_equipment_generator_integration_code.md §1](./04_29_equipment_generator_integration_code.md)
 
 ---
@@ -211,14 +210,14 @@ Phase16InventoryData           → CreateTestEquipment() → EquipmentData (SO) 
 **Код:** → [04_29_equipment_generator_integration_code.md §2](./04_29_equipment_generator_integration_code.md)
 
 **Подзадачи:**
-- [ ] 1.1 Создать `EquipmentSOFactory.cs` с методами CreateFromWeapon/CreateFromArmor
-- [ ] 1.2 Маппинг WeaponSubtype → EquipmentSlot (12→WeaponMain)
-- [ ] 1.3 Маппинг ArmorSubtype → EquipmentSlot (7→соответствующие слоты, Arms→Hands)
-- [ ] 1.4 Маппинг WeaponSubtype → handType (5 двуручных)
-- [ ] 1.5 Добавить поля moveSpeedPenalty/qiFlowPenalty в EquipmentData (Д7)
-- [ ] 1.6 Добавить equippedSprite в EquipmentData (Д6)
-- [ ] 1.7 Программная иконка: поиск по имени + fallback (GradeColors + Tier-индикатор)
-- [ ] 1.8 Runtime-методы CreateRuntimeFromWeapon/CreateRuntimeFromArmor (без AssetDatabase)
+- [x] 1.1 Создать `EquipmentSOFactory.cs` с методами CreateFromWeapon/CreateFromArmor
+- [x] 1.2 Маппинг WeaponSubtype → EquipmentSlot (12→WeaponMain)
+- [x] 1.3 Маппинг ArmorSubtype → EquipmentSlot (7→соответствующие слоты, Arms→Hands)
+- [x] 1.4 Маппинг WeaponSubtype → handType (5 двуручных)
+- [x] 1.5 Добавить поля moveSpeedPenalty/qiFlowPenalty в EquipmentData (Д7)
+- [x] 1.6 Добавить equippedSprite в EquipmentData (Д6)
+- [x] 1.7 Программная иконка: поиск по имени + fallback (GradeColors + Tier-индикатор)
+- [x] 1.8 Runtime-методы CreateRuntimeFromWeapon/CreateRuntimeFromArmor (без AssetDatabase)
 - [ ] 1.9 Тест: WeaponGenerator.Generate() → EquipmentSOFactory.CreateFromWeapon() → EquipmentData SO
 
 ### Этап 2: Editor-меню «Генерация экипировки» (ИНТЕГРАЦИЯ)
@@ -265,10 +264,10 @@ Phase16InventoryData           → CreateTestEquipment() → EquipmentData (SO) 
 **⚠️ РЕШЕНИЕ:** НЕ добавлять `dodgePenalty` отдельно — использовать существующее `dodgeBonus` (оно уже принимает отрицательные значения). Добавить только `moveSpeedPenalty`, `qiFlowPenalty` и `equippedSprite`.
 
 **Подзадачи:**
-- [ ] 4.1 Добавить `moveSpeedPenalty` в EquipmentData.cs (float, Range(-50, 0))
-- [ ] 4.2 Добавить `qiFlowPenalty` в EquipmentData.cs (float, Range(-30, 30))
-- [ ] 4.3 Добавить `equippedSprite` в EquipmentData.cs (Sprite)
-- [ ] 4.4 Обновить EquipmentSOFactory — заполнение новых полей из DTO
+- [x] 4.1 Добавить `moveSpeedPenalty` в EquipmentData.cs (float, Range(-50, 0))
+- [x] 4.2 Добавить `qiFlowPenalty` в EquipmentData.cs (float, Range(-30, 30))
+- [x] 4.3 Добавить `equippedSprite` в EquipmentData.cs (Sprite)
+- [x] 4.4 Обновить EquipmentSOFactory — заполнение новых полей из DTO
 - [ ] 4.5 (ОТДЕЛЬНО) AI-генерация 45 equipped-спрайтов по спецификации из EQUIPPED_SPRITES_DRAFT.md
 - [ ] 4.6 (ОТДЕЛЬНО) Создать `EquipmentVisualController.cs` — наложение equipped-спрайтов на персонажа
 
@@ -283,19 +282,19 @@ Phase16InventoryData           → CreateTestEquipment() → EquipmentData (SO) 
 **Стало:** Вызов `WeaponGenerator.Generate()` + `ArmorGenerator.Generate()` + `EquipmentSOFactory.CreateFromWeapon/Armor()`
 
 **Подзадачи:**
-- [ ] 5.1 Переписать `CreateTestEquipment()` — использовать генераторы
+- [ ] 5.1 Переписать `CreateTestEquipment()` — использовать генераторы (ЧАСТИЧНО: GradeColors интегрированы)
 - [ ] 5.2 Сгенерировать базовый набор: 5 оружия + 5 брони (T1, Common, Level 1)
 - [ ] 5.3 Сгенерировать улучшенный набор: 3 оружия + 3 брони (T3, Refined, Level 3-5)
-- [ ] 5.4 Сгенерировать 5 рюкзаков + 4 кольца (оставить как есть — они не через генераторы)
+- [x] 5.4 Сгенерировать 5 рюкзаков + 4 кольца (оставить как есть — они не через генераторы)
 
 ### UI: Интеграция GradeColors в интерфейс
 
 **Изменения:** `InventorySlotUI.cs`, `TooltipPanel.cs`  
 **Код:** → [04_29_equipment_generator_integration_code.md §6-7](./04_29_equipment_generator_integration_code.md)
 
-- [ ] UI.1 InventorySlotUI: подсветка фона по Grade (15% прозрачности)
-- [ ] UI.2 TooltipPanel: цвет текста грейда = GradeColors.GetGradeColor()
-- [ ] UI.3 TooltipPanel: цвет текста тира = GradeColors.GetTierColor()
+- [x] UI.1 InventorySlotUI: подсветка фона по Grade (15% прозрачности)
+- [x] UI.2 TooltipPanel: цвет текста грейда = GradeColors.GetGradeColor()
+- [x] UI.3 TooltipPanel: цвет текста тира = GradeColors.GetTierColor()
 
 ---
 
@@ -393,4 +392,4 @@ Phase16InventoryData           → CreateTestEquipment() → EquipmentData (SO) 
 ---
 
 *Создано: 2026-04-29 07:11 UTC*  
-*Редактировано: 2026-04-29 08:10 UTC — разделение на план + кодовую базу, перекрёстные ссылки*
+*Редактировано: 2026-04-29 09:05 UTC — реализация: Подготовка + Этап 1 + Этап 4 + UI. Коммит 5cb04fc*
