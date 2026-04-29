@@ -3,14 +3,24 @@
 **Дата:** 2026-04-28 15:40 UTC
 **Проект:** Cultivation World Simulator (Unity 6.3 URP 2D)
 **Статус:** ✅ Этап 1 завершён — Icon-спрайты сгенерированы
+**Редактировано:** 2026-04-29 06:05:00 UTC
+
+---
+
+## 📎 Перекрёстные ссылки
+
+| Документ | Описание |
+|----------|----------|
+| **`docs/SPRITE_INDEX.md`** §5 | Полный перечень существующих спрайтов экипировки (icon, 21 файл) |
+| **`docs_temp/EQUIPPED_SPRITES_DRAFT.md`** | Черновик системы equipped-спрайтов (архитектура Overlay, код) |
 
 ---
 
 ## ⚠️ Задача
 
 Отображение экипировки в двух состояниях:
-1. **На земле (Item Drop)** — иконка предмета в инвентаре и на карте
-2. **Надетая на персонажа (Equipped)** — визуальное изменение спрайта персонажа
+1. **На земле (Item Drop)** — иконка предмета в инвентаре и на карте ✅ *(реализовано, перечень см. `docs/SPRITE_INDEX.md` §5)*
+2. **Надетая на персонажа (Equipped)** — визуальное изменение спрайта персонажа ❌ *(НЕ реализовано, см. `EQUIPPED_SPRITES_DRAFT.md`)*
 
 ---
 
@@ -35,38 +45,11 @@
 
 ---
 
-## 📊 СУЩЕСТВУЮЩИЕ СПРАЙТЫ (21 файл)
+## 📊 СУЩЕСТВУЮЩИЕ СПРАЙТЫ
 
-### Оружие (11 файлов)
+**21 icon-спрайт** экипировки существует. Полный перечень с описаниями → **`docs/SPRITE_INDEX.md`** §5 «Equipment (Снаряжение)».
 
-| Файл | Подтип | Тир | Icon ✅ | Equipped ❌ |
-|------|--------|-----|---------|-------------|
-| weapon_claws.png | Unarmed | T1 | ✅ 1024×1024 | ❌ Нет |
-| weapon_dagger_iron.png | Dagger | T1 | ✅ | ❌ |
-| weapon_sword_iron.png | Sword | T1 | ✅ | ❌ |
-| weapon_sword_spirit.png | Sword | T3 | ✅ | ❌ |
-| weapon_greatsword_iron.png | Greatsword | T1 | ✅ | ❌ |
-| weapon_axe_iron.png | Axe | T1 | ✅ | ❌ |
-| weapon_spear_iron.png | Spear | T1 | ✅ | ❌ |
-| weapon_bow_wood.png | Bow | T1 | ✅ | ❌ |
-| weapon_crossbow_iron.png | Crossbow | T1 | ✅ | ❌ |
-| weapon_staff_wood.png | Staff | T1 | ✅ | ❌ |
-| weapon_staff_jade.png | Staff | T3 | ✅ | ❌ |
-
-### Броня (10 файлов)
-
-| Файл | Подтип | Вес.класс | Icon ✅ | Equipped ❌ |
-|------|--------|-----------|---------|-------------|
-| armor_helmet_iron.png | Head | Heavy | ✅ | ❌ |
-| armor_hood_cloth.png | Head | Light | ✅ | ❌ |
-| armor_torso_iron.png | Torso | Heavy | ✅ | ❌ |
-| armor_chainmail.png | Torso | Medium | ✅ | ❌ |
-| armor_vest_leather.png | Torso | Light | ✅ | ❌ |
-| armor_robe_cloth.png | Torso | Light | ✅ | ❌ |
-| armor_robe_spirit.png | Torso | Light (T3) | ✅ | ❌ |
-| armor_greaves_iron.png | Legs | Heavy | ✅ | ❌ |
-| armor_boots_leather.png | Feet | Light | ✅ | ❌ |
-| armor_gloves_leather.png | Hands | Light | ✅ | ❌ |
+**Статус equipped-спрайтов:** ❌ Ни для одного предмета нет equipped-версии. См. **`EQUIPPED_SPRITES_DRAFT.md`**.
 
 ---
 

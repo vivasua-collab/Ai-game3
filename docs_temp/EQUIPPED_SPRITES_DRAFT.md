@@ -4,7 +4,17 @@
 **Проект:** Cultivation World Simulator (Unity 6.3 URP 2D)  
 **Статус:** 📝 Черновик  
 **Решение:** ✅ Упрощённая модель — 1 слот = 1 предмет = 1 equipped-спрайт (без слоёв экипировки)  
-**Связанные документы:** `EQUIPMENT_SPRITES_AUDIT.md`, `13_SpriteSetup.md`, `08_EquipmentData.md`
+**Редактировано:** 2026-04-29 06:05:00 UTC
+
+---
+
+## 📎 Перекрёстные ссылки
+
+| Документ | Описание |
+|----------|----------|
+| **`docs/SPRITE_INDEX.md`** §5 | Полный перечень существующих icon-спрайтов экипировки (21 файл) |
+| **`docs_temp/EQUIPMENT_SPRITES_AUDIT.md`** | Аудит недостающих спрайтов, план генерации icon + equipped |
+| **`docs_temp/CharacterSpriteMirroring.md`** | Зеркалирование спрайтов персонажей (flipX / scale) |
 
 ---
 
@@ -24,8 +34,8 @@
 
 | Компонент | Статус | Описание |
 |-----------|--------|----------|
-| Icon-спрайты (Equipment/Icons/) | ✅ 44 шт. | 128×128 px, для инвентаря и дропа |
-| Исходные спрайты (Equipment/) | ✅ 38 шт. | 1024×1024 px, для генерации иконок |
+| Icon-спрайты (Equipment/Icons/) | ✅ | 128×128 px, для инвентаря и дропа → **перечень см. `docs/SPRITE_INDEX.md`** §5 |
+| Исходные спрайты (Equipment/) | ✅ | 1024×1024 px, для генерации иконок → **перечень см. `docs/SPRITE_INDEX.md`** §5 |
 | `ItemData.icon: Sprite` | ✅ | Единое поле иконки, используется в UI |
 | `EquipmentController.OnEquipmentEquipped` | ✅ | Событие экипировки |
 | `EquipmentController.OnEquipmentUnequipped` | ✅ | Событие снятия |

@@ -2,7 +2,18 @@
 
 **Дата создания:** 2026-04-13 14:18:00 UTC  
 **Всего спрайтов:** 127 PNG файлов  
-**Источник:** Code + PNG (meta файлы НЕ в окружении, на локальном ПК)
+**Источник:** Code + PNG (meta файлы НЕ в окружении, на локальном ПК)  
+**Редактировано:** 2026-04-29 06:05:00 UTC
+
+---
+
+## 📎 Связанные документы
+
+| Документ | Путь | Описание |
+|----------|------|----------|
+| **EQUIPMENT_SPRITES_AUDIT.md** | `docs_temp/EQUIPMENT_SPRITES_AUDIT.md` | Аудит недостающих спрайтов экипировки, план генерации icon + equipped |
+| **EQUIPPED_SPRITES_DRAFT.md** | `docs_temp/EQUIPPED_SPRITES_DRAFT.md` | Черновик системы equipped-спрайтов (архитектура Overlay, спецификация, код) |
+| **CharacterSpriteMirroring.md** | `docs_temp/CharacterSpriteMirroring.md` | Зеркалирование спрайтов персонажей (flipX / scale), интеграция с PlayerController |
 
 ---
 
@@ -58,7 +69,8 @@
 ## 3. 🧑 Player (Игрок) — 9 спрайтов
 
 **Путь:** `Assets/Sprites/Characters/Player/` + `Assets/Sprites/player_sprite.png`  
-**Назначение:** SpriteRenderer на объекте Player
+**Назначение:** SpriteRenderer на объекте Player  
+**📎 См. также:** `docs_temp/CharacterSpriteMirroring.md` — зеркалирование и интеграция с контроллером
 
 | # | Имя файла | Описание |
 |---|-----------|----------|
@@ -77,7 +89,8 @@
 ## 4. 👤 NPC (Неигровые персонажи) — 12 спрайтов
 
 **Путь:** `Assets/Sprites/Characters/NPC/`  
-**Связанные классы:** NPCController, NPCGenerator, NPCPresetData
+**Связанные классы:** NPCController, NPCGenerator, NPCPresetData  
+**📎 См. также:** `docs_temp/CharacterSpriteMirroring.md` — зеркалирование и интеграция с контроллером
 
 | # | Имя файла | Тип NPC |
 |---|-----------|---------|
@@ -100,7 +113,10 @@
 
 **Путь:** `Assets/Sprites/Equipment/`  
 **ScriptableObject:** EquipmentData.cs  
-**Генератор:** AssetGeneratorExtended.cs, WeaponGenerator.cs, ArmorGenerator.cs
+**Генератор:** AssetGeneratorExtended.cs, WeaponGenerator.cs, ArmorGenerator.cs  
+**📎 См. также:**  
+- `docs_temp/EQUIPMENT_SPRITES_AUDIT.md` — аудит недостающих icon + equipped спрайтов  
+- `docs_temp/EQUIPPED_SPRITES_DRAFT.md` — черновик системы equipped-спрайтов (архитектура Overlay Layering)
 
 ### Оружие (11)
 
