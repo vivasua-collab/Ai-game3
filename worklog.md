@@ -26,3 +26,24 @@ Stage Summary:
 - 6 файлов изменено, ~156 строк кода
 - Формулы веса и объёма единообразны: Weapon/Armor → clamp(weight, 1, 4), Consumable → 0.1
 - Компиляция будет проверена при следующем запуске Unity Editor
+---
+Task ID: 1
+Agent: main
+Task: Аудит кода экипировки и создание детального плана внедрения генераторов
+
+Work Log:
+- Прочитал документацию: EQUIPMENT_SYSTEM.md, INVENTORY_SYSTEM.md, ARCHITECTURE.md, EQUIPPED_SPRITES_DRAFT.md, SPRITE_INDEX.md
+- Прочитал модели данных: ItemData.cs, EquipmentData.cs, Enums.cs
+- Прочитал контроллеры: EquipmentController.cs, PlayerVisual.cs, CharacterSpriteController.cs
+- Прочитал генераторы: WeaponGenerator.cs, ArmorGenerator.cs, ConsumableGenerator.cs, GeneratorRegistry.cs, AssetGeneratorExtended.cs, MaterialSystem.cs
+- Прочитал чекпоинты: 04_28_generator_audit_plan.md, 04_29_equipment_generator_integration_plan.md
+- Идентифицировал критический разрыв: DTO→SO мост не существует
+- Найдены недостающие поля EquipmentData: moveSpeedPenalty, qiFlowPenalty, equippedSprite
+- Найдена проблема Arms-слота: ArmorSubtype.Arms маппится на EquipmentSlot.Hands
+- Обновил checkpoint 04_29_equipment_generator_integration_plan.md с результатами аудита и детализированным планом (540 строк)
+
+Stage Summary:
+- Полный аудит 15+ файлов кода и документации
+- 5 ключевых находок, 4 открытых вопроса решены
+- План: 5 этапов, ~540 строк нового кода, 2 файла изменений
+- Порядок: Подготовка → EquipmentSOFactory → Phase16 → Editor-меню → LootGenerator
