@@ -15,6 +15,7 @@
 //   - Переименованы конфликтующие переменные so/rendererListProp
 //   - FIX-v2: GraphicsSettings.currentRenderPipeline read-only → SerializedObject подход
 // Редактировано: 2026-04-29 12:05:54 UTC — аудит: убрана инлайн-отметка из тела файла
+// Редактировано: 2026-04-29 — IsNeeded: проверка m_RendererData; EnsureURPAsset: починка m_RendererData
 // ============================================================================
 
 #if UNITY_EDITOR
@@ -38,12 +39,24 @@ namespace CultivationGame.Editor.SceneBuilder
         public bool IsNeeded()
         {
             // Нужна если URP Asset или Renderer2D не существуют,
-            // или если GraphicsSettings не назначен
-            bool hasURPAsset = AssetDatabase.LoadAssetAtPath<UniversalRenderPipelineAsset>(URP_ASSET_PATH) != null;
+            // или если GraphicsSettings не назначен,
+            // или если default renderer не привязан к URP Asset
+            var urpAsset = AssetDatabase.LoadAssetAtPath<UniversalRenderPipelineAsset>(URP_ASSET_PATH);
+            bool hasURPAsset = urpAsset != null;
             bool hasRenderer2D = AssetDatabase.LoadAssetAtPath<Renderer2DData>(RENDERER2D_PATH) != null;
             bool hasGraphicsSettings = GraphicsSettings.currentRenderPipeline != null;
 
-            return !hasURPAsset || !hasRenderer2D || !hasGraphicsSettings;
+            // Проверяем, что default renderer назначен (m_RendererData не null)
+            bool hasDefaultRenderer = true;
+            if (urpAsset != null)
+            {
+                var so = new SerializedObject(urpAsset);
+                var rendererDataProp = so.FindProperty("m_RendererData");
+                if (rendererDataProp != null && rendererDataProp.objectReferenceValue == null)
+                    hasDefaultRenderer = false;
+            }
+
+            return !hasURPAsset || !hasRenderer2D || !hasGraphicsSettings || !hasDefaultRenderer;
         }
 
         public void Execute()
@@ -121,8 +134,19 @@ namespace CultivationGame.Editor.SceneBuilder
             var existing = AssetDatabase.LoadAssetAtPath<UniversalRenderPipelineAsset>(URP_ASSET_PATH);
             if (existing != null)
             {
-                // Проверяем, что renderer2D назначен в существующий ассет
                 var existingSo = new SerializedObject(existing);
+                bool modified = false;
+
+                // Починка m_RendererData (default renderer)
+                var rendererDataProp = existingSo.FindProperty("m_RendererData");
+                if (rendererDataProp != null && rendererDataProp.objectReferenceValue == null && renderer2DData != null)
+                {
+                    rendererDataProp.objectReferenceValue = renderer2DData;
+                    modified = true;
+                    Debug.Log("[Phase00] m_RendererData починен: назначен Renderer2D");
+                }
+
+                // Починка m_RendererDataList[0]
                 var existingRendererList = existingSo.FindProperty("m_RendererDataList");
                 if (existingRendererList != null && existingRendererList.arraySize > 0)
                 {
@@ -130,10 +154,14 @@ namespace CultivationGame.Editor.SceneBuilder
                     if (firstRenderer.objectReferenceValue == null && renderer2DData != null)
                     {
                         firstRenderer.objectReferenceValue = renderer2DData;
-                        existingSo.ApplyModifiedProperties();
-                        Debug.Log("[Phase00] Renderer2D назначен в существующий UniversalRP.asset");
+                        modified = true;
+                        Debug.Log("[Phase00] Renderer2D назначен в m_RendererDataList[0]");
                     }
                 }
+
+                if (modified)
+                    existingSo.ApplyModifiedProperties();
+
                 Debug.Log("[Phase00] UniversalRP.asset уже существует");
                 return existing;
             }
