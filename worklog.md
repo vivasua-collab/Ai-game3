@@ -108,3 +108,37 @@ Stage Summary:
 - GeneratorRegistry.cs — Equipment Loot region + bounded LRU кэш
 - 4/6 подзадач этапа 3 выполнены (3.5-3.6 отложены как ОТДЕЛЬНО)
 - Статус: Этапы 1,2,3,4,UI ✅ | Этап 5 ❌
+
+---
+Task ID: 4
+Agent: main
+Task: Спрайт персонажа + отладочные инструменты + инструкция тестирования
+
+Work Log:
+- Исследована проблема отсутствующего спрайта персонажа
+  - PNG файлы существуют: player_variant1-8_*.png в Assets/Sprites/Characters/Player/
+  - Проблема: нет .meta файлов → Unity импортирует с textureType=Default
+  - LoadAssetAtPath<Sprite>() возвращает null при Default-типе
+  - EnsurePlayerSpritePPU() вызывался ТОЛЬКО внутри if(sprite!=null) → никогда не вызывался!
+- FIX SPRITE-01: Переставлен порядок в LoadPlayerSprite():
+  - Сначала File.Exists() → затем EnsurePlayerSpritePPU() → затем LoadAssetAtPath<Sprite>()
+  - Теперь настройки импорта исправляются ДО попытки загрузки
+- Создан EquipmentDebugPanel.cs (namespace CultivationGame.DebugTools):
+  - IMGUI-панель, F2 — переключение
+  - Секции: Генератор (оружие/броня/смешанный), Инвентарь, Кукла, Статистика
+  - Генерация и добавление предметов в инвентарь одной кнопкой
+  - Прогресс-бары веса/объёма, удаление предметов, очистка, сортировка
+  - Кнопки управления генераторами: сброс кэша, новый сид
+- Phase06Player.cs: добавлен EquipmentDebugPanel на Player
+- Создан чекпоинт: checkpoints/05_02_inventory_generator_test_instructions.md
+  - 9 пошаговых тестов: спрайт, генерация, перегруз, кукла, двуручное, детерминированность, иконки, очистка
+  - Полная pipeline-диаграмма: DTO → SO → Inventory → Equip
+  - Известные ограничения (5 пунктов)
+  - Editor-меню альтернативы (7 пунктов)
+- Коммит: 607aa83, push на GitHub
+
+Stage Summary:
+- FIX SPRITE-01: спрайт персонажа теперь загружается корректно
+- EquipmentDebugPanel.cs — новый отладочный инструмент (F2)
+- 9 тестов для ручной проверки инвентаря и генератора
+- Push: 607aa83
