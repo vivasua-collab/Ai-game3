@@ -142,3 +142,29 @@ Stage Summary:
 - EquipmentDebugPanel.cs — новый отладочный инструмент (F2)
 - 9 тестов для ручной проверки инвентаря и генератора
 - Push: 607aa83
+
+---
+Task ID: 2
+Agent: Main
+Task: Внедрение NPC системы по планам checkpoints/04_30_npc_generation_and_placement.md и 04_30_npc_implementation_plan.md
+
+Work Log:
+- Прочитал START_PROMPT.md и оба чекпоинта для восстановления контекста
+- Прочитал все ключевые файлы: NPCController, NPCAI, NPCData, PlayerVisual, Interactable, InteractionController, WorldController, FullSceneBuilder, NPCGenerator, GeneratorRegistry, EquipmentSceneSpawner
+- ШАГ 1: Создал NPCVisual.cs — визуал NPC (спрайт по роли + имя + HP-бар), ~320 строк
+- ШАГ 2: Создал NPCInteractable.cs — extends Interactable (Talk/Trade/Attack/Gift/Learn/Teach/...), ~320 строк
+- ШАГ 3: Отредактировал NPCController.cs — +авторегистрация в WorldController.Start() + OnDestroy()
+- ШАГ 4: Создал NPCSceneSpawner.cs — Editor-спавнер (Ctrl+N, Ctrl+Shift+N, Ctrl+F5, Ctrl+F6 + меню), ~250 строк
+- ШАГ 5: Отредактировал NPCAI.cs — +NPCVisual feedback при смене AI-состояния
+- ШАГ 6: Создал Phase19NPCPlacement.cs — IScenePhase, 7 NPC на тестовой поляне
+- ШАГ 7: Отредактировал FullSceneBuilder.cs — +Phase19 в PHASES + MenuItem
+- Удалил неиспользуемый using UnityEngine.SceneManagement из NPCSceneSpawner
+- Обновил чекпоинты: 04_30_npc_generation_and_placement.md → complete, 04_30_npc_implementation_plan.md → complete
+- Git push: 94593b9
+
+Stage Summary:
+- Все 7 GAP закрыты: NPCVisual, NPCInteractable, NPCSceneSpawner, Phase19, WorldController регистрация
+- 4 новых файла, 3 отредактированных, 0 удалённых
+- 1567 строк добавлено, 3 удалено
+- Хоткеи NPC: Ctrl+N (1 случайный), Ctrl+Shift+N (5 ролей), Ctrl+F5 (Merchant), Ctrl+F6 (Monster)
+- Известные ограничения: AI движения stub, DialogueSystem заглушка
