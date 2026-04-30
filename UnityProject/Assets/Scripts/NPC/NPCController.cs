@@ -87,7 +87,8 @@ namespace CultivationGame.NPC
         int ICombatant.CultivationLevel => state != null ? (int)state.CultivationLevel : 0;
         int ICombatant.CultivationSubLevel => state?.SubLevel ?? 0;
         int ICombatant.Strength => (int)(state?.BodyStrength ?? 10);
-        int ICombatant.Agility => (int)(state?.BodyStrength ?? 10);
+        // Редактировано: 2026-05-01 — Исправлено: Agility вместо BodyStrength
+        int ICombatant.Agility => (int)(state?.Agility ?? 10);
         int ICombatant.Intelligence => (int)(state?.Intelligence ?? 10);
         int ICombatant.Vitality => (int)(state?.Constitution ?? 10);
         long ICombatant.CurrentQi => state?.CurrentQi ?? 0;
@@ -194,7 +195,7 @@ namespace CultivationGame.NPC
             {
                 CultivationLevel = (int)(state?.CultivationLevel ?? Core.CultivationLevel.None),
                 Strength = (int)(state?.BodyStrength ?? 10),
-                Agility = (int)(state?.BodyStrength ?? 10),
+                Agility = (int)(state?.Agility ?? 10),  // Редактировано: 2026-05-01 — Agility вместо BodyStrength
                 Intelligence = (int)(state?.Intelligence ?? 10),
                 Penetration = 0,
                 AttackElement = attackElement,
@@ -213,7 +214,7 @@ namespace CultivationGame.NPC
                 CultivationLevel = (int)(state?.CultivationLevel ?? Core.CultivationLevel.None),
                 CurrentQi = state?.CurrentQi ?? 0,
                 QiDefense = qiController != null ? qiController.QiDefense : QiDefenseType.RawQi,
-                Agility = (int)(state?.BodyStrength ?? 10),
+                Agility = (int)(state?.Agility ?? 10),  // Редактировано: 2026-05-01 — Agility вместо BodyStrength
                 Strength = (int)(state?.BodyStrength ?? 10),
                 ArmorCoverage = 0f,
                 DamageReduction = 0f,
@@ -566,6 +567,8 @@ namespace CultivationGame.NPC
             state.BodyStrength = generated.strength;
             state.Constitution = generated.constitution;
             state.BodyDefense = generated.baseDefense;
+            // Редактировано: 2026-05-01 — Инициализация Agility из генератора
+            state.Agility = generated.agility;
 
             // Mental (генерируем на основе intelligence)
             state.Intelligence = generated.intelligence;
@@ -773,6 +776,7 @@ namespace CultivationGame.NPC
                 BodyStrength = state.BodyStrength,
                 BodyDefense = state.BodyDefense,
                 Constitution = state.Constitution,
+                Agility = state.Agility,  // Редактировано: 2026-05-01 — Agility save
                 Lifespan = state.Lifespan,
                 Willpower = state.Willpower,
                 Perception = state.Perception,
@@ -791,7 +795,8 @@ namespace CultivationGame.NPC
                 SectId = state.SectId ?? "",
                 CurrentLocation = state.CurrentLocation ?? "",
                 CurrentAIState = (int)state.CurrentAIState,
-                TargetId = state.TargetId ?? ""
+                TargetId = state.TargetId ?? "",
+                RoleValue = (int)state.Role  // Редактировано: 2026-05-01 — NPCRole save
             };
         }
         
@@ -815,6 +820,7 @@ namespace CultivationGame.NPC
             state.BodyStrength = data.BodyStrength;
             state.BodyDefense = data.BodyDefense;
             state.Constitution = data.Constitution;
+            state.Agility = data.Agility;  // Редактировано: 2026-05-01 — Agility load
             state.Lifespan = data.Lifespan;
             state.Willpower = data.Willpower;
             state.Perception = data.Perception;
@@ -844,6 +850,7 @@ namespace CultivationGame.NPC
             state.CurrentLocation = data.CurrentLocation;
             state.CurrentAIState = (NPCAIState)data.CurrentAIState;
             state.TargetId = data.TargetId;
+            state.Role = (NPCRole)data.RoleValue;  // Редактировано: 2026-05-01 — NPCRole load
         }
     }
 }

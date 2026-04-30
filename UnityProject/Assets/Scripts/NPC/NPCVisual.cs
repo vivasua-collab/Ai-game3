@@ -354,11 +354,9 @@ namespace CultivationGame.NPC
                 _ => Color.white
             };
 
-            // Применяем только если нет загруженного спрайта (иначе белые спрайты тонировать не нужно)
-            if (mainSprite.sprite != null && mainSprite.color == Color.white)
-            {
-                // Не перекрываем цвет загруженного спрайта
-            }
+            // Редактировано: 2026-05-01 — Применяем tint ко всем NPC (AI-индикация)
+            // Tint мягкий, не перекрывает спрайт полностью — только оттенок
+            mainSprite.color = tint;
         }
 
         /// <summary>

@@ -11,6 +11,7 @@ using UnityEngine;
 using CultivationGame.Core;
 using CultivationGame.Combat;
 using CultivationGame.Qi;
+using CultivationGame.Generators;  // Редактировано: 2026-05-01 — NPCRole enum
 
 namespace CultivationGame.NPC
 {
@@ -84,6 +85,8 @@ namespace CultivationGame.NPC
         public string NpcId;
         public string Name;
         public int Age;
+        // Редактировано: 2026-05-01 — NPCRole для save/load (раньше терялась)
+        public NPCRole Role;
         
         // === Cultivation ===
         public CultivationLevel CultivationLevel;
@@ -104,6 +107,8 @@ namespace CultivationGame.NPC
         public float BodyStrength;
         public float BodyDefense;
         public float Constitution;
+        // Редактировано: 2026-05-01 — Добавлено отдельное поле Agility (было BodyStrength по ошибке)
+        public float Agility;
         public int Lifespan;
         public int MaxLifespan;
         
@@ -299,6 +304,7 @@ namespace CultivationGame.NPC
         public float BodyStrength;
         public float BodyDefense;
         public float Constitution;
+        public float Agility;       // Редактировано: 2026-05-01 — Добавлено для save/load
         public int Lifespan;
         
         // Mental
@@ -326,5 +332,8 @@ namespace CultivationGame.NPC
         // AI
         public int CurrentAIState;
         public string TargetId;
+
+        // Редактировано: 2026-05-01 — NPCRole для save/load
+        public int RoleValue;  // NPCRole enum as int
     }
 }

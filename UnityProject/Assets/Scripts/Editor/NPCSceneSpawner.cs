@@ -204,6 +204,12 @@ namespace CultivationGame.Editor
             soAI.FindProperty("fleeHealthThreshold").floatValue = 0.2f;
             soAI.FindProperty("attackRange").floatValue = 1.5f;
             soAI.FindProperty("attackCooldown").floatValue = 1.5f;
+            // Редактировано: 2026-05-01 — Настройка playerLayerMask для корректного обнаружения игрока
+            int playerLayer = LayerMask.NameToLayer("Player");
+            if (playerLayer >= 0)
+            {
+                soAI.FindProperty("playerLayerMask").intValue = 1 << playerLayer;
+            }
             soAI.ApplyModifiedProperties();
 
             // 6a. Настройка NPCMovement — домашняя позиция и скорость по роли
@@ -230,6 +236,9 @@ namespace CultivationGame.Editor
 
             // 7. Инициализируем NPCController из GeneratedNPC
             controller.InitializeFromGenerated(generated);
+
+            // Редактировано: 2026-05-01 — Сохраняем роль в NPCState (для save/load)
+            controller.State.Role = role;
 
             // 8. Настраиваем NPCVisual — спрайт по роли
             visual.SetSpriteByRole(role);

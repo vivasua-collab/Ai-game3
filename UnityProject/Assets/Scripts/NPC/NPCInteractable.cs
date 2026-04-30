@@ -460,11 +460,17 @@ namespace CultivationGame.NPC
         /// </summary>
         private NPCRole GetNPCRole()
         {
-            // NPCController не хранит роль напрямую, но можно определить по Attitude и Personality
-            // Для упрощения — используем Attitude как индикатор
-            // TODO: Добавить NPCRole в NPCState для точного определения
+            // Редактировано: 2026-05-01 — Приоритет: кэш → NPCState.Role → эвристика
+            if (_cachedRole.HasValue)
+                return _cachedRole.Value;
+
             if (npcController == null) return NPCRole.Passerby;
 
+            // Проверяем NPCState.Role (устанавливается при спавне)
+            if (npcController.State != null && npcController.State.Role != NPCRole.Passerby)
+                return npcController.State.Role;
+
+            // Fallback: эвристика по Attitude + PersonalityTrait
             var attitude = npcController.Attitude;
             var personality = npcController.Personality;
 
