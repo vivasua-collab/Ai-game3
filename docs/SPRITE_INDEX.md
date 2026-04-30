@@ -1,9 +1,9 @@
 # Индексация спрайтов проекта — Cultivation World Simulator
 
 **Дата создания:** 2026-04-13 14:18:00 UTC  
-**Всего спрайтов:** 127 PNG файлов  
+**Всего спрайтов:** 133 PNG файла  
 **Источник:** Code + PNG (meta файлы НЕ в окружении, на локальном ПК)  
-**Редактировано:** 2026-04-29 06:05:00 UTC
+**Редактировано:** 2025-05-01
 
 ---
 
@@ -86,26 +86,47 @@
 
 ---
 
-## 4. 👤 NPC (Неигровые персонажи) — 12 спрайтов
+## 4. 👤 NPC (Неигровые персонажи) — 18 спрайтов
 
 **Путь:** `Assets/Sprites/Characters/NPC/`  
-**Связанные классы:** NPCController, NPCGenerator, NPCPresetData  
+**Связанные классы:** NPCController, NPCGenerator, NPCPresetData, NPCVisual  
 **📎 См. также:** `docs_temp/CharacterSpriteMirroring.md` — зеркалирование и интеграция с контроллером
 
-| # | Имя файла | Тип NPC |
-|---|-----------|---------|
-| 1 | npc_guard.png | Стражник |
-| 2 | npc_fairy.png | Фея |
-| 3 | npc_merchant.png | Торговец |
-| 4 | npc_beast_cultivator.png | Звериный культиватор |
-| 5 | npc_villager_male.png | Житель деревни (муж.) |
-| 6 | npc_enemy_demonic.png | Демонический враг |
-| 7 | npc_rogue.png | Разбойник |
-| 8 | npc_disciple_female.png | Ученица |
-| 9 | npc_rival.png | Соперник |
-| 10 | npc_elder_master.png | Старший мастер |
-| 11 | npc_disciple_male.png | Ученик |
-| 12 | npc_village_elder.png | Старейшина деревни |
+### Маппинг NPCRole → спрайт (в NPCVisual.cs)
+
+| NPCRole | Приоритетный спрайт | Вариации | Fallback |
+|---------|--------------------|---------|----------|
+| Monster | npc_monster_wild | npc_beast_cultivator | программный гуманоид |
+| Guard | npc_guard | npc_guard_female | программный гуманоид |
+| Merchant | npc_merchant | npc_merchant_female | программный гуманоид |
+| Cultivator | npc_cultivator_master | npc_disciple_male, npc_disciple_female | программный гуманоид |
+| Elder | npc_elder_master | npc_village_elder | программный гуманоид |
+| Enemy | npc_enemy_demonic | npc_rival | программный гуманоид |
+| Disciple | npc_disciple_male | npc_disciple_female | программный гуманоид |
+| Passerby | npc_passerby | npc_villager_male, npc_villager_female | программный гуманоид |
+
+### Все NPC-спрайты
+
+| # | Имя файла | Тип NPC | Новый |
+|---|-----------|---------|-------|
+| 1 | npc_monster_wild.png | Дикая тварь (Monster) | ✅ |
+| 2 | npc_passerby.png | Прохожий (Passerby) | ✅ |
+| 3 | npc_merchant_female.png | Торговец (жен.) | ✅ |
+| 4 | npc_guard_female.png | Стражник (жен.) | ✅ |
+| 5 | npc_cultivator_master.png | Мастер-культиватор | ✅ |
+| 6 | npc_villager_female.png | Жительница деревни | ✅ |
+| 7 | npc_guard.png | Стражник (муж.) | |
+| 8 | npc_merchant.png | Торговец (муж.) | |
+| 9 | npc_villager_male.png | Житель деревни (муж.) | |
+| 10 | npc_disciple_male.png | Ученик (муж.) | |
+| 11 | npc_disciple_female.png | Ученица (жен.) | |
+| 12 | npc_elder_master.png | Старший мастер | |
+| 13 | npc_village_elder.png | Старейшина деревни | |
+| 14 | npc_enemy_demonic.png | Демонический враг | |
+| 15 | npc_rival.png | Соперник | |
+| 16 | npc_beast_cultivator.png | Звериный культиватор | |
+| 17 | npc_rogue.png | Разбойник | |
+| 18 | npc_fairy.png | Фея | |
 
 ---
 
@@ -303,7 +324,7 @@
 | Terrain Tiles | 10 | Sprites/Tiles/ |
 | Object Tiles | 7 | Sprites/Tiles/ |
 | Player | 9 | Sprites/ + Sprites/Characters/Player/ |
-| NPC | 12 | Sprites/Characters/NPC/ |
+| NPC | 18 | Sprites/Characters/NPC/ |
 | Equipment | 20 | Sprites/Equipment/ |
 | Items | 16 | Sprites/Items/ |
 | Elements | 7 | Sprites/Elements/ |
@@ -312,7 +333,7 @@
 | Combat Effects | 12 | Sprites/Combat/TechniqueEffects/ |
 | Orbital Weapons | 8 | Sprites/Combat/OrbitalWeapons/ |
 | UI | 4 | Sprites/UI/ |
-| **ИТОГО** | **126** | |
+| **ИТОГО** | **132** | |
 
 ---
 
@@ -334,6 +355,17 @@
 - ⚠️ cultivation_10_ascension.png — ПЛАНИРУЕТСЯ (не входит в текущую модель данных)
 
 ### TechniqueType (11 типов) → 11 спрайтов ✅ ПОЛНОЕ
+
+### NPCRole (8 ролей) → 18 спрайтов ✅ ПОЛНОЕ
+- ✅ Monster → npc_monster_wild + npc_beast_cultivator (вариация)
+- ✅ Guard → npc_guard + npc_guard_female (вариация)
+- ✅ Merchant → npc_merchant + npc_merchant_female (вариация)
+- ✅ Cultivator → npc_cultivator_master + npc_disciple_male + npc_disciple_female (вариации)
+- ✅ Elder → npc_elder_master + npc_village_elder (вариация)
+- ✅ Enemy → npc_enemy_demonic + npc_rival (вариация)
+- ✅ Disciple → npc_disciple_male + npc_disciple_female (вариация)
+- ✅ Passerby → npc_passerby + npc_villager_male + npc_villager_female (вариации)
+- ➕ Дополнительные (не привязаны к роли): npc_rogue, npc_fairy
 
 ---
 

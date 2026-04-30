@@ -62,17 +62,20 @@ namespace CultivationGame.NPC
         private Material createdMaterial;
 
         // === Маппинг роль → спрайт ===
+        // Приоритет: специфичный → вариация → fallback
+        // Редактировано: 2025-05-01 — добавлены npc_monster_wild, npc_passerby, npc_merchant_female,
+        //   npc_guard_female, npc_cultivator_master, npc_villager_female
         private static readonly System.Collections.Generic.Dictionary<NPCRole, string[]> RoleSpritePaths =
             new System.Collections.Generic.Dictionary<NPCRole, string[]>
         {
-            { NPCRole.Monster,    new[] { "Assets/Sprites/Characters/NPC/npc_rogue.png", "Assets/Sprites/Characters/NPC/npc_beast_cultivator.png" } },
-            { NPCRole.Guard,      new[] { "Assets/Sprites/Characters/NPC/npc_guard.png" } },
-            { NPCRole.Merchant,   new[] { "Assets/Sprites/Characters/NPC/npc_merchant.png" } },
-            { NPCRole.Cultivator, new[] { "Assets/Sprites/Characters/NPC/npc_disciple_male.png", "Assets/Sprites/Characters/NPC/npc_disciple_female.png" } },
-            { NPCRole.Elder,      new[] { "Assets/Sprites/Characters/NPC/npc_village_elder.png", "Assets/Sprites/Characters/NPC/npc_elder_master.png" } },
+            { NPCRole.Monster,    new[] { "Assets/Sprites/Characters/NPC/npc_monster_wild.png", "Assets/Sprites/Characters/NPC/npc_beast_cultivator.png" } },
+            { NPCRole.Guard,      new[] { "Assets/Sprites/Characters/NPC/npc_guard.png", "Assets/Sprites/Characters/NPC/npc_guard_female.png" } },
+            { NPCRole.Merchant,   new[] { "Assets/Sprites/Characters/NPC/npc_merchant.png", "Assets/Sprites/Characters/NPC/npc_merchant_female.png" } },
+            { NPCRole.Cultivator, new[] { "Assets/Sprites/Characters/NPC/npc_cultivator_master.png", "Assets/Sprites/Characters/NPC/npc_disciple_male.png", "Assets/Sprites/Characters/NPC/npc_disciple_female.png" } },
+            { NPCRole.Elder,      new[] { "Assets/Sprites/Characters/NPC/npc_elder_master.png", "Assets/Sprites/Characters/NPC/npc_village_elder.png" } },
             { NPCRole.Enemy,      new[] { "Assets/Sprites/Characters/NPC/npc_enemy_demonic.png", "Assets/Sprites/Characters/NPC/npc_rival.png" } },
-            { NPCRole.Disciple,   new[] { "Assets/Sprites/Characters/NPC/npc_disciple_male.png" } },
-            { NPCRole.Passerby,   new[] { "Assets/Sprites/Characters/NPC/npc_villager_male.png" } }
+            { NPCRole.Disciple,   new[] { "Assets/Sprites/Characters/NPC/npc_disciple_male.png", "Assets/Sprites/Characters/NPC/npc_disciple_female.png" } },
+            { NPCRole.Passerby,   new[] { "Assets/Sprites/Characters/NPC/npc_passerby.png", "Assets/Sprites/Characters/NPC/npc_villager_male.png", "Assets/Sprites/Characters/NPC/npc_villager_female.png" } }
         };
 
         // === Цвета по Attitude ===
