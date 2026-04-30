@@ -5,7 +5,7 @@
 // Версия: 2.0 — Рефакторинг: монолит → оркестратор + отдельные файлы фаз
 //
 // АРХИТЕКТУРА:
-//   19 фаз, каждая в отдельном файле (Assets/Scripts/Editor/SceneBuilder/).
+//   20 фаз, каждая в отдельном файле (Assets/Scripts/Editor/SceneBuilder/).
 //   Каждая фаза реализует IScenePhase — IsNeeded() + Execute().
 //   Оркестратор регистрирует фазы и управляет их запуском.
 //
@@ -28,6 +28,7 @@
 //   SceneBuilder/Phase16InventoryData.cs    — Фаза 16
 //   SceneBuilder/Phase17InventoryUI.cs       — Фаза 17
 //   SceneBuilder/Phase18InventoryComponents.cs — Фаза 18
+//   SceneBuilder/Phase19NPCPlacement.cs        — Фаза 19 (NEW)
 //   FullSceneBuilder.cs                    — Оркестратор (этот файл)
 //
 // СОВМЕСТИМОСТЬ: Unity 6.3+ (6000.3)
@@ -70,6 +71,7 @@ namespace CultivationGame.Editor
             new Phase16InventoryData(),
             new Phase17InventoryUI(),
             new Phase18InventoryComponents(),
+            new Phase19NPCPlacement(),
         };
 
         #endregion
@@ -205,6 +207,9 @@ namespace CultivationGame.Editor
 
         [MenuItem("Tools/Full Scene Builder/Phase 18: Inventory Components", false, 118)]
         public static void RunPhase18() { RunSinglePhase(18); }
+
+        [MenuItem("Tools/Full Scene Builder/Phase 19: NPC Placement", false, 119)]
+        public static void RunPhase19() { RunSinglePhase(19); }
 
         // ====================================================================
         //  UTILITY: Run Single Phase

@@ -4,6 +4,7 @@
 // Версия: 1.1
 // Создано: 2026-03-30 10:00:00 UTC
 // Редактировано: 2026-04-11 00:00:00 UTC — Fix-07
+// Редактировано: 2026-04-30 07:55:00 UTC — NPCVisual feedback при смене AI-состояния
 // ============================================================================
 
 using System;
@@ -37,6 +38,7 @@ namespace CultivationGame.NPC
         
         // === Runtime ===
         private NPCController npcController;
+        private NPCVisual npcVisual;
         private NPCState state;
         private float decisionTimer;
         private List<string> knownTargets = new List<string>();
@@ -69,6 +71,7 @@ namespace CultivationGame.NPC
         private void Awake()
         {
             npcController = GetComponent<NPCController>();
+            npcVisual = GetComponent<NPCVisual>();
         }
         
         private void Start()
@@ -431,6 +434,10 @@ namespace CultivationGame.NPC
             
             if (npcController != null)
                 npcController.SetAIState(newState);
+            
+            // Визуальная обратная связь через NPCVisual
+            if (npcVisual != null)
+                npcVisual.SetAIState(newState);
         }
         
         // === Threat System ===

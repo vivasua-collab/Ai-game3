@@ -3,6 +3,7 @@
 // Cultivation World Simulator
 // Создано: 2026-03-30 10:00:00 UTC
 // Редактировано: 2026-04-11 06:46:00 UTC — Fix-07, NPC-M05: generated.age вместо деривации
+// Редактировано: 2026-04-30 07:48:00 UTC — GAP-4: авторегистрация в WorldController + OnDestroy
 // ============================================================================
 //
 // Источник: docs/NPC_AI_SYSTEM.md, docs/QI_SYSTEM.md
@@ -89,6 +90,13 @@ namespace CultivationGame.NPC
             
             // FIX NPC-H02: Get TimeController for lifespan
             ServiceLocator.Request<TimeController>(tc => timeController = tc);
+            
+            // GAP-4: Авторегистрация в WorldController
+            // ServiceLocator.Request<WorldController> может не сработать (регистрация закомментирована),
+            // поэтому используем FindFirstObjectByType как fallback
+            var wc = FindFirstObjectByType<WorldController>();
+            if (wc != null)
+                wc.RegisterNPC(this);
         }
         
         private void Update()
@@ -524,6 +532,14 @@ namespace CultivationGame.NPC
             return controller;
         }
 
+        // GAP-4: Отписка от WorldController при уничтожении
+        private void OnDestroy()
+        {
+            var wc = FindFirstObjectByType<WorldController>();
+            if (wc != null)
+                wc.UnregisterNPC(NpcId);
+        }
+        
         // === Save/Load ===
 
         public NPCSaveData GetSaveData()
