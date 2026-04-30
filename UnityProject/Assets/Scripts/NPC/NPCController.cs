@@ -4,6 +4,7 @@
 // Создано: 2026-03-30 10:00:00 UTC
 // Редактировано: 2026-04-11 06:46:00 UTC — Fix-07, NPC-M05: generated.age вместо деривации
 // Редактировано: 2026-04-30 07:48:00 UTC — GAP-4: авторегистрация в WorldController + OnDestroy
+// Редактировано: 2026-04-30 09:45:00 UTC — ICombatant: реализация интерфейса, TakeDamage через пайплайн
 // ============================================================================
 //
 // Источник: docs/NPC_AI_SYSTEM.md, docs/QI_SYSTEM.md
@@ -29,8 +30,9 @@ namespace CultivationGame.NPC
 {
     /// <summary>
     /// Главный контроллер NPC — объединяет все системы NPC.
+    /// Реализует ICombatant для участия в боевом пайплайне.
     /// </summary>
-    public class NPCController : MonoBehaviour
+    public class NPCController : MonoBehaviour, ICombatant
     {
         [Header("Preset")]
         [SerializeField] private Data.ScriptableObjects.NPCPresetData preset;
@@ -60,6 +62,11 @@ namespace CultivationGame.NPC
         public event Action<NPCController, string, int> OnRelationshipChanged;
         public event Action<NPCController, NPCAIState> OnAIStateChanged;
         
+        // === ICombatant Events ===
+        public event Action OnDeath;
+        public event Action<float> OnDamageTaken;
+        public event Action<long, long> OnQiChanged;
+        
         // === Properties ===
         
         public NPCState State => state;
@@ -72,6 +79,152 @@ namespace CultivationGame.NPC
         // FIX NPC-ATT-01: Expose Attitude + PersonalityTrait (2026-04-11)
         public Attitude Attitude => state?.Attitude ?? Attitude.Neutral;
         public PersonalityTrait Personality => state?.Personality ?? PersonalityTrait.None;
+        
+        // === ICombatant Explicit Implementation ===
+        
+        string ICombatant.Name => NpcName;
+        GameObject ICombatant.GameObject => gameObject;
+        int ICombatant.CultivationLevel => state != null ? (int)state.CultivationLevel : 0;
+        int ICombatant.CultivationSubLevel => state?.SubLevel ?? 0;
+        int ICombatant.Strength => (int)(state?.BodyStrength ?? 10);
+        int ICombatant.Agility => (int)(state?.BodyStrength ?? 10);
+        int ICombatant.Intelligence => (int)(state?.Intelligence ?? 10);
+        int ICombatant.Vitality => (int)(state?.Constitution ?? 10);
+        long ICombatant.CurrentQi => state?.CurrentQi ?? 0;
+        long ICombatant.MaxQi => state?.MaxQi ?? 0;
+        float ICombatant.QiDensity => qiController?.QiDensity ?? 1f;
+        QiDefenseType ICombatant.QiDefense => qiController != null ? qiController.QiDefense : QiDefenseType.RawQi;
+        bool ICombatant.HasShieldTechnique => false; // TODO: проверить TechniqueController
+        BodyMaterial ICombatant.BodyMaterial => bodyController?.BodyMaterial ?? BodyMaterial.Organic;
+        float ICombatant.HealthPercent => state != null && state.MaxHealth > 0
+            ? (float)state.CurrentHealth / state.MaxHealth
+            : 0f;
+        bool ICombatant.IsAlive => IsAlive;
+        int ICombatant.Penetration => 0;
+        float ICombatant.DodgeChance => DefenseProcessor.CalculateDodgeChance(
+            (int)(state?.BodyStrength ?? 10), 0f);
+        float ICombatant.ParryChance => DefenseProcessor.CalculateParryChance(
+            (int)(state?.BodyStrength ?? 10), 0f);
+        float ICombatant.BlockChance => DefenseProcessor.CalculateBlockChance(
+            (int)(state?.BodyStrength ?? 10), 0f);
+        float ICombatant.ArmorCoverage => 0f;
+        float ICombatant.DamageReduction => 0f;
+        int ICombatant.ArmorValue => 0;
+        
+        // === ICombatant Method Implementations ===
+        
+        /// <summary>
+        /// Нанести урон указанной части тела через пайплайн боевой системы.
+        /// </summary>
+        void ICombatant.TakeDamage(BodyPartType part, float damage)
+        {
+            if (!IsAlive) return;
+            
+            if (bodyController != null)
+            {
+                bodyController.TakeDamage(part, damage);
+            }
+            else
+            {
+                // Fallback: прямой урон по HP (без BodyController)
+                state.CurrentHealth -= (int)damage;
+            }
+            
+            OnDamageTaken?.Invoke(damage);
+            
+            // Обновляем HealthPercent в state
+            SyncHealthFromBody();
+            
+            // Проверяем смерть
+            if (!CheckAlive())
+            {
+                Die("combat");
+            }
+        }
+        
+        /// <summary>
+        /// Нанести урон в случайную часть тела.
+        /// </summary>
+        void ICombatant.TakeDamageRandom(float damage)
+        {
+            if (!IsAlive) return;
+            
+            if (bodyController != null)
+            {
+                bodyController.TakeDamageRandom(damage);
+            }
+            else
+            {
+                state.CurrentHealth -= (int)damage;
+            }
+            
+            OnDamageTaken?.Invoke(damage);
+            SyncHealthFromBody();
+            
+            if (!CheckAlive())
+            {
+                Die("combat");
+            }
+        }
+        
+        bool ICombatant.SpendQi(long amount)
+        {
+            bool result = qiController?.SpendQi(amount) ?? false;
+            if (result && state != null)
+            {
+                state.CurrentQi = qiController.CurrentQi;
+                OnQiChanged?.Invoke(state.CurrentQi, state.MaxQi);
+            }
+            return result;
+        }
+        
+        void ICombatant.AddQi(long amount)
+        {
+            qiController?.AddQi(amount);
+            if (state != null && qiController != null)
+            {
+                state.CurrentQi = qiController.CurrentQi;
+                OnQiChanged?.Invoke(state.CurrentQi, state.MaxQi);
+            }
+        }
+        
+        AttackerParams ICombatant.GetAttackerParams(Element attackElement)
+        {
+            return new AttackerParams
+            {
+                CultivationLevel = (int)(state?.CultivationLevel ?? Core.CultivationLevel.None),
+                Strength = (int)(state?.BodyStrength ?? 10),
+                Agility = (int)(state?.BodyStrength ?? 10),
+                Intelligence = (int)(state?.Intelligence ?? 10),
+                Penetration = 0,
+                AttackElement = attackElement,
+                CombatSubtype = CombatSubtype.MeleeStrike,
+                TechniqueLevel = 1,
+                TechniqueGrade = TechniqueGrade.Common,
+                IsUltimate = false,
+                IsQiTechnique = false
+            };
+        }
+        
+        DefenderParams ICombatant.GetDefenderParams()
+        {
+            return new DefenderParams
+            {
+                CultivationLevel = (int)(state?.CultivationLevel ?? Core.CultivationLevel.None),
+                CurrentQi = state?.CurrentQi ?? 0,
+                QiDefense = qiController != null ? qiController.QiDefense : QiDefenseType.RawQi,
+                Agility = (int)(state?.BodyStrength ?? 10),
+                Strength = (int)(state?.BodyStrength ?? 10),
+                ArmorCoverage = 0f,
+                DamageReduction = 0f,
+                ArmorValue = 0,
+                DodgePenalty = 0f,
+                ParryBonus = 0f,
+                BlockBonus = 0f,
+                BodyMaterial = bodyController?.BodyMaterial ?? BodyMaterial.Organic,
+                DefenderElement = Element.Neutral
+            };
+        }
         
         // === Unity Lifecycle ===
         
@@ -90,6 +243,12 @@ namespace CultivationGame.NPC
             
             // FIX NPC-H02: Get TimeController for lifespan
             ServiceLocator.Request<TimeController>(tc => timeController = tc);
+            
+            // Подписка на BodyController.OnDeath для автоматической смерти NPC
+            if (bodyController != null)
+            {
+                bodyController.OnDeath += OnBodyDeath;
+            }
             
             // GAP-4: Авторегистрация в WorldController
             // ServiceLocator.Request<WorldController> может не сработать (регистрация закомментирована),
@@ -275,34 +434,45 @@ namespace CultivationGame.NPC
             state.CurrentQi = 0;
             
             OnNPCDeath?.Invoke(this);
+            OnDeath?.Invoke(); // ICombatant event
             
             Debug.Log($"NPC {state.Name} died from {cause}");
         }
         
         // FIX NPC-H03: TakeDamage notifies AI of attacker (2026-04-11)
+        // Редактировано: 2026-04-30 — Помечен Obsolete, используйте ICombatant.TakeDamage()
         /// <summary>
-        /// Нанести урон NPC.
+        /// Нанести урон NPC (устаревший метод).
+        /// Для боевого пайплайна используйте ICombatant.TakeDamage(BodyPartType, float).
+        /// Этот метод оставлен для обратной совместимости.
         /// </summary>
-        /// <param name="damage">Amount of damage</param>
-        /// <param name="attackerId">ID of the attacker (used to notify AI)</param>
+        [Obsolete("Use ICombatant.TakeDamage(BodyPartType, float) through CombatManager.")]
         public void TakeDamage(int damage, string attackerId = "")
         {
             if (!state.IsAlive) return;
             
-            // Уменьшаем здоровье
-            state.CurrentHealth -= damage;
+            // Направляем через пайплайн, если BodyController доступен
+            if (bodyController != null)
+            {
+                bodyController.TakeDamageRandom(damage);
+                SyncHealthFromBody();
+            }
+            else
+            {
+                state.CurrentHealth -= damage;
+            }
             
             // FIX NPC-H03: Notify AI controller of attacker
             if (!string.IsNullOrEmpty(attackerId) && aiController != null)
             {
-                // Add threat proportional to damage
                 float threatLevel = damage * 0.5f;
                 aiController.AddThreat(attackerId, threatLevel);
             }
             
-            if (state.CurrentHealth <= 0)
+            OnDamageTaken?.Invoke(damage);
+            
+            if (!CheckAlive())
             {
-                state.CurrentHealth = 0;
                 Die("combat");
             }
         }
@@ -532,12 +702,51 @@ namespace CultivationGame.NPC
             return controller;
         }
 
+        // === Health Sync ===
+        
+        /// <summary>
+        /// Синхронизировать HP из BodyController в NPCState.
+        /// BodyController — источник истины для HP, но NPCState хранит CurrentHealth.
+        /// </summary>
+        private void SyncHealthFromBody()
+        {
+            if (bodyController != null && state != null)
+            {
+                state.CurrentHealth = (int)(bodyController.HealthPercent * state.MaxHealth);
+            }
+        }
+        
+        /// <summary>
+        /// Проверить, жив ли NPC (по BodyController если есть, иначе по state).
+        /// </summary>
+        private bool CheckAlive()
+        {
+            if (bodyController != null)
+                return bodyController.IsAlive;
+            return state.CurrentHealth > 0;
+        }
+        
         // GAP-4: Отписка от WorldController при уничтожении
         private void OnDestroy()
         {
             var wc = FindFirstObjectByType<WorldController>();
             if (wc != null)
                 wc.UnregisterNPC(NpcId);
+            
+            // Отписка от BodyController events
+            if (bodyController != null)
+            {
+                bodyController.OnDeath -= OnBodyDeath;
+            }
+        }
+        
+        /// <summary>
+        /// Обработчик смерти тела — вызывает NPC Die().
+        /// </summary>
+        private void OnBodyDeath()
+        {
+            if (state.IsAlive)
+                Die("combat");
         }
         
         // === Save/Load ===

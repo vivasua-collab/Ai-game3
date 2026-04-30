@@ -183,6 +183,7 @@ namespace CultivationGame.Editor
             var technique = go.AddComponent<TechniqueController>();
             var visual = go.AddComponent<NPCVisual>();
             var interactable = go.AddComponent<NPCInteractable>();
+            var movement = go.AddComponent<NPCMovement>();
 
             // 4. Физика: Rigidbody2D
             var rb = go.AddComponent<Rigidbody2D>();
@@ -201,7 +202,31 @@ namespace CultivationGame.Editor
             soAI.FindProperty("decisionInterval").floatValue = 1f;
             soAI.FindProperty("aggroRange").floatValue = 10f;
             soAI.FindProperty("fleeHealthThreshold").floatValue = 0.2f;
+            soAI.FindProperty("attackRange").floatValue = 1.5f;
+            soAI.FindProperty("attackCooldown").floatValue = 1.5f;
             soAI.ApplyModifiedProperties();
+
+            // 6a. Настройка NPCMovement — домашняя позиция и скорость по роли
+            movement.SetHomePosition(position);
+            float roleSpeed = role switch
+            {
+                NPCRole.Monster => 4f,
+                NPCRole.Enemy => 3.5f,
+                NPCRole.Guard => 2.5f,
+                NPCRole.Cultivator => 2f,
+                NPCRole.Elder => 1.5f,
+                NPCRole.Merchant => 1.5f,
+                _ => 2.5f
+            };
+            movement.SetBaseSpeed(roleSpeed);
+            movement.SetWanderRadius(role switch
+            {
+                NPCRole.Monster => 8f,
+                NPCRole.Guard => 6f,
+                NPCRole.Merchant => 3f,
+                NPCRole.Elder => 2f,
+                _ => 5f
+            });
 
             // 7. Инициализируем NPCController из GeneratedNPC
             controller.InitializeFromGenerated(generated);

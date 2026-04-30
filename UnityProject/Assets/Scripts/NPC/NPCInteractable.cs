@@ -14,6 +14,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using CultivationGame.Core;
+using CultivationGame.Combat;
 using CultivationGame.Generators;
 using CultivationGame.Interaction;
 
@@ -277,8 +278,41 @@ namespace CultivationGame.NPC
                 RelationshipChange = -50
             };
 
-            // Урон NPC
-            npcController.TakeDamage(10, "player");
+            // Получаем ICombatant для NPC и Player
+            ICombatant npcCombatant = npcController as ICombatant;
+            var playerObj = player?.GetComponent<CultivationGame.Player.PlayerController>();
+            ICombatant playerCombatant = playerObj as ICombatant;
+            
+            if (npcCombatant != null && playerCombatant != null)
+            {
+                CombatManager cm = CombatManager.Instance;
+                if (cm != null)
+                {
+                    // Инициируем бой и наносим базовую атаку через полный пайплайн
+                    cm.InitiateCombat(playerCombatant, npcCombatant);
+                    AttackResult attackResult = cm.ExecuteBasicAttack(playerCombatant, npcCombatant);
+                    
+                    if (attackResult.Success)
+                    {
+                        result.Message = $"Вы атакуете {npcController.NpcName}! Урон: {attackResult.Damage.FinalDamage:F1}";
+                    }
+                }
+                else
+                {
+                    // Fallback: CombatManager не найден — используем старый метод
+#pragma warning disable CS0618
+                    npcController.TakeDamage(10, "player");
+#pragma warning restore CS0618
+                }
+            }
+            else
+            {
+                // Fallback: нет ICombatant — старый метод
+#pragma warning disable CS0618
+                npcController.TakeDamage(10, "player");
+#pragma warning restore CS0618
+            }
+
             npcController.ModifyRelationship("player", result.RelationshipChange);
 
             return result;

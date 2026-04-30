@@ -168,3 +168,57 @@ Stage Summary:
 - 1567 строк добавлено, 3 удалено
 - Хоткеи NPC: Ctrl+N (1 случайный), Ctrl+Shift+N (5 ролей), Ctrl+F5 (Merchant), Ctrl+F6 (Monster)
 - Известные ограничения: AI движения stub, DialogueSystem заглушка
+
+---
+Task ID: 5
+Agent: main
+Task: Внедрение базовой системы движения NPC и боевой системы по плану checkpoints/04_30_npc_movement_combat_plan.md
+
+Work Log:
+- Прочитан чекпоинт 04_30_npc_movement_combat_plan.md — 4 чекпоинта (Movement, ICombatant, Attack, Response)
+- Проведён полный аудит 30+ файлов: NPCController, NPCAI, NPCVisual, NPCInteractable, CombatManager, DamageCalculator, HitDetector, DefenseProcessor, BodyController, QiController, PlayerController, NPCSceneSpawner, Phase19NPCPlacement, NPCData
+- Создан детальный чекпоинт внедрения: checkpoints/04_30_npc_movement_combat_impl.md
+- СОЗДАН NPCMovement.cs (~308 строк): компонент движения через Rigidbody2D
+  - MoveTo, WanderAround, FleeFrom, FollowTarget, Stop
+  - Flip спрайта по направлению движения
+  - Паузы при блуждании, домашняя позиция
+- ОТРЕДАКТИРОВАН NPCController.cs (+208 строк): реализация ICombatant
+  - Явная реализация интерфейса (как PlayerController)
+  - TakeDamage(BodyPartType, float) через BodyController
+  - TakeDamageRandom(float) через BodyController
+  - SpendQi/AddQi через QiController
+  - GetAttackerParams/GetDefenderParams
+  - OnDeath/OnDamageTaken/OnQiChanged events
+  - SyncHealthFromBody() — синхронизация BodyController→NPCState
+  - CheckAlive() — проверка через BodyController
+  - OnBodyDeath() — обработчик смерти тела
+  - Старый TakeDamage(int, string) → [Obsolete] с пайплайном
+- ОТРЕДАКТИРОВАН NPCAI.cs (+240 строк): реализация ExecuteXxx через NPCMovement + CombatManager
+  - ExecuteWandering → NPCMovement.WanderAround()
+  - ExecutePatrolling → NPCMovement.MoveTo(patrolPoint) с индексом
+  - ExecuteFollowing → NPCMovement.FollowTarget()
+  - ExecuteFleeing → NPCMovement.FleeFrom(threat.position) + 10с таймер
+  - ExecuteAttacking → подход к цели + PerformAttack() через CombatManager
+  - PerformAttack() — CombatManager.InitiateCombat + ExecuteBasicAttack
+  - FindTargetTransform() — разрешение цели по ID (player + NPC)
+  - CheckAggroRadius() — Physics2D.OverlapCircle для Hostile/Hatred NPC
+  - attackCooldown, attackRange, chaseSpeedMultiplier, playerLayerMask
+  - Stop() при Idle/Cultivating/Resting
+- ОТРЕДАКТИРОВАН NPCInteractable.cs: HandleAttack через CombatManager
+  - ICombatant приведение для NPC и Player
+  - CombatManager.InitiateCombat + ExecuteBasicAttack
+  - Fallback на старый TakeDamage при отсутствии CombatManager
+- ОТРЕДАКТИРОВАН NPCSceneSpawner.cs:
+  - +NPCMovement при спавне
+  - HomePosition, скорость и радиус блуждания по роли (Monster 4f/8f, Elder 1.5f/2f)
+  - attackRange/attackCooldown через SerializedObject
+
+Stage Summary:
+- 1 новый файл: NPCMovement.cs (308 строк)
+- 4 отредактированных файла: NPCController.cs, NPCAI.cs, NPCInteractable.cs, NPCSceneSpawner.cs
+- NPC теперь реализует ICombatant — участвует в 10-слойном пайплайне урона
+- NPC двигается: блуждание, патруль, следование, бегство, подход к цели
+- NPC атакует: через CombatManager.ExecuteBasicAttack с кулдауном
+- NPC обнаруживает игрока: aggro radius для Hostile/Hatred NPC
+- Player→NPC атака: через CombatManager вместо хардкода TakeDamage(10)
+- Чекпоинт: checkpoints/04_30_npc_movement_combat_impl.md

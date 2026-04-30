@@ -5,12 +5,14 @@
 // Создано: 2026-03-30 10:00:00 UTC
 // Редактировано: 2026-04-11 00:00:00 UTC — Fix-07
 // Редактировано: 2026-04-30 07:55:00 UTC — NPCVisual feedback при смене AI-состояния
+// Редактировано: 2026-04-30 09:55:00 UTC — ExecuteXxx через NPCMovement + CombatManager, AggroRadius, TargetResolution
 // ============================================================================
 
 using System;
 using System.Collections.Generic;
 using UnityEngine;
 using CultivationGame.Core;
+using CultivationGame.Combat;
 using CultivationGame.Qi;
 
 namespace CultivationGame.NPC
@@ -22,13 +24,15 @@ namespace CultivationGame.NPC
     {
         [Header("Config")]
         [SerializeField] private float decisionInterval = 1f;
-#pragma warning disable CS0414
         [SerializeField] private float aggroRange = 10f;
-#pragma warning restore CS0414
         [SerializeField] private float fleeHealthThreshold = 0.2f;
-#pragma warning disable CS0414
         [SerializeField] private float detectionRange = 15f;
-#pragma warning restore CS0414
+        
+        [Header("Combat")]
+        [SerializeField] private float attackRange = 1.5f;
+        [SerializeField] private float attackCooldown = 1.5f;
+        [SerializeField] private float chaseSpeedMultiplier = 1.2f;
+        [SerializeField] private LayerMask playerLayerMask = -1;
         
         [Header("Personality Modifiers")]
         [SerializeField] private float aggressiveness = 0.5f;    // 0-1
@@ -39,10 +43,17 @@ namespace CultivationGame.NPC
         // === Runtime ===
         private NPCController npcController;
         private NPCVisual npcVisual;
+        private NPCMovement npcMovement;
         private NPCState state;
         private float decisionTimer;
         private List<string> knownTargets = new List<string>();
         private Dictionary<string, float> threatLevels = new Dictionary<string, float>();
+        
+        // Combat Runtime
+        private float lastAttackTime = -999f;
+        private Transform cachedTargetTransform;
+        private float aggroCheckTimer = 0f;
+        private float aggroCheckInterval = 0.5f;
         
         // FIX NPC-M01: Threat decay tracking
         private float threatDecayTimer = 0f;
@@ -51,9 +62,7 @@ namespace CultivationGame.NPC
         
         // === Patrol ===
         private Vector3[] patrolPoints;
-#pragma warning disable CS0414
         private int currentPatrolIndex;
-#pragma warning restore CS0414
         
         // FIX NPC-ATT-02: Store personality traits for behavior weights
         private PersonalityTrait personalityFlags = PersonalityTrait.None;
@@ -72,6 +81,7 @@ namespace CultivationGame.NPC
         {
             npcController = GetComponent<NPCController>();
             npcVisual = GetComponent<NPCVisual>();
+            npcMovement = GetComponent<NPCMovement>();
         }
         
         private void Start()
@@ -94,6 +104,9 @@ namespace CultivationGame.NPC
             
             // FIX NPC-M01: Decay threat levels over time
             DecayThreats();
+            
+            // Aggro Radius: обнаружение игрока
+            CheckAggroRadius();
             
             ExecuteCurrentState();
         }
@@ -335,6 +348,10 @@ namespace CultivationGame.NPC
         
         private void ExecuteIdle()
         {
+            // Останавливаем движение
+            if (npcMovement != null && npcMovement.IsMoving)
+                npcMovement.Stop();
+            
             // Ничего не делаем, ждём
             if (state.StateTimer > 5f)
             {
@@ -344,30 +361,67 @@ namespace CultivationGame.NPC
         
         private void ExecuteWandering()
         {
-            // Случайное блуждание
-            // Реальное движение будет реализовано с NavMesh
+            if (npcMovement == null) return;
+            
+            // Блуждание вокруг домашней позиции
+            npcMovement.WanderAround(npcMovement.HomePosition);
         }
         
         private void ExecutePatrolling()
         {
-            if (patrolPoints == null || patrolPoints.Length == 0) return;
+            if (npcMovement == null) return;
+            if (patrolPoints == null || patrolPoints.Length == 0)
+            {
+                // Нет точек патруля — блуждаем
+                ExecuteWandering();
+                return;
+            }
             
-            // Переход к следующей точке патруля
-            // Реальное движение с NavMesh
+            // Двигаемся к текущей точке патруля
+            Vector3 target = patrolPoints[currentPatrolIndex];
+            npcMovement.MoveTo(target);
+            
+            // Если достигли — переходим к следующей
+            if (npcMovement.HasReachedTarget(target))
+            {
+                currentPatrolIndex = (currentPatrolIndex + 1) % patrolPoints.Length;
+            }
         }
         
         private void ExecuteFollowing()
         {
+            if (npcMovement == null) return;
             if (string.IsNullOrEmpty(state.TargetId)) return;
             
-            // Следование за целью
+            Transform target = FindTargetTransform(state.TargetId);
+            if (target != null)
+            {
+                npcMovement.FollowTarget(target, stopDistance: 1.5f);
+            }
         }
         
         private void ExecuteFleeing()
         {
-            // Бегство от угрозы
+            if (npcMovement == null) return;
+            
+            // Определяем, от чего убегаем
+            string threatId = GetHighestThreat();
+            Transform threat = FindTargetTransform(threatId);
+            
+            if (threat != null)
+            {
+                npcMovement.FleeFrom(threat.position);
+            }
+            else
+            {
+                // Угроза не найдена — убегаем от последней известной позиции
+                npcMovement.FleeFrom(state.LastKnownPosition);
+            }
+            
+            // Через 10с без урона — пытаемся спрятаться (Idle)
             if (state.StateTimer > 10f)
             {
+                npcMovement.Stop();
                 ChangeState(NPCAIState.Idle);
             }
         }
@@ -380,7 +434,38 @@ namespace CultivationGame.NPC
                 return;
             }
             
-            // Атака цели через CombatSystem
+            Transform target = FindTargetTransform(state.TargetId);
+            if (target == null)
+            {
+                // Цель потеряна
+                ChangeState(NPCAIState.Idle);
+                return;
+            }
+            
+            float dist = Vector3.Distance(transform.position, target.position);
+            
+            if (dist > attackRange)
+            {
+                // Подходим к цели
+                if (npcMovement != null)
+                {
+                    float chaseSpeed = npcMovement.BaseSpeed * chaseSpeedMultiplier;
+                    npcMovement.MoveTo(target.position, chaseSpeed);
+                }
+            }
+            else
+            {
+                // В зоне атаки — останавливаемся и атакуем
+                if (npcMovement != null)
+                    npcMovement.Stop();
+                
+                // Проверяем кулдаун атаки
+                if (Time.time - lastAttackTime >= attackCooldown)
+                {
+                    lastAttackTime = Time.time;
+                    PerformAttack(target);
+                }
+            }
         }
         
         // FIX NPC-M02: Qi restoration proportional to conductivity (2026-04-11)
@@ -390,6 +475,10 @@ namespace CultivationGame.NPC
         /// </summary>
         private void ExecuteCultivating()
         {
+            // Останавливаем движение при культивации
+            if (npcMovement != null && npcMovement.IsMoving)
+                npcMovement.Stop();
+            
             if (state.StateTimer > 30f)
             {
                 // Base Qi recovery, scaled by conductivity
@@ -411,6 +500,10 @@ namespace CultivationGame.NPC
         
         private void ExecuteResting()
         {
+            // Останавливаем движение при отдыхе
+            if (npcMovement != null && npcMovement.IsMoving)
+                npcMovement.Stop();
+            
             // Отдых — восстановление здоровья и выносливости
             if (state.StateTimer > 20f)
             {
@@ -636,5 +729,158 @@ namespace CultivationGame.NPC
             ambition = Mathf.Clamp01(ambition);
         }
 #pragma warning restore CS0618 // Disposition obsolete
+        
+        // === Combat System ===
+        
+        /// <summary>
+        /// Выполнить атаку по цели через CombatManager.
+        /// </summary>
+        private void PerformAttack(Transform target)
+        {
+            if (npcController == null) return;
+            
+            ICombatant npcCombatant = npcController as ICombatant;
+            ICombatant targetCombatant = target.GetComponent<ICombatant>();
+            
+            if (npcCombatant == null || targetCombatant == null)
+            {
+                Debug.LogWarning($"[NPCAI] Cannot attack: NPC or target is not ICombatant");
+                return;
+            }
+            
+            CombatManager cm = CombatManager.Instance;
+            if (cm == null)
+            {
+                Debug.LogWarning("[NPCAI] CombatManager not found — cannot attack");
+                return;
+            }
+            
+            // Если бой ещё не начат — инициируем
+            if (!cm.IsInCombat || !cm.IsCombatantInCombat(npcCombatant))
+            {
+                cm.InitiateCombat(npcCombatant, targetCombatant);
+            }
+            
+            // Выполняем базовую атаку через полный пайплайн
+            AttackResult result = cm.ExecuteBasicAttack(npcCombatant, targetCombatant);
+            
+            if (result.Success)
+            {
+                Debug.Log($"[NPCAI] {npcController.NpcName} атакует {targetCombatant.Name}: " +
+                          $"урон={result.Damage.FinalDamage:F1}");
+            }
+        }
+        
+        /// <summary>
+        /// Найти Transform цели по ID.
+        /// Поддерживает: "player" → GameObject.Find("Player")
+        /// Для NPC целей — поиск по NPCController.NpcId
+        /// </summary>
+        public Transform FindTargetTransform(string targetId)
+        {
+            if (string.IsNullOrEmpty(targetId)) return null;
+            
+            // Проверяем кэш
+            if (cachedTargetTransform != null && cachedTargetTransform.gameObject.activeInHierarchy)
+            {
+                // Проверяем, что кэшированная цель совпадает
+                var npcCtrl = cachedTargetTransform.GetComponent<NPCController>();
+                if (npcCtrl != null && npcCtrl.NpcId == targetId)
+                    return cachedTargetTransform;
+                
+                var playerCtrl = cachedTargetTransform.GetComponent<Player.PlayerController>();
+                if (playerCtrl != null && targetId == "player")
+                    return cachedTargetTransform;
+            }
+            
+            Transform found = null;
+            
+            // Специальный случай: игрок
+            if (targetId == "player")
+            {
+                var playerObj = GameObject.Find("Player");
+                if (playerObj != null)
+                    found = playerObj.transform;
+            }
+            else
+            {
+                // Поиск по NPCController.NpcId
+                var allNPCs = FindObjectsByType<NPCController>(FindObjectsSortMode.None);
+                foreach (var npc in allNPCs)
+                {
+                    if (npc.NpcId == targetId && npc.IsAlive)
+                    {
+                        found = npc.transform;
+                        break;
+                    }
+                }
+            }
+            
+            // Кэшируем результат
+            if (found != null)
+                cachedTargetTransform = found;
+            
+            return found;
+        }
+        
+        // === Aggro Radius ===
+        
+        /// <summary>
+        /// Проверить aggro radius — обнаружение игрока в зоне агрессии.
+        /// Monster/Enemy атакуют при Attitude.Hostile/Hatred.
+        /// Guard/Elder атакуют только при провокации (через Threat).
+        /// </summary>
+        private void CheckAggroRadius()
+        {
+            if (state == null) return;
+            
+            // Не проверяем, если уже в бою или уже атакуем/убегаем
+            if (CurrentState == NPCAIState.Attacking || CurrentState == NPCAIState.Fleeing)
+                return;
+            
+            aggroCheckTimer += Time.deltaTime;
+            if (aggroCheckTimer < aggroCheckInterval)
+                return;
+            aggroCheckTimer = 0f;
+            
+            // Проверяем агрессию только для враждебных NPC
+            if (state.Attitude != Attitude.Hostile && state.Attitude != Attitude.Hatred)
+                return;
+            
+            // Поиск игрока через Physics2D.OverlapCircle
+            Collider2D[] hits = Physics2D.OverlapCircleAll(transform.position, aggroRange, playerLayerMask);
+            
+            foreach (var hit in hits)
+            {
+                var playerCombatant = hit.GetComponent<Player.PlayerController>();
+                if (playerCombatant != null && playerCombatant.IsAlive)
+                {
+                    // Игрок в зоне агрессии!
+                    state.TargetId = "player";
+                    state.LastKnownPosition = playerCombatant.transform.position;
+                    AddThreat("player", 30f); // Базовая угроза при обнаружении
+                    
+                    // Решаем: атаковать или бежать
+                    if (aggressiveness > cautiousness)
+                    {
+                        ChangeState(NPCAIState.Attacking);
+                    }
+                    else
+                    {
+                        ChangeState(NPCAIState.Fleeing);
+                    }
+                    
+                    return;
+                }
+            }
+        }
+        
+        /// <summary>
+        /// Установить слой для обнаружения игрока.
+        /// </summary>
+        public void SetPlayerLayerMask(LayerMask mask)
+        {
+            playerLayerMask = mask;
+        }
     }
 }
