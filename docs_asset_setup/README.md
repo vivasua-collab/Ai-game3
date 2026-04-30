@@ -71,6 +71,12 @@
 | [18_InventoryUI.md](./18_InventoryUI.md) | InventoryScreen + BodyDoll + Backpack + Tooltip + DragDrop + ContextMenu + SpiritStorage + StorageRing (вручную wiring) | Вручную |
 | [18_InventoryUI_SemiAuto.md](./18_InventoryUI_SemiAuto.md) | InventoryScreen + BodyDoll + Backpack + Tooltip + DragDrop + ContextMenu + SpiritStorage + StorageRing — ~150 wiring автоматически | Полуавтомат |
 
+### NPC
+
+| Файл | Что создаёт | Способ |
+|------|-------------|--------|
+| [19_NPCPlacement.md](./19_NPCPlacement.md) | 7 NPC на тестовой поляне (Merchant, Guard×2, Elder, Cultivator, Monster×2) + hotkey-спавн | Полуавтомат |
+
 ---
 
 ## 🤖 Инструменты автоматизации
@@ -80,7 +86,7 @@
 **Скрипт:** `Editor/FullSceneBuilder.cs`
 **Меню:** `Tools → Full Scene Builder → Build All (One Click)`
 
-Инкрементальный генератор полной сцены. Выполняет 18 фаз, каждая идемпотентна
+Инкрементальный генератор полной сцены. Выполняет 20 фаз (00–19), каждая идемпотентна
 (повторный запуск безопасен — пропускает уже выполненные фазы).
 
 #### Фазы
@@ -105,6 +111,7 @@
 | 16 | Inventory Data | BackpackData (5 рюкзаков) + StorageRingData (4 кольца) + volume/allowNesting для ItemData |
 | 17 | Inventory UI | InventoryScreen + BodyDoll (7 слотов + wiring) + BackpackPanel (список + вес/объём + wiring) + Tooltip + DragDrop + ContextMenu + SpiritStorage + StorageRing — ~152 wiring операции автоматически |
 | 18 | Inventory Components | SpiritStorageController + StorageRingController на Player + подключение UI |
+| 19 | NPC Placement | 7 NPC на тестовой поляне (Merchant, Guard×2, Elder, Cultivator, Monster×2) + NPCAI + патрули |
 
 #### Как использовать
 
@@ -126,6 +133,7 @@ Tools → Full Scene Builder → Phase 15: Configure Test Location
 Tools → Full Scene Builder → Phase 16: Inventory Data
 Tools → Full Scene Builder → Phase 17: Inventory UI
 Tools → Full Scene Builder → Phase 18: Inventory Components
+Tools → Full Scene Builder → Phase 19: NPC Placement
 ```
 
 #### Повторный запуск
@@ -144,7 +152,7 @@ Tools → Full Scene Builder → Phase 18: Inventory Components
 
 | Меню | Скрипт | Назначение |
 |------|--------|------------|
-| `Tools → Full Scene Builder → Build All` | `Editor/FullSceneBuilder.cs` | **Всё за 1 клик (18 фаз)** |
+| `Tools → Full Scene Builder → Build All` | `Editor/FullSceneBuilder.cs` | **Всё за 1 клик (20 фаз)** |
 | `Tools → Full Scene Builder → Phase NN` | `Editor/FullSceneBuilder.cs` | Отдельная фаза |
 | `Window → Asset Generator` | `Editor/AssetGenerator.cs` | Базовые данные |
 | `Window → Asset Generator Extended` | `Editor/AssetGeneratorExtended.cs` | Контент |
@@ -173,6 +181,7 @@ Tools → Full Scene Builder → Phase 18: Inventory Components
 5. **Player** — см. [05_PlayerSetup_SemiAuto.md](./05_PlayerSetup_SemiAuto.md)
 6. **Инвентарь (данные)** — см. [17_InventoryData_SemiAuto.md](./17_InventoryData_SemiAuto.md)
 7. **Инвентарь (UI)** — см. [18_InventoryUI_SemiAuto.md](./18_InventoryUI_SemiAuto.md)
+8. **NPC** — см. [19_NPCPlacement.md](./19_NPCPlacement.md)
 
 ---
 
@@ -186,6 +195,7 @@ Tools → Full Scene Builder → Phase 18: Inventory Components
 | Боевая система | `docs/COMBAT_SYSTEM.md` |
 | Спецификация инвентаря | `docs_temp/INVENTORY_UI_DRAFT.md` |
 | Аудит флагов инвентаря | `docs_temp/INVENTORY_FLAGS_AUDIT.md` |
+| Горячие клавиши | `docs/!hotkeys.md` |
 | Enums проекта | `UnityProject/Assets/Scripts/Core/Enums.cs` |
 | Примеры кода | `docs_examples/` |
 
@@ -199,4 +209,4 @@ Tools → Full Scene Builder → Phase 18: Inventory Components
 
 ---
 
-*Обновлено: 2026-04-25 16:15:00 MSK*
+*Обновлено: 2026-04-30 08:09:40 UTC — добавлена Phase 19: NPC Placement, горячие клавиши*

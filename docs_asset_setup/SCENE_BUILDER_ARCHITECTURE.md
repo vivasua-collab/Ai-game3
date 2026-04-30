@@ -1,8 +1,8 @@
 # Архитектура генерации сцены — Оркестратор + фазовые файлы
 
 **Создано:** 2026-04-17 13:49:14 UTC
-**Редактировано:** 2026-04-29 12:13 UTC
-**Версия:** 2.4
+**Редактировано:** 2026-04-30 08:09:40 UTC
+**Версия:** 2.5
 
 ---
 
@@ -39,7 +39,8 @@ Assets/Scripts/Editor/
     ├── Phase15ConfigureTestLocation.cs  # Фаза 15: Тестовая локация
     ├── Phase16InventoryData.cs          # Фаза 16: Данные инвентаря (Backpack, StorageRing)
     ├── Phase17InventoryUI.cs            # Фаза 17: UI инвентаря (InventoryScreen, панели)
-    └── Phase18InventoryComponents.cs    # Фаза 18: Компоненты инвентаря на Player
+    ├── Phase18InventoryComponents.cs    # Фаза 18: Компоненты инвентаря на Player
+    └── Phase19NPCPlacement.cs           # Фаза 19: Размещение NPC
 ```
 
 ---
@@ -53,7 +54,7 @@ Assets/Scripts/Editor/
 
 ### Что делает
 
-- Регистрирует 19 фаз в массиве `PHASES`
+- Регистрирует 20 фаз (00–19) в массиве `PHASES`
 - Управляет запуском: `IsNeeded()` → `Execute()` → логирование
 - Обрабатывает ошибки: try/catch с диалогом продолжения
 - Предоставляет меню: `Tools → Full Scene Builder → Build All` и отдельные фазы
@@ -79,7 +80,7 @@ public interface IScenePhase
 {
     string Name { get; }       // Короткое имя (для логирования)
     string MenuPath { get; }   // Путь в меню
-    int Order { get; }         // Порядковый номер (1-18)
+    int Order { get; }         // Порядковый номер (0-19)
     bool IsNeeded();           // Проверяет, нужно ли выполнение
     void Execute();            // Выполняет фазу
 }
@@ -133,6 +134,7 @@ public interface IScenePhase
 | 16 | Phase16InventoryData | Inventory Data | BackpackData + StorageRingData .asset файлы | — |
 | 17 | Phase17InventoryUI | Inventory UI | InventoryScreen + BodyDoll + Backpack + Tooltip + DragDrop панели | — |
 | 18 | Phase18InventoryComponents | Inventory Components | SpiritStorage + StorageRing контроллеры на Player | — |
+| 19 | Phase19NPCPlacement | NPC Placement | 7 NPC на тестовой поляне (Merchant, Guard×2, Elder, Cultivator, Monster×2) + NPCAI + патрули | — |
 
 ---
 
@@ -290,6 +292,56 @@ GameUI/
 **IsNeeded():** Проверяет наличие `SpiritStorageController` на Player
 
 **Зависимости:** Phase06Player (Player существует), Phase17InventoryUI (UI существует)
+
+---
+
+## Фаза 19: NPC Placement — Детализация
+
+Фаза 19 реализует систему размещения NPC на тестовой поляне.
+Документация: `docs_asset_setup/19_NPCPlacement.md`
+Горячие клавиши: `docs/!hotkeys.md`
+
+### Phase19NPCPlacement
+
+**Что делает:**
+- Спавнит 7 NPC на фиксированных позициях тестовой поляны
+- Вызывает `NPCSceneSpawner.SpawnNPCInScene()` для каждого NPC
+- Для Guard автоматически настраивает 4 точки патруля (квадрат)
+
+**IsNeeded():** Проверяет наличие объектов с тегом «NPC» на сцене
+
+**Зависимости:** Phase02TagsLayers (тег NPC), Phase06Player (Player), Phase09GenerateAssets (NPCPresets)
+
+**Размещение NPC:**
+
+| Роль | Уровень | Позиция (X, Y) | Локация |
+|---|---|---|---|
+| Merchant | 2 | (3, -2) | Центр деревни |
+| Guard | 3 | (8, 0) | Вход |
+| Guard | 2 | (-5, 3) | Патруль |
+| Elder | 5 | (-3, -4) | Дом старейшины |
+| Cultivator | 4 | (5, 5) | Площадка культивации |
+| Monster | 1 | (-10, -8) | Окраина |
+| Monster | 2 | (12, -10) | Окраина |
+
+**Компоненты каждого NPC:**
+```
+NPC_[Name]:
+├── NPCController (InitializeFromGenerated)
+├── NPCAI (state по роли)
+├── BodyController
+├── QiController
+├── TechniqueController
+├── NPCVisual (цвет по роли)
+├── NPCInteractable
+├── Rigidbody2D (Dynamic, gravity=0)
+└── CircleCollider2D (solid, r=0.5)
+```
+
+**Дополнительные инструменты (NPCSceneSpawner.cs):**
+- Hotkey-спавн: Ctrl+N, Ctrl+Shift+N, Ctrl+F5, Ctrl+F6
+- Меню: `Tools → NPC → Spawn In Scene → ...`
+- Очистка: `Tools → NPC → Clear All NPCs`
 
 ---
 
