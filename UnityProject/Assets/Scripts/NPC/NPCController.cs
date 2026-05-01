@@ -5,6 +5,7 @@
 // Редактировано: 2026-04-11 06:46:00 UTC — Fix-07, NPC-M05: generated.age вместо деривации
 // Редактировано: 2026-04-30 07:48:00 UTC — GAP-4: авторегистрация в WorldController + OnDestroy
 // Редактировано: 2026-04-30 09:45:00 UTC — ICombatant: реализация интерфейса, TakeDamage через пайплайн
+// Редактировано: 2026-05-01 13:02:00 UTC — fix: +using Generators для NPCRole (CS0246)
 // ============================================================================
 //
 // Источник: docs/NPC_AI_SYSTEM.md, docs/QI_SYSTEM.md
@@ -25,6 +26,7 @@ using CultivationGame.Combat;
 using CultivationGame.Qi;
 using CultivationGame.Body;
 using CultivationGame.World;
+using CultivationGame.Generators;  // Редактировано: 2026-05-01 — NPCRole для save/load
 
 namespace CultivationGame.NPC
 {

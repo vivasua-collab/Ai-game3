@@ -2,6 +2,7 @@
 // NPCVisual.cs — Визуальное отображение NPC
 // Cultivation World Simulator
 // Создано: 2026-04-30 07:41:00 UTC
+// Редактировано: 2026-05-01 13:01:00 UTC — fix: enableWordWrapping → textWrappingMode (CS0618)
 // ============================================================================
 //
 // Создаёт визуал NPC: спрайт по роли, имя + HP-бар.
@@ -224,7 +225,7 @@ namespace CultivationGame.NPC
             nameLabel.alignment = TMPro.TextAlignmentOptions.Center;
             nameLabel.color = Color.white;
             nameLabel.overflowMode = TMPro.TextOverflowModes.Ellipsis;
-            nameLabel.enableWordWrapping = false;
+            nameLabel.textWrappingMode = TMPro.TextWrappingMode.NoWrap;
 
             var textRect = textObj.GetComponent<RectTransform>();
             textRect.anchorMin = Vector2.zero;

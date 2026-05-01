@@ -2,6 +2,7 @@
 // NPCMovement.cs — Компонент движения NPC
 // Cultivation World Simulator
 // Создано: 2026-04-30 09:40:00 UTC
+// Редактировано: 2026-05-01 13:02:00 UTC — fix: Vector2.z → убрано обращение к .z (CS1061)
 // ============================================================================
 //
 // Управляет перемещением NPC через Rigidbody2D.linearVelocity.
@@ -82,7 +83,6 @@ namespace CultivationGame.NPC
             if (speed <= 0f) speed = baseSpeed;
 
             Vector2 direction = (target - transform.position);
-            direction.z = 0f;
 
             // Если достаточно близко — останавливаемся
             if (direction.magnitude <= reachThreshold)
@@ -134,7 +134,6 @@ namespace CultivationGame.NPC
 
             // Двигаемся к текущей цели
             Vector2 direction = (currentTarget - transform.position);
-            direction.z = 0f;
 
             if (direction.magnitude <= reachThreshold)
             {
@@ -164,7 +163,6 @@ namespace CultivationGame.NPC
             if (speed <= 0f) speed = baseSpeed * fleeSpeedMultiplier;
 
             Vector2 direction = (transform.position - source);
-            direction.z = 0f;
 
             if (direction.magnitude < 0.01f)
             {
@@ -200,7 +198,6 @@ namespace CultivationGame.NPC
             if (speed <= 0f) speed = baseSpeed * chaseSpeedMultiplier;
 
             Vector2 direction = (target.position - transform.position);
-            direction.z = 0f;
 
             if (direction.magnitude <= stopDistance)
             {

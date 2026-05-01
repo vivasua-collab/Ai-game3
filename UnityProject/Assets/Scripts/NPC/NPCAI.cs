@@ -6,6 +6,7 @@
 // Редактировано: 2026-04-11 00:00:00 UTC — Fix-07
 // Редактировано: 2026-04-30 07:55:00 UTC — NPCVisual feedback при смене AI-состояния
 // Редактировано: 2026-04-30 09:55:00 UTC — ExecuteXxx через NPCMovement + CombatManager, AggroRadius, TargetResolution
+// Редактировано: 2026-05-01 13:03:00 UTC — fix: detectionRange CS0414 warning suppressed
 // ============================================================================
 
 using System;
@@ -26,7 +27,9 @@ namespace CultivationGame.NPC
         [SerializeField] private float decisionInterval = 1f;
         [SerializeField] private float aggroRange = 10f;
         [SerializeField] private float fleeHealthThreshold = 0.2f;
+#pragma warning disable CS0414  // TODO: использовать для не-боевого обнаружения
         [SerializeField] private float detectionRange = 15f;
+#pragma warning restore CS0414
         
         [Header("Combat")]
         [SerializeField] private float attackRange = 1.5f;
