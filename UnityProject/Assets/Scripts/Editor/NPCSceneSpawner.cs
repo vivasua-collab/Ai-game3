@@ -47,15 +47,15 @@ namespace CultivationGame.Editor
         //  МЕНЮ: СПАВН В СЦЕНУ
         // ================================================================
 
-        /// Спавн 1 случайного NPC рядом с Player [Ctrl+N]
-        [MenuItem("Tools/NPC/Spawn In Scene/Random NPC _%n", false, 30)]
+        /// Спавн 1 случайного NPC рядом с Player [Ctrl+Alt+N]
+        [MenuItem("Tools/NPC/Spawn In Scene/Random NPC _%#n", false, 30)]
         public static void SpawnRandomNPC()
         {
             SpawnNPCNearPlayer(NPCRole.Passerby, 0);
         }
 
-        /// Спавн 5 NPC разных ролей рядом с Player [Ctrl+Shift+N]
-        [MenuItem("Tools/NPC/Spawn In Scene/5 Random NPCs _%#n", false, 31)]
+        /// Спавн 5 NPC разных ролей рядом с Player [Ctrl+Shift+Alt+N]
+        [MenuItem("Tools/NPC/Spawn In Scene/5 Random NPCs _%#&n", false, 31)]
         public static void Spawn5RandomNPCs()
         {
             var roles = new[] { NPCRole.Merchant, NPCRole.Guard, NPCRole.Cultivator, NPCRole.Elder, NPCRole.Monster };
