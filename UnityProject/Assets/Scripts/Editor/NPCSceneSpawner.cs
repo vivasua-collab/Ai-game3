@@ -25,6 +25,7 @@ using CultivationGame.Generators;
 using CultivationGame.NPC;
 using CultivationGame.Body;
 using CultivationGame.Qi;
+using CultivationGame.Combat;  // Редактировано: 2026-05-01 — TechniqueController
 
 namespace CultivationGame.Editor
 {
