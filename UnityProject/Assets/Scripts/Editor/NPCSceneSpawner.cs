@@ -186,8 +186,9 @@ namespace CultivationGame.Editor
             var interactable = go.AddComponent<NPCInteractable>();
             var movement = go.AddComponent<NPCMovement>();
 
-            // 4. Физика: Rigidbody2D
-            var rb = go.AddComponent<Rigidbody2D>();
+            // 4. Физика: Rigidbody2D (уже добавлен через RequireComponent у NPCMovement)
+            var rb = go.GetComponent<Rigidbody2D>();
+            if (rb == null) rb = go.AddComponent<Rigidbody2D>(); // fallback если RequireComponent не сработал
             rb.bodyType = RigidbodyType2D.Dynamic;
             rb.gravityScale = 0f;
             rb.freezeRotation = true;
