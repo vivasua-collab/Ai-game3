@@ -1,35 +1,17 @@
 // ============================================================================
-// FullSceneBuilder.cs — Оркестратор сборки сцены (v2.0)
+// FullSceneBuilder.cs — Оркестратор сборки сцены (v2.1)
 // Cultivation World Simulator
 // ============================================================================
-// Версия: 2.0 — Рефакторинг: монолит → оркестратор + отдельные файлы фаз
+// Версия: 2.1 — Добавлена система детального логирования:
+//   - Лог-файл: Logs/SceneBuilder_{timestamp}.log
+//   - Детальный отчёт по каждой фазе (IsNeeded reason, timing, results)
+//   - Сводная таблица в конце: фаза | статус | время | причина
+//   - При повторном запуске: показывает какие фазы выполняются повторно
 //
 // АРХИТЕКТУРА:
 //   20 фаз, каждая в отдельном файле (Assets/Scripts/Editor/SceneBuilder/).
 //   Каждая фаза реализует IScenePhase — IsNeeded() + Execute().
 //   Оркестратор регистрирует фазы и управляет их запуском.
-//
-//   Все 12 патчей из ScenePatchBuilder.cs объединены в соответствующие фазы:
-//     PATCH-001, PATCH-011 → Phase02TagsLayers
-//     PATCH-002, PATCH-005, PATCH-006, PATCH-007 → Phase08Tilemap
-//     PATCH-003 → Phase06Player
-//     PATCH-004, PATCH-009, PATCH-010 → Phase04CameraLight
-//     PATCH-008 → SceneBuilderUtils.CleanMissingPrefabs
-//     PATCH-012 → Phase02TagsLayers
-//
-// ФАЙЛЫ:
-//   SceneBuilder/IScenePhase.cs           — Интерфейс фазы
-//   SceneBuilder/SceneBuilderConstants.cs  — Общие константы
-//   SceneBuilder/SceneBuilderUtils.cs      — Общие утилиты
-//   SceneBuilder/Phase00URPSetup.cs           — Фаза 00 (NEW)
-//   SceneBuilder/Phase01Folders.cs         — Фаза 01
-//   SceneBuilder/Phase02TagsLayers.cs      — Фаза 02
-//   ... и т.д. для Phase03-Phase15
-//   SceneBuilder/Phase16InventoryData.cs    — Фаза 16
-//   SceneBuilder/Phase17InventoryUI.cs       — Фаза 17
-//   SceneBuilder/Phase18InventoryComponents.cs — Фаза 18
-//   SceneBuilder/Phase19NPCPlacement.cs        — Фаза 19 (NEW)
-//   FullSceneBuilder.cs                    — Оркестратор (этот файл)
 //
 // СОВМЕСТИМОСТЬ: Unity 6.3+ (6000.3)
 // ============================================================================
@@ -37,6 +19,8 @@
 #if UNITY_EDITOR
 using UnityEngine;
 using UnityEditor;
+using System.IO;
+using System.Text;
 using CultivationGame.Editor.SceneBuilder;
 
 namespace CultivationGame.Editor
@@ -44,7 +28,7 @@ namespace CultivationGame.Editor
     /// <summary>
     /// Оркестратор сборки сцены.
     /// Регистрирует все фазы и управляет их запуском.
-    /// Каждая фаза находится в отдельном файле.
+    /// v2.1: Детальное логирование для диагностики повторных запусков.
     /// </summary>
     public static class FullSceneBuilder
     {
@@ -77,49 +61,130 @@ namespace CultivationGame.Editor
         #endregion
 
         // ====================================================================
+        //  LOGGING
+        // ====================================================================
+
+        private static StringBuilder _logBuilder;
+        private static string _logFilePath;
+
+        private static void InitLog()
+        {
+            _logBuilder = new StringBuilder();
+            string logsDir = "Logs";
+            if (!Directory.Exists(logsDir))
+                Directory.CreateDirectory(logsDir);
+
+            string timestamp = System.DateTime.Now.ToString("yyyy-MM-dd_HH-mm-ss");
+            _logFilePath = Path.Combine(logsDir, $"SceneBuilder_{timestamp}.log");
+
+            LogLine("========================================");
+            LogLine($"FullSceneBuilder LOG — {System.DateTime.Now:yyyy-MM-dd HH:mm:ss}");
+            LogLine($"Unity {UnityEngine.Application.unityVersion}");
+            LogLine("========================================");
+            LogLine("");
+        }
+
+        private static void LogLine(string line)
+        {
+            _logBuilder?.AppendLine(line);
+        }
+
+        private static void FlushLog()
+        {
+            if (_logBuilder != null && _logFilePath != null)
+            {
+                File.WriteAllText(_logFilePath, _logBuilder.ToString());
+                Debug.Log($"[FullSceneBuilder] Лог записан: {_logFilePath}");
+            }
+        }
+
+        // ====================================================================
         //  MAIN: Build All (One Click)
         // ====================================================================
 
         [MenuItem("Tools/Full Scene Builder/Build All (One Click)", false, 0)]
         public static void BuildAll()
         {
+            InitLog();
+
             Debug.Log("========================================");
             Debug.Log("[FullSceneBuilder] === BUILD ALL START ===");
             Debug.Log("========================================");
 
+            LogLine("PHASE CHECK REPORT:");
+            LogLine("----------------------------------------");
+
+            // Предварительный отчёт: какие фазы нужны
+            for (int i = 0; i < PHASES.Length; i++)
+            {
+                var phase = PHASES[i];
+                bool needed;
+                try { needed = phase.IsNeeded(); }
+                catch (System.Exception ex)
+                {
+                    needed = true; // если IsNeeded падает — предполагаем что нужна
+                    LogLine($"  [{i:D2}] {phase.Name}: IsNeeded() ERROR — {ex.Message}");
+                }
+
+                string status = needed ? "NEEDS EXECUTION" : "SKIP (already done)";
+                string reason = phase.IsNeededReason;
+                string reasonStr = !string.IsNullOrEmpty(reason) ? $" — {reason}" : "";
+                LogLine($"  [{i:D2}] {phase.Name,-35} → {status}{reasonStr}");
+                Debug.Log($"[FullSceneBuilder] [{i:D2}] {phase.Name}: {(needed ? "NEEDS RUN" : "SKIP")}{reasonStr}");
+            }
+            LogLine("----------------------------------------");
+            LogLine("");
+
+            // Выполнение фаз
             int executed = 0;
             int skipped = 0;
             int failed = 0;
             float startTime = (float)EditorApplication.timeSinceStartup;
 
+            LogLine("EXECUTION REPORT:");
+            LogLine("----------------------------------------");
+
             for (int i = 0; i < PHASES.Length; i++)
             {
                 var phase = PHASES[i];
-                string phaseLabel = $"[{i + 1}/{PHASES.Length}] {phase.Name}";
+                string phaseLabel = $"[{i:D2}/{PHASES.Length:D2}] {phase.Name}";
+
+                float phaseStart = (float)EditorApplication.timeSinceStartup;
 
                 try
                 {
                     if (phase.IsNeeded())
                     {
                         Debug.Log($"{phaseLabel}: Executing...");
+                        LogLine($"  [{i:D2}] {phase.Name}: START");
+
                         phase.Execute();
-                        Debug.Log($"{phaseLabel}: ✅ Done");
+
+                        float phaseTime = (float)EditorApplication.timeSinceStartup - phaseStart;
+                        Debug.Log($"{phaseLabel}: ✅ Done ({phaseTime:F2}s)");
+                        LogLine($"  [{i:D2}] {phase.Name}: ✅ DONE ({phaseTime:F2}s)");
                         executed++;
                     }
                     else
                     {
                         Debug.Log($"{phaseLabel}: ⏭ Skipped (already done)");
+                        LogLine($"  [{i:D2}] {phase.Name}: ⏭ SKIPPED");
                         skipped++;
                     }
                 }
                 catch (System.Exception ex)
                 {
+                    float phaseTime = (float)EditorApplication.timeSinceStartup - phaseStart;
                     Debug.LogError($"{phaseLabel}: ❌ FAILED — {ex.Message}\n{ex.StackTrace}");
+                    LogLine($"  [{i:D2}] {phase.Name}: ❌ FAILED ({phaseTime:F2}s)");
+                    LogLine($"         Error: {ex.Message}");
+                    LogLine($"         Stack: {ex.StackTrace}");
                     failed++;
 
                     if (!EditorUtility.DisplayDialog("Phase Failed",
                         $"Фаза «{phase.Name}» упала:\n{ex.Message}\n\nПродолжить?", "Да", "Стоп"))
                     {
+                        LogLine($"  *** BUILD ABORTED at phase {i} ***");
                         break;
                     }
                 }
@@ -127,24 +192,104 @@ namespace CultivationGame.Editor
 
             float elapsed = (float)EditorApplication.timeSinceStartup - startTime;
 
+            LogLine("----------------------------------------");
+            LogLine("");
+            LogLine("SUMMARY:");
+            LogLine($"  Total phases: {PHASES.Length}");
+            LogLine($"  Executed:     {executed}");
+            LogLine($"  Skipped:      {skipped}");
+            LogLine($"  Failed:       {failed}");
+            LogLine($"  Total time:   {elapsed:F1}s");
+            LogLine("");
+
+            if (executed > 0 && skipped < PHASES.Length - executed)
+            {
+                LogLine("NOTE: Some phases were re-executed on this run.");
+                LogLine("This may indicate a dependency/ordering issue.");
+                LogLine("Check which phase was re-run and verify its IsNeeded() logic.");
+            }
+
+            LogLine("========================================");
+
             Debug.Log("========================================");
             Debug.Log($"[FullSceneBuilder] === BUILD ALL COMPLETE ===");
             Debug.Log($"  Executed: {executed} | Skipped: {skipped} | Failed: {failed}");
             Debug.Log($"  Time: {elapsed:F1}s");
             Debug.Log("========================================");
 
+            FlushLog();
+
             if (failed == 0)
             {
                 EditorUtility.DisplayDialog("Build Complete",
-                    $"Сборка завершена!\n\nВыполнено: {executed}\nПропущено: {skipped}\nВремя: {elapsed:F1}s",
+                    $"Сборка завершена!\n\nВыполнено: {executed}\nПропущено: {skipped}\nВремя: {elapsed:F1}s\n\nЛог: {_logFilePath}",
                     "OK");
             }
             else
             {
                 EditorUtility.DisplayDialog("Build Finished with Errors",
-                    $"Выполнено: {executed}\nПропущено: {skipped}\nОшибки: {failed}",
+                    $"Выполнено: {executed}\nПропущено: {skipped}\nОшибки: {failed}\n\nЛог: {_logFilePath}",
                     "OK");
             }
+        }
+
+        // ====================================================================
+        //  DRY RUN: Check which phases need execution (without running)
+        // ====================================================================
+
+        [MenuItem("Tools/Full Scene Builder/Dry Run (Check Only)", false, 1)]
+        public static void DryRun()
+        {
+            InitLog();
+
+            Debug.Log("========================================");
+            Debug.Log("[FullSceneBuilder] === DRY RUN (Check Only) ===");
+            Debug.Log("========================================");
+
+            int needed = 0;
+            int notNeeded = 0;
+
+            LogLine("DRY RUN — Phase Status Check:");
+            LogLine("----------------------------------------");
+
+            for (int i = 0; i < PHASES.Length; i++)
+            {
+                var phase = PHASES[i];
+                bool isNeeded;
+                string reason = "";
+
+                try
+                {
+                    isNeeded = phase.IsNeeded();
+                    reason = isNeeded ? "NEEDS EXECUTION" : "Already done";
+                }
+                catch (System.Exception ex)
+                {
+                    isNeeded = true;
+                    reason = $"ERROR: {ex.Message}";
+                }
+
+                string icon = isNeeded ? "❗" : "✅";
+                string reasonDetail = phase.IsNeededReason;
+                string reasonFull = !string.IsNullOrEmpty(reasonDetail) ? $"{reason} — {reasonDetail}" : reason;
+                Debug.Log($"[FullSceneBuilder] [{i:D2}] {icon} {phase.Name}: {reasonFull}");
+                LogLine($"  [{i:D2}] {icon} {phase.Name,-35} → {reasonFull}");
+
+                if (isNeeded) needed++;
+                else notNeeded++;
+            }
+
+            LogLine("----------------------------------------");
+            LogLine($"  Need execution: {needed} | Already done: {notNeeded}");
+            LogLine("========================================");
+
+            Debug.Log($"[FullSceneBuilder] DRY RUN: {needed} phases need execution, {notNeeded} already done");
+
+            FlushLog();
+
+            EditorUtility.DisplayDialog("Dry Run Complete",
+                $"Фазы, требующие выполнения: {needed}\nУже выполнены: {notNeeded}\n\nЛог: {_logFilePath}",
+                "OK");
         }
 
         // ====================================================================
@@ -229,13 +374,15 @@ namespace CultivationGame.Editor
             {
                 try
                 {
+                    float t = (float)EditorApplication.timeSinceStartup;
                     Debug.Log($"[FullSceneBuilder] Running phase: {phase.Name}");
                     phase.Execute();
-                    Debug.Log($"[FullSceneBuilder] ✅ Phase '{phase.Name}' complete");
+                    float elapsed = (float)EditorApplication.timeSinceStartup - t;
+                    Debug.Log($"[FullSceneBuilder] ✅ Phase '{phase.Name}' complete ({elapsed:F2}s)");
                 }
                 catch (System.Exception ex)
                 {
-                    Debug.LogError($"[FullSceneBuilder] ❌ Phase '{phase.Name}' failed: {ex.Message}");
+                    Debug.LogError($"[FullSceneBuilder] ❌ Phase '{phase.Name}' failed: {ex.Message}\n{ex.StackTrace}");
                 }
             }
             else
