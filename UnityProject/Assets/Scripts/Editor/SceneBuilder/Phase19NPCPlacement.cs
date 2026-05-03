@@ -52,8 +52,17 @@ namespace CultivationGame.Editor.SceneBuilder
         public bool IsNeeded()
         {
             // Проверяем, есть ли уже NPC в сцене
-            var existingNPCs = GameObject.FindGameObjectsWithTag("NPC");
-            return existingNPCs == null || existingNPCs.Length == 0;
+            // Редактировано: 2026-05-04 — Безопасная проверка тега (может не существовать)
+            try
+            {
+                var existingNPCs = GameObject.FindGameObjectsWithTag("NPC");
+                return existingNPCs == null || existingNPCs.Length == 0;
+            }
+            catch (UnityException)
+            {
+                // Тег "NPC" ещё не определён — фаза нужна
+                return true;
+            }
         }
 
         /// <summary>

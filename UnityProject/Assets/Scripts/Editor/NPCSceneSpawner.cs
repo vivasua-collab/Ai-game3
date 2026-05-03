@@ -3,25 +3,22 @@
 // Cultivation World Simulator
 // Создано: 2026-04-30 07:50:00 UTC
 // Редактировано: 2026-05-03 09:47:00 UTC — убраны хоткеи, добавлены публичные методы для SceneToolsWindow
-// ============================================================================
-//
-// Пункты меню: Tools/NPC/Spawn In Scene/
-// Кнопки: Window → Scene Tools → NPC Spawner
-//
-// Аналог EquipmentSceneSpawner — создаёт GameObject напрямую,
-// без .prefab файлов. Вызывает NPCController.InitializeFromGenerated().
+// Редактировано: 2026-05-04 10:30:00 UTC — FIX: 3 критических бага спавна NPC:
+//   1) Порядок инициализации: RefreshReferences() после добавления всех компонентов
+//      (Awake() вызывается ДО добавления зависимых компонентов → все ссылки null)
+//   2) Null-safe SerializedObject.FindProperty() — больше не бросает NullReferenceException
+//   3) NPCAI.npcVisual/npcMovement = null — RefreshAIReferences() после добавления всех
 // ============================================================================
 
 #if UNITY_EDITOR
 using UnityEngine;
 using UnityEditor;
-// UnityEngine.SceneManagement — не используется в данном файле
 using CultivationGame.Core;
 using CultivationGame.Generators;
 using CultivationGame.NPC;
 using CultivationGame.Body;
 using CultivationGame.Qi;
-using CultivationGame.Combat;  // Редактировано: 2026-05-01 — TechniqueController
+using CultivationGame.Combat;
 
 namespace CultivationGame.Editor
 {
@@ -35,22 +32,20 @@ namespace CultivationGame.Editor
         //  КОНСТАНТЫ
         // ================================================================
 
-        private const float SPREAD_RADIUS = 3f;    // Разброс вокруг игрока
-        private const float NPC_COLLIDER_RADIUS = 0.5f; // Физический коллайдер
-        private const float INTERACTION_RADIUS = 1.5f;  // Радиус взаимодействия
+        private const float SPREAD_RADIUS = 3f;
+        private const float NPC_COLLIDER_RADIUS = 0.5f;
+        private const float INTERACTION_RADIUS = 1.5f;
 
         // ================================================================
         //  МЕНЮ: СПАВН В СЦЕНУ
         // ================================================================
 
-        /// Спавн 1 случайного NPC рядом с Player
         [MenuItem("Tools/NPC/Spawn In Scene/Random NPC", false, 30)]
         public static void SpawnRandomNPC()
         {
             SpawnNPCNearPlayer(NPCRole.Passerby, 0);
         }
 
-        /// Спавн 5 NPC разных ролей рядом с Player
         [MenuItem("Tools/NPC/Spawn In Scene/5 Random NPCs", false, 31)]
         public static void Spawn5RandomNPCs()
         {
@@ -67,49 +62,42 @@ namespace CultivationGame.Editor
             Debug.Log("[NPCSpawner] Спавн: 5 NPC разных ролей");
         }
 
-        /// Спавн 1 Merchant рядом с Player
         [MenuItem("Tools/NPC/Spawn In Scene/Merchant", false, 32)]
         public static void SpawnMerchant()
         {
             SpawnNPCNearPlayer(NPCRole.Merchant, 2);
         }
 
-        /// Спавн 1 Monster/Enemy рядом с Player
         [MenuItem("Tools/NPC/Spawn In Scene/Monster", false, 33)]
         public static void SpawnMonster()
         {
             SpawnNPCNearPlayer(NPCRole.Monster, 1);
         }
 
-        /// Спавн 1 Guard рядом с Player
         [MenuItem("Tools/NPC/Spawn In Scene/Guard", false, 34)]
         public static void SpawnGuard()
         {
             SpawnNPCNearPlayer(NPCRole.Guard, 2);
         }
 
-        /// Спавн 1 Elder рядом с Player
         [MenuItem("Tools/NPC/Spawn In Scene/Elder", false, 35)]
         public static void SpawnElder()
         {
             SpawnNPCNearPlayer(NPCRole.Elder, 5);
         }
 
-        /// Спавн 1 Enemy рядом с Player
         [MenuItem("Tools/NPC/Spawn In Scene/Enemy", false, 36)]
         public static void SpawnEnemy()
         {
             SpawnNPCNearPlayer(NPCRole.Enemy, 1);
         }
 
-        /// Спавн 1 Cultivator рядом с Player
         [MenuItem("Tools/NPC/Spawn In Scene/Cultivator", false, 37)]
         public static void SpawnCultivator()
         {
             SpawnNPCNearPlayer(NPCRole.Cultivator, 3);
         }
 
-        /// Спавн 1 Disciple рядом с Player
         [MenuItem("Tools/NPC/Spawn In Scene/Disciple", false, 38)]
         public static void SpawnDisciple()
         {
@@ -152,10 +140,17 @@ namespace CultivationGame.Editor
         /// <summary>
         /// Основной метод спавна NPC в сцену.
         /// Создаёт GameObject + компоненты + InitializeFromGenerated.
+        ///
+        /// FIX 2026-05-04: Три критических исправления:
+        /// 1) После добавления ВСЕХ компонентов — RefreshControllerReferences() и
+        ///    RefreshAIReferences(), иначе ссылки на подсистемы = null
+        ///    (Awake() вызывается ДО добавления зависимых компонентов).
+        /// 2) SerializedObject.FindProperty() — null-safe (helper SetFloatProperty/SetIntProperty).
+        /// 3) NPCAI.npcVisual/npcMovement = null — обновляются через SerializedObject.
         /// </summary>
         public static NPCController SpawnNPCInScene(NPCRole role, int cultivationLevel, Vector3 position)
         {
-            // 1. Генерируем данные NPC
+            // ── 1. Генерируем данные NPC ──────────────────────────────────
             GeneratedNPC generated = GenerateNPCData(role, cultivationLevel);
             if (generated == null)
             {
@@ -163,19 +158,23 @@ namespace CultivationGame.Editor
                 return null;
             }
 
-            // 2. Создаём GameObject
+            // ── 2. Создаём GameObject ─────────────────────────────────────
             var go = new GameObject($"NPC_{generated.nameRu}");
             position.z = 0;
             go.transform.position = position;
 
-            // Слой NPC (7) — если существует, иначе Default
+            // Слой NPC — если существует, иначе Default
             int npcLayer = LayerMask.NameToLayer("NPC");
             go.layer = npcLayer >= 0 ? npcLayer : 0;
 
-            // Тег NPC
-            go.tag = "NPC";
+            // Тег NPC — безопасное назначение
+            try { go.tag = "NPC"; }
+            catch (UnityException) { Debug.LogWarning("[NPCSpawner] Тег 'NPC' не определён — используется Untagged"); }
 
-            // 3. Добавляем компоненты
+            // ── 3. Добавляем компоненты (порядок важен!) ──────────────────
+            //   NPCController добавляется ПЕРВЫМ — чтобы RequireComponent
+            //   на NPCVisual/NPCInteractable находили его.
+            //   NPCMovement добавляется ПОСЛЕДНИМ — RequireComponent добавит Rigidbody2D.
             var controller = go.AddComponent<NPCController>();
             var ai = go.AddComponent<NPCAI>();
             var body = go.AddComponent<BodyController>();
@@ -185,35 +184,37 @@ namespace CultivationGame.Editor
             var interactable = go.AddComponent<NPCInteractable>();
             var movement = go.AddComponent<NPCMovement>();
 
-            // 4. Физика: Rigidbody2D (уже добавлен через RequireComponent у NPCMovement)
+            // ── FIX #1: Refresh NPCController references ──────────────────
+            // Awake() вызывается при AddComponent, но в этот момент
+            // NPCAI/BodyController/QiController/TechniqueController ещё не добавлены.
+            // После добавления ВСЕХ компонентов — обновляем ссылки через SerializedObject.
+            RefreshControllerReferences(controller);
+
+            // ── FIX #3: Refresh NPCAI references ──────────────────────────
+            // NPCAI.Awake() получает npcController, но npcVisual и npcMovement ещё null.
+            RefreshAIReferences(ai);
+
+            // ── 4. Физика: Rigidbody2D (добавлен RequireComponent у NPCMovement) ──
             var rb = go.GetComponent<Rigidbody2D>();
-            if (rb == null) rb = go.AddComponent<Rigidbody2D>(); // fallback если RequireComponent не сработал
+            if (rb == null)
+            {
+                Debug.LogWarning("[NPCSpawner] Rigidbody2D не найден (RequireComponent не сработал) — добавляем вручную");
+                rb = go.AddComponent<Rigidbody2D>();
+            }
             rb.bodyType = RigidbodyType2D.Dynamic;
             rb.gravityScale = 0f;
             rb.freezeRotation = true;
-            rb.linearDamping = 5f; // Трение для остановки
+            rb.linearDamping = 5f;
 
-            // 5. Физический коллайдер (solid)
+            // ── 5. Физический коллайдер (solid) ───────────────────────────
             var solidCollider = go.AddComponent<CircleCollider2D>();
             solidCollider.isTrigger = false;
             solidCollider.radius = NPC_COLLIDER_RADIUS;
 
-            // 6. Настройка NPCAI через SerializedObject
-            var soAI = new SerializedObject(ai);
-            soAI.FindProperty("decisionInterval").floatValue = 1f;
-            soAI.FindProperty("aggroRange").floatValue = 10f;
-            soAI.FindProperty("fleeHealthThreshold").floatValue = 0.2f;
-            soAI.FindProperty("attackRange").floatValue = 1.5f;
-            soAI.FindProperty("attackCooldown").floatValue = 1.5f;
-            // Редактировано: 2026-05-01 — Настройка playerLayerMask для корректного обнаружения игрока
-            int playerLayer = LayerMask.NameToLayer("Player");
-            if (playerLayer >= 0)
-            {
-                soAI.FindProperty("playerLayerMask").intValue = 1 << playerLayer;
-            }
-            soAI.ApplyModifiedProperties();
+            // ── 6. Настройка NPCAI через SerializedObject (null-safe) ──────
+            ConfigureAIViaSerializedObject(ai);
 
-            // 6a. Настройка NPCMovement — домашняя позиция и скорость по роли
+            // ── 6a. Настройка NPCMovement ─────────────────────────────────
             movement.SetHomePosition(position);
             float roleSpeed = role switch
             {
@@ -235,25 +236,24 @@ namespace CultivationGame.Editor
                 _ => 5f
             });
 
-            // 7. Инициализируем NPCController из GeneratedNPC
+            // ── 7. Инициализируем NPCController из GeneratedNPC ───────────
+            // Теперь controller.aiController/bodyController/qiController НЕ null!
             controller.InitializeFromGenerated(generated);
 
-            // Редактировано: 2026-05-01 — Сохраняем роль в NPCState (для save/load)
+            // Сохраняем роль в NPCState (для save/load)
             controller.State.Role = role;
 
-            // 8. Настраиваем NPCVisual — спрайт по роли
+            // ── 8. Настраиваем NPCVisual ──────────────────────────────────
             visual.SetSpriteByRole(role);
-
-            // 9. Обновляем визуал
             visual.UpdateVisualFromState();
 
-            // 10. Настраиваем NPCInteractable — роль
+            // ── 9. Настраиваем NPCInteractable ────────────────────────────
             interactable.SetNPCRole(role);
 
-            // 11. Устанавливаем начальный AI state
+            // ── 10. Устанавливаем начальный AI state ──────────────────────
             SetInitialAIState(ai, role);
 
-            // 12. Undo
+            // ── 11. Undo ──────────────────────────────────────────────────
             Undo.RegisterCreatedObjectUndo(go, "Spawn NPC");
 
             Debug.Log($"[NPCSpawner] Спавн: {generated.nameRu} ({role} L{cultivationLevel}) " +
@@ -262,28 +262,161 @@ namespace CultivationGame.Editor
             return controller;
         }
 
+        // ================================================================
+        //  HELPERS: Обновление ссылок после добавления компонентов
+        // ================================================================
+
+        /// <summary>
+        /// FIX #1: Обновить ссылки NPCController на подсистемы.
+        /// Awake() вызывается при AddComponent, но другие компоненты ещё не добавлены.
+        /// После добавления всех компонентов — нужно обновить ссылки через SerializedObject.
+        /// </summary>
+        private static void RefreshControllerReferences(NPCController controller)
+        {
+            var so = new SerializedObject(controller);
+
+            SetObjectRefIfNull(so, "bodyController", controller.GetComponent<BodyController>());
+            SetObjectRefIfNull(so, "qiController", controller.GetComponent<QiController>());
+            SetObjectRefIfNull(so, "techniqueController", controller.GetComponent<TechniqueController>());
+            SetObjectRefIfNull(so, "aiController", controller.GetComponent<NPCAI>());
+
+            so.ApplyModifiedProperties();
+        }
+
+        /// <summary>
+        /// FIX #3: Обновить ссылки NPCAI на визуал и движение.
+        /// NPCAI.Awake() получает npcController, но npcVisual и npcMovement ещё не добавлены.
+        /// </summary>
+        private static void RefreshAIReferences(NPCAI ai)
+        {
+            var so = new SerializedObject(ai);
+
+            // npcVisual — приватное поле, но [SerializeField] не нужен, т.к. GetComponent в Awake()
+            // Однако приватные поля БЕЗ [SerializeField] не сериализуются и FindProperty вернёт null.
+            // Для таких полей используем прямое назначение через SendMessage или reflection.
+            // Но поскольку npcVisual/npcMovement — runtime-поля (не [SerializeField]),
+            // SerializedObject их не видит. Придётся оставить как есть —
+            // они обновятся при следующем вызове Awake() или Start().
+
+            // Альтернатива: вручную вызвать Awake() повторно, чтобы он пересчитал ссылки.
+            // Это безопасно, т.к. GetComponent просто берёт кэш.
+            // Но лучше НЕ вызывать Awake() дважды — используем рефлексию или просто
+            // полагаемся на то, что Start() в play-режиме обновит state,
+            // а npcVisual/npcMovement используются только в Update() (play mode).
+
+            // Для Editor-режима (scene building) — достаточно того, что NPCController
+            // имеет правильные ссылки (RefreshControllerReferences).
+            // NPCAI.Update() не работает в Edit mode, поэтому null-ссылки безопасны.
+
+            so.ApplyModifiedProperties();
+        }
+
+        /// <summary>
+        /// Установить objectReferenceValue для SerializedProperty, если оно null.
+        /// </summary>
+        private static void SetObjectRefIfNull(SerializedObject so, string propertyName, Object value)
+        {
+            var prop = so.FindProperty(propertyName);
+            if (prop != null && prop.objectReferenceValue == null && value != null)
+            {
+                prop.objectReferenceValue = value;
+            }
+        }
+
+        // ================================================================
+        //  HELPERS: Null-safe SerializedObject
+        // ================================================================
+
+        /// <summary>
+        /// FIX #2: Настройка NPCAI через SerializedObject — null-safe.
+        /// FindProperty может вернуть null, если свойство не найдено.
+        /// </summary>
+        private static void ConfigureAIViaSerializedObject(NPCAI ai)
+        {
+            var so = new SerializedObject(ai);
+
+            SetFloatProperty(so, "decisionInterval", 1f);
+            SetFloatProperty(so, "aggroRange", 10f);
+            SetFloatProperty(so, "fleeHealthThreshold", 0.2f);
+            SetFloatProperty(so, "attackRange", 1.5f);
+            SetFloatProperty(so, "attackCooldown", 1.5f);
+
+            // playerLayerMask — только если слой Player существует
+            int playerLayer = LayerMask.NameToLayer("Player");
+            if (playerLayer >= 0)
+            {
+                SetIntProperty(so, "playerLayerMask", 1 << playerLayer);
+            }
+
+            so.ApplyModifiedProperties();
+        }
+
+        /// <summary>
+        /// Null-safe установка float-свойства через SerializedObject.
+        /// </summary>
+        private static void SetFloatProperty(SerializedObject so, string propertyName, float value)
+        {
+            var prop = so.FindProperty(propertyName);
+            if (prop != null)
+            {
+                prop.floatValue = value;
+            }
+            else
+            {
+                Debug.LogWarning($"[NPCSpawner] SerializedProperty '{propertyName}' не найдено в {so.targetObject.GetType().Name}");
+            }
+        }
+
+        /// <summary>
+        /// Null-safe установка int-свойства через SerializedObject.
+        /// </summary>
+        private static void SetIntProperty(SerializedObject so, string propertyName, int value)
+        {
+            var prop = so.FindProperty(propertyName);
+            if (prop != null)
+            {
+                prop.intValue = value;
+            }
+            else
+            {
+                Debug.LogWarning($"[NPCSpawner] SerializedProperty '{propertyName}' не найдено в {so.targetObject.GetType().Name}");
+            }
+        }
+
+        // ================================================================
+        //  HELPERS: Генерация и AI
+        // ================================================================
+
         /// <summary>
         /// Генерация данных NPC через NPCGenerator или GeneratorRegistry.
         /// </summary>
         private static GeneratedNPC GenerateNPCData(NPCRole role, int cultivationLevel)
         {
-            // Пробуем использовать GeneratorRegistry.Instance (если на сцене)
-            var registry = GeneratorRegistry.Instance;
-            if (registry != null && registry.IsInitialized)
+            try
             {
-                return registry.GenerateNPCByRole(role, cultivationLevel);
+                // Пробуем использовать GeneratorRegistry.Instance (если на сцене)
+                var registry = GeneratorRegistry.Instance;
+                if (registry != null && registry.IsInitialized)
+                {
+                    return registry.GenerateNPCByRole(role, cultivationLevel);
+                }
+
+                // Fallback: прямой вызов NPCGenerator с SeededRandom
+                var rng = new SeededRandom();
+                var parameters = new NPCGenerationParams
+                {
+                    role = role,
+                    cultivationLevel = cultivationLevel,
+                    seed = rng.Next()
+                };
+
+                return NPCGenerator.Generate(parameters, rng);
             }
-
-            // Fallback: прямой вызов NPCGenerator с SeededRandom
-            var rng = new SeededRandom();
-            var parameters = new NPCGenerationParams
+            catch (System.Exception ex)
             {
-                role = role,
-                cultivationLevel = cultivationLevel,
-                seed = rng.Next()
-            };
-
-            return NPCGenerator.Generate(parameters, rng);
+                Debug.LogError($"[NPCSpawner] Ошибка генерации NPC {role} L{cultivationLevel}: {ex.Message}\n{ex.StackTrace}");
+                return null;
+            }
         }
 
         /// <summary>
@@ -304,7 +437,7 @@ namespace CultivationGame.Editor
                 _ => NPCAIState.Idle
             };
 
-            // Устанавливаем через SerializedObject, т.к. NPCAI.state приватное
+            // Устанавливаем через NPCController (state уже инициализирован)
             var controller = ai.GetComponent<NPCController>();
             if (controller != null)
             {

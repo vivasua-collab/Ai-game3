@@ -91,6 +91,13 @@ namespace CultivationGame.NPC
         {
             if (npcController != null)
                 state = npcController.State;
+
+            // Редактировано: 2026-05-04 — Refresh ссылок, которые были null в Awake()
+            // (компоненты добавлялись после NPCAI в NPCSceneSpawner)
+            if (npcVisual == null)
+                npcVisual = GetComponent<NPCVisual>();
+            if (npcMovement == null)
+                npcMovement = GetComponent<NPCMovement>();
         }
         
         private void Update()

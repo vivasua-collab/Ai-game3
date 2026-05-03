@@ -245,3 +245,46 @@ Stage Summary:
 - Найдено 19 проблем разной степени критичности (см. ниже)
 - SceneToolsWindow уже существует — кнопки спауна NPC и экипировки РЕАЛИЗОВАНЫ
 - Ключевая проблема: IScenePhase.Order комментарий говорит 0-18, но реально 0-19
+---
+Task ID: 1
+Agent: Main
+Task: Fix NullReferenceException in Phase 19 NPC Placement
+
+Work Log:
+- Read and analyzed all NPC-related files: NPCSceneSpawner, Phase19NPCPlacement, FullSceneBuilder, NPCController, NPCAI, NPCVisual, NPCMovement, NPCInteractable, NPCGenerator, TechniqueController, TechniqueGenerator, GeneratorRegistry, SeededRandom, NPCData
+- Identified 3 critical bugs causing NullReferenceException:
+  1. Component initialization order: NPCController.Awake() runs BEFORE NPCAI/BodyController/QiController/TechniqueController are added → all [SerializeField] references remain null → InitializeFromGenerated() skips AI/Body/Qi setup
+  2. SerializedObject.FindProperty() without null check: if FindProperty returns null, accessing .floatValue/.intValue throws NullReferenceException
+  3. NPCAI.npcVisual/npcMovement = null: Awake() runs before these components are added, and Start() only sets state
+- Fixed NPCSceneSpawner.cs:
+  - Added RefreshControllerReferences() method: after adding ALL components, sets bodyController/qiController/techniqueController/aiController via SerializedObject
+  - Added null-safe helpers: SetFloatProperty/SetIntProperty/SetObjectRefIfNull
+  - Added try-catch around go.tag = "NPC" (tag might not exist)
+  - Added try-catch around GenerateNPCData()
+  - Added ConfigureAIViaSerializedObject() with null-safe property access
+- Fixed NPCAI.cs:
+  - Start() now re-fetches npcVisual and npcMovement if they were null (added after Awake in spawner)
+
+Stage Summary:
+- NPCSceneSpawner.cs rewritten with 3 critical fixes
+- NPCAI.cs Start() now refreshes null references
+- Root cause: component initialization order + null-unsafe SerializedObject access
+
+---
+Task ID: 5
+Agent: Main
+Task: Детальный аудит всех фазовых файлов Scene Builder (00-19)
+
+Work Log:
+- Read and analyzed all 20 phase files + 3 support files (IScenePhase, SceneBuilderConstants, SceneBuilderUtils)
+- Launched parallel audit agents for phases 00-09 and 10-19
+- Identified critical bugs, high-priority issues, and low-priority improvements
+- Fixed Phase19 IsNeeded() — safe tag check (try-catch for missing "NPC" tag)
+- Verified Phase19 coordinates (100,80) are CORRECT — map is 100×80 tiles × 2m = 200×160m, center = (100,80)
+
+Stage Summary:
+- CRITICAL bugs found: Phase04 (FindProperty without null-checks), Phase07 (PauseMenu buttons not wired), Phase17 (SetActive(false) before wiring)
+- HIGH priority: Phase02 (deletes user tags), Phase15 (FindProperty null-checks), Phase16 (volume=weight bug), Phase18 (starter backpack dummy)
+- Phase19 coordinate bug was a FALSE ALARM — verified map is 200×160m, center at (100,80) is correct
+- Phase19 IsNeeded() fixed — safe tag check
+- Full audit report compiled for user review
