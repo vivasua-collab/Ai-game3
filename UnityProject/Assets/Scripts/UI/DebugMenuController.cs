@@ -7,6 +7,7 @@
 //   2) float→int: GUI.HorizontalSlider возвращает float, npcLevel = int → явный cast
 //   3) CultivationGame.Editor → NPCRuntimeSpawner/EquipmentRuntimeSpawner
 //      (runtime Assembly-CSharp не может ссылаться на Editor-сборку)
+// Редактировано: 2026-05-04 12:30:00 UTC — кнопка + панель перенесены на правую сторону
 // ============================================================================
 //
 // IMGUI-оверлей для Play-режима.
@@ -74,8 +75,8 @@ namespace CultivationGame.UI
         {
             if (!debugEnabled) return;
 
-            // ── Кнопка "⚙ DEBUG" (всегда видна) ──────────────────────
-            float btnX = panelMargin;
+            // ── Кнопка "⚙ DEBUG" (всегда видна, правая сторона) ──────
+            float btnX = Screen.width - buttonWidth - panelMargin;
             float btnY = panelMargin;
 
             GUI.backgroundColor = showPanel ? BtnDanger : BtnNPC;
@@ -85,10 +86,11 @@ namespace CultivationGame.UI
             }
             GUI.backgroundColor = Color.white;
 
-            // ── Панель ───────────────────────────────────────────────
+            // ── Панель (правая сторона, под кнопкой) ────────────────
             if (showPanel)
             {
-                DrawPanel(btnX, btnY + buttonHeight + 4f);
+                float panelX = Screen.width - panelWidth - panelMargin;
+                DrawPanel(panelX, btnY + buttonHeight + 4f);
             }
         }
 
