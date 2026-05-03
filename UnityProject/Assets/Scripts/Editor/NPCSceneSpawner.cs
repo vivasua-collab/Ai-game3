@@ -3,11 +3,12 @@
 // Cultivation World Simulator
 // Создано: 2026-04-30 07:50:00 UTC
 // Редактировано: 2026-05-03 09:47:00 UTC — убраны хоткеи, добавлены публичные методы для SceneToolsWindow
-// Редактировано: 2026-05-04 10:30:00 UTC — FIX: 3 критических бага спавна NPC:
+// Редактировано: 2026-05-03 11:30:00 UTC — FIX: 4 критических бага спавна NPC:
 //   1) Порядок инициализации: RefreshReferences() после добавления всех компонентов
 //      (Awake() вызывается ДО добавления зависимых компонентов → все ссылки null)
 //   2) Null-safe SerializedObject.FindProperty() — больше не бросает NullReferenceException
 //   3) NPCAI.npcVisual/npcMovement = null — RefreshAIReferences() после добавления всех
+//   4) Null-safe: visual, interactable, movement, State.Role — проверка на null
 // ============================================================================
 
 #if UNITY_EDITOR
@@ -215,40 +216,62 @@ namespace CultivationGame.Editor
             ConfigureAIViaSerializedObject(ai);
 
             // ── 6a. Настройка NPCMovement ─────────────────────────────────
-            movement.SetHomePosition(position);
-            float roleSpeed = role switch
+            if (movement != null)
             {
-                NPCRole.Monster => 4f,
-                NPCRole.Enemy => 3.5f,
-                NPCRole.Guard => 2.5f,
-                NPCRole.Cultivator => 2f,
-                NPCRole.Elder => 1.5f,
-                NPCRole.Merchant => 1.5f,
-                _ => 2.5f
-            };
-            movement.SetBaseSpeed(roleSpeed);
-            movement.SetWanderRadius(role switch
+                movement.SetHomePosition(position);
+                float roleSpeed = role switch
+                {
+                    NPCRole.Monster => 4f,
+                    NPCRole.Enemy => 3.5f,
+                    NPCRole.Guard => 2.5f,
+                    NPCRole.Cultivator => 2f,
+                    NPCRole.Elder => 1.5f,
+                    NPCRole.Merchant => 1.5f,
+                    _ => 2.5f
+                };
+                movement.SetBaseSpeed(roleSpeed);
+                movement.SetWanderRadius(role switch
+                {
+                    NPCRole.Monster => 8f,
+                    NPCRole.Guard => 6f,
+                    NPCRole.Merchant => 3f,
+                    NPCRole.Elder => 2f,
+                    _ => 5f
+                });
+            }
+            else
             {
-                NPCRole.Monster => 8f,
-                NPCRole.Guard => 6f,
-                NPCRole.Merchant => 3f,
-                NPCRole.Elder => 2f,
-                _ => 5f
-            });
+                Debug.LogWarning("[NPCSpawner] NPCMovement is null — skip movement setup");
+            }
 
             // ── 7. Инициализируем NPCController из GeneratedNPC ───────────
             // Теперь controller.aiController/bodyController/qiController НЕ null!
             controller.InitializeFromGenerated(generated);
 
-            // Сохраняем роль в NPCState (для save/load)
-            controller.State.Role = role;
+            // Сохраняем роль в NPCState (для save/load) — null-safe
+            if (controller.State != null)
+                controller.State.Role = role;
 
             // ── 8. Настраиваем NPCVisual ──────────────────────────────────
-            visual.SetSpriteByRole(role);
-            visual.UpdateVisualFromState();
+            if (visual != null)
+            {
+                visual.SetSpriteByRole(role);
+                visual.UpdateVisualFromState();
+            }
+            else
+            {
+                Debug.LogWarning("[NPCSpawner] NPCVisual is null — skip visual setup");
+            }
 
             // ── 9. Настраиваем NPCInteractable ────────────────────────────
-            interactable.SetNPCRole(role);
+            if (interactable != null)
+            {
+                interactable.SetNPCRole(role);
+            }
+            else
+            {
+                Debug.LogWarning("[NPCSpawner] NPCInteractable is null — skip interactable setup");
+            }
 
             // ── 10. Устанавливаем начальный AI state ──────────────────────
             SetInitialAIState(ai, role);

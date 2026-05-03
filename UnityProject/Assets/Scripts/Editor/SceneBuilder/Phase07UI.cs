@@ -6,6 +6,7 @@
 //   подключение SerializedField ссылок. Без UIManager клавиша I не работает.
 // Редактировано: 2026-04-25 14:00:00 UTC — FIX: Подключение HUDController
 //   SerializeField ссылок + MenuUI оставшиеся ссылки
+// Редактировано: 2026-05-03 11:30:00 UTC — +DebugMenuController (IMGUI overlay для Play-режима)
 // ============================================================================
 
 #if UNITY_EDITOR
@@ -32,6 +33,9 @@ namespace CultivationGame.Editor.SceneBuilder
         public void Execute()
         {
             SceneBuilderUtils.EnsureSceneOpen();
+
+            // Создаём DebugMenuController, даже если GameUI уже существует
+            CreateDebugMenuController();
 
             if (GameObject.Find("GameUI") != null)
             {
@@ -86,7 +90,7 @@ namespace CultivationGame.Editor.SceneBuilder
             WireHUDControllerReferences(hud, hudController);
 
             Undo.RegisterCreatedObjectUndo(canvasGO, "Create GameUI");
-            Debug.Log("[Phase07] ✅ UI создан: Canvas + UIManager + HUD + MainMenu + PauseMenu");
+            Debug.Log("[Phase07] ✅ UI создан: Canvas + UIManager + HUD + MainMenu + PauseMenu + DebugMenu");
         }
 
         // ====================================================================
@@ -327,6 +331,30 @@ namespace CultivationGame.Editor.SceneBuilder
                 prop.objectReferenceValue = image;
             else
                 prop.objectReferenceValue = child.gameObject;
+        }
+
+        // ====================================================================
+        //  DEBUG Menu Controller
+        // ====================================================================
+
+        /// <summary>
+        /// Создать DebugMenuController — IMGUI overlay для Play-режима.
+        /// Одна кнопка "⚙ DEBUG" на экране → панель спавна NPC/экипировки.
+        /// Флаг включения: F12.
+        /// </summary>
+        private void CreateDebugMenuController()
+        {
+            // Проверяем, не существует ли уже
+            if (UnityEngine.Object.FindFirstObjectByType<CultivationGame.UI.DebugMenuController>() != null)
+            {
+                Debug.Log("[Phase07] DebugMenuController уже существует");
+                return;
+            }
+
+            var debugGO = new GameObject("DebugMenu");
+            debugGO.AddComponent<CultivationGame.UI.DebugMenuController>();
+            Undo.RegisterCreatedObjectUndo(debugGO, "Create DebugMenuController");
+            Debug.Log("[Phase07] DebugMenuController создан (F12 — вкл/выкл)");
         }
 
         // ====================================================================

@@ -2,6 +2,8 @@
 // Phase19NPCPlacement.cs — Фаза 19: Размещение NPC на тестовой поляне
 // Cultivation World Simulator
 // Создано: 2026-04-30 07:58:00 UTC
+// Редактировано: 2026-05-03 11:30:00 UTC — FIX: try/catch для каждого NPC,
+//   чтобы один неудачный спавн не блокировал остальные
 // ============================================================================
 //
 // IScenePhase: размещение NPC на тестовой поляне.
@@ -19,6 +21,7 @@ namespace CultivationGame.Editor.SceneBuilder
 {
     /// <summary>
     /// Фаза 19: Размещение NPC на тестовой поляне.
+    /// Каждый NPC спавнится в try/catch — неудача одного не блокирует остальных.
     /// </summary>
     public class Phase19NPCPlacement : IScenePhase
     {
@@ -52,7 +55,6 @@ namespace CultivationGame.Editor.SceneBuilder
         public bool IsNeeded()
         {
             // Проверяем, есть ли уже NPC в сцене
-            // Редактировано: 2026-05-04 — Безопасная проверка тега (может не существовать)
             try
             {
                 var existingNPCs = GameObject.FindGameObjectsWithTag("NPC");
@@ -67,37 +69,56 @@ namespace CultivationGame.Editor.SceneBuilder
 
         /// <summary>
         /// Выполняет фазу: спавнит NPC на тестовой поляне.
+        /// FIX 2026-05-03: Каждый NPC в try/catch — неудача одного не блокирует остальных.
         /// </summary>
         public void Execute()
         {
             Debug.Log("[Phase19] Начало размещения NPC на тестовой поляне");
 
             int spawned = 0;
+            int failed = 0;
 
             foreach (var (role, level, offsetX, offsetY) in NPC_PLACEMENTS)
             {
                 Vector3 position = new Vector3(CENTER_X + offsetX, CENTER_Y + offsetY, 0f);
 
-                var controller = NPCSceneSpawner.SpawnNPCInScene(role, level, position);
-                if (controller != null)
+                try
                 {
-                    spawned++;
-
-                    // Дополнительная настройка для Guard: точки патруля
-                    if (role == NPCRole.Guard)
+                    var controller = NPCSceneSpawner.SpawnNPCInScene(role, level, position);
+                    if (controller != null)
                     {
-                        SetupGuardPatrol(controller, position);
-                    }
+                        spawned++;
 
-                    Debug.Log($"[Phase19] Спавн: {controller.NpcName} ({role} L{level}) поз.({position.x},{position.y})");
+                        // Дополнительная настройка для Guard: точки патруля
+                        if (role == NPCRole.Guard)
+                        {
+                            SetupGuardPatrol(controller, position);
+                        }
+
+                        Debug.Log($"[Phase19] ✅ Спавн: {controller.NpcName} ({role} L{level}) поз.({position.x},{position.y})");
+                    }
+                    else
+                    {
+                        failed++;
+                        Debug.LogWarning($"[Phase19] ❌ SpawnNPCInScene вернул null: {role} L{level}");
+                    }
                 }
-                else
+                catch (System.Exception ex)
                 {
-                    Debug.LogWarning($"[Phase19] Не удалось создать NPC {role} L{level}");
+                    failed++;
+                    Debug.LogError($"[Phase19] ❌ Ошибка спавна {role} L{level}: {ex.Message}\n{ex.StackTrace}");
+                    // Продолжаем спавнить остальных NPC
                 }
             }
 
-            Debug.Log($"[Phase19] ✅ Размещение завершено: {spawned}/{NPC_PLACEMENTS.Length} NPC");
+            Debug.Log($"[Phase19] Размещение завершено: {spawned}/{NPC_PLACEMENTS.Length} NPC" +
+                      (failed > 0 ? $" ({failed} ошибок)" : ""));
+
+            if (failed > 0 && spawned == 0)
+            {
+                Debug.LogWarning("[Phase19] Все NPC не были созданы. Возможна зависимость от предыдущих фаз. " +
+                    "Попробуйте запустить билдер повторно.");
+            }
         }
 
         /// <summary>
