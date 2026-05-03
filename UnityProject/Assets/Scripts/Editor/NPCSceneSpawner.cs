@@ -1,16 +1,12 @@
 // ============================================================================
-// NPCSceneSpawner.cs — Генерация NPC в активной сцене (hotkey + menu)
+// NPCSceneSpawner.cs — Генерация NPC в активной сцене (menu + SceneToolsWindow)
 // Cultivation World Simulator
 // Создано: 2026-04-30 07:50:00 UTC
+// Редактировано: 2026-05-03 09:47:00 UTC — убраны хоткеи, добавлены публичные методы для SceneToolsWindow
 // ============================================================================
 //
-// Горячие клавиши:
-//   Ctrl+N          — 1 случайный NPC рядом с Player
-//   Ctrl+Shift+N    — 5 NPC разных ролей рядом с Player
-//   Ctrl+F5         — 1 Merchant рядом с Player
-//   Ctrl+F6         — 1 Monster/Enemy рядом с Player
-//
 // Пункты меню: Tools/NPC/Spawn In Scene/
+// Кнопки: Window → Scene Tools → NPC Spawner
 //
 // Аналог EquipmentSceneSpawner — создаёт GameObject напрямую,
 // без .prefab файлов. Вызывает NPCController.InitializeFromGenerated().
@@ -47,15 +43,15 @@ namespace CultivationGame.Editor
         //  МЕНЮ: СПАВН В СЦЕНУ
         // ================================================================
 
-        /// Спавн 1 случайного NPC рядом с Player [Ctrl+Alt+N]
-        [MenuItem("Tools/NPC/Spawn In Scene/Random NPC _%#n", false, 30)]
+        /// Спавн 1 случайного NPC рядом с Player
+        [MenuItem("Tools/NPC/Spawn In Scene/Random NPC", false, 30)]
         public static void SpawnRandomNPC()
         {
             SpawnNPCNearPlayer(NPCRole.Passerby, 0);
         }
 
-        /// Спавн 5 NPC разных ролей рядом с Player [Ctrl+Shift+Alt+N]
-        [MenuItem("Tools/NPC/Spawn In Scene/5 Random NPCs _%#&n", false, 31)]
+        /// Спавн 5 NPC разных ролей рядом с Player
+        [MenuItem("Tools/NPC/Spawn In Scene/5 Random NPCs", false, 31)]
         public static void Spawn5RandomNPCs()
         {
             var roles = new[] { NPCRole.Merchant, NPCRole.Guard, NPCRole.Cultivator, NPCRole.Elder, NPCRole.Monster };
@@ -71,15 +67,15 @@ namespace CultivationGame.Editor
             Debug.Log("[NPCSpawner] Спавн: 5 NPC разных ролей");
         }
 
-        /// Спавн 1 Merchant рядом с Player [Ctrl+F5]
-        [MenuItem("Tools/NPC/Spawn In Scene/Merchant _%F5", false, 32)]
+        /// Спавн 1 Merchant рядом с Player
+        [MenuItem("Tools/NPC/Spawn In Scene/Merchant", false, 32)]
         public static void SpawnMerchant()
         {
             SpawnNPCNearPlayer(NPCRole.Merchant, 2);
         }
 
-        /// Спавн 1 Monster/Enemy рядом с Player [Ctrl+F6]
-        [MenuItem("Tools/NPC/Spawn In Scene/Monster _%F6", false, 33)]
+        /// Спавн 1 Monster/Enemy рядом с Player
+        [MenuItem("Tools/NPC/Spawn In Scene/Monster", false, 33)]
         public static void SpawnMonster()
         {
             SpawnNPCNearPlayer(NPCRole.Monster, 1);
@@ -120,9 +116,11 @@ namespace CultivationGame.Editor
             SpawnNPCNearPlayer(NPCRole.Disciple, 1);
         }
 
-        /// Удалить все NPC из сцены
+        /// <summary>
+        /// Удалить все NPC из сцены. Возвращает количество удалённых.
+        /// </summary>
         [MenuItem("Tools/NPC/Clear All NPCs", false, 50)]
-        public static void ClearAllNPCs()
+        public static int ClearAllNPCs()
         {
             var npcs = Object.FindObjectsByType<NPCController>(FindObjectsSortMode.None);
             int count = 0;
@@ -132,6 +130,7 @@ namespace CultivationGame.Editor
                 count++;
             }
             Debug.Log($"[NPCSpawner] Удалено {count} NPC из сцены");
+            return count;
         }
 
         // ================================================================

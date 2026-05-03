@@ -2,6 +2,7 @@
 // EquipmentSceneSpawner.cs — Генерация эквипа в активной сцене (hotkey + menu)
 // Cultivation World Simulator
 // Создано: 2026-04-29
+// Редактировано: 2026-05-03 09:48:00 UTC — добавлены публичные методы для SceneToolsWindow + ClearAllLoot
 // ============================================================================
 //
 // Горячие клавиши:
@@ -100,6 +101,72 @@ namespace CultivationGame.Editor
                     added++;
             }
             Debug.Log($"[EquipmentSpawner] Добавлено {added}/{loot.Count} предметов в инвентарь");
+        }
+
+        /// <summary>
+        /// Спавн N случайных предметов рядом с Player.
+        /// Публичный метод для SceneToolsWindow.
+        /// </summary>
+        public static void SpawnRandomLootNearPlayer(int count)
+        {
+            SpawnLootNearPlayer(count, 1);
+        }
+
+        /// <summary>
+        /// Спавн N предметов указанного уровня рядом с Player.
+        /// Публичный метод для SceneToolsWindow.
+        /// </summary>
+        public static void SpawnLevelLootNearPlayer(int level, int count)
+        {
+            SpawnLootNearPlayer(count, level);
+        }
+
+        /// <summary>
+        /// Спавн оружия в сцену рядом с Player.
+        /// </summary>
+        public static void SpawnWeaponInScene()
+        {
+            SpawnSingleNearPlayer(() => LootGenerator.GenerateRandomWeapon(1));
+        }
+
+        /// <summary>
+        /// Спавн брони в сцену рядом с Player.
+        /// </summary>
+        public static void SpawnArmorInScene()
+        {
+            SpawnSingleNearPlayer(() => LootGenerator.GenerateRandomArmor(1));
+        }
+
+        /// <summary>
+        /// Добавить N случайных предметов в инвентарь Player.
+        /// </summary>
+        public static void AddRandomToInventory(int count)
+        {
+            var loot = LootGenerator.GenerateLoot(1, count);
+            int added = 0;
+            foreach (var eq in loot)
+            {
+                if (AddToPlayerInventory(eq))
+                    added++;
+            }
+            Debug.Log($"[EquipmentSpawner] Добавлено {added}/{loot.Count} предметов в инвентарь");
+        }
+
+        /// <summary>
+        /// Удалить весь лут (ResourcePickup) из сцены.
+        /// Возвращает количество удалённых.
+        /// </summary>
+        public static int ClearAllLoot()
+        {
+            var pickups = Object.FindObjectsByType<ResourcePickup>(FindObjectsSortMode.None);
+            int count = 0;
+            foreach (var pickup in pickups)
+            {
+                Undo.DestroyObjectImmediate(pickup.gameObject);
+                count++;
+            }
+            Debug.Log($"[EquipmentSpawner] Удалено {count} предметов из сцены");
+            return count;
         }
 
         // ================================================================

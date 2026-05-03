@@ -50,7 +50,7 @@ namespace CultivationGame.Editor
     {
         #region Phase Registry
 
-        private static readonly IScenePhase[] PHASES = new IScenePhase[]
+        public static readonly IScenePhase[] PHASES = new IScenePhase[]
         {
             new Phase00URPSetup(),
             new Phase01Folders(),
@@ -215,7 +215,7 @@ namespace CultivationGame.Editor
         //  UTILITY: Run Single Phase
         // ====================================================================
 
-        private static void RunSinglePhase(int index)
+        public static void RunSinglePhase(int index)
         {
             if (index < 0 || index >= PHASES.Length)
             {
