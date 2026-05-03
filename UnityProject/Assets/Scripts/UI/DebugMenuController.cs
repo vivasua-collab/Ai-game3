@@ -8,6 +8,8 @@
 //   3) CultivationGame.Editor → NPCRuntimeSpawner/EquipmentRuntimeSpawner
 //      (runtime Assembly-CSharp не может ссылаться на Editor-сборку)
 // Редактировано: 2026-05-04 12:30:00 UTC — кнопка + панель перенесены на правую сторону
+// Редактировано: 2026-05-04 12:45:00 UTC — FIX: Input.GetKeyDown → InputSystem Keyboard.current
+//   (проект использует Input System package, legacy Input отключён)
 // ============================================================================
 //
 // IMGUI-оверлей для Play-режима.
@@ -18,6 +20,7 @@
 // ============================================================================
 
 using UnityEngine;
+using UnityEngine.InputSystem;
 using CultivationGame.Generators;
 using CultivationGame.NPC;
 
@@ -62,8 +65,8 @@ namespace CultivationGame.UI
 
         private void Update()
         {
-            // F12 — переключение DEBUG режима
-            if (Input.GetKeyDown(KeyCode.F12))
+            // F12 — переключение DEBUG режима (Input System package)
+            if (Keyboard.current != null && Keyboard.current.f12Key.wasPressedThisFrame)
             {
                 debugEnabled = !debugEnabled;
                 if (!debugEnabled) showPanel = false;
