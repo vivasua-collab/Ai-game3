@@ -350,7 +350,10 @@ namespace CultivationGame.Editor
         /// </summary>
         private void SpawnFullNPCSet()
         {
-            var placements = new (NPCRole role, int level, float x, float y)[]
+            // Центр карты = позиция Player (100, 80). Смещения относительно центра.
+            const float cx = 100f, cy = 80f;
+
+            var placements = new (NPCRole role, int level, float offsetX, float offsetY)[]
             {
                 (NPCRole.Merchant,   2,   3f,  -2f),
                 (NPCRole.Guard,      3,   8f,   0f),
@@ -362,10 +365,10 @@ namespace CultivationGame.Editor
             };
 
             int spawned = 0;
-            foreach (var (role, level, x, y) in placements)
+            foreach (var (role, level, ox, oy) in placements)
             {
                 var ctrl = NPCSceneSpawner.SpawnNPCInScene(role, level,
-                    new Vector3(x, y, 0f));
+                    new Vector3(cx + ox, cy + oy, 0f));
                 if (ctrl != null) spawned++;
             }
 

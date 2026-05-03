@@ -77,8 +77,9 @@ public class SceneSetupTools : EditorWindow
     [MenuItem("Window/Scene Setup Tools")]
     public static void ShowWindow()
     {
-        var window = GetWindow<SceneSetupTools>("Scene Setup Tools");
-        window.minSize = new Vector2(400, 600);
+        // Редирект на SceneToolsWindow — единое окно инструментов
+        Debug.Log("[SceneSetupTools] Рекомендуется использовать Window → Scene Tools");
+        CultivationGame.Editor.SceneToolsWindow.ShowWindow();
     }
 
     void OnGUI()

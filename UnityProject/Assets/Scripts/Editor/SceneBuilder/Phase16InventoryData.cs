@@ -185,7 +185,9 @@ namespace CultivationGame.Editor.SceneBuilder
             data.rarity = rarity;
             data.stackable = false;
             data.maxStack = 1;
+            data.weight = weight;      // M6 fix: вес кольца (0.05f) не назначался
             data.volume = 0.05f;
+            data.value = value;        // M6 fix: стоимость не назначалась
             data.allowNesting = NestingFlag.None; // Кольцо нельзя вложить — пространственная нестабильность
 
             // EquipmentData-поля (StorageRingData наследует от EquipmentData)

@@ -29,9 +29,12 @@ namespace CultivationGame.Editor.SceneBuilder
         public int Order => 19;
 
         // === Конфигурация спавна ===
-        // Позиции относительно центра карты (0,0)
+        // Центр карты = позиция Player (100, 80). Смещения относительно центра.
 
-        private static readonly (NPCRole role, int level, float x, float y)[] NPC_PLACEMENTS =
+        private const float CENTER_X = 100f;
+        private const float CENTER_Y = 80f;
+
+        private static readonly (NPCRole role, int level, float offsetX, float offsetY)[] NPC_PLACEMENTS =
         {
             (NPCRole.Merchant,   2,   3f,  -2f),  // Центр деревни
             (NPCRole.Guard,      3,   8f,   0f),  // Вход
@@ -62,9 +65,9 @@ namespace CultivationGame.Editor.SceneBuilder
 
             int spawned = 0;
 
-            foreach (var (role, level, x, y) in NPC_PLACEMENTS)
+            foreach (var (role, level, offsetX, offsetY) in NPC_PLACEMENTS)
             {
-                Vector3 position = new Vector3(x, y, 0f);
+                Vector3 position = new Vector3(CENTER_X + offsetX, CENTER_Y + offsetY, 0f);
 
                 var controller = NPCSceneSpawner.SpawnNPCInScene(role, level, position);
                 if (controller != null)
@@ -77,7 +80,7 @@ namespace CultivationGame.Editor.SceneBuilder
                         SetupGuardPatrol(controller, position);
                     }
 
-                    Debug.Log($"[Phase19] Спавн: {controller.NpcName} ({role} L{level}) поз.({x},{y})");
+                    Debug.Log($"[Phase19] Спавн: {controller.NpcName} ({role} L{level}) поз.({position.x},{position.y})");
                 }
                 else
                 {

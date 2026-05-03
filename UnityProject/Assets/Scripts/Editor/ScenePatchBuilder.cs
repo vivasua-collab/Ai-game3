@@ -34,21 +34,22 @@ namespace CultivationGame.Editor
     [System.Obsolete("ScenePatchBuilder устарел. Используйте FullSceneBuilder v2.0 (Tools → Full Scene Builder → Build All)")]
     public static class ScenePatchBuilder
     {
-        [MenuItem("Tools/Scene Patch Builder/Apply All Pending Patches (DEPRECATED — use Full Scene Builder)", false, 0)]
+        [MenuItem("Tools/Scene Patch Builder/Apply All Pending Patches (DEPRECATED — use Scene Tools)", false, 0)]
         public static void ApplyAllPending()
         {
-            Debug.LogWarning("[ScenePatchBuilder] УСТАРЕЛО! Все патчи теперь в FullSceneBuilder v2.0. " +
-                "Используйте: Tools → Full Scene Builder → Build All (One Click)");
+            Debug.LogWarning("[ScenePatchBuilder] УСТАРЕЛО! Используйте Window → Scene Tools.");
             EditorUtility.DisplayDialog("Устаревший инструмент",
                 "ScenePatchBuilder устарел!\n\nВсе патчи объединены в FullSceneBuilder v2.0.\n" +
-                "Используйте: Tools → Full Scene Builder → Build All (One Click)",
+                "Используйте: Window → Scene Tools",
                 "OK");
+            SceneToolsWindow.ShowWindow();
         }
 
-        [MenuItem("Tools/Scene Patch Builder/Validate Current Scene (DEPRECATED — use Full Scene Builder)", false, 100)]
+        [MenuItem("Tools/Scene Patch Builder/Validate Current Scene (DEPRECATED — use Scene Tools)", false, 100)]
         public static void ValidateScene()
         {
-            Debug.LogWarning("[ScenePatchBuilder] УСТАРЕЛО! Используйте FullSceneBuilder Build All для валидации.");
+            Debug.LogWarning("[ScenePatchBuilder] УСТАРЕЛО! Открываю Scene Tools...");
+            SceneToolsWindow.ShowWindow();
         }
 
         [MenuItem("Tools/Scene Patch Builder/Show Applied Patches (DEPRECATED)", false, 200)]

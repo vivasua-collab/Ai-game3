@@ -21,13 +21,17 @@ namespace CultivationGame.Editor.SceneBuilder
 
         public bool IsNeeded()
         {
-            // Если сцена не открыта — Camera.main вернёт null → return true
+            // Если сцена не открыта — объекты не найдены → return true
             var cam = Camera.main;
             if (cam == null) return true;
 
-            // Камера ещё не настроена для тайловой карты
-            if (cam.transform.position.x < 1f && cam.transform.position.y < 1f)
-                return true;
+            // Проверяем Camera2DSetup — если его нет, фаза нужна
+            if (cam.GetComponent<Camera2DSetup>() == null) return true;
+
+            // Проверяем Camera2DSetup настройки (bounds должны быть заданы)
+            var camSo = new SerializedObject(cam.GetComponent<Camera2DSetup>());
+            var useBounds = camSo.FindProperty("useBounds");
+            if (useBounds != null && !useBounds.boolValue) return true;
 
             if (UnityEngine.Object.FindFirstObjectByType<Grid>() == null)
                 return true;

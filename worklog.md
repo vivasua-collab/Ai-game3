@@ -222,3 +222,26 @@ Stage Summary:
 - NPC обнаруживает игрока: aggro radius для Hostile/Hatred NPC
 - Player→NPC атака: через CombatManager вместо хардкода TakeDamage(10)
 - Чекпоинт: checkpoints/04_30_npc_movement_combat_impl.md
+
+---
+Task ID: 6
+Agent: main
+Task: Детальный аудит создателя сцены — FullSceneBuilder + все фазы (00-19) + вспомогательные Editor-утилиты
+
+Work Log:
+- Прочитаны все 24 файла Editor-утилит:
+  - FullSceneBuilder.cs (оркестратор)
+  - IScenePhase.cs (интерфейс)
+  - SceneBuilderConstants.cs (константы)
+  - SceneBuilderUtils.cs (утилиты)
+  - Phase00URPSetup.cs — Phase19NPCPlacement.cs (20 фаз)
+  - NPCSceneSpawner.cs, EquipmentSceneSpawner.cs, EquipmentGeneratorMenu.cs
+  - SceneToolsWindow.cs, SceneSetupTools.cs, ScenePatchBuilder.cs
+- Проверены исходные данные: NPCRole enum, NPCController.InitializeFromGenerated(), GeneratedNPC class
+- Проверен git: HEAD=bc65df4, код актуален
+
+Stage Summary:
+- Полный аудит 24 файлов (~6000+ строк) завершён
+- Найдено 19 проблем разной степени критичности (см. ниже)
+- SceneToolsWindow уже существует — кнопки спауна NPC и экипировки РЕАЛИЗОВАНЫ
+- Ключевая проблема: IScenePhase.Order комментарий говорит 0-18, но реально 0-19

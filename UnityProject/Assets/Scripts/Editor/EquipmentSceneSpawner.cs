@@ -5,13 +5,8 @@
 // Редактировано: 2026-05-03 09:48:00 UTC — добавлены публичные методы для SceneToolsWindow + ClearAllLoot
 // ============================================================================
 //
-// Горячие клавиши:
-//   Ctrl+G     — 3 случайных предмета рядом с игроком
-//   Ctrl+Shift+G — 10 случайных предметов рядом с игроком
-//   Ctrl+F1    — 1 оружие T1 в инвентарь игрока
-//   Ctrl+F2    — 1 броня T1 в инвентарь игрока
-//
 // Пункты меню: Tools/Equipment/Spawn In Scene/
+// Кнопки: Window → Scene Tools → Equipment Spawner
 //
 // Использует LootGenerator (runtime) — не создаёт .asset файлов.
 // Спавнит ResourcePickup с EquipmentData возле позиции Player.
@@ -47,16 +42,16 @@ namespace CultivationGame.Editor
         //  МЕНЮ: СПАВН В СЦЕНУ (ResourcePickup)
         // ================================================================
 
-        /// Спавн 3 случайных предметов рядом с игроком [Ctrl+G]
-        [MenuItem("Tools/Equipment/Spawn In Scene/Random Loot x3 _%g", false, 30)]
+        /// Спавн 3 случайных предметов рядом с игроком
+        [MenuItem("Tools/Equipment/Spawn In Scene/Random Loot x3", false, 30)]
         public static void SpawnRandomLoot3() => SpawnLootNearPlayer(3, 1);
 
-        /// Спавн 10 случайных предметов рядом с игроком [Ctrl+Shift+G]
-        [MenuItem("Tools/Equipment/Spawn In Scene/Random Loot x10 _%#g", false, 31)]
+        /// Спавн 10 случайных предметов рядом с игроком
+        [MenuItem("Tools/Equipment/Spawn In Scene/Random Loot x10", false, 31)]
         public static void SpawnRandomLoot10() => SpawnLootNearPlayer(10, 1);
 
-        /// Спавн 5 предметов уровня 3 [Ctrl+Alt+G]
-        [MenuItem("Tools/Equipment/Spawn In Scene/Random Loot L3 x5 _%&g", false, 32)]
+        /// Спавн 5 предметов уровня 3
+        [MenuItem("Tools/Equipment/Spawn In Scene/Random Loot L3 x5", false, 32)]
         public static void SpawnRandomLootL3() => SpawnLootNearPlayer(5, 3);
 
         /// Спавн 1 оружия рядом с игроком
@@ -73,24 +68,24 @@ namespace CultivationGame.Editor
         //  МЕНЮ: ПРЯМО В ИНВЕНТАРЬ
         // ================================================================
 
-        /// Добавить 1 оружие в инвентарь игрока [Ctrl+F1]
-        [MenuItem("Tools/Equipment/Add to Inventory/Weapon _%F1", false, 40)]
+        /// Добавить 1 оружие в инвентарь игрока
+        [MenuItem("Tools/Equipment/Add to Inventory/Weapon", false, 40)]
         public static void AddWeaponToInventory()
         {
             var equip = LootGenerator.GenerateRandomWeapon(1);
             AddToPlayerInventory(equip);
         }
 
-        /// Добавить 1 броню в инвентарь игрока [Ctrl+F2]
-        [MenuItem("Tools/Equipment/Add to Inventory/Armor _%F2", false, 41)]
+        /// Добавить 1 броню в инвентарь игрока
+        [MenuItem("Tools/Equipment/Add to Inventory/Armor", false, 41)]
         public static void AddArmorToInventory()
         {
             var equip = LootGenerator.GenerateRandomArmor(1);
             AddToPlayerInventory(equip);
         }
 
-        /// Добавить 3 случайных предмета в инвентарь [Ctrl+F3]
-        [MenuItem("Tools/Equipment/Add to Inventory/Random Loot x3 _%F3", false, 42)]
+        /// Добавить 3 случайных предмета в инвентарь
+        [MenuItem("Tools/Equipment/Add to Inventory/Random Loot x3", false, 42)]
         public static void AddRandomLootToInventory()
         {
             var loot = LootGenerator.GenerateLoot(1, 3);
