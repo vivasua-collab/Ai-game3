@@ -1,7 +1,7 @@
 # Чекпоинт: Система боя — полный план внедрения
 
 **Дата:** 2026-05-04 04:10 UTC
-**Обновлено:** 2026-05-05 — аудит тиковой системы, добавлено правило tick/10
+**Обновлено:** 2026-05-04 04:45 UTC — внедрение фаз 1-5 боевой системы + тиковая интеграция
 **Статус:** in_progress
 
 👉 Кодовая база: [05_04_combat_system_code.md](05_04_combat_system_code.md)
@@ -18,6 +18,13 @@
 - [x] Разработана архитектура системы накачки техник (Charge System)
 - [x] Аудит тиковой системы (TimeController) — см. раздел ниже
 - [x] Добавлено ограничение: минимальное время накачки = tick / 10
+- [x] **ТИКОВАЯ СИСТЕМА**: Полная интеграция TimeController v2.0 — синглтон, OnTick в обоих режимах, OnTickDelta, TickInterval/MinChargeTime публичные
+- [x] **ФАЗА 1**: Созданы ChargeState.cs + TechniqueChargeSystem.cs — ядро накачки
+- [x] **ФАЗА 1**: Интегрирован UseTechniqueFromCharge в TechniqueController v1.1
+- [x] **ФАЗА 2**: Создан CombatTrigger.cs — триггер боя (2D коллайдер)
+- [x] **ФАЗА 3**: HitDetector.cs мигрирован Physics → Physics2D (v2.0)
+- [x] **ФАЗА 4**: Созданы CombatAI.cs + AIPersonality.cs — ИИ для NPC
+- [x] **ФАЗА 5**: CombatManager v2.0 — интеграция прерываний накачки
 
 ---
 

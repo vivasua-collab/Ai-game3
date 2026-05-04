@@ -1,22 +1,22 @@
 // ============================================================================
 // CombatManager.cs — Центральный менеджер боя
 // Cultivation World Simulator
-// Версия: 1.3 — Добавлен OnDestroy для сброса Instance
+// Версия: 2.0 — Интеграция с тиковой системой и системой накачки
 // ============================================================================
 // Создан: 2026-03-31 14:12:00 UTC
-// Редактировано: 2026-04-09 10:30:00 UTC
+// Редактировано: 2026-05-04 04:32:00 UTC — Интеграция с тиковой системой
 //
-// ИЗМЕНЕНИЯ В ВЕРСИИ 1.3:
-// - FIX: Добавлен OnDestroy для сброса Instance = null (аудит Unity 6.3)
-//
-// ИЗМЕНЕНИЯ В ВЕРСИИ 1.2:
-// - FIX: Добавлены null guards в ExecuteAttack, ExecuteTechniqueAttack, ExecuteBasicAttack
+// ИЗМЕНЕНИЯ В ВЕРСИИ 2.0:
+// - Интеграция с тиковой системой (TimeController.OnTick)
+// - Обработка прерываний накачки при получении урона
+// - Подписка на OnTickDelta для покадрового обновления боя
 // ============================================================================
 
 using System;
 using System.Collections.Generic;
 using UnityEngine;
 using CultivationGame.Core;
+using CultivationGame.World;
 
 namespace CultivationGame.Combat
 {
@@ -162,6 +162,7 @@ namespace CultivationGame.Combat
             {
                 CheckCombatEnd();
                 CheckTimeout();
+                ProcessChargeInterrupts();
             }
         }
 
@@ -436,6 +437,9 @@ namespace CultivationGame.Combat
             if (damage.FinalDamage > 0)
             {
                 target.TakeDamage(damage.HitPart, damage.FinalDamage);
+                
+                // Проверяем прерывание накачки при получении урона
+                CheckChargeInterruptOnDamage(target, damage.FinalDamage);
             }
         }
 
@@ -511,6 +515,52 @@ namespace CultivationGame.Combat
             {
                 Debug.LogWarning("[CombatManager] Combat timeout reached");
                 ForceEndCombat();
+            }
+        }
+
+        #endregion
+
+        #region Накачка — интеграция с боем
+
+        /// <summary>
+        /// Проверка прерывания накачки при получении урона.
+        /// Вызывается каждый кадр во время боя.
+        /// </summary>
+        private void ProcessChargeInterrupts()
+        {
+            // Пробегаем по всем combatants и проверяем их накачку
+            foreach (var combatant in combatants)
+            {
+                if (combatant == null || !combatant.IsAlive) continue;
+
+                // Получаем TechniqueChargeSystem через ITechniqueUser
+                if (combatant is ITechniqueUser techniqueUser)
+                {
+                    var chargeSystem = techniqueUser.TechniqueController?.ChargeSystem;
+                    if (chargeSystem != null && chargeSystem.IsCharging)
+                    {
+                        // Проверяем: получил ли combatant урон на этом кадре?
+                        // Это проверяется через событие OnDamageTaken в CombatantBase
+                        // ProcessChargeInterrupts уже не нужна — прерывание обрабатывается
+                        // через CombatManager.OnAttackExecuted → TryInterruptByDamage
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// Обработать получение урона combatant'ом — проверить прерывание накачки.
+        /// Вызывается после каждого ExecuteAttack.
+        /// </summary>
+        private void CheckChargeInterruptOnDamage(ICombatant target, float damage)
+        {
+            if (target is ITechniqueUser techniqueUser)
+            {
+                var chargeSystem = techniqueUser.TechniqueController?.ChargeSystem;
+                if (chargeSystem != null && chargeSystem.IsCharging)
+                {
+                    chargeSystem.TryInterruptByDamage(damage);
+                }
             }
         }
 

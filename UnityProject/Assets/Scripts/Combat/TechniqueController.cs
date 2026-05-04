@@ -1,11 +1,10 @@
 // ============================================================================
 // TechniqueController.cs — Контроллер техник
 // Cultivation World Simulator
-// Версия: 1.0
+// Версия: 1.1 — Интеграция с системой накачки (TechniqueChargeSystem)
 // ============================================================================
 // Создан: 2026-03-30 10:00:00 UTC
-// Редактирован: 2026-03-31 09:24:43 UTC
-// ============================================================================
+// Редактировано: 2026-05-04 04:30:00 UTC — Добавлен UseTechniqueFromCharge
 
 using System;
 using System.Collections.Generic;
@@ -74,6 +73,9 @@ namespace CultivationGame.Combat
         private LearnedTechnique[] quickSlots;
         private int ultimateCount = 0;
         
+        // === Система накачки ===
+        private TechniqueChargeSystem chargeSystem;
+        
         // === Events ===
         
         public event Action<LearnedTechnique> OnTechniqueLearned;
@@ -94,6 +96,9 @@ namespace CultivationGame.Combat
             
             if (qiController == null)
                 qiController = GetComponent<QiController>();
+            
+            // Получаем/создаём систему накачки
+            chargeSystem = GetComponent<TechniqueChargeSystem>();
         }
         
         private void Update()
@@ -283,12 +288,98 @@ namespace CultivationGame.Combat
         
         /// <summary>
         /// Использовать технику из слота быстрого доступа.
+        /// С системой накачки: начинается накачка, а не мгновенное использование.
         /// </summary>
         public TechniqueUseResult UseQuickSlot(int slot)
         {
             var technique = GetQuickSlotTechnique(slot);
-            return technique != null ? UseTechnique(technique) : new TechniqueUseResult { Success = false };
+            if (technique == null)
+                return new TechniqueUseResult { Success = false, FailReason = "Empty slot" };
+            
+            // Если есть система накачки — начинаем накачку
+            if (chargeSystem != null)
+            {
+                if (chargeSystem.IsCharging)
+                {
+                    // Уже накачиваем
+                    if (chargeSystem.ActiveCharge.Technique == technique)
+                    {
+                        // Та же техника → отмена накачки
+                        chargeSystem.CancelCharge();
+                        return new TechniqueUseResult { Success = false, FailReason = "Charge cancelled" };
+                    }
+                    // Другая техника → игнорируем (правило: только одна)
+                    return new TechniqueUseResult { Success = false, FailReason = "Already charging" };
+                }
+                
+                // Начинаем накачку
+                if (chargeSystem.BeginCharge(technique))
+                {
+                    return new TechniqueUseResult { Success = false, FailReason = "Charging started" };
+                }
+                return new TechniqueUseResult { Success = false, FailReason = "Cannot start charge" };
+            }
+            
+            // Fallback: без системы накачки — мгновенное использование
+            return UseTechnique(technique);
         }
+        
+        /// <summary>
+        /// Использовать технику ПОСЛЕ завершения накачки.
+        /// Вызывается из TechniqueChargeSystem.FireChargedTechnique().
+        /// НЕ тратит Ци (уже потрачено во время накачки), только:
+        /// - Устанавливает кулдаун
+        /// - Повышает мастерство
+        /// - Формирует TechniqueUseResult для CombatManager
+        /// </summary>
+        public TechniqueUseResult UseTechniqueFromCharge(LearnedTechnique technique)
+        {
+            TechniqueUseResult result = new TechniqueUseResult();
+            
+            if (technique == null || technique.Data == null)
+            {
+                result.Success = false;
+                result.FailReason = "Invalid technique";
+                return result;
+            }
+            
+            // Ци уже потрачено во время накачки — НЕ списываем повторно!
+            
+            // Устанавливаем кулдаун
+            technique.CooldownRemaining = technique.Data.cooldown;
+            
+            // Повышаем мастерство (+0.02 за использование через накачку — больше чем мгновенное)
+            IncreaseMastery(technique, 0.02f);
+            
+            // Рассчитываем параметры
+            int capacity = CalculateCapacity(technique);
+            int damage = CalculateDamage(technique);
+            long qiCost = CalculateQiCost(technique);
+            
+            // Заполняем результат
+            result.Success = true;
+            result.QiCost = qiCost;
+            result.Capacity = capacity;
+            result.Damage = damage;
+            result.CastTime = CalculateCastTime(technique);
+            result.Element = technique.Data.element;
+            result.Type = technique.Data.techniqueType;
+            result.IsUltimate = technique.Data.isUltimate;
+            
+            OnTechniqueUsed?.Invoke(technique, result.CastTime);
+            
+            return result;
+        }
+        
+        /// <summary>
+        /// Система накачки (для внешнего доступа).
+        /// </summary>
+        public TechniqueChargeSystem ChargeSystem => chargeSystem;
+        
+        /// <summary>
+        /// Идёт ли накачка техники?
+        /// </summary>
+        public bool IsCharging => chargeSystem != null && chargeSystem.IsCharging;
         
         // === Calculations ===
         

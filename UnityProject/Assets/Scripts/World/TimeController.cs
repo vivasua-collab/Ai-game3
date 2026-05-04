@@ -1,21 +1,20 @@
 // ============================================================================
-// TimeController.cs — Система игрового времени
+// TimeController.cs — Система игрового времени (ТИКОВАЯ СИСТЕМА)
 // Cultivation World Simulator
-// Версия: 1.3 — Fix-09: LoadSaveData validation, cascading guard, GetTotalDays accuracy
+// Версия: 2.0 — Полная интеграция тиковой системы как основного таймера
 // ============================================================================
 // Создано: 2026-03-30 14:00:00 UTC
-// Редактировано: 2026-04-11 14:50:00 UTC — FIX CS1503: double→float для totalGameSeconds
+// Редактировано: 2026-05-04 04:25:00 UTC — Полная интеграция тиковой системы
 //
-// ИЗМЕНЕНИЯ В ВЕРСИИ 1.2:
-// - FIX: totalGameSeconds теперь увеличивается на 60 за минуту (не на 1)
-// - FIX: oldTimeOfDay вычисляется ДО мутации hour (корректные переходы)
-//
-// ИЗМЕНЕНИЯ В ВЕРСИИ 1.3 (Fix-09):
-// - FIX WLD-H01: OnHourPassed fires with post-increment value (documented)
-// - FIX WLD-H06: LoadSaveData validates and clamps all fields
-// - FIX WLD-M01: SetTime/SetTime fire transition events
-// - FIX WLD-M02: Cascading event guard (isAdvancing)
-// - FIX WLD-M06: GetTotalDays uses totalGameSeconds for accuracy
+// ИЗМЕНЕНИЯ В ВЕРСИИ 2.0:
+// - ТИКОВАЯ СИСТЕМА = основной таймер для ВСЕХ расчётов
+// - 1 тик = константа для игрового мира (tickInterval)
+// - Тик динамичен для игрока (зависит от скорости времени)
+// - OnTick срабатывает в ОБЕИХ режимах (детерминированный и нет)
+// - Добавлено публичное свойство TickInterval
+// - Добавлено событие OnTickDelta (float) — для систем с покадровым обновлением
+// - Добавлен Instance (синглтон) для доступа из боевой системы
+// - Добавлен TickDeltaTime — реальное время одного тика в секундах
 // ============================================================================
 
 using System;
@@ -27,9 +26,31 @@ namespace CultivationGame.World
     /// <summary>
     /// Контроллер игрового времени.
     /// Управляет течением времени, датами, сезонами.
+    ///
+    /// ╔═══════════════════════════════════════════════════════════════════════════╗
+    /// ║  ТИКОВАЯ СИСТЕМА — ОСНОВНОЙ ТАЙМЕР ИГРЫ                                    ║
+    /// ╠═══════════════════════════════════════════════════════════════════════════╣
+    /// ║                                                                            ║
+    /// ║  Для игрового мира: 1 тик = КОНСТАНТА (tickInterval)                       ║
+    /// ║  Для игрока: тик динамичен (регулятор скорости TimeSpeed)                  ║
+    /// ║                                                                            ║
+    /// ║  Все расчёты (бой, накачка, баффы, Ци) привязаны к тикам.                 ║
+    /// ║  minChargeTime = tickInterval / 10 (правило tick/10)                       ║
+    /// ║                                                                            ║
+    /// ╚═══════════════════════════════════════════════════════════════════════════╝
     /// </summary>
     public class TimeController : MonoBehaviour
     {
+        #region Singleton
+
+        public static TimeController Instance { get; private set; }
+
+        #endregion
+
+        [Header("Тиковая система — ОСНОВНОЙ ТАЙМЕР")]
+        [Tooltip("Интервал тика в РЕАЛЬНЫХ секундах. 1 тик = константа для мира.")]
+        [SerializeField] private float tickInterval = 1f;
+
         [Header("Time Settings")]
         [SerializeField] private TimeSpeed currentTimeSpeed = TimeSpeed.Normal;
         [SerializeField] private bool autoAdvance = true;
@@ -39,9 +60,6 @@ namespace CultivationGame.World
         [SerializeField] private float normalSpeedRatio = 60f;      // 1 сек = 1 минута
         [SerializeField] private float fastSpeedRatio = 300f;       // 1 сек = 5 минут
         [SerializeField] private float veryFastSpeedRatio = 900f;   // 1 сек = 15 минут
-        
-        [Header("Deterministic Settings")]
-        [SerializeField] private float tickInterval = 1f; // Интервал тика в секундах
         
         [Header("Calendar")]
         [SerializeField] private int daysPerMonth = 30;
@@ -59,8 +77,9 @@ namespace CultivationGame.World
         
         private float timeAccumulator = 0f;
         private double totalGameSeconds = 0;
-        private float deterministicAccumulator = 0f;
+        private float tickAccumulator = 0f;  // Единый аккуммулятор тиков (для обоих режимов)
         private int currentTick = 0;
+        private float lastTickRealTime = 0f; // Реальное время предыдущего тика
         
         // FIX WLD-M02: Guard against cascading event re-entrancy (2026-04-11)
         private bool isAdvancing = false;
@@ -75,9 +94,33 @@ namespace CultivationGame.World
         public event Action<TimeOfDay> OnTimeOfDayChanged;
         public event Action<Season> OnSeasonChanged;
         public event Action<TimeSpeed> OnTimeSpeedChanged;
-        public event Action<int> OnTick; // Детерминированный тик
+        
+        /// <summary>
+        /// Событие тика — ОСНОВНОЙ ТАЙМЕР для всех игровых систем.
+        /// Срабатывает в ЛЮБОМ режиме (детерминированном и нет).
+        /// Параметр: номер тика (int, монотонно возрастающий).
+        /// </summary>
+        public event Action<int> OnTick;
+        
+        /// <summary>
+        /// Покадровое событие тика — для систем с плавным обновлением (UI, накачка).
+        /// Параметр: deltaTime в реальных секундах с прошлого кадра.
+        /// </summary>
+        public event Action<float> OnTickDelta;
         
         // === Properties ===
+        
+        /// <summary>Интервал тика в реальных секундах — КОНСТАНТА для мира.</summary>
+        public float TickInterval => tickInterval;
+        
+        /// <summary>Минимальное время накачки техники = tick / 10.</summary>
+        public float MinChargeTime => tickInterval / 10f;
+        
+        /// <summary>Текущий номер тика (монотонно возрастающий).</summary>
+        public int CurrentTick => currentTick;
+        
+        /// <summary>Реальное время между тиками (может варьироваться при просадках FPS).</summary>
+        public float TickDeltaTime { get; private set; } = 0f;
         
         public int Year => currentYear;
         public int Month => currentMonth;
@@ -88,7 +131,6 @@ namespace CultivationGame.World
         public TimeOfDay CurrentTimeOfDay => CalculateTimeOfDay();
         public Season CurrentSeason => CalculateSeason();
         public double TotalGameSeconds => totalGameSeconds;
-        public int CurrentTick => currentTick;
         
         public string FormattedDate => $"{currentDay:D2}.{currentMonth:D2}.{currentYear}";
         public string FormattedTime => $"{currentHour:D2}:{currentMinute:D2}";
@@ -98,16 +140,27 @@ namespace CultivationGame.World
         
         private void Awake()
         {
-            // Registration handled by GameInitializer to avoid double-registration warning
-            // ServiceLocator.Register(this);
+            // Синглтон для доступа из боевой системы и других компонентов
+            if (Instance != null && Instance != this)
+            {
+                Destroy(gameObject);
+                return;
+            }
+            Instance = this;
+            
+            lastTickRealTime = Time.time;
         }
         
         private void Update()
         {
+            // Покадровое событие — для плавного обновления UI и накачки
+            float deltaTime = Time.deltaTime;
+            OnTickDelta?.Invoke(deltaTime);
+            
             // Недетерминированный режим (зависит от FPS)
             if (!useDeterministicTime && autoAdvance && currentTimeSpeed != TimeSpeed.Paused)
             {
-                ProcessTimeUpdate();
+                ProcessTimeUpdate(deltaTime);
             }
         }
         
@@ -123,18 +176,27 @@ namespace CultivationGame.World
         private void OnDestroy()
         {
             ServiceLocator.Unregister<TimeController>();
+            
+            if (Instance == this)
+            {
+                Instance = null;
+            }
         }
         
         // === Time Processing ===
         
         /// <summary>
         /// Обработка времени через Update (недетерминированная).
-        /// Внимание: при падении FPS время может "отставать".
+        /// Теперь тоже отправляет OnTick — единая тиковая система!
         /// </summary>
-        private void ProcessTimeUpdate()
+        private void ProcessTimeUpdate(float deltaTime)
         {
             float ratio = GetSpeedRatio();
-            timeAccumulator += Time.deltaTime * ratio;
+            timeAccumulator += deltaTime * ratio;
+            
+            // Обработка тиков — единая логика для обоих режимов
+            tickAccumulator += deltaTime;
+            ProcessTick();
             
             while (timeAccumulator >= 60f)
             {
@@ -153,20 +215,35 @@ namespace CultivationGame.World
             float gameTimeDelta = Time.fixedDeltaTime * ratio;
             
             timeAccumulator += gameTimeDelta;
-            deterministicAccumulator += Time.fixedDeltaTime;
             
-            // Отправляем событие тика для систем, которые должны работать с фиксированным шагом
-            if (deterministicAccumulator >= tickInterval)
-            {
-                deterministicAccumulator -= tickInterval;
-                currentTick++;
-                OnTick?.Invoke(currentTick);
-            }
+            // Обработка тиков — единая логика
+            tickAccumulator += Time.fixedDeltaTime;
+            ProcessTick();
             
             while (timeAccumulator >= 60f)
             {
                 timeAccumulator -= 60f;
                 AdvanceMinute();
+            }
+        }
+        
+        /// <summary>
+        /// Единая обработка тика для обоих режимов.
+        /// Тик срабатывает когда tickAccumulator >= tickInterval.
+        /// </summary>
+        private void ProcessTick()
+        {
+            while (tickAccumulator >= tickInterval)
+            {
+                tickAccumulator -= tickInterval;
+                currentTick++;
+                
+                // Рассчитываем реальное время между тиками
+                float now = Time.time;
+                TickDeltaTime = now - lastTickRealTime;
+                lastTickRealTime = now;
+                
+                OnTick?.Invoke(currentTick);
             }
         }
         

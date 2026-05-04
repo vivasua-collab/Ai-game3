@@ -1,9 +1,10 @@
 // ============================================================================
-// HitDetector.cs — Определение попаданий
+// HitDetector.cs — Определение попаданий (2D)
 // Cultivation World Simulator
-// Версия: 1.0
+// Версия: 2.0 — Миграция Physics 3D → Physics2D
 // ============================================================================
 // Создан: 2026-03-31 14:14:00 UTC
+// Редактировано: 2026-05-04 04:38:00 UTC — Миграция на Physics2D
 // ============================================================================
 
 using System;
@@ -23,7 +24,7 @@ namespace CultivationGame.Combat
         public float Distance;          // Расстояние до цели
         public ICombatant Target;       // Найденная цель
         public BodyPartType SuggestedPart; // Предлагаемая часть тела
-        public Vector3 HitPoint;        // Точка попадания
+        public Vector2 HitPoint;        // Точка попадания (2D)
         public string FailReason;       // Причина неудачи
     }
 
@@ -41,23 +42,18 @@ namespace CultivationGame.Combat
     }
 
     /// <summary>
-    /// Определение попаданий и целей.
+    /// Определение попаданий и целей (2D).
     ///
     /// Источник: ALGORITHMS.md §8 "Шансы попадания"
     ///
     /// ╔═══════════════════════════════════════════════════════════════════════════╗
-    /// ║  ШАНСЫ ПОПАДАНИЯ                                                           ║
+    /// ║  ВЕРСИЯ 2.0 — ПОЛНАЯ МИГРАЦИЯ НА PHYSICS2D                                ║
     /// ╠═══════════════════════════════════════════════════════════════════════════╣
-    /// ║                                                                            ║
-    /// ║  Базовый шанс: зависит от типа атаки                                       ║
-    /// ║  - Ближний бой: 95%                                                        ║
-    /// ║  - Дальнобойная атака: зависит от расстояния                               ║
-    /// ║                                                                            ║
-    /// ║  Модификаторы:                                                             ║
-    /// ║  - Размер цели: ±10-30%                                                    ║
-    /// ║  - Позиция: ±10-25%                                                        ║
-    /// ║  - Оружие: зависит от типа                                                 ║
-    /// ║                                                                            ║
+    /// ║  Physics.OverlapSphere → Physics2D.OverlapCircleAll                       ║
+    /// ║  Physics.Raycast → Physics2D.Raycast                                      ║
+    /// ║  Collider → Collider2D                                                    ║
+    /// ║  RaycastHit → RaycastHit2D                                                ║
+    /// ║  Vector3 → Vector2 (позиции/направления)                                  ║
     /// ╚═══════════════════════════════════════════════════════════════════════════╝
     /// </summary>
     public static class HitDetector
@@ -72,21 +68,20 @@ namespace CultivationGame.Combat
 
         // === Layer Masks ===
 
-        private static LayerMask obstacleLayerMask = -1; // Default: everything except triggers
+        private static LayerMask obstacleLayerMask = -1;
 
         /// <summary>
         /// Инициализировать маски слоёв.
         /// </summary>
         static HitDetector()
         {
-            // Исключаем триггеры из проверки препятствий
             obstacleLayerMask = ~0;
         }
 
         #region Target Detection
 
         /// <summary>
-        /// Найти ближайшую цель.
+        /// Найти ближайшую цель (2D).
         /// </summary>
         public static ICombatant FindNearestTarget(
             ICombatant attacker,
@@ -96,10 +91,10 @@ namespace CultivationGame.Combat
             if (attacker == null)
                 return null;
 
-            Vector3 attackerPos = attacker.GameObject.transform.position;
+            Vector2 attackerPos = (Vector2)attacker.GameObject.transform.position;
 
-            // Ищем все ICombatant в радиусе
-            Collider[] colliders = Physics.OverlapSphere(attackerPos, maxRange);
+            // Ищем все ICombatant в радиусе (2D)
+            Collider2D[] colliders = Physics2D.OverlapCircleAll(attackerPos, maxRange);
 
             ICombatant nearestTarget = null;
             float nearestDistance = float.MaxValue;
@@ -114,14 +109,12 @@ namespace CultivationGame.Combat
                 if (!target.IsAlive)
                     continue;
 
-                // Проверяем тип цели
                 if (!IsValidTargetType(attacker, target, targetType))
                     continue;
 
-                // Проверяем расстояние
-                float distance = Vector3.Distance(
+                float distance = Vector2.Distance(
                     attackerPos,
-                    target.GameObject.transform.position
+                    (Vector2)target.GameObject.transform.position
                 );
 
                 if (distance < nearestDistance)
@@ -135,7 +128,7 @@ namespace CultivationGame.Combat
         }
 
         /// <summary>
-        /// Найти все цели в радиусе.
+        /// Найти все цели в радиусе (2D).
         /// </summary>
         public static List<ICombatant> FindTargetsInRange(
             ICombatant attacker,
@@ -147,8 +140,8 @@ namespace CultivationGame.Combat
             if (attacker == null)
                 return targets;
 
-            Vector3 attackerPos = attacker.GameObject.transform.position;
-            Collider[] colliders = Physics.OverlapSphere(attackerPos, range);
+            Vector2 attackerPos = (Vector2)attacker.GameObject.transform.position;
+            Collider2D[] colliders = Physics2D.OverlapCircleAll(attackerPos, range);
 
             foreach (var collider in colliders)
             {
@@ -171,10 +164,6 @@ namespace CultivationGame.Combat
 
         /// <summary>
         /// Проверить тип цели.
-        /// FIX CMB-C10: Улучшена логика Ally/Neutral (пока без FactionController — 
-        /// будет обновлено в Fix-04 когда Attitude enum доступен).
-        /// FIX CMB-M07: SizeClass в формулу попадания (пока заглушка — 
-        /// полная интеграция в Fix-04).
         /// </summary>
         private static bool IsValidTargetType(ICombatant attacker, ICombatant target, TargetType targetType)
         {
@@ -184,33 +173,20 @@ namespace CultivationGame.Combat
                 TargetType.Self => target == attacker,
                 TargetType.Any => true,
                 TargetType.Enemy => target != attacker,
-                // FIX CMB-C10: Ally/Neutral — заглушка, полная реализация в Fix-04
-                // после добавления enum Attitude и FactionController
                 TargetType.Ally => IsValidAlly(attacker, target),
                 TargetType.Neutral => IsValidNeutral(attacker, target),
                 _ => false
             };
         }
         
-        /// <summary>
-        /// Проверить, является ли цель союзником.
-        /// FIX CMB-C10: Временная реализация. После Fix-04 будет использовать Attitude enum.
-        /// </summary>
         private static bool IsValidAlly(ICombatant attacker, ICombatant target)
         {
-            // TODO Fix-04: Использовать FactionController.GetAttitude(attacker, target) >= Attitude.Friendly
-            // Пока: тот же GameObject (редкий кейс) — союзник
             return false; // Без FactionController пока нет способа определить
         }
         
-        /// <summary>
-        /// Проверить, является ли цель нейтральной.
-        /// FIX CMB-C10: Временная реализация.
-        /// </summary>
         private static bool IsValidNeutral(ICombatant attacker, ICombatant target)
         {
-            // TODO Fix-04: Использовать FactionController.GetAttitude() в диапазоне Neutral
-            return false; // Без FactionController пока нет способа определить
+            return false;
         }
 
         #endregion
@@ -218,44 +194,45 @@ namespace CultivationGame.Combat
         #region Line of Sight
 
         /// <summary>
-        /// Проверить прямую видимость.
+        /// Проверить прямую видимость (2D).
         /// </summary>
         public static bool HasLineOfSight(ICombatant attacker, ICombatant target)
         {
             if (attacker == null || target == null)
                 return false;
 
-            Vector3 attackerPos = attacker.GameObject.transform.position;
-            Vector3 targetPos = target.GameObject.transform.position;
+            Vector2 attackerPos = (Vector2)attacker.GameObject.transform.position;
+            Vector2 targetPos = (Vector2)target.GameObject.transform.position;
 
-            Vector3 direction = (targetPos - attackerPos).normalized;
-            float distance = Vector3.Distance(attackerPos, targetPos);
+            Vector2 direction = (targetPos - attackerPos).normalized;
+            float distance = Vector2.Distance(attackerPos, targetPos);
 
-            // Raycast от атакующего к цели
-            if (Physics.Raycast(attackerPos, direction, out RaycastHit hit, distance, obstacleLayerMask))
+            // Raycast 2D от атакующего к цели
+            RaycastHit2D hit = Physics2D.Raycast(attackerPos, direction, distance, obstacleLayerMask);
+
+            if (hit.collider != null)
             {
-                // Если raycast попал в что-то до цели
                 return hit.collider.gameObject == target.GameObject ||
                        hit.collider.transform.IsChildOf(target.GameObject.transform);
             }
 
-            // Raycast не попал ни во что - цель не закрыта препятствием
             return true;
         }
 
         /// <summary>
-        /// Проверить прямую видимость к точке.
+        /// Проверить прямую видимость к точке (2D).
         /// </summary>
-        public static bool HasLineOfSightToPoint(ICombatant attacker, Vector3 point)
+        public static bool HasLineOfSightToPoint(ICombatant attacker, Vector2 point)
         {
             if (attacker == null)
                 return false;
 
-            Vector3 attackerPos = attacker.GameObject.transform.position;
-            Vector3 direction = (point - attackerPos).normalized;
-            float distance = Vector3.Distance(attackerPos, point);
+            Vector2 attackerPos = (Vector2)attacker.GameObject.transform.position;
+            Vector2 direction = (point - attackerPos).normalized;
+            float distance = Vector2.Distance(attackerPos, point);
 
-            return !Physics.Raycast(attackerPos, direction, distance, obstacleLayerMask);
+            RaycastHit2D hit = Physics2D.Raycast(attackerPos, direction, distance, obstacleLayerMask);
+            return hit.collider == null;
         }
 
         #endregion
@@ -263,7 +240,7 @@ namespace CultivationGame.Combat
         #region Hit Detection
 
         /// <summary>
-        /// Проверить возможность атаки.
+        /// Проверить возможность атаки (2D).
         /// </summary>
         public static HitDetectionResult CheckAttackFeasibility(
             ICombatant attacker,
@@ -282,11 +259,11 @@ namespace CultivationGame.Combat
                 return result;
             }
 
-            // Проверка расстояния
+            // Проверка расстояния (2D)
             float range = GetAttackRange(attackType);
-            result.Distance = Vector3.Distance(
-                attacker.GameObject.transform.position,
-                target.GameObject.transform.position
+            result.Distance = Vector2.Distance(
+                (Vector2)attacker.GameObject.transform.position,
+                (Vector2)target.GameObject.transform.position
             );
             result.IsInRange = result.Distance <= range;
 
@@ -296,7 +273,7 @@ namespace CultivationGame.Combat
                 return result;
             }
 
-            // Проверка прямой видимости
+            // Проверка прямой видимости (2D)
             result.HasLineOfSight = HasLineOfSight(attacker, target);
 
             if (!result.HasLineOfSight)
@@ -305,8 +282,8 @@ namespace CultivationGame.Combat
                 return result;
             }
 
-            // Вычисляем точку попадания
-            result.HitPoint = target.GameObject.transform.position;
+            // Вычисляем точку попадания (2D)
+            result.HitPoint = (Vector2)target.GameObject.transform.position;
 
             // Предлагаем часть тела
             result.SuggestedPart = DefenseProcessor.RollBodyPart();
@@ -335,9 +312,7 @@ namespace CultivationGame.Combat
         #region Hit Chance Calculation
 
         /// <summary>
-        /// Рассчитать шанс попадания.
-        ///
-        /// Источник: ALGORITHMS.md §8 "Шансы попадания"
+        /// Рассчитать шанс попадания (2D).
         /// </summary>
         public static float CalculateHitChance(
             ICombatant attacker,
@@ -352,22 +327,20 @@ namespace CultivationGame.Combat
             float agilityMod = (attacker.Agility - 10) * 0.01f;
             baseChance += agilityMod;
 
-            // FIX CMB-M07: Модификатор размера цели
-            // SizeClass пока берём из collider bounds (если есть)
+            // Модификатор размера цели (2D коллайдер)
             float sizeModifier = GetSizeModifier(target);
             baseChance += sizeModifier;
 
             // Модификатор расстояния для дальнобойных атак
             if (IsRangedAttack(attackType))
             {
-                float distance = Vector3.Distance(
-                    attacker.GameObject.transform.position,
-                    target.GameObject.transform.position
+                float distance = Vector2.Distance(
+                    (Vector2)attacker.GameObject.transform.position,
+                    (Vector2)target.GameObject.transform.position
                 );
                 float maxRange = GetAttackRange(attackType);
                 float distanceRatio = distance / maxRange;
 
-                // Шанс падает с расстоянием
                 baseChance *= (1f - distanceRatio * 0.3f);
             }
 
@@ -393,28 +366,22 @@ namespace CultivationGame.Combat
         }
         
         /// <summary>
-        /// Получить модификатор размера цели для шанса попадания.
-        /// FIX CMB-M07: Интеграция SizeClass в формулу попадания.
-        /// 
-        /// Большие цели (+10..+30%), маленькие (-10..-30%).
-        /// Определяется по Collider bounds если нет явного SizeClass.
+        /// Получить модификатор размера цели для шанса попадания (2D).
         /// </summary>
         private static float GetSizeModifier(ICombatant target)
         {
             if (target?.GameObject == null) return 0f;
             
-            // Пытаемся получить размер из коллайдера
-            var collider = target.GameObject.GetComponent<Collider>();
-            if (collider != null)
+            // Пытаемся получить размер из 2D коллайдера
+            var collider2D = target.GameObject.GetComponent<Collider2D>();
+            if (collider2D != null)
             {
-                float size = collider.bounds.size.magnitude;
-                // Нормализация: размер 1.0 = человек (0 модификатор)
-                // > 1.5 = большая цель (+), < 0.7 = маленькая (-)
-                if (size > 1.5f) return Mathf.Min(0.3f, (size - 1.5f) * 0.1f);  // +10..+30%
-                if (size < 0.7f) return Mathf.Max(-0.3f, (size - 0.7f) * 0.2f);  // -10..-30%
+                float size = collider2D.bounds.size.magnitude;
+                if (size > 1.5f) return Mathf.Min(0.3f, (size - 1.5f) * 0.1f);
+                if (size < 0.7f) return Mathf.Max(-0.3f, (size - 0.7f) * 0.2f);
             }
             
-            return 0f; // Стандартный размер
+            return 0f;
         }
 
         #endregion
@@ -422,15 +389,15 @@ namespace CultivationGame.Combat
         #region Area of Effect
 
         /// <summary>
-        /// Найти все цели в области.
+        /// Найти все цели в области (2D).
         /// </summary>
         public static List<ICombatant> FindTargetsInArea(
-            Vector3 center,
+            Vector2 center,
             float radius,
             ICombatant exclude = null)
         {
             List<ICombatant> targets = new List<ICombatant>();
-            Collider[] colliders = Physics.OverlapSphere(center, radius);
+            Collider2D[] colliders = Physics2D.OverlapCircleAll(center, radius);
 
             foreach (var collider in colliders)
             {
@@ -452,11 +419,11 @@ namespace CultivationGame.Combat
         }
 
         /// <summary>
-        /// Найти цели в конусе.
+        /// Найти цели в конусе (2D).
         /// </summary>
         public static List<ICombatant> FindTargetsInCone(
             ICombatant attacker,
-            Vector3 direction,
+            Vector2 direction,
             float range,
             float angleDegrees)
         {
@@ -465,15 +432,15 @@ namespace CultivationGame.Combat
             if (attacker == null)
                 return targets;
 
-            Vector3 attackerPos = attacker.GameObject.transform.position;
+            Vector2 attackerPos = (Vector2)attacker.GameObject.transform.position;
             List<ICombatant> potentialTargets = FindTargetsInRange(attacker, range, TargetType.Enemy);
 
             float halfAngle = angleDegrees / 2f;
 
             foreach (var target in potentialTargets)
             {
-                Vector3 toTarget = (target.GameObject.transform.position - attackerPos).normalized;
-                float angle = Vector3.Angle(direction, toTarget);
+                Vector2 toTarget = ((Vector2)target.GameObject.transform.position - attackerPos).normalized;
+                float angle = Vector2.Angle(direction, toTarget);
 
                 if (angle <= halfAngle)
                 {
