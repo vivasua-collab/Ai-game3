@@ -4,6 +4,7 @@
 // Версия: 1.1 — Fix-02: Elemental interaction Variant A, AttackType.Normal, defenderElement
 // Создан: 2026-03-30 10:00:00 UTC
 // Редактировано: 2026-04-10 14:43:00 UTC
+// Редактировано: 2026-05-04 07:25:00 UTC — ФАЗА 7: Слой 1b (оружие), Слой 3b (формация)
 // ============================================================================
 
 using System;
@@ -45,6 +46,7 @@ namespace CultivationGame.Combat
     
     /// <summary>
     /// Параметры атакующего.
+    /// ФАЗА 7: Добавлено WeaponBonusDamage для слоя 1b.
     /// </summary>
     public struct AttackerParams
     {
@@ -59,11 +61,16 @@ namespace CultivationGame.Combat
         public TechniqueGrade TechniqueGrade;
         public bool IsUltimate;
         public bool IsQiTechnique;          // TRUE = техника Ци, FALSE = физическая атака
+
+        // ФАЗА 7: Слой 1b — бонус урона оружия
+        /// <summary>Бонусный урон от оружия (для CombatSubtype.MeleeWeapon)</summary>
+        public float WeaponBonusDamage;
     }
     
     /// <summary>
     /// Параметры защищающегося.
     /// FIX CMB-H05: добавлено DefenderElement для стихийных взаимодействий
+    /// ФАЗА 7: Добавлено FormationBuffMultiplier для слоя 3b.
     /// </summary>
     public struct DefenderParams
     {
@@ -85,6 +92,14 @@ namespace CultivationGame.Combat
         
         // FIX CMB-H05: Элемент защитника для стихийных взаимодействий
         public Element DefenderElement;
+
+        // ФАЗА 7: Слой 3b — бафф формации
+        /// <summary>
+        /// Множитель баффа формации (1.0 = нет формации, > 1.0 = усиление).
+        /// Источник: FormationSystem / FormationArrayEffect.
+        /// Применяется как: finalDamage *= formationBuffMultiplier
+        /// </summary>
+        public float FormationBuffMultiplier;
     }
     
     /// <summary>
@@ -127,6 +142,18 @@ namespace CultivationGame.Combat
             );
             
             float damage = result.RawDamage;
+
+            // ========================================
+            // СЛОЙ 1b: Бонус урона оружия (ФАЗА 7)
+            // Для CombatSubtype.MeleeWeapon добавляем бонус от экипировки.
+            // Формула: rawDamage += weaponBonusDamage
+            // Источник: EquipmentController / WeaponData
+            // ========================================
+
+            if (attacker.CombatSubtype == CombatSubtype.MeleeWeapon && attacker.WeaponBonusDamage > 0)
+            {
+                damage += attacker.WeaponBonusDamage;
+            }
             
             // ========================================
             // СЛОЙ 2: Level Suppression
@@ -155,6 +182,18 @@ namespace CultivationGame.Combat
             
             result.ElementMultiplier = CalculateElementalInteraction(attacker.AttackElement, defender.DefenderElement);
             damage *= result.ElementMultiplier;
+
+            // ========================================
+            // СЛОЙ 3b: Бафф формации (ФАЗА 7)
+            // Если защитник в формации, входящий урон умножается на formationBuffMultiplier.
+            // Значение > 1.0 = формация усиливает защиту (снижает урон обратно).
+            // Формула: damage /= formationBuffMultiplier
+            // ========================================
+
+            if (defender.FormationBuffMultiplier > 1.0f)
+            {
+                damage /= defender.FormationBuffMultiplier;
+            }
             
             // ========================================
             // СЛОЙ 3: Определение части тела

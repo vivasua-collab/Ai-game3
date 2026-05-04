@@ -4,6 +4,7 @@
 // Версия: 1.0
 // ============================================================================
 // Создан: 2026-03-31 14:08:00 UTC
+// Редактировано: 2026-05-04 07:25:00 UTC — ФАЗА 7: WeaponBonusDamage + FormationBuffMultiplier
 // ============================================================================
 
 using System;
@@ -175,6 +176,14 @@ namespace CultivationGame.Combat
         // Финальные шансы считаются в DamageCalculator через DefenseProcessor
         public virtual float WeaponParryBonus => 0f;  // TODO: из EquipmentController
         public virtual float ShieldBlockBonus => 0f;   // TODO: из EquipmentController
+
+        // ФАЗА 7: Слой 1b — бонус урона оружия
+        /// <summary>Бонусный урон от оружия (из EquipmentController)</summary>
+        public virtual float WeaponBonusDamage => 0f;
+
+        // ФАЗА 7: Слой 3b — множитель баффа формации
+        /// <summary>Множитель баффа формации (1.0 = нет, > 1.0 = усиление защиты)</summary>
+        public virtual float FormationBuffMultiplier => 1.0f;
         
         // FIX CMB-H05: Элемент защитника для стихийных взаимодействий
         public virtual Element DefenderElement => Element.Neutral;
@@ -268,6 +277,7 @@ namespace CultivationGame.Combat
         
         /// <summary>
         /// Получить параметры атакующего для DamageCalculator.
+        /// ФАЗА 7: Добавлено WeaponBonusDamage для слоя 1b.
         /// </summary>
         public AttackerParams GetAttackerParams(Element attackElement = Element.Neutral)
         {
@@ -283,7 +293,8 @@ namespace CultivationGame.Combat
                 TechniqueLevel = 1,
                 TechniqueGrade = TechniqueGrade.Common,
                 IsUltimate = false,
-                IsQiTechnique = false
+                IsQiTechnique = false,
+                WeaponBonusDamage = WeaponBonusDamage  // ФАЗА 7: слой 1b
             };
         }
         
@@ -291,6 +302,7 @@ namespace CultivationGame.Combat
         /// Получить параметры защищающегося для DamageCalculator.
         /// FIX CMB-C03: Передаём СЫРЫЕ бонусы экипировки, не финальные шансы.
         /// DamageCalculator сам вызовет CalculateParryChance/CalculateBlockChance.
+        /// ФАЗА 7: Добавлено FormationBuffMultiplier для слоя 3b.
         /// </summary>
         public DefenderParams GetDefenderParams()
         {
@@ -308,7 +320,8 @@ namespace CultivationGame.Combat
                 ParryBonus = WeaponParryBonus,   // FIX CMB-C03: сырой бонус оружия
                 BlockBonus = ShieldBlockBonus,    // FIX CMB-C03: сырой бонус щита
                 BodyMaterial = BodyMaterial,
-                DefenderElement = DefenderElement  // FIX CMB-H05
+                DefenderElement = DefenderElement,  // FIX CMB-H05
+                FormationBuffMultiplier = FormationBuffMultiplier  // ФАЗА 7: слой 3b
             };
         }
     }

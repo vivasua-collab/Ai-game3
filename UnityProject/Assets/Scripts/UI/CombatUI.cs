@@ -3,6 +3,7 @@
 // Cultivation World Simulator
 // Создано: 2026-04-03
 // Редактировано: 2026-04-11 06:38:02 UTC — UI-L02: Camera.main null guards, CORE-M03: AttackResult→CombatAttackResult
+// Редактировано: 2026-05-04 07:20:00 UTC — ФАЗА 6: Полоска накачки, слоты техник, индикатор прерывания
 
 using System;
 using System.Collections.Generic;
@@ -10,6 +11,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 using CultivationGame.Core;
+using CultivationGame.Combat;
 
 namespace CultivationGame.UI
 {
@@ -110,6 +112,31 @@ namespace CultivationGame.UI
         [Tooltip("Префаб числа урона")]
         public GameObject damageNumberPrefab;
 
+        // === ФАЗА 6: Система накачки техник ===
+
+        [Header("Накачка техник (ФАЗА 6)")]
+        [Tooltip("Панель накачки (показывается при зарядке)")]
+        public GameObject chargePanel;
+
+        [Tooltip("Полоска прогресса накачки")]
+        public ProgressBar chargeProgressBar;
+
+        [Tooltip("Имя накачиваемой техники")]
+        public TMP_Text chargeTechniqueNameText;
+
+        [Tooltip("Текст вложенного/требуемого Ци")]
+        public TMP_Text chargeQiText;
+
+        [Tooltip("Индикатор прерывания (мигает при опасности)")]
+        public GameObject interruptWarningIndicator;
+
+        [Tooltip("Скорость вливания Ци (Ци/сек)")]
+        public TMP_Text chargeRateText;
+
+        [Header("Слоты техник (ФАЗА 6)")]
+        [Tooltip("Массив иконок слотов техник (1-9)")]
+        public TechniqueSlotUI[] techniqueSlots = new TechniqueSlotUI[9];
+
         #endregion
 
         #region Runtime Data
@@ -131,6 +158,11 @@ namespace CultivationGame.UI
         private CombatStage currentStage = CombatStage.None;
         private int currentTurn = 0;
         private bool isPlayerTurn = false;
+
+        // ФАЗА 6: Состояние накачки
+        private bool isChargeActive = false;
+        private float interruptFlashTimer = 0f;
+        private const float INTERRUPT_FLASH_INTERVAL = 0.3f;
 
         #endregion
 
@@ -154,6 +186,21 @@ namespace CultivationGame.UI
         private void Start()
         {
             HideCombatUI();
+            HideChargeBar();
+        }
+
+        private void Update()
+        {
+            // ФАЗА 6: Мигание индикатора прерывания
+            if (isChargeActive && interruptWarningIndicator != null)
+            {
+                interruptFlashTimer += Time.deltaTime;
+                if (interruptFlashTimer >= INTERRUPT_FLASH_INTERVAL)
+                {
+                    interruptFlashTimer = 0f;
+                    interruptWarningIndicator.SetActive(!interruptWarningIndicator.activeSelf);
+                }
+            }
         }
 
         #endregion
@@ -726,6 +773,268 @@ namespace CultivationGame.UI
 
         #endregion
 
+        #region ФАЗА 6: Накачка техник
+
+        /// <summary>
+        /// Обновить прогресс накачки техники.
+        /// Вызывается каждый кадр во время зарядки.
+        /// </summary>
+        /// <param name="progress">Прогресс 0.0-1.0</param>
+        /// <param name="qiCharged">Вложенное Ци</param>
+        /// <param name="qiTotal">Требуемое Ци</param>
+        public void UpdateChargeProgress(float progress, long qiCharged, long qiTotal)
+        {
+            if (chargeProgressBar != null)
+            {
+                chargeProgressBar.SetValues(progress * 100f, 100f);
+
+                // Цвет: жёлтый → оранжевый → зелёный по мере зарядки
+                if (progress < 0.3f)
+                    chargeProgressBar.SetColor(Color.yellow);
+                else if (progress < 0.7f)
+                    chargeProgressBar.SetColor(new Color(1f, 0.6f, 0f)); // Оранжевый
+                else
+                    chargeProgressBar.SetColor(Color.green);
+            }
+
+            if (chargeQiText != null)
+            {
+                chargeQiText.text = $"{qiCharged}/{qiTotal} Ци";
+            }
+        }
+
+        /// <summary>
+        /// Показать полоску накачки.
+        /// </summary>
+        /// <param name="techniqueName">Имя техники</param>
+        public void ShowChargeBar(string techniqueName)
+        {
+            isChargeActive = true;
+            interruptFlashTimer = 0f;
+
+            if (chargePanel != null)
+                chargePanel.SetActive(true);
+
+            if (chargeTechniqueNameText != null)
+                chargeTechniqueNameText.text = techniqueName;
+
+            if (chargeProgressBar != null)
+            {
+                chargeProgressBar.SetValues(0f, 100f);
+                chargeProgressBar.SetColor(Color.yellow);
+            }
+
+            if (interruptWarningIndicator != null)
+                interruptWarningIndicator.SetActive(false);
+
+            // Добавляем в лог
+            AddLogEntry($"Накачка: {techniqueName}...", LogType.Technique);
+        }
+
+        /// <summary>
+        /// Скрыть полоску накачки.
+        /// </summary>
+        public void HideChargeBar()
+        {
+            isChargeActive = false;
+
+            if (chargePanel != null)
+                chargePanel.SetActive(false);
+
+            if (interruptWarningIndicator != null)
+                interruptWarningIndicator.SetActive(false);
+        }
+
+        /// <summary>
+        /// Мигание индикатора прерывания — техника может быть прервана!
+        /// </summary>
+        public void FlashInterruptWarning()
+        {
+            if (interruptWarningIndicator != null)
+            {
+                interruptWarningIndicator.SetActive(true);
+                interruptFlashTimer = 0f;
+            }
+        }
+
+        /// <summary>
+        /// Установить состояние слота техники.
+        /// </summary>
+        /// <param name="slot">Номер слота 0-8</param>
+        /// <param name="state">Состояние слота</param>
+        public void SetTechniqueSlotState(int slot, TechniqueSlotState state)
+        {
+            if (slot < 0 || slot >= techniqueSlots.Length) return;
+            if (techniqueSlots[slot] == null) return;
+
+            techniqueSlots[slot].SetState(state);
+        }
+
+        /// <summary>
+        /// Обновить кулдаун слота техники.
+        /// </summary>
+        /// <param name="slot">Номер слота 0-8</param>
+        /// <param name="remaining">Оставшееся время (сек)</param>
+        /// <param name="total">Общее время кулдауна (сек)</param>
+        public void UpdateTechniqueSlotCooldown(int slot, float remaining, float total)
+        {
+            if (slot < 0 || slot >= techniqueSlots.Length) return;
+            if (techniqueSlots[slot] == null) return;
+
+            techniqueSlots[slot].UpdateCooldown(remaining, total);
+        }
+
+        /// <summary>
+        /// Инициализировать слоты техник из TechniqueController.
+        /// </summary>
+        public void InitializeTechniqueSlots(TechniqueController techController)
+        {
+            if (techController == null) return;
+
+            for (int i = 0; i < 9 && i < techniqueSlots.Length; i++)
+            {
+                if (techniqueSlots[i] == null) continue;
+
+                var tech = techController.GetQuickSlotTechnique(i);
+                if (tech != null && tech.Data != null)
+                {
+                    techniqueSlots[i].Initialize(
+                        tech.Data.nameRu,
+                        tech.Data.baseQiCost,
+                        i + 1 // Номер клавиши (1-9)
+                    );
+                }
+                else
+                {
+                    techniqueSlots[i].Clear();
+                }
+            }
+        }
+
+        /// <summary>
+        /// Обновить все слоты техник (кулдауны, доступность).
+        /// Вызывать каждый кадр или по событию.
+        /// </summary>
+        public void RefreshTechniqueSlots(TechniqueController techController)
+        {
+            if (techController == null) return;
+
+            for (int i = 0; i < 9 && i < techniqueSlots.Length; i++)
+            {
+                if (techniqueSlots[i] == null) continue;
+
+                var tech = techController.GetQuickSlotTechnique(i);
+                if (tech == null || tech.Data == null)
+                {
+                    techniqueSlots[i].SetState(TechniqueSlotState.Unavailable);
+                    continue;
+                }
+
+                // Кулдаун
+                if (tech.CooldownRemaining > 0)
+                {
+                    techniqueSlots[i].SetState(TechniqueSlotState.Cooldown);
+                    techniqueSlots[i].UpdateCooldown(tech.CooldownRemaining, tech.Data.cooldown);
+                    continue;
+                }
+
+                // Накачивается?
+                if (techController.IsCharging && techController.ChargeSystem.ActiveCharge.Technique == tech)
+                {
+                    techniqueSlots[i].SetState(TechniqueSlotState.Charging);
+                    continue;
+                }
+
+                // Можно использовать?
+                if (techController.CanUseTechnique(tech))
+                {
+                    techniqueSlots[i].SetState(TechniqueSlotState.Ready);
+                }
+                else
+                {
+                    techniqueSlots[i].SetState(TechniqueSlotState.Unavailable);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Подписка на события TechniqueChargeSystem.
+        /// </summary>
+        public void SubscribeToChargeSystem(TechniqueChargeSystem chargeSystem)
+        {
+            if (chargeSystem == null) return;
+
+            chargeSystem.OnChargeStarted += OnChargeStartedHandler;
+            chargeSystem.OnChargeProgress += OnChargeProgressHandler;
+            chargeSystem.OnChargeCompleted += OnChargeCompletedHandler;
+            chargeSystem.OnChargeInterrupted += OnChargeInterruptedHandler;
+            chargeSystem.OnChargeFired += OnChargeFiredHandler;
+        }
+
+        /// <summary>
+        /// Отписка от событий TechniqueChargeSystem.
+        /// </summary>
+        public void UnsubscribeFromChargeSystem(TechniqueChargeSystem chargeSystem)
+        {
+            if (chargeSystem == null) return;
+
+            chargeSystem.OnChargeStarted -= OnChargeStartedHandler;
+            chargeSystem.OnChargeProgress -= OnChargeProgressHandler;
+            chargeSystem.OnChargeCompleted -= OnChargeCompletedHandler;
+            chargeSystem.OnChargeInterrupted -= OnChargeInterruptedHandler;
+            chargeSystem.OnChargeFired -= OnChargeFiredHandler;
+        }
+
+        // === Обработчики событий накачки ===
+
+        private void OnChargeStartedHandler(TechniqueChargeData data)
+        {
+            string name = data.Technique?.Data?.nameRu ?? "???";
+            ShowChargeBar(name);
+
+            // Уведомляем о скорости вливания Ци
+            if (chargeRateText != null)
+            {
+                chargeRateText.text = $"{data.QiChargeRate:F0} Ци/с";
+            }
+        }
+
+        private void OnChargeProgressHandler(TechniqueChargeData data)
+        {
+            UpdateChargeProgress(data.ChargeProgress, data.QiCharged, data.QiTotalRequired);
+        }
+
+        private void OnChargeCompletedHandler(TechniqueChargeData data)
+        {
+            string name = data.Technique?.Data?.nameRu ?? "???";
+            AddLogEntry($"Накачка завершена: {name}!", LogType.Important);
+        }
+
+        private void OnChargeInterruptedHandler(TechniqueChargeData data, ChargeInterruptReason reason)
+        {
+            string name = data.Technique?.Data?.nameRu ?? "???";
+            string reasonText = reason switch
+            {
+                ChargeInterruptReason.PlayerCancel => "отмена",
+                ChargeInterruptReason.DamageInterrupt => "урон",
+                ChargeInterruptReason.StunInterrupt => "оглушение",
+                ChargeInterruptReason.DeathInterrupt => "смерть",
+                ChargeInterruptReason.QiDepleted => "мало Ци",
+                _ => "неизвестно"
+            };
+            AddLogEntry($"Накачка прервана: {name} ({reasonText}, возврат {data.QiReturnPercent * 100:F0}% Ци)", LogType.Damage);
+            HideChargeBar();
+        }
+
+        private void OnChargeFiredHandler(TechniqueChargeData data)
+        {
+            string name = data.Technique?.Data?.nameRu ?? "???";
+            AddLogEntry($"Техника сработала: {name}!", LogType.Technique);
+            HideChargeBar();
+        }
+
+        #endregion
+
         #region Helpers
 
         private Color GetHealthColor(float current, float max)
@@ -946,6 +1255,166 @@ namespace CultivationGame.UI
 
             if (unavailableReasonText != null && !available)
                 unavailableReasonText.text = reason;
+        }
+    }
+
+    // ============================================================================
+    // ФАЗА 6: Состояние слота техники
+    // ============================================================================
+
+    /// <summary>
+    /// Состояние слота техники в UI.
+    /// </summary>
+    public enum TechniqueSlotState
+    {
+        /// <summary>Готова к использованию</summary>
+        Ready,
+        /// <summary>Накачивается (заряжается)</summary>
+        Charging,
+        /// <summary>На кулдауне</summary>
+        Cooldown,
+        /// <summary>Недоступна (мало Ци/уровень)</summary>
+        Unavailable
+    }
+
+    // ============================================================================
+    // ФАЗА 6: UI слота техники (quickslot 1-9)
+    // ============================================================================
+
+    /// <summary>
+    /// UI-компонент одного слота техники на панели боя.
+    /// Показывает иконку, номер клавиши, состояние, кулдаун.
+    /// </summary>
+    [Serializable]
+    public class TechniqueSlotUI : MonoBehaviour
+    {
+        [Header("UI элементы")]
+        [Tooltip("Иконка техники")]
+        public Image iconImage;
+
+        [Tooltip("Номер клавиши (1-9)")]
+        public TMP_Text keyNumberText;
+
+        [Tooltip("Имя техники")]
+        public TMP_Text techniqueNameText;
+
+        [Tooltip("Стоимость Ци")]
+        public TMP_Text qiCostText;
+
+        [Tooltip("Оверлей кулдауна (затемнение)")]
+        public Image cooldownOverlay;
+
+        [Tooltip("Текст оставшегося кулдауна")]
+        public TMP_Text cooldownText;
+
+        [Tooltip("Оверлей накачки (свечение)")]
+        public GameObject chargeOverlay;
+
+        [Tooltip("Оверлей недоступности")]
+        public GameObject unavailableOverlay;
+
+        [Header("Цвета состояний")]
+        public Color readyColor = Color.white;
+        public Color chargingColor = new Color(1f, 0.8f, 0.2f); // Жёлто-золотой
+        public Color cooldownColor = new Color(0.5f, 0.5f, 0.5f, 0.7f);
+        public Color unavailableColor = new Color(0.3f, 0.3f, 0.3f, 0.8f);
+
+        // === Runtime ===
+        private TechniqueSlotState currentState = TechniqueSlotState.Ready;
+
+        /// <summary>Текущее состояние слота</summary>
+        public TechniqueSlotState State => currentState;
+
+        /// <summary>
+        /// Инициализировать слот с данными техники.
+        /// </summary>
+        public void Initialize(string name, long qiCost, int keyNumber)
+        {
+            if (techniqueNameText != null)
+                techniqueNameText.text = name;
+
+            if (qiCostText != null)
+                qiCostText.text = $"{qiCost}";
+
+            if (keyNumberText != null)
+                keyNumberText.text = keyNumber.ToString();
+
+            SetState(TechniqueSlotState.Ready);
+        }
+
+        /// <summary>
+        /// Очистить слот (нет техники).
+        /// </summary>
+        public void Clear()
+        {
+            if (techniqueNameText != null)
+                techniqueNameText.text = "";
+            if (qiCostText != null)
+                qiCostText.text = "";
+            if (iconImage != null)
+                iconImage.color = Color.gray;
+
+            SetState(TechniqueSlotState.Unavailable);
+        }
+
+        /// <summary>
+        /// Установить состояние слота.
+        /// </summary>
+        public void SetState(TechniqueSlotState state)
+        {
+            currentState = state;
+
+            // Сбрасываем все оверлеи
+            if (chargeOverlay != null) chargeOverlay.SetActive(false);
+            if (unavailableOverlay != null) unavailableOverlay.SetActive(false);
+            if (cooldownOverlay != null) cooldownOverlay.fillAmount = 0f;
+            if (cooldownText != null) cooldownText.text = "";
+
+            switch (state)
+            {
+                case TechniqueSlotState.Ready:
+                    if (iconImage != null) iconImage.color = readyColor;
+                    break;
+
+                case TechniqueSlotState.Charging:
+                    if (iconImage != null) iconImage.color = chargingColor;
+                    if (chargeOverlay != null) chargeOverlay.SetActive(true);
+                    break;
+
+                case TechniqueSlotState.Cooldown:
+                    if (iconImage != null) iconImage.color = cooldownColor;
+                    break;
+
+                case TechniqueSlotState.Unavailable:
+                    if (iconImage != null) iconImage.color = unavailableColor;
+                    if (unavailableOverlay != null) unavailableOverlay.SetActive(true);
+                    break;
+            }
+        }
+
+        /// <summary>
+        /// Обновить отображение кулдауна.
+        /// </summary>
+        /// <param name="remaining">Оставшееся время (сек)</param>
+        /// <param name="total">Общее время кулдауна (сек)</param>
+        public void UpdateCooldown(float remaining, float total)
+        {
+            if (cooldownOverlay != null && total > 0)
+            {
+                cooldownOverlay.fillAmount = remaining / total;
+            }
+
+            if (cooldownText != null)
+            {
+                if (remaining > 0)
+                {
+                    cooldownText.text = $"{remaining:F1}";
+                }
+                else
+                {
+                    cooldownText.text = "";
+                }
+            }
         }
     }
 }

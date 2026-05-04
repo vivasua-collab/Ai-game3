@@ -209,7 +209,8 @@ namespace CultivationGame.NPC
                 TechniqueLevel = 1,
                 TechniqueGrade = TechniqueGrade.Common,
                 IsUltimate = false,
-                IsQiTechnique = false
+                IsQiTechnique = false,
+                WeaponBonusDamage = 0f  // ФАЗА 7: TODO из EquipmentController
             };
         }
         
@@ -229,7 +230,8 @@ namespace CultivationGame.NPC
                 ParryBonus = 0f,
                 BlockBonus = 0f,
                 BodyMaterial = bodyController?.BodyMaterial ?? BodyMaterial.Organic,
-                DefenderElement = Element.Neutral
+                DefenderElement = Element.Neutral,
+                FormationBuffMultiplier = 1.0f  // ФАЗА 7: TODO из FormationSystem
             };
         }
         

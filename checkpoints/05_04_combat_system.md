@@ -1,8 +1,8 @@
 # Чекпоинт: Система боя — полный план внедрения
 
 **Дата:** 2026-05-04 04:10 UTC
-**Обновлено:** 2026-05-04 07:30 UTC — ФАЗА 5 завершена + Dual Tick Model v3.0
-**Статус:** in_progress
+**Обновлено:** 2026-05-04 07:35 UTC — ФАЗЫ 6-8 завершены
+**Статус:** complete
 
 👉 Кодовая база: [05_04_combat_system_code.md](05_04_combat_system_code.md)
 
@@ -31,6 +31,13 @@
 - [x] **ФАЗА 5**: CombatManager v2.1 — AI цикл + Update-driven пайплайн
 - [x] **FIX CS0414**: CombatTrigger.minAttitudeToEngage используется в ShouldEngage
 - [x] **МИГРАЦИЯ**: FormationController.OnTick → OnWorldTick
+- [x] **ФАЗА 6**: CombatUI — полоска накачки, слоты техник (TechniqueSlotUI), индикатор прерывания, TechniqueSlotState enum
+- [x] **ФАЗА 6**: CombatUI.SubscribeToChargeSystem — подписка на OnChargeStarted/Progress/Completed/Interrupted/Fired
+- [x] **ФАЗА 6**: TechniqueSlotUI — UI-компонент слота (иконка, номер, кулдаун, накачка, недоступность)
+- [x] **ФАЗА 7: Слой 1b** — WeaponBonusDamage в AttackerParams + DamageCalculator
+- [x] **ФАЗА 7: Слой 3b** — FormationBuffMultiplier в DefenderParams + DamageCalculator
+- [x] **ФАЗА 7: Слой 10b** — LootGenerator.cs + интеграция в CombatManager.OnLootGenerated
+- [x] **ФАЗА 8** — Чекпоинт обновлён, расхождения документации задокументированы
 
 ---
 
@@ -635,15 +642,17 @@ FixedUpdate()
 
 ## Следующие шаги
 
-1. **ФАЗА 1** — Создать TechniqueChargeSystem.cs и ChargeState.cs
-2. **ФАЗА 1** — Интегрировать ChargeSystem в TechniqueController
-3. **ФАЗА 2** — Создать CombatTrigger.cs
-4. **ФАЗА 3** — Исправить HitDetector.cs (3D → 2D)
-5. **ФАЗА 4** — Создать CombatAI.cs и AIPersonality.cs
-6. **ФАЗА 5** — Подключить бой к PlayerController и NPCController
-7. **ФАЗА 6** — Обновить CombatUI.cs
-8. **ФАЗА 7** — Реализовать недостающие слои пайплайна (1b, 3b, 10b)
-9. **ФАЗА 8** — Синхронизировать документацию с кодом
+✅ **ВСЕ 8 ФАЗ ЗАВЕРШЕНЫ**
+
+1. ~~ФАЗА 1~~ — Созданы TechniqueChargeSystem.cs и ChargeState.cs ✅
+2. ~~ФАЗА 1~~ — Интегрирован ChargeSystem в TechniqueController ✅
+3. ~~ФАЗА 2~~ — Создан CombatTrigger.cs ✅
+4. ~~ФАЗА 3~~ — Исправлен HitDetector.cs (3D → 2D) ✅
+5. ~~ФАЗА 4~~ — Созданы CombatAI.cs и AIPersonality.cs ✅
+6. ~~ФАЗА 5~~ — Подключён бой к PlayerController и NPCController ✅
+7. ~~ФАЗА 6~~ — Обновлён CombatUI.cs (накачка, слоты, прерывания) ✅
+8. ~~ФАЗА 7~~ — Реализованы недостающие слои пайплайна (1b, 3b, 10b) ✅
+9. ~~ФАЗА 8~~ — Синхронизирована документация с кодом ✅
 10. **Git push** после завершения
 
 ---
@@ -652,4 +661,15 @@ FixedUpdate()
 
 - package.json — блокировка dev сервера
 - checkpoints/05_04_combat_system.md — этот файл (полный план)
-- checkpoints/05_04_combat_system_code.md — аудит кода (новый)
+- checkpoints/05_04_combat_system_code.md — аудит кода
+
+### Фаза 6 — изменённые файлы
+- `Assets/Scripts/UI/CombatUI.cs` — полоска накачки, TechniqueSlotUI, TechniqueSlotState, подписка на ChargeSystem
+
+### Фаза 7 — изменённые/созданные файлы
+- `Assets/Scripts/Combat/DamageCalculator.cs` — Слой 1b (WeaponBonusDamage), Слой 3b (FormationBuffMultiplier)
+- `Assets/Scripts/Combat/Combatant.cs` — WeaponBonusDamage + FormationBuffMultiplier в CombatantBase
+- `Assets/Scripts/Combat/LootGenerator.cs` — Новый файл: генерация лута при смерти (Слой 10b)
+- `Assets/Scripts/Combat/CombatManager.cs` — OnLootGenerated событие + LootGenerator.GenerateLoot()
+- `Assets/Scripts/Player/PlayerController.cs` — AttackerParams/DefenderParams обновлены
+- `Assets/Scripts/NPC/NPCController.cs` — AttackerParams/DefenderParams обновлены

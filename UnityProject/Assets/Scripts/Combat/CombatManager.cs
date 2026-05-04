@@ -5,6 +5,7 @@
 // ============================================================================
 // Создан: 2026-03-31 14:12:00 UTC
 // Редактировано: 2026-05-04 07:25:00 UTC — ФАЗА 5: AI цикл + Update-driven пайплайн
+// Редактировано: 2026-05-04 07:30:00 UTC — ФАЗА 7: LootGenerator интеграция
 //
 // ИЗМЕНЕНИЯ В ВЕРСИИ 2.1:
 // - AI цикл: каждый кадр запрашивает CombatAI.GetNextAction() для NPC
@@ -117,6 +118,10 @@ namespace CultivationGame.Combat
         public event Action<CombatResult> OnCombatEnd;
         public event Action<ICombatant, ICombatant, DamageResult> OnAttackExecuted;
         public event Action<CombatState> OnStateChanged;
+
+        // ФАЗА 7: Событие генерации лута
+        /// <summary>Событие: сгенерирован лут при смерти combatant</summary>
+        public event Action<ICombatant, LootResult> OnLootGenerated;
 
         #endregion
 
@@ -374,6 +379,7 @@ namespace CultivationGame.Combat
 
         /// <summary>
         /// Завершить бой.
+        /// ФАЗА 7: Генерация лута при смерти проигравшего.
         /// </summary>
         public void EndCombat(ICombatant winner, ICombatant loser)
         {
@@ -381,6 +387,15 @@ namespace CultivationGame.Combat
                 return;
 
             SetState(CombatState.Ending);
+
+            // ФАЗА 7: Генерация лута из поверженного
+            if (loser != null && loser.IsAlive == false)
+            {
+                int victorLevel = winner?.CultivationLevel ?? 1;
+                LootResult loot = LootGenerator.GenerateLoot(loser, victorLevel);
+                OnLootGenerated?.Invoke(loser, loot);
+                Debug.Log($"[CombatManager] Лут из {loser.Name}: {loot.TotalItemCount} предметов, Ци={loot.QiAbsorbed}");
+            }
 
             // Отписываемся от событий смерти
             foreach (var combatant in combatants)
