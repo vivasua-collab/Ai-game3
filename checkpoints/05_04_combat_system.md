@@ -1,6 +1,7 @@
 # Чекпоинт: Система боя — полный план внедрения
 
 **Дата:** 2026-05-04 04:10 UTC
+**Обновлено:** 2026-05-05 — аудит тиковой системы, добавлено правило tick/10
 **Статус:** in_progress
 
 👉 Кодовая база: [05_04_combat_system_code.md](05_04_combat_system_code.md)
@@ -15,6 +16,8 @@
 - [x] Прочитан PlayerController, NPCController, CombatUI
 - [x] Проведён полный аудит боевой системы
 - [x] Разработана архитектура системы накачки техник (Charge System)
+- [x] Аудит тиковой системы (TimeController) — см. раздел ниже
+- [x] Добавлено ограничение: минимальное время накачки = tick / 10
 
 ---
 
@@ -83,28 +86,38 @@ public struct TechniqueChargeData
 | **Частичный возврат Ци** | При прерывании: возвращается 50% вложенного Ци. При отмене игроком: 70%. При оглушении: 0% |
 | **Движение** | melee техники: можно двигаться (0.5× скорость). ranged: нельзя двигаться |
 | **Минимальная накачка** | Техника не сработает, если вложено < 30% требуемого Ци (фиаско) |
+| **Минимальное время накачки** | **tick / 10** — накачка НЕ может быть быстрее чем tickInterval ÷ 10. При tickInterval=1с → min=0.1с. Это абсолютный пол для chargeTime |
 | **Перенакачка** | Если ChargeProgress ≥ 1.0 и QiCharged ≥ QiTotalRequired — автоматический запуск |
 
 **Формула времени накачки:**
 ```
-chargeTime = baseChargeTime × (1 / (1 + cultivationBonus)) × (1 / (1 + masteryBonus))
+chargeTime = max(minChargeTime, baseChargeTime × (1 / (1 + cultivationBonus)) × (1 / (1 + masteryBonus)))
 
 Где:
+- **minChargeTime = TimeController.tickInterval / 10** — абсолютный минимум (правило tick/10)
+  - При tickInterval=1с → minChargeTime=0.1с
+  - При изменении tickInterval автоматически пересчитывается
 - baseChargeTime = TechniqueData.chargeTime (из SO, секунды)
 - cultivationBonus = (cultivationLevel - 1) × 0.05
 - masteryBonus = mastery / 100
 
 Базовые времена по типу:
-| Тип | baseChargeTime |
-|-----|---------------|
-| melee_strike | 0.5 сек |
-| melee_weapon | 0.8 сек |
-| ranged_projectile | 1.2 сек |
-| ranged_beam | 1.5 сек |
-| ranged_aoe | 2.0 сек |
-| defense | 0.3 сек |
-| healing | 1.0 сек |
-| ultimate | 3.0 сек |
+| Тип | baseChargeTime | effectiveTime (L1, 0% mastery) |
+|-----|---------------|--------------------------------|
+| melee_strike | 0.5 сек | max(0.1, 0.5) = 0.5 сек |
+| melee_weapon | 0.8 сек | max(0.1, 0.8) = 0.8 сек |
+| ranged_projectile | 1.2 сек | max(0.1, 1.2) = 1.2 сек |
+| ranged_beam | 1.5 сек | max(0.1, 1.5) = 1.5 сек |
+| ranged_aoe | 2.0 сек | max(0.1, 2.0) = 2.0 сек |
+| defense | 0.3 сек | max(0.1, 0.3) = 0.3 сек |
+| healing | 1.0 сек | max(0.1, 1.0) = 1.0 сек |
+| ultimate | 3.0 сек | max(0.1, 3.0) = 3.0 сек |
+
+⚠️ При высоком уровне культивации и мастерстве chargeTime может стать < 0.1с —
+тогда срабатывает ограничение tick/10 и техника не может быть быстрее 0.1с.
+Пример: defense L10, 100% mastery:
+  chargeTime = 0.3 × (1/(1+0.45)) × (1/(1+1.0)) = 0.3 × 0.69 × 0.5 = 0.103с
+  → ок, выше 0.1с. Но если mastery=200% (хипотетически) → 0.075с → ограничено до 0.1с
 ```
 
 **Интеграция с TechniqueController:**
@@ -112,6 +125,13 @@ chargeTime = baseChargeTime × (1 / (1 + cultivationBonus)) × (1 / (1 + mastery
 - TechniqueController.UseQuickSlot() → вызывает BeginCharge(slot)
 - Новое поле: `private TechniqueChargeData activeCharge;`
 - Новые события: `OnChargeStarted`, `OnChargeProgress`, `OnChargeCompleted`, `OnChargeInterrupted`
+
+**Интеграция с тиковой системой (TimeController):**
+- TechniqueChargeSystem берёт tickInterval из TimeController.Instance (если доступен)
+- Формула: `minChargeTime = TimeController.Instance?.TickInterval / 10f ?? 0.1f`
+- Fallback: если TimeController не доступен → 0.1с (hardcoded default)
+- Накачка обрабатывается ПО КАДРАМ (Time.deltaTime), НЕ по тикам — для плавности UI
+- Тик используется ТОЛЬКО для расчёта минимального времени накачки
 
 ---
 
@@ -465,6 +485,138 @@ Unavailable — недостаточно Ци / уровня
 2. **Ultimate множитель** — код: ×1.3, доки: ×2.0 → решение: код верен, обновить доки
 3. **Light элемент** — есть в ALGORITHMS.md §10, нет в Element enum → добавить
 4. **Poison в Element enum** — доки говорят «не стихия», но код использует как элемент → оставить для техник
+
+---
+
+## 🔍 АУДИТ ТИКОВОЙ СИСТЕМЫ (TimeController)
+
+**Дата аудита:** 2026-05-05
+
+### Исходные данные
+
+| Параметр | Значение | Расположение |
+|----------|----------|-------------|
+| tickInterval | 1.0 сек (настраиваемый) | `TimeController.cs:44` |
+| currentTick | int, ++каждый тик | `TimeController.cs:63` |
+| OnTick event | Action<int> | `TimeController.cs:78` |
+| useDeterministicTime | true (по умолчанию) | `TimeController.cs:36` |
+| TICKS_PER_MINUTE | 1 (константа) | `GameConstants.cs:540` |
+
+### Механика работы
+
+```
+FixedUpdate()
+  → if (useDeterministicTime && autoAdvance && !Paused)
+     → deterministicAccumulator += Time.fixedDeltaTime (0.02с)
+     → if (deterministicAccumulator >= tickInterval)
+        → deterministicAccumulator -= tickInterval
+        → currentTick++
+        → OnTick?.Invoke(currentTick)
+     → timeAccumulator += Time.fixedDeltaTime × speedRatio
+     → while (timeAccumulator >= 60f) → AdvanceMinute()
+```
+
+### Подписчики OnTick
+
+| Компонент | Подписка | Файл |
+|-----------|----------|------|
+| FormationController | ✅ OnTick += HandleTimeTick | `FormationController.cs:228` |
+| FormationCore | ✅ ProcessTimeTick(int) | `FormationCore.cs:534` |
+| FormationQiPool | ✅ ProcessDrain(int) | `FormationQiPool.cs:360` |
+| QuestController | ⚠️ OnTick() метод есть, но подписка не найдена | `QuestController.cs:593` |
+| **CombatManager** | ❌ НЕ подписан | — |
+| **TechniqueController** | ❌ НЕ подписан | — |
+| **TechniqueChargeSystem** | ❌ НЕ существует | — |
+
+### Результаты аудита
+
+| # | Проверка | Результат | Комментарий |
+|---|----------|-----------|------------|
+| 1 | Тик срабатывает в детерминированном режиме | ✅ PASS | Каждые 1с, FixedUpdate-based |
+| 2 | Тик срабатывает в недетерминированном режиме | ❌ FAIL | `ProcessTimeUpdate()` НЕ отправляет OnTick |
+| 3 | currentTick корректно инкрементируется | ✅ PASS | currentTick++, OnTick?.Invoke |
+| 4 | deterministicAccumulator не переполняется | ✅ PASS | -= tickInterval, не обнуляется |
+| 5 | TickInterval доступен извне | ❌ FAIL | Нет публичного свойства TickInterval |
+| 6 | Боевая система подключена к тикам | ❌ FAIL | CombatManager/TechniqueController не подписаны |
+| 7 | TICKS_PER_MINUTE используется корректно | ⚠️ WARN | Константа существует, но нигде не используется в бою |
+
+### Обнаруженные проблемы
+
+1. **❌ КРИТИЧЕСКОЕ: Нет публичного свойства TickInterval**
+   - TimeController.tickInterval = `private float tickInterval = 1f`
+   - Нужно добавить: `public float TickInterval => tickInterval;`
+   - TechniqueChargeSystem не сможет получить tickInterval для расчёта minChargeTime
+
+2. **❌ OnTick не срабатывает в недетерминированном режиме**
+   - `ProcessTimeUpdate()` обновляет время, но НЕ отправляет OnTick
+   - Если useDeterministicTime=false, подписчики не получают тики
+   - **Влияние на бой:** минимальное — зарядка работает по deltaTime, не по тикам
+
+3. **⚠️ QuestController.OnTick не подключён**
+   - Метод существует, но подписка не найдена в коде
+   - Возможно, подключается через инспектор или автоматически
+
+4. **⚠️ TICKS_PER_MINUTE = 1 не используется**
+   - Константа в GameConstants, но не привязана к TimeController.tickInterval
+   - Может быть источником путаницы
+
+### Необходимые исправления (для Phase 1)
+
+1. **Добавить публичное свойство** в `TimeController.cs`:
+   ```csharp
+   public float TickInterval => tickInterval;
+   ```
+
+2. **Добавить fallback** в TechniqueChargeSystem:
+   ```csharp
+   private static float GetMinChargeTime()
+   {
+       var tc = CultivationGame.World.TimeController.Instance;
+       float tickInterval = tc != null ? tc.TickInterval : 1f;
+       return tickInterval / 10f; // tick / 10
+   }
+   ```
+
+3. **(ОПЦИОНАЛЬНО) Добавить OnTick в ProcessTimeUpdate** для недетерминированного режима:
+   ```csharp
+   private void ProcessTimeUpdate()
+   {
+       float ratio = GetSpeedRatio();
+       timeAccumulator += Time.deltaTime * ratio;
+       deterministicAccumulator += Time.deltaTime;
+       if (deterministicAccumulator >= tickInterval)
+       {
+           deterministicAccumulator -= tickInterval;
+           currentTick++;
+           OnTick?.Invoke(currentTick);
+       }
+       while (timeAccumulator >= 60f)
+       {
+           timeAccumulator -= 60f;
+           AdvanceMinute();
+       }
+   }
+   ```
+
+### Расчёт minChargeTime для текущих настроек
+
+| tickInterval | minChargeTime (tick/10) | Примечание |
+|-------------|------------------------|------------|
+| 0.5 сек | 0.05 сек | Быстрый серверный тик |
+| **1.0 сек** | **0.1 сек** | **Текущее значение по умолчанию** |
+| 2.0 сек | 0.2 сек | Медленный тик |
+| 5.0 сек | 0.5 сек | Очень медленный тик |
+
+### Вывод по тиковой системе
+
+✅ **Тиковая система работает корректно в детерминированном режиме** (по умолчанию).
+Тики срабатывают каждые 1с (tickInterval=1f), OnTick отправляется подписчикам.
+
+❌ **Два критических пробела для боевой системы:**
+1. Нет публичного доступа к tickInterval → нужно добавить свойство
+2. Боевая система полностью отключена от тиков → накачка работает по deltaTime (это правильно для плавности UI), но minChargeTime должен вычисляться из tickInterval
+
+✅ **Правило tick/10 реализуемо:** при текущем tickInterval=1с, минимальное время накачки = 0.1с.
 
 ---
 
