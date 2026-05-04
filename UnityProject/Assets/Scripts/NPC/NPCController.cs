@@ -5,7 +5,7 @@
 // Редактировано: 2026-04-11 06:46:00 UTC — Fix-07, NPC-M05: generated.age вместо деривации
 // Редактировано: 2026-04-30 07:48:00 UTC — GAP-4: авторегистрация в WorldController + OnDestroy
 // Редактировано: 2026-04-30 09:45:00 UTC — ICombatant: реализация интерфейса, TakeDamage через пайплайн
-// Редактировано: 2026-05-01 13:02:00 UTC — fix: +using Generators для NPCRole (CS0246)
+// Редактировано: 2026-05-04 07:20:00 UTC — ФАЗА 5: CombatAI + CombatTrigger + ITechniqueUser
 // ============================================================================
 //
 // Источник: docs/NPC_AI_SYSTEM.md, docs/QI_SYSTEM.md
@@ -32,9 +32,9 @@ namespace CultivationGame.NPC
 {
     /// <summary>
     /// Главный контроллер NPC — объединяет все системы NPC.
-    /// Реализует ICombatant для участия в боевом пайплайне.
+    /// Реализует ICombatant и ITechniqueUser для участия в боевом пайплайне.
     /// </summary>
-    public class NPCController : MonoBehaviour, ICombatant
+    public class NPCController : MonoBehaviour, ICombatant, ITechniqueUser
     {
         [Header("Preset")]
         [SerializeField] private Data.ScriptableObjects.NPCPresetData preset;
@@ -44,6 +44,10 @@ namespace CultivationGame.NPC
         [SerializeField] private QiController qiController;
         [SerializeField] private TechniqueController techniqueController;
         [SerializeField] private NPCAI aiController;
+        
+        // ФАЗА 5: CombatAI и CombatTrigger для боевых решений
+        private Combat.CombatAI combatAI;
+        private Combat.CombatTrigger combatTrigger;
         
         [Header("Runtime")]
         [SerializeField] private NPCState state;
@@ -229,6 +233,36 @@ namespace CultivationGame.NPC
             };
         }
         
+        // === ITechniqueUser Implementation (ФАЗА 5) ===
+        
+        /// <summary>TechniqueController для ITechniqueUser</summary>
+        TechniqueController ITechniqueUser.TechniqueController => techniqueController;
+        
+        /// <summary>Можно ли использовать технику?</summary>
+        bool ITechniqueUser.CanUseTechnique(LearnedTechnique technique)
+        {
+            return techniqueController != null && techniqueController.CanUseTechnique(technique);
+        }
+        
+        /// <summary>Использовать технику через TechniqueController</summary>
+        TechniqueUseResult ITechniqueUser.UseTechnique(LearnedTechnique technique)
+        {
+            if (techniqueController == null)
+                return new TechniqueUseResult { Success = false, FailReason = "No TechniqueController" };
+            return techniqueController.UseTechnique(technique);
+        }
+        
+        /// <summary>
+        /// CombatAI для принятия боевых решений (ФАЗА 5).
+        /// Инициализируется в InitializeCombatComponents().
+        /// </summary>
+        public Combat.CombatAI CombatAI => combatAI;
+        
+        /// <summary>
+        /// CombatTrigger для автоматического агра (ФАЗА 5).
+        /// </summary>
+        public Combat.CombatTrigger CombatTrigger => combatTrigger;
+        
         // === Unity Lifecycle ===
         
         private void Awake()
@@ -280,6 +314,39 @@ namespace CultivationGame.NPC
                 techniqueController = GetComponent<TechniqueController>();
             if (aiController == null)
                 aiController = GetComponent<NPCAI>();
+            
+            // ФАЗА 5: Инициализация боевых компонентов
+            InitializeCombatComponents();
+        }
+        
+        /// <summary>
+        /// Инициализация боевых компонентов: CombatAI + CombatTrigger (ФАЗА 5).
+        /// CombatAI — для принятия боевых решений (какую технику накачать).
+        /// CombatTrigger — для автоматического агра при контакте.
+        /// </summary>
+        private void InitializeCombatComponents()
+        {
+            // CombatAI — если нет, добавляем автоматически
+            combatAI = GetComponent<Combat.CombatAI>();
+            if (combatAI == null && techniqueController != null)
+            {
+                combatAI = gameObject.AddComponent<Combat.CombatAI>();
+                combatAI.Init(this, techniqueController);
+                Debug.Log($"[NPCController] CombatAI добавлен для {NpcName}");
+            }
+            else if (combatAI != null && techniqueController != null)
+            {
+                combatAI.Init(this, techniqueController);
+            }
+            
+            // CombatTrigger — если нет, добавляем автоматически (только для враждебных NPC)
+            combatTrigger = GetComponent<Combat.CombatTrigger>();
+            if (combatTrigger == null && Attitude <= Attitude.Unfriendly)
+            {
+                combatTrigger = gameObject.AddComponent<Combat.CombatTrigger>();
+                combatTrigger.SetOwner(this);
+                Debug.Log($"[NPCController] CombatTrigger добавлен для {NpcName} (Attitude={Attitude})");
+            }
         }
         
         /// <summary>

@@ -3,7 +3,7 @@
 // Cultivation World Simulator
 // Версия: 1.2 — Заменён FindFirstObjectByType на ServiceLocator
 // Создано: 2026-03-30 14:00:00 UTC
-// Редактировано: 2026-04-15 12:00:00 UTC — FIX: StatDevelopment new() вместо GetComponent
+// Редактировано: 2026-05-04 07:15:00 UTC — ФАЗА 5: ProcessCombatInput + ITechniqueUser
 //
 // ИЗМЕНЕНИЯ В ВЕРСИИ 1.2:
 // - FIX: FindFirstObjectByType заменён на ServiceLocator.GetOrFind (аудит Unity 6.3)
@@ -31,7 +31,8 @@ namespace CultivationGame.Player
     /// Главный контроллер игрока — объединяет все системы персонажа.
     /// </summary>
     // FIX PLR-H01: Implement ICombatant interface by delegating to QiController/BodyController (2026-04-11)
-    public class PlayerController : MonoBehaviour, ICombatant
+    // ФАЗА 5: ITechniqueUser для интеграции с TechniqueChargeSystem (2026-05-04)
+    public class PlayerController : MonoBehaviour, ICombatant, ITechniqueUser
     {
         [Header("Identity")]
         [SerializeField] private string playerId = "player";
@@ -186,6 +187,164 @@ namespace CultivationGame.Player
             };
         }
         
+        // === ITechniqueUser Implementation (ФАЗА 5) ===
+        
+        /// <summary>TechniqueController для ITechniqueUser</summary>
+        TechniqueController ITechniqueUser.TechniqueController => techniqueController;
+        
+        /// <summary>Можно ли использовать технику?</summary>
+        bool ITechniqueUser.CanUseTechnique(LearnedTechnique technique)
+        {
+            return techniqueController != null && techniqueController.CanUseTechnique(technique);
+        }
+        
+        /// <summary>Использовать технику через TechniqueController</summary>
+        TechniqueUseResult ITechniqueUser.UseTechnique(LearnedTechnique technique)
+        {
+            if (techniqueController == null)
+                return new TechniqueUseResult { Success = false, FailReason = "No TechniqueController" };
+            return techniqueController.UseTechnique(technique);
+        }
+        
+        // === Combat Input (ФАЗА 5) ===
+        
+        /// <summary>
+        /// Текущая цель в бою.
+        /// </summary>
+        private ICombatant currentCombatTarget;
+        
+        /// <summary>
+        /// Обработка боевого ввода.
+        /// Клавиши 1-9: начать накачку техники из quickslot
+        /// Повторное нажатие: отменить накачку
+        /// Пробел: базовая атака
+        /// Q/E: цикл по целям
+        /// </summary>
+        private void ProcessCombatInput()
+        {
+            if (Keyboard.current == null) return;
+            
+            // Техники (1-9) — накачка через TechniqueChargeSystem
+            for (int i = 0; i < 9; i++)
+            {
+                // Клавиши 1-9 на основной клавиатуре
+                var key = Keyboard.current.digit1Key; // Начнём с 1
+                switch (i)
+                {
+                    case 0: key = Keyboard.current.digit1Key; break;
+                    case 1: key = Keyboard.current.digit2Key; break;
+                    case 2: key = Keyboard.current.digit3Key; break;
+                    case 3: key = Keyboard.current.digit4Key; break;
+                    case 4: key = Keyboard.current.digit5Key; break;
+                    case 5: key = Keyboard.current.digit6Key; break;
+                    case 6: key = Keyboard.current.digit7Key; break;
+                    case 7: key = Keyboard.current.digit8Key; break;
+                    case 8: key = Keyboard.current.digit9Key; break;
+                }
+                
+                if (key.wasPressedThisFrame)
+                {
+                    HandleTechniqueInput(i);
+                }
+            }
+            
+            // Базовая атака (Пробел)
+            if (Keyboard.current.spaceKey.wasPressedThisFrame)
+            {
+                ExecuteBasicAttack();
+            }
+            
+            // Цикл по целям: Q — предыдущая, E — следующая
+            if (Keyboard.current.qKey.wasPressedThisFrame)
+            {
+                CycleTarget(-1);
+            }
+            if (Keyboard.current.eKey.wasPressedThisFrame)
+            {
+                CycleTarget(1);
+            }
+        }
+        
+        /// <summary>
+        /// Обработка нажатия клавиши техники.
+        /// Если уже накачиваем ту же → отмена.
+        /// Если накачиваем другую → игнорируем (правило: одна техника).
+        /// Если не накачиваем → начать накачку.
+        /// </summary>
+        private void HandleTechniqueInput(int slot)
+        {
+            if (techniqueController == null) return;
+            
+            var tech = techniqueController.GetQuickSlotTechnique(slot);
+            if (tech == null) return;
+            
+            if (techniqueController.IsCharging)
+            {
+                // Уже накачиваем
+                if (techniqueController.ChargeSystem.ActiveCharge.Technique == tech)
+                {
+                    // Та же техника → отмена накачки
+                    techniqueController.ChargeSystem.CancelCharge();
+                }
+                // Другая техника → игнорируем (правило: только одна)
+                return;
+            }
+            
+            // Начать накачку
+            techniqueController.UseQuickSlot(slot);
+        }
+        
+        /// <summary>
+        /// Базовая атака (без техники) — пробел.
+        /// </summary>
+        private void ExecuteBasicAttack()
+        {
+            if (CombatManager.Instance == null || !CombatManager.Instance.IsInCombat) return;
+            if (currentCombatTarget == null || !currentCombatTarget.IsAlive)
+            {
+                // Пытаемся найти ближайшую цель
+                currentCombatTarget = HitDetector.FindNearestTarget(this);
+                if (currentCombatTarget == null) return;
+            }
+            
+            CombatManager.Instance.ExecuteBasicAttack(this, currentCombatTarget);
+        }
+        
+        /// <summary>
+        /// Цикл по целям в бою.
+        /// direction: -1 = предыдущая, +1 = следующая.
+        /// </summary>
+        private void CycleTarget(int direction)
+        {
+            if (CombatManager.Instance == null || !CombatManager.Instance.IsInCombat) return;
+            
+            var combatants = CombatManager.Instance.Combatants;
+            if (combatants.Count == 0) return;
+            
+            // Находим текущий индекс
+            int currentIndex = -1;
+            for (int i = 0; i < combatants.Count; i++)
+            {
+                if (combatants[i] == currentCombatTarget)
+                {
+                    currentIndex = i;
+                    break;
+                }
+            }
+            
+            // Переключаемся на следующую/предыдущую цель (кроме себя)
+            for (int attempt = 0; attempt < combatants.Count; attempt++)
+            {
+                currentIndex = (currentIndex + direction + combatants.Count) % combatants.Count;
+                if (combatants[currentIndex] != this && combatants[currentIndex].IsAlive)
+                {
+                    currentCombatTarget = combatants[currentIndex];
+                    Debug.Log($"[PlayerController] Цель: {currentCombatTarget.Name}");
+                    return;
+                }
+            }
+        }
+        
         // === Unity Lifecycle ===
         
         private void Awake()
@@ -203,6 +362,7 @@ namespace CultivationGame.Player
             if (!IsAlive) return;
             
             ProcessInput();
+            ProcessCombatInput();
             UpdateState();
         }
         

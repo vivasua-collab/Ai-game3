@@ -1,15 +1,18 @@
 // ============================================================================
 // TimeController.cs — Система игрового времени (ТИКОВАЯ СИСТЕМА)
 // Cultivation World Simulator
-// Версия: 2.0 — Полная интеграция тиковой системы как основного таймера
+// Версия: 3.0 — Dual Tick Model: OnTick (константа) + OnWorldTick (масштабируется)
 // ============================================================================
 // Создано: 2026-03-30 14:00:00 UTC
-// Редактировано: 2026-05-04 04:25:00 UTC — Полная интеграция тиковой системы
+// Редактировано: 2026-05-04 07:10:00 UTC — Dual Tick Model v3.0
 //
-// ИЗМЕНЕНИЯ В ВЕРСИИ 2.0:
-// - ТИКОВАЯ СИСТЕМА = основной таймер для ВСЕХ расчётов
-// - 1 тик = константа для игрового мира (tickInterval)
-// - Тик динамичен для игрока (зависит от скорости времени)
+// ИЗМЕНЕНИЯ В ВЕРСИИ 3.0:
+// - DUAL TICK MODEL: два типа тиков
+//   • OnTick — КОНСТАНТА (tickInterval реальных секунд), для боя/накачки
+//   • OnWorldTick — МАСШТАБИРУЕТСЯ скоростью, для мира (формации, Ци, NPC)
+// - При Normal speed: OnWorldTick = OnTick (1 тик/сек)
+// - При Fast speed: OnWorldTick ×5 (5 тиков/сек)
+// - При VeryFast speed: OnWorldTick ×15 (15 тиков/сек)
 // - OnTick срабатывает в ОБЕИХ режимах (детерминированный и нет)
 // - Добавлено публичное свойство TickInterval
 // - Добавлено событие OnTickDelta (float) — для систем с покадровым обновлением
@@ -28,14 +31,21 @@ namespace CultivationGame.World
     /// Управляет течением времени, датами, сезонами.
     ///
     /// ╔═══════════════════════════════════════════════════════════════════════════╗
-    /// ║  ТИКОВАЯ СИСТЕМА — ОСНОВНОЙ ТАЙМЕР ИГРЫ                                    ║
+    /// ║  DUAL TICK MODEL — ТИКОВАЯ СИСТЕМА v3.0                                     ║
     /// ╠═══════════════════════════════════════════════════════════════════════════╣
     /// ║                                                                            ║
-    /// ║  Для игрового мира: 1 тик = КОНСТАНТА (tickInterval)                       ║
-    /// ║  Для игрока: тик динамичен (регулятор скорости TimeSpeed)                  ║
+    /// ║  OnTick (БОЕВОЙ ТИК):                                                      ║
+    /// ║  • Интервал: tickInterval реальных секунд (КОНСТАНТА)                      ║
+    /// ║  • НЕ масштабируется скоростью времени                                     ║
+    /// ║  • Используется: бой, накачка, кулдауны                                   ║
     /// ║                                                                            ║
-    /// ║  Все расчёты (бой, накачка, баффы, Ци) привязаны к тикам.                 ║
-    /// ║  minChargeTime = tickInterval / 10 (правило tick/10)                       ║
+    /// ║  OnWorldTick (МИРОВОЙ ТИК):                                                ║
+    /// ║  • Интервал: tickInterval / speedMultiplier реальных секунд               ║
+    /// ║  • МАСШТАБИРУЕТСЯ скоростью времени (регулятор игрока)                     ║
+    /// ║  • Normal (1×): 1 тик/сек | Fast (5×): 5 тик/сек | VeryFast (15×): 15     ║
+    /// ║  • Используется: формации, Ци-пулы, NPC, баффы                            ║
+    /// ║                                                                            ║
+    /// ║  Правило tick/10: minChargeTime = tickInterval / 10                        ║
     /// ║                                                                            ║
     /// ╚═══════════════════════════════════════════════════════════════════════════╝
     /// </summary>
@@ -77,9 +87,14 @@ namespace CultivationGame.World
         
         private float timeAccumulator = 0f;
         private double totalGameSeconds = 0;
-        private float tickAccumulator = 0f;  // Единый аккуммулятор тиков (для обоих режимов)
+        private float tickAccumulator = 0f;  // Аккумулятор боевых тиков (константа)
         private int currentTick = 0;
         private float lastTickRealTime = 0f; // Реальное время предыдущего тика
+        
+        // === World Tick (масштабируемый) ===
+        private float worldTickAccumulator = 0f; // Аккумулятор мировых тиков (масштабируется скоростью)
+        private int currentWorldTick = 0;
+        private float lastWorldTickRealTime = 0f;
         
         // FIX WLD-M02: Guard against cascading event re-entrancy (2026-04-11)
         private bool isAdvancing = false;
@@ -96,11 +111,20 @@ namespace CultivationGame.World
         public event Action<TimeSpeed> OnTimeSpeedChanged;
         
         /// <summary>
-        /// Событие тика — ОСНОВНОЙ ТАЙМЕР для всех игровых систем.
-        /// Срабатывает в ЛЮБОМ режиме (детерминированном и нет).
+        /// Боевой тик — КОНСТАНТА, не зависит от скорости времени.
+        /// Интервал = tickInterval реальных секунд.
+        /// Используется: бой, накачка техник, кулдауны.
         /// Параметр: номер тика (int, монотонно возрастающий).
         /// </summary>
         public event Action<int> OnTick;
+        
+        /// <summary>
+        /// Мировой тик — МАСШТАБИРУЕТСЯ скоростью времени.
+        /// При Normal: 1 тик/сек. При Fast: 5 тик/сек. При VeryFast: 15 тик/сек.
+        /// Используется: формации, Ци-пулы, NPC жизненный цикл, баффы.
+        /// Параметр: номер мирового тика (int, монотонно возрастающий).
+        /// </summary>
+        public event Action<int> OnWorldTick;
         
         /// <summary>
         /// Покадровое событие тика — для систем с плавным обновлением (UI, накачка).
@@ -110,17 +134,26 @@ namespace CultivationGame.World
         
         // === Properties ===
         
-        /// <summary>Интервал тика в реальных секундах — КОНСТАНТА для мира.</summary>
+        /// <summary>Интервал боевого тика в реальных секундах — КОНСТАНТА.</summary>
         public float TickInterval => tickInterval;
         
         /// <summary>Минимальное время накачки техники = tick / 10.</summary>
         public float MinChargeTime => tickInterval / 10f;
         
-        /// <summary>Текущий номер тика (монотонно возрастающий).</summary>
+        /// <summary>Текущий номер боевого тика (монотонно возрастающий).</summary>
         public int CurrentTick => currentTick;
         
-        /// <summary>Реальное время между тиками (может варьироваться при просадках FPS).</summary>
+        /// <summary>Текущий номер мирового тика (монотонно возрастающий).</summary>
+        public int CurrentWorldTick => currentWorldTick;
+        
+        /// <summary>Множитель скорости тиков (1 = Normal, 5 = Fast, 15 = VeryFast).</summary>
+        public float TickSpeedMultiplier => currentTimeSpeed == TimeSpeed.Paused ? 0f : GetSpeedRatio() / normalSpeedRatio;
+        
+        /// <summary>Реальное время между боевыми тиками.</summary>
         public float TickDeltaTime { get; private set; } = 0f;
+        
+        /// <summary>Реальное время между мировыми тиками (уменьшается при увеличении скорости).</summary>
+        public float WorldTickDeltaTime { get; private set; } = 0f;
         
         public int Year => currentYear;
         public int Month => currentMonth;
@@ -149,6 +182,7 @@ namespace CultivationGame.World
             Instance = this;
             
             lastTickRealTime = Time.time;
+            lastWorldTickRealTime = Time.time;
         }
         
         private void Update()
@@ -187,16 +221,20 @@ namespace CultivationGame.World
         
         /// <summary>
         /// Обработка времени через Update (недетерминированная).
-        /// Теперь тоже отправляет OnTick — единая тиковая система!
         /// </summary>
         private void ProcessTimeUpdate(float deltaTime)
         {
             float ratio = GetSpeedRatio();
             timeAccumulator += deltaTime * ratio;
             
-            // Обработка тиков — единая логика для обоих режимов
+            // Боевой тик — КОНСТАНТА (не масштабируется скоростью)
             tickAccumulator += deltaTime;
             ProcessTick();
+            
+            // Мировой тик — МАСШТАБИРУЕТСЯ скоростью
+            float speedMultiplier = ratio / normalSpeedRatio;
+            worldTickAccumulator += deltaTime * speedMultiplier;
+            ProcessWorldTick();
             
             while (timeAccumulator >= 60f)
             {
@@ -216,9 +254,14 @@ namespace CultivationGame.World
             
             timeAccumulator += gameTimeDelta;
             
-            // Обработка тиков — единая логика
+            // Боевой тик — КОНСТАНТА
             tickAccumulator += Time.fixedDeltaTime;
             ProcessTick();
+            
+            // Мировой тик — МАСШТАБИРУЕТСЯ скоростью
+            float speedMultiplier = ratio / normalSpeedRatio;
+            worldTickAccumulator += Time.fixedDeltaTime * speedMultiplier;
+            ProcessWorldTick();
             
             while (timeAccumulator >= 60f)
             {
@@ -228,8 +271,8 @@ namespace CultivationGame.World
         }
         
         /// <summary>
-        /// Единая обработка тика для обоих режимов.
-        /// Тик срабатывает когда tickAccumulator >= tickInterval.
+        /// Обработка боевого тика — КОНСТАНТА, не зависит от скорости.
+        /// Используется боевой системой, накачкой техник, кулдаунами.
         /// </summary>
         private void ProcessTick()
         {
@@ -238,12 +281,31 @@ namespace CultivationGame.World
                 tickAccumulator -= tickInterval;
                 currentTick++;
                 
-                // Рассчитываем реальное время между тиками
                 float now = Time.time;
                 TickDeltaTime = now - lastTickRealTime;
                 lastTickRealTime = now;
                 
                 OnTick?.Invoke(currentTick);
+            }
+        }
+        
+        /// <summary>
+        /// Обработка мирового тика — МАСШТАБИРУЕТСЯ скоростью времени.
+        /// Normal: 1 тик/сек, Fast: 5 тик/сек, VeryFast: 15 тик/сек.
+        /// Используется формациями, Ци-пулами, NPC, баффами.
+        /// </summary>
+        private void ProcessWorldTick()
+        {
+            while (worldTickAccumulator >= tickInterval)
+            {
+                worldTickAccumulator -= tickInterval;
+                currentWorldTick++;
+                
+                float now = Time.time;
+                WorldTickDeltaTime = now - lastWorldTickRealTime;
+                lastWorldTickRealTime = now;
+                
+                OnWorldTick?.Invoke(currentWorldTick);
             }
         }
         

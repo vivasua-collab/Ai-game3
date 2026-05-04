@@ -225,7 +225,7 @@ namespace CultivationGame.Formation
         {
             if (timeController != null)
             {
-                timeController.OnTick += HandleTimeTick;
+                timeController.OnWorldTick += HandleTimeTick;
             }
         }
 
@@ -233,7 +233,7 @@ namespace CultivationGame.Formation
         {
             if (timeController != null)
             {
-                timeController.OnTick -= HandleTimeTick;
+                timeController.OnWorldTick -= HandleTimeTick;
             }
 
             // Отписываемся от всех активных формаций

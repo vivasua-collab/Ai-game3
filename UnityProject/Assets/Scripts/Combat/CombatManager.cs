@@ -1,15 +1,17 @@
 // ============================================================================
 // CombatManager.cs — Центральный менеджер боя
 // Cultivation World Simulator
-// Версия: 2.0 — Интеграция с тиковой системой и системой накачки
+// Версия: 2.1 — Update-driven пайплайн с AI циклом для NPC
 // ============================================================================
 // Создан: 2026-03-31 14:12:00 UTC
-// Редактировано: 2026-05-04 04:32:00 UTC — Интеграция с тиковой системой
+// Редактировано: 2026-05-04 07:25:00 UTC — ФАЗА 5: AI цикл + Update-driven пайплайн
 //
-// ИЗМЕНЕНИЯ В ВЕРСИИ 2.0:
+// ИЗМЕНЕНИЯ В ВЕРСИИ 2.1:
+// - AI цикл: каждый кадр запрашивает CombatAI.GetNextAction() для NPC
+// - NPC может начать накачку техники через CombatAI → TechniqueChargeSystem
+// - Когда накачка завершена → автоматический запуск через TechniqueChargeSystem
+// - Обработка AI решений: BasicAttack, ChargeTechnique, Flee и т.д.
 // - Интеграция с тиковой системой (TimeController.OnTick)
-// - Обработка прерываний накачки при получении урона
-// - Подписка на OnTickDelta для покадрового обновления боя
 // ============================================================================
 
 using System;
@@ -17,6 +19,8 @@ using System.Collections.Generic;
 using UnityEngine;
 using CultivationGame.Core;
 using CultivationGame.World;
+using CultivationGame.Player;
+using CultivationGame.NPC;
 
 namespace CultivationGame.Combat
 {
@@ -160,6 +164,7 @@ namespace CultivationGame.Combat
         {
             if (state == CombatState.Active)
             {
+                ProcessAIActions();
                 CheckCombatEnd();
                 CheckTimeout();
                 ProcessChargeInterrupts();
@@ -521,6 +526,65 @@ namespace CultivationGame.Combat
         #endregion
 
         #region Накачка — интеграция с боем
+
+        /// <summary>
+        /// Обработка AI действий для NPC combatants.
+        /// Каждый кадр запрашивает CombatAI.GetNextAction() для каждого NPC.
+        /// Если NPC уже накачивает технику — действие ContinueCharge.
+        /// Если NPC принял решение BasicAttack — выполняет базовую атаку.
+        /// Если NPC решил ChargeTechnique — начинает накачку.
+        /// </summary>
+        private void ProcessAIActions()
+        {
+            foreach (var combatant in combatants)
+            {
+                if (combatant == null || !combatant.IsAlive) continue;
+                
+                // Пропускаем игрока — его ввод обрабатывается в PlayerController
+                if (combatant is Player.PlayerController) continue;
+                
+                // Получаем CombatAI для NPC
+                var npcController = combatant as NPC.NPCController;
+                if (npcController == null) continue;
+                
+                var ai = npcController.CombatAI;
+                if (ai == null) continue;
+                
+                // Получаем противника для NPC
+                ICombatant opponent = GetOpponent(combatant);
+                if (opponent == null) continue;
+                
+                // Запрашиваем следующее действие у AI
+                AIDecision decision = ai.GetNextAction(opponent);
+                
+                // Обрабатываем решение
+                switch (decision)
+                {
+                    case AIDecision.BasicAttack:
+                        ExecuteBasicAttack(combatant, opponent);
+                        break;
+                        
+                    case AIDecision.ChargeTechnique:
+                    case AIDecision.UseDefensiveTech:
+                        // Накачка уже начата в CombatAI.GetNextAction()
+                        // TechniqueChargeSystem обработает автоматически
+                        break;
+                        
+                    case AIDecision.ContinueCharge:
+                        // Накачка продолжается — TechniqueChargeSystem обрабатывает каждый кадр
+                        break;
+                        
+                    case AIDecision.Flee:
+                        // TODO: Реализовать побег из боя
+                        Debug.Log($"[CombatManager] {combatant.Name} пытается сбежать!");
+                        break;
+                        
+                    case AIDecision.Wait:
+                        // NPC ждёт — ничего не делаем
+                        break;
+                }
+            }
+        }
 
         /// <summary>
         /// Проверка прерывания накачки при получении урона.

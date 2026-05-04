@@ -1,7 +1,7 @@
 # Чекпоинт: Система боя — полный план внедрения
 
 **Дата:** 2026-05-04 04:10 UTC
-**Обновлено:** 2026-05-04 04:45 UTC — внедрение фаз 1-5 боевой системы + тиковая интеграция
+**Обновлено:** 2026-05-04 07:30 UTC — ФАЗА 5 завершена + Dual Tick Model v3.0
 **Статус:** in_progress
 
 👉 Кодовая база: [05_04_combat_system_code.md](05_04_combat_system_code.md)
@@ -25,6 +25,12 @@
 - [x] **ФАЗА 3**: HitDetector.cs мигрирован Physics → Physics2D (v2.0)
 - [x] **ФАЗА 4**: Созданы CombatAI.cs + AIPersonality.cs — ИИ для NPC
 - [x] **ФАЗА 5**: CombatManager v2.0 — интеграция прерываний накачки
+- [x] **ТИКОВАЯ СИСТЕМА v3.0**: Dual Tick Model — OnTick (константа для боя) + OnWorldTick (масштабируется скоростью)
+- [x] **ФАЗА 5**: PlayerController — ProcessCombatInput (1-9, пробел, Q/E) + ITechniqueUser
+- [x] **ФАЗА 5**: NPCController — CombatAI + CombatTrigger + ITechniqueUser интеграция
+- [x] **ФАЗА 5**: CombatManager v2.1 — AI цикл + Update-driven пайплайн
+- [x] **FIX CS0414**: CombatTrigger.minAttitudeToEngage используется в ShouldEngage
+- [x] **МИГРАЦИЯ**: FormationController.OnTick → OnWorldTick
 
 ---
 

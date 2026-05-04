@@ -4,10 +4,12 @@
 // Версия: 1.0
 // ============================================================================
 // Создано: 2026-05-04 04:35:00 UTC
+// Редактировано: 2026-05-04 07:05:00 UTC — FIX CS0414: minAttitudeToEngage используется в ShouldEngage
 // ============================================================================
 
 using UnityEngine;
 using CultivationGame.Core;
+using CultivationGame.NPC;
 
 namespace CultivationGame.Combat
 {
@@ -99,17 +101,30 @@ namespace CultivationGame.Combat
 
         /// <summary>
         /// Проверить, нужно ли атаковать цель.
-        /// TODO: Интеграция с RelationshipController.
+        /// Использует minAttitudeToEngage для фильтрации по отношению.
+        /// TODO: Полная интеграция с RelationshipController.
         /// </summary>
         private bool ShouldEngage(MonoBehaviour target)
         {
-            // Временная логика: атакуем по тегу "Player" если мы "Enemy"
-            if (gameObject.CompareTag("Enemy") && target.CompareTag("Player"))
-                return true;
-            if (gameObject.CompareTag("Player") && target.CompareTag("Enemy"))
-                return true;
+            // Проверяем ICombatant на цели — получаем Attitude если доступен
+            var targetCombatant = target.GetComponent<ICombatant>() as ICombatant;
 
-            // По умолчанию — проверка отношения (когда будет RelationshipController)
+            // Если цель — NPCController, можем проверить Attitude напрямую
+            var targetNpc = target.GetComponent<NPC.NPCController>();
+            if (targetNpc != null)
+            {
+                // Атакуем только если отношение цели ≤ minAttitudeToEngage
+                // (Hostile < Unfriendly < Neutral < Friendly < Allied)
+                if (targetNpc.Attitude <= minAttitudeToEngage)
+                    return true;
+            }
+
+            // Fallback: атакуем по тегу "Player" если мы "Enemy" и minAttitudeToEngage = Hostile
+            if (gameObject.CompareTag("Enemy") && target.CompareTag("Player"))
+                return minAttitudeToEngage >= Attitude.Hostile;
+            if (gameObject.CompareTag("Player") && target.CompareTag("Enemy"))
+                return minAttitudeToEngage >= Attitude.Hostile;
+
             return false;
         }
 
