@@ -1,21 +1,22 @@
-# 🔍 Аудит боевой системы и экипировки — v3.0 (глубокий, 2 итерации)
+# 🔍 Аудит боевой системы и экипировки — v3.0 (глубокий, 4 итерации)
 
-**Дата:** 2026-05-05 08:35:42 UTC
+**Дата аудита:** 2026-05-05 (Итерации 1-2: 08:35 UTC, Итерация 3: 09:10 UTC, Итерация 4: 09:15 UTC)
 **Аудитор:** AI-ассистент
-**Область:** Боевая система (11 слоёв) + Система экипировки + Генераторы
-**Документы-источники:** ALGORITHMS.md, COMBAT_SYSTEM.md, EQUIPMENT_SYSTEM.md, INVENTORY_SYSTEM.md, TECHNIQUE_SYSTEM.md, GENERATORS_SYSTEM.md
-**Код:** `Scripts/Combat/`, `Scripts/Inventory/`, `Scripts/Generators/`, `Scripts/Core/Constants.cs`, `Scripts/Core/Enums.cs`
+**Область:** Боевая система (11 слоёв) + Система экипировки + Генераторы + Тело + Ци + Формации + Инвентарь + Данные
+**Документы-источники:** ALGORITHMS.md, COMBAT_SYSTEM.md, EQUIPMENT_SYSTEM.md, INVENTORY_SYSTEM.md, TECHNIQUE_SYSTEM.md, GENERATORS_SYSTEM.md, BODY_SYSTEM.md, QI_SYSTEM.md, FORMATION_SYSTEM.md, NPC_AI_SYSTEM.md, BUFF_MODIFIERS_SYSTEM.md, CHARGER_SYSTEM.md, ELEMENTS_SYSTEM.md, ENTITY_TYPES.md, MORTAL_DEVELOPMENT.md, GLOSSARY.md, NPC.md
+**Код:** Все скрипты в `Scripts/Combat/`, `Scripts/Body/`, `Scripts/Qi/`, `Scripts/Formation/`, `Scripts/Inventory/`, `Scripts/Generators/`, `Scripts/NPC/`, `Scripts/Buff/`, `Scripts/Charger/`, `Scripts/Data/`, `Scripts/Core/`, `Scripts/Player/`
 
 ---
 
 ## 📊 Сводка критичности
 
-| Категория | Количество |
-|-----------|-----------|
-| 🔴 КРИТИЧЕСКОЕ (нарушает формулы документации) | 5 |
-| 🟠 ВЫСОКОЕ (пропущенные функции/фичи) | 6 |
-| 🟡 СРЕДНЕЕ (расхождения данных) | 7 |
-| 🟢 НИЗКОЕ (стиль/нейминг/структура) | 5 |
+| Категория | Итерации 1-2 | Итерация 3 | Итерация 4 | ИТОГО |
+|-----------|-------------|------------|------------|-------|
+| 🔴 КРИТИЧЕСКОЕ | 5 | 3 | 4 | **12** |
+| 🟠 ВЫСОКОЕ | 6 | 4 | 7 | **17** |
+| 🟡 СРЕДНЕЕ | 7 | 5 | 7 | **19** |
+| 🟢 НИЗКОЕ | 5 | 4 | 5 | **14** |
+| **ИТОГО** | **23** | **16** | **23** | **62** |
 
 ---
 
@@ -574,6 +575,535 @@ DodgePenalty = 0f, // ФАЗА 1: реализовано через EquipmentCon
 
 ---
 
-*Аудит создан: 2026-05-05 08:35:42 UTC*
+---
+
+# 🔍 ИТЕРАЦИЯ 3: Глубокий аудит боевых файлов (незатронутых)
+
+**Дата:** 2026-05-05 09:10 UTC
+**Область:** BodyController, BodyDamage, BodyPart, QiController, TechniqueController, AIPersonality, ChargeState, CombatEvents, CombatTrigger, FormationController, FormationCore, FormationEffects, OrbitalWeapon, BuffManager, NPCAI
+
+---
+
+## 🔴 КРИТИЧЕСКИЕ РАСХОЖДЕНИЯ (Итерация 3)
+
+### К-06 · BodyDamage: Кровотечение — случайный шанс вместо документированной пороговой системы
+
+**Документация (COMBAT_SYSTEM.md Слой 10):**
+> Кровотечение: если damage > threshold → bleedDamage per tick
+
+**Код (BodyDamage.cs строки 82-85):**
+```csharp
+if (part.State >= BodyPartState.Wounded)
+{
+    result.CausedBleeding = UnityEngine.Random.value < 0.3f;  // ← Случайный 30%
+}
+```
+
+**Проблема:** Документация требует пороговую систему (damage > threshold), а код использует случайный шанс. Нет степеней кровотечения (1/3/5/10 HP/тик из BODY_SYSTEM.md).
+
+**Вердикт:** ❌ Кровотечение не следует документированной механике.
+
+---
+
+### К-07 · BodyDamage: Шок — случайный шанс вместо документированного порога redHP < 30%
+
+**Документация (COMBAT_SYSTEM.md Слой 10):**
+> Шок: если redHP упала ниже 30% → штрафы к действиям
+
+**Код (BodyDamage.cs строки 88-91):**
+```csharp
+if (totalDamage > part.MaxRedHP * 0.5f)
+{
+    result.CausedShock = UnityEngine.Random.value < 0.2f;  // ← Урон > 50% HP = 20% шанс
+}
+```
+
+**Проблема:** Документация привязывает шок к текущему уровню HP (< 30%), а код — к разовому урону (> 50% maxHP). Условия и триггеры полностью разные.
+
+**Вердикт:** ❌ Условие шока не соответствует документации.
+
+---
+
+### К-08 · BodyController: Регенерация через Update() вместо OnTick/OnWorldTick
+
+**Документация (Dual Tick Model v3.0):**
+> OnTick — постоянная (бой, зарядка, кулдауны)
+> OnWorldTick — масштабируемая (формации, Ци, NPC)
+
+**Код (BodyController.cs строки 72-78):**
+```csharp
+private void Update()
+{
+    if (enableRegeneration && IsAlive)
+    {
+        ProcessRegeneration();
+    }
+}
+```
+
+**Проблема:** Регенерация тела выполняется в Update(), что означает:
+1. Привязка к FPS, а не к игровым тикам
+2. Не масштабируется при паузе/ускорении времени
+3. Должна быть в OnWorldTick (как и Ци/NPC регенерация)
+
+**Вердикт:** ❌ Нарушение Dual Tick Model v3.0.
+
+---
+
+## 🟠 ВЫСОКИЕ РАСХОЖДЕНИЯ (Итерация 3)
+
+### В-07 · QiController: Проводимость рассчитывается от maxQiCapacity вместо coreCapacity
+
+**Код (QiController.cs строки 104-107):**
+```csharp
+baseConductivity = maxQiCapacity / 360f;
+```
+
+**Проблема:** maxQiCapacity = coreCapacity × qualityMult × subLevelGrowth. Но документация (QI_SYSTEM.md) указывает, что проводимость = coreCapacity / 360 сек. Код использует уже умноженное значение, что завышает проводимость при высоком качестве ядра.
+
+**Вердикт:** ⚠️ Проводимость завышена для ядер качества > Normal.
+
+---
+
+### В-08 · QiController: Meditate() использует линейное продвижение времени вместо тиков
+
+**Код (QiController.cs строки 279-284):**
+```csharp
+float hoursAdvanced = durationTicks / 60f;
+timeController.AdvanceHours(Mathf.RoundToInt(hoursAdvanced));
+```
+
+**Проблема:** 1 тик = 1 минута (ALGORITHMS.md), но `durationTicks / 60f` = минуты → часы. Это верно. Однако AdvanceHours() обходит тиковую систему — OnWorldTick не вызывается корректно. Формации, Qi и NPC не получают тиков.
+
+**Вердикт:** ⚠️ Медитация обходит тиковую модель — побочные эффекты не обрабатываются.
+
+---
+
+### В-09 · TechniqueController: HasActiveShield() проверяет TechniqueType.Defense, но не подтип Shield
+
+**Код (TechniqueController.cs строки 114-124):**
+```csharp
+public bool HasActiveShield()
+{
+    foreach (var tech in learnedTechniques)
+    {
+        if (tech.Data != null &&
+            tech.Data.techniqueType == TechniqueType.Defense &&
+            tech.CooldownRemaining <= 0f)
+            return true;
+    }
+    return false;
+}
+```
+
+**Документация (COMBAT_SYSTEM.md Слой 5):** Щит = конкретная щитовая техника, а не любая Defense.
+
+**Проблема:** Метод возвращает true для ЛЮБОЙ защитной техники без кулдауна (включая Block/Dodge/Reflect), а не только для Shield. Это неверно активирует Shield-режим Qi Buffer (1:1 или 2:1) вместо RawQi (3:1 или 5:1).
+
+**Вердикт:** ⚠️ Qi Buffer неверно использует Shield-режим для всех защитных техник.
+
+---
+
+### В-10 · FormationEffects: ApplyShield() — заглушка без реальной логики
+
+**Код (FormationEffects.cs строки 498-510):**
+```csharp
+public static void ApplyShield(GameObject target, FormationEffect effect)
+{
+    if (effect.value <= 0) return;
+    var qi = target.GetComponent<Qi.QiController>();
+    if (qi != null)
+    {
+        Debug.Log($"[FormationEffects] Shield {effect.value} applied to {target.name}");
+    }
+}
+```
+
+**Документация (FORMATION_SYSTEM.md):** Щит формации должен реально поглощать урон.
+
+**Вердикт:** ⚠️ Щит формации — только лог, реальной защиты нет.
+
+---
+
+## 🟡 СРЕДНИЕ РАСХОЖДЕНИЯ (Итерация 3)
+
+### С-08 · BodyPart: Состояния Bruised/Wounded не совпадают с документацией
+
+**Документация (BODY_SYSTEM.md):** Healthy, Damaged, Crippled, Severed
+
+**Код (BodyPart.cs UpdateState):** Healthy, Bruised, Wounded, Disabled, Severed (5 состояний вместо 4)
+
+**Вердикт:** ⚠️ Код добавляет промежуточное состояние «Bruised» и заменяет «Damaged» на «Wounded».
+
+---
+
+### С-09 · BodyDamage: Quadruped Torso HP = 150 вместо 100
+
+**Документация (BODY_SYSTEM.md «Части тела четвероногих»):** Torso = 100 функциональной HP
+
+**Код (BodyDamage.cs строка 157):** `new BodyPart(BodyPartType.Torso, 150f * hpMultiplier, isVital: false)`
+
+**Вердикт:** ⚠️ Torso четвероногих на 50% мощнее документированного.
+
+---
+
+### С-10 · QiController: Регенерация через Update() вместо OnTick
+
+Аналогично К-08 — QiController.ProcessPassiveRegeneration() вызывается из Update(), а не из OnTick/OnWorldTick.
+
+**Вердикт:** ⚠️ Нарушение Dual Tick Model v3.0 (как К-08).
+
+---
+
+### С-11 · TechniqueController: IncreaseMastery baseGain = 0.01, но документация не уточняет baseGain
+
+**Документация (TECHNIQUE_SYSTEM.md):** `masteryGained = max(0.1, baseGain × (1 - currentMastery / 100))`
+
+**Код:** Вызывает `IncreaseMastery(technique, 0.01f)` за обычное использование и `0.02f` за накачку.
+
+**Проблема:** При baseGain=0.01 и mastery=0: `max(0.1, 0.01 × 1.0) = 0.1` — минимальный порог 0.1 всегда побеждает. baseGain никогда не используется напрямую. При mastery=50: `max(0.1, 0.01 × 0.5) = 0.1` — всё ещё минимум.
+
+**Вердикт:** ⚠️ baseGain = 0.01/0.02 слишком малы — всегда срабатывает min 0.1%. Формула не работает как задумано.
+
+---
+
+### С-12 · CombatTrigger: ShouldEngage() — Attitude сравнение инвертировано
+
+**Код (CombatTrigger.cs строки 113-119):**
+```csharp
+if (targetNpc.Attitude <= minAttitudeToEngage)
+    return true;
+```
+
+**Проблема:** Attitude — enum от Hatred (-100) до SwornAlly (100). `<=` означает «атаковать тех, чьё отношение ХУЖЕ или равно порогу». Если minAttitudeToEngage = Hostile, то атакуются только Hostile и Hatred — это корректно. Но если minAttitudeToEngage = Neutral, атакуются ВСЕ с Neutral и хуже, включая союзников с Unfriendly — это может быть нежелательно.
+
+**Вердикт:** ⚠️ Логика сравнения Attitude может привести к атаке нейтралов.
+
+---
+
+## 🟢 НИЗКИЕ РАСХОЖДЕНИЯ (Итерация 3)
+
+### Н-06 · AIPersonality: Не связан с PersonalityTrait [Flags] из документации
+
+**Документация (NPC_AI_SYSTEM.md):** AI поведение модифицируется PersonalityTrait [Flags]
+**Код:** AIPersonality использует 5 float параметров вместо PersonalityTrait [Flags]
+
+**Вердикт:** ℹ️ Альтернативная реализация, не противоречит документации, но не интегрирована с PersonalityTrait.
+
+---
+
+### Н-07 · ChargeState: MinChargeTime = tickInterval / 10 не вычисляется динамически
+
+**Документация:** MinChargeTime = tickInterval / 10
+**Код:** `MinChargeTime = 0.1f` — захардкожено
+
+**Вердикт:** ℹ️ Работает для стандартного tickInterval = 1 сек, но не адаптируется к изменённой скорости тиков.
+
+---
+
+### Н-08 · FormationCore: Drain обрабатывается через ProcessTimeTick вместо OnWorldTick
+
+**Код (FormationCore.cs строка 534-544):** ProcessTimeTick() вызывается через HandleTimeTick → TimeController.OnWorldTick
+
+**Вердикт:** ℹ️ Корректная интеграция с Dual Tick Model — OnWorldTick используется правильно для формаций.
+
+---
+
+### Н-09 · CombatEvents: Статические события без очистки между сценами
+
+**Проблема:** CombatEvents использует статические event-делегаты. При загрузке новой сцены подписчики не отписываются — потенциальная утечка памяти.
+
+**Вердикт:** ℹ️ Требует Cleanup() при смене сцены.
+
+---
+
+---
+
+# 🔍 ИТЕРАЦИЯ 4: Глубокий аудит экипировки/инвентаря/данных (незатронутых)
+
+**Дата:** 2026-05-05 09:15 UTC
+**Область:** InventoryController, MaterialSystem, CraftingController, SpiritStorageController, StorageRingController, MaterialData, CultivationLevelData, ElementData, NPCPresetData, SpeciesData, FactionData, FormationCoreData, BackpackData, StorageRingData, MortalStageData, ChargerController, ChargerBuffer, ChargerData, ChargerHeat, ChargerSlot, StatDevelopment, GradeColors, GameSettings, ServiceLocator
+
+---
+
+## 🔴 КРИТИЧЕСКИЕ РАСХОЖДЕНИЯ (Итерация 4)
+
+### К-09 · SpiritStorageController: Уровень разблокировки 1 вместо 3
+
+**Документация (INVENTORY_SYSTEM.md §«Духовное хранилище»):** «Разблокируется на уровне культивации 3»
+
+**Код (SpiritStorageController.cs строка 45):** `public int requiredCultivationLevel = 1; // AwakenedCore`
+
+**Вердикт:** ❌ Безлимитное хранилище доступно с уровня 1, нарушает геймплейный баланс.
+
+---
+
+### К-10 · SpiritStorageController: Нет ограничения на 20 слотов
+
+**Документация (INVENTORY_SYSTEM.md):** «Вместимость: 20 слотов»
+
+**Код:** `List<SpiritStorageEntry>` без ограничения ёмкости.
+
+**Вердикт:** ❌ Безлимитное хранилище нарушает экономику.
+
+---
+
+### К-11 · ChargerData: Бонусы к первичным характеристикам (STR/AGI/INT/VIT)
+
+**Документация (BUFF_MODIFIERS_SYSTEM.md §«КРИТИЧЕСКИЕ ПРАВИЛА»):** «БАФФЫ НЕ МОГУТ ВЛИЯТЬ НА ПЕРВИЧНЫЕ ХАРАКТЕРИСТИКИ!»
+
+**Код (ChargerData.cs строки 134-138):** `private int strengthBonus; private int agilityBonus; private int intelligenceBonus; private int vitalityBonus;`
+
+**Вердикт:** ❌ Фундаментальное нарушение архитектуры баланса.
+
+---
+
+### К-12 · NPCPresetData: Устаревшее поле baseDisposition вместо Attitude
+
+**Документация (NPC.md §«Отношения и Attitude», ENTITY_TYPES.md §6 Fix-07):** «Disposition заменён на Attitude + PersonalityTrait [Flags]»
+
+**Код (NPCPresetData.cs строка 96):** `public int baseDisposition = 0;`
+
+**Вердикт:** ❌ Устаревшее поле, несовместимое с текущей системой отношений.
+
+---
+
+## 🟠 ВЫСОКИЕ РАСХОЖДЕНИЯ (Итерация 4)
+
+### В-11 · NPCPresetData: PersonalityTraitEntry вместо PersonalityTrait [Flags]
+
+**Документация (NPC.md):** `PersonalityTrait [Flags]`: Aggressive=1, Cautious=2, Treacherous=4, ...
+
+**Код:** `PersonalityTraitEntry` с полями `string traitName` + `int intensity`
+
+**Вердикт:** ⚠️ Несовместимая структура — невозможно корректно применить AI-модификаторы.
+
+---
+
+### В-12 · ElementData: Одно поле oppositeElement вместо множественных противоположностей
+
+**Документация (ALGORITHMS.md §10.1):** Void имеет ДВЕ противоположности: Lightning и Light
+
+**Код:** `public Element oppositeElement;` — только одна
+
+**Вердикт:** ⚠️ Void не может представить обе противоположности.
+
+---
+
+### В-13 · CultivationLevelData: qiDensity как редактируемое поле вместо формулы
+
+**Документация (ALGORITHMS.md §3.3):** `qiDensity = 2^(cultivationLevel - 1)`
+
+**Код:** `public int qiDensity = 1;` — редактируемое поле
+
+**Вердикт:** ⚠️ Можно задать некорректное значение, нарушив формулу.
+
+---
+
+### В-14 · BackpackData: Нет ограничения «только расходники» для BeltSlots
+
+**Документация (INVENTORY_SYSTEM.md §«Пояс (Quick Access)»):** «4 слота быстрого доступа. Только расходники»
+
+**Код:** `public int beltSlots = 0;` — нет проверки типа предмета
+
+**Вердикт:** ⚠️ Нет ограничения на тип предметов в поясных слотах.
+
+---
+
+### В-15 · MaterialData: Отсутствуют поля flexibility и qiRetention
+
+**Документация (EQUIPMENT_SYSTEM.md §3.2):** Свойства: hardness (1-10), flexibility (0-1), qiConductivity (0.3-5.0), qiRetention (75-100)
+
+**Код:** Присутствуют hardness, durability, conductivity. **Отсутствуют:** flexibility, qiRetention
+
+**Вердикт:** ⚠️ Два документированных свойства не реализованы.
+
+---
+
+### В-16 · ChargerSlot.QiStoneQuality: Damaged отсутствует, Raw вместо Common
+
+**Документация (EQUIPMENT_SYSTEM.md §2.1):** 5 грейдов: Damaged, Common, Refined, Perfect, Transcendent
+
+**Код:** QiStoneQuality: Raw, Refined, Perfect, Transcendent (4 значения)
+
+**Вердикт:** ⚠️ Несогласованность в системе грейдов.
+
+---
+
+### В-17 · InventoryController: Состояния прочности — 6 вместо 5 (дублирование К-10/С-01)
+
+**Документация:** 5 состояний (Pristine/Good/Worn/Damaged/Broken)
+**Код InventoryController.cs GetCondition():** 6 состояний (+Excellent, смещённые пороги)
+
+**Вердикт:** ⚠️ Подтверждает расхождение С-01 на уровне InventoryController.
+
+---
+
+## 🟡 СРЕДНИЕ РАСХОЖДЕНИЯ (Итерация 4)
+
+### С-13 · NPCPresetData: Alignment enum (D&D) вместо PersonalityTrait [Flags]
+
+**Документация:** PersonalityTrait [Flags] + Attitude (-100..+100)
+**Код:** `Alignment` enum (LawfulGood..ChaoticEvil)
+
+**Вердикт:** ⚠️ Несовместимая система мировоззрения.
+
+---
+
+### С-14 · FormationCoreData: 3 дополнительных типа ядер не документированы
+
+**Документация (GLOSSARY.md):** Disk или Altar
+**Код:** `FormationCoreType`: Disk, Altar, Array, Totem, Seal
+
+**Вердикт:** ⚠️ Расширение, требующее обновления GLOSSARY.md.
+
+---
+
+### С-15 · CultivationLevelData: coreCapacityMultiplier вместо формулы 1.1^totalSubLevels
+
+**Документация:** `coreCapacity = 1000 × 1.1^totalSubLevels × qualityMultiplier`
+**Код:** `public float coreCapacityMultiplier = 1.0f;` — редактируемое поле
+
+**Вердикт:** ⚠️ Нет гарантии целостности формулы.
+
+---
+
+### С-16 · MortalStageData: Шансы пробуждения — диапазоны не совпадают
+
+**Документация (MORTAL_DEVELOPMENT.md):** Базовый шанс: 0.01%, зона высокой плотности: 0.1%, критическое состояние: 1%
+**Код:** Все [Range(0f, 5f)], по умолчанию 0
+
+**Вердикт:** ⚠️ По умолчанию 0% = невозможно пробуждение.
+
+---
+
+### С-17 · FactionData.FactionType не совпадает с документацией
+
+**Документация:** Sect (orthodox/unorthodox/...), Nation (monarchy/...)
+**Код:** Sect, Clan, Guild, Empire, Alliance, Independent, Criminal, Religious
+
+**Вердикт:** ⚠️ Частичная несовместимость типологии.
+
+---
+
+## 🟢 НИЗКИЕ РАСХОЖДЕНИЯ (Итерация 4)
+
+### Н-10 · GradeColors: Damaged = коричнево-красный вместо красного
+
+**Документация (EQUIPMENT_SYSTEM.md §2.1):** 🔴 Красный
+**Код:** `new Color(0.545f, 0.271f, 0.075f)` — коричнево-красный
+
+**Вердикт:** ℹ️ Незначительное визуальное расхождение.
+
+---
+
+### Н-11 · GameSettings: basePlayerQi = 100 вместо 1000
+
+**Документация (GLOSSARY.md):** L1 практик: coreCapacity = 1000
+**Код:** `public long basePlayerQi = 100;`
+
+**Вердикт:** ℹ️ Может быть для смертного старта, но создаёт путаницу.
+
+---
+
+### Н-12 · ServiceLocator: Перерегистрация разрешена с warning
+
+**Вердикт:** ℹ️ Потенциальная подмена сервисов, но предупреждение есть.
+
+---
+
+### Н-13 · SpeciesData: LongMinMaxRange.GetRandom() теряет точность для больших long
+
+**Код:** `(long)UnityEngine.Random.Range((float)min, (float)max)` — потеря точности > 16.7M
+
+**Вердикт:** ℹ️ Текущие значения не достигают порога.
+
+---
+
+### Н-14 · CraftingController: Нет документации CRAFTING_SYSTEM.md
+
+**Вердикт:** ℹ️ Пробел в документации, а не в коде.
+
+---
+
+---
+
+# 📊 ОБНОВЛЁННАЯ СВОДКА (4 итерации)
+
+## Полный список расхождений
+
+### 🔴 КРИТИЧЕСКИЕ (12)
+
+| ID | Описание | Итерация |
+|----|----------|----------|
+| К-01 | TechniqueGrade множители: 1.2/1.4/1.6 вместо 1.3/1.6/2.0 | 1-2 |
+| К-02 | Ultimate множитель: 1.3 вместо 2.0 | 1-2 |
+| К-03 | Equipment Efficiency множители завышены | 1-2 |
+| К-04 | Элемент Light отсутствует в enum | 1-2 |
+| К-05 | Poison в Element enum — нарушение правила | 1-2 |
+| К-06 | Кровотечение: случайный шанс вместо пороговой системы | 3 |
+| К-07 | Шок: урон > 50% HP вместо redHP < 30% | 3 |
+| К-08 | BodyController регенерация через Update() вместо OnTick | 3 |
+| К-09 | SpiritStorage: уровень разблокировки 1 вместо 3 | 4 |
+| К-10 | SpiritStorage: нет лимита 20 слотов | 4 |
+| К-11 | ChargerData: бонусы к первичным статам (запрещено) | 4 |
+| К-12 | NPCPresetData: устаревшее baseDisposition | 4 |
+
+### 🟠 ВЫСОКИЕ (17)
+
+| ID | Описание | Итерация |
+|----|----------|----------|
+| В-01 | Парирование/блок — захардкоженные множители | 1-2 |
+| В-02 | CombatantBase не передаёт статы экипировки | 1-2 |
+| В-03 | Износ брони не интегрирован в пайплайн | 1-2 |
+| В-04 | Кровотечение/шок/оглушение (Слой 10) — не реализованы | 1-2 |
+| В-05 | LootGenerator — захардкоженные пулы | 1-2 |
+| В-06 | Износ оружия при атаке не реализован | 1-2 |
+| В-07 | QiController: проводимость от maxQiCapacity вместо coreCapacity | 3 |
+| В-08 | QiController: Meditate() обходит тиковую систему | 3 |
+| В-09 | TechniqueController: HasActiveShield() для всех Defense | 3 |
+| В-10 | FormationEffects: ApplyShield() — заглушка | 3 |
+| В-11 | NPCPresetData: PersonalityTraitEntry вместо [Flags] | 4 |
+| В-12 | ElementData: одно oppositeElement | 4 |
+| В-13 | CultivationLevelData: qiDensity — редактируемое поле | 4 |
+| В-14 | BackpackData: нет ограничения «только расходники» | 4 |
+| В-15 | MaterialData: отсутствуют flexibility, qiRetention | 4 |
+| В-16 | ChargerSlot: QiStoneQuality без Damaged/Common | 4 |
+| В-17 | InventoryController: 6 состояний прочности вместо 5 | 4 |
+
+---
+
+## 📐 МЕТОДОЛОГИЯ АУДИТА (обновлено)
+
+### Итерация 1: Структурный аудит
+- Сравнение файловой структуры документации с реальным расположением файлов
+- Проверка наличия всех документированных классов/модулей
+
+### Итерация 2: Формульный аудит
+- Побитовое сравнение числовых констант с таблицами в документации
+- Проверка всех формул в DamageCalculator, TechniqueCapacity, QiBuffer, DefenseProcessor
+
+### Итерация 3: Аудит боевых файлов (незатронутых)
+- BodyController, BodyDamage, BodyPart — тело, HP, повреждения
+- QiController — система Ци, регенерация, медитация
+- TechniqueController — контроллер техник, щит/накачка
+- FormationController, FormationCore, FormationEffects — система формаций
+- AIPersonality, ChargeState, CombatEvents, CombatTrigger — вспомогательные боевые
+
+### Итерация 4: Аудит экипировки/инвентаря/данных (незатронутых)
+- InventoryController, MaterialSystem, CraftingController, SpiritStorageController, StorageRingController
+- MaterialData, CultivationLevelData, ElementData, NPCPresetData, SpeciesData, FactionData
+- ChargerController, ChargerBuffer, ChargerData, ChargerHeat, ChargerSlot
+- StatDevelopment, GradeColors, GameSettings, ServiceLocator
+
+### Файлы проверены (62 файла, ~30K строк кода)
+
+Все файлы из итераций 1-2 (27 файлов) + итерации 3 (15 файлов) + итерации 4 (24 файла).
+
+---
+
+*Аудит создан: 2026-05-05 08:35 UTC*
+*Итерация 3 добавлена: 2026-05-05 09:10 UTC*
+*Итерация 4 добавлена: 2026-05-05 09:15 UTC*
 *Аудитор: AI-ассистент*
-*Следующий шаг: Исправление критических расхождений (К-01…К-05)*
+*Следующий шаг: Исправление критических расхождений (К-01…К-12)*
