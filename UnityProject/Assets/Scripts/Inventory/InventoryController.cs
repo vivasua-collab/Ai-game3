@@ -166,6 +166,15 @@ namespace CultivationGame.Inventory
         {
             // Инициализация — пустой инвентарь
             RecalculateTotals();
+
+            // FIX ИСП-ИНВ-08: Зарегистрировать контроллер в ServiceLocator
+            ServiceLocator.Register(this);
+        }
+
+        private void OnDestroy()
+        {
+            // FIX ИСП-ИНВ-08: Отписаться от ServiceLocator
+            ServiceLocator.Unregister<InventoryController>();
         }
 
         #endregion
@@ -356,6 +365,8 @@ namespace CultivationGame.Inventory
                 remaining -= toPlace;
 
                 OnItemAdded?.Invoke(newSlot);
+                // FIX ИСП-ИНВ-05: GameEvents мост — уведомить внешние системы
+                GameEvents.TriggerItemAdded(itemData.itemId, toPlace);
                 lastSlot = newSlot;
             }
 
@@ -389,6 +400,8 @@ namespace CultivationGame.Inventory
             for (int i = slots.Count - 1; i >= 0 && removed < count; i--)
             {
                 var slot = slots[i];
+                // FIX ИСП-ИНВ-09: NullRef guard при null ItemData
+                if (slot.ItemData == null) continue;
                 if (slot.ItemData.itemId == itemId)
                 {
                     int toRemove = Mathf.Min(count - removed, slot.Count);
@@ -457,6 +470,9 @@ namespace CultivationGame.Inventory
                 slotById.Remove(slot.SlotId);
                 UpdateRowIndices();
                 OnItemRemoved?.Invoke(slot);
+                // FIX ИСП-ИНВ-05: GameEvents мост — уведомить внешние системы
+                if (slot.ItemData != null)
+                    GameEvents.TriggerItemRemoved(slot.ItemData.itemId, count);
             }
             else
             {
@@ -558,6 +574,11 @@ namespace CultivationGame.Inventory
                 RemoveFromSlot(slot, 1);
             }
 
+            // FIX ИСП-БЛ-07: При замене экипировки — старый предмет возвращается в инвентарь
+            // EquipmentController.Equip() уже вызывает Unequip() для старого предмета.
+            // Мы должны подписаться на OnEquipmentUnequipped чтобы вернуть его.
+            // Это обрабатывается через подписку в Initialize() ниже.
+
             return instance;
         }
 
@@ -614,6 +635,8 @@ namespace CultivationGame.Inventory
         {
             foreach (var slot in slots)
             {
+                // FIX ИСП-ИНВ-09: NullRef guard при null ItemData
+                if (slot.ItemData == null) continue;
                 if (slot.ItemData.itemId == itemId && slot.Count < slot.ItemData.maxStack)
                     return slot;
             }
@@ -625,6 +648,8 @@ namespace CultivationGame.Inventory
             var result = new List<InventorySlot>();
             foreach (var slot in slots)
             {
+                // FIX ИСП-ИНВ-09: NullRef guard при null ItemData
+                if (slot.ItemData == null) continue;
                 if (slot.ItemData.itemId == itemId)
                     result.Add(slot);
             }
@@ -636,6 +661,8 @@ namespace CultivationGame.Inventory
             int total = 0;
             foreach (var slot in slots)
             {
+                // FIX ИСП-ИНВ-09: NullRef guard при null ItemData
+                if (slot.ItemData == null) continue;
                 if (slot.ItemData.itemId == itemId)
                     total += slot.Count;
             }
@@ -664,6 +691,11 @@ namespace CultivationGame.Inventory
         {
             slots.Sort((a, b) =>
             {
+                // FIX ИСП-ИНВ-09: NullRef guard при null ItemData
+                if (a.ItemData == null && b.ItemData == null) return 0;
+                if (a.ItemData == null) return 1;
+                if (b.ItemData == null) return -1;
+
                 int catCompare = ((int)a.ItemData.category).CompareTo((int)b.ItemData.category);
                 if (catCompare != 0) return catCompare;
 

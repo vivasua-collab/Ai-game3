@@ -151,6 +151,8 @@ namespace CultivationGame.Inventory
                 OnStatsChanged += ApplyQiFlowBonus;
                 qiUpdateSubscribed = true;
             }
+            // FIX ИСП-ИНВ-08: Зарегистрировать контроллер в ServiceLocator
+            ServiceLocator.Register(this);
         }
 
         private void OnDestroy()
@@ -161,6 +163,8 @@ namespace CultivationGame.Inventory
                 OnStatsChanged -= ApplyQiFlowBonus;
                 qiUpdateSubscribed = false;
             }
+            // FIX ИСП-ИНВ-08: Отписаться от ServiceLocator
+            ServiceLocator.Unregister<EquipmentController>();
         }
 
         /// <summary>

@@ -150,6 +150,8 @@ namespace CultivationGame.UI.Inventory
             if (slotRowPrefab == null || listContainer == null) return null;
 
             var rowGO = Instantiate(slotRowPrefab, listContainer);
+            // FIX ИСП-ИНВ-01: Активировать клон после Instantiate — префаб может быть деактивирован
+            rowGO.SetActive(true);
             var rowUI = rowGO.GetComponent<InventorySlotUI>();
 
             if (rowUI == null)

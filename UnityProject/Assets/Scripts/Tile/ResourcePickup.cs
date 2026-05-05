@@ -143,8 +143,8 @@ namespace CultivationGame.TileSystem
             var inventory = picker.GetComponent<InventoryController>();
             if (inventory == null)
             {
-                // Fallback: ServiceLocator
-                inventory = ServiceLocator.Get<InventoryController>();
+                // Fallback: ServiceLocator — FIX ИСП-ИНВ-03: GetOrFind вместо Get
+                inventory = ServiceLocator.GetOrFind<InventoryController>();
             }
             
             if (inventory != null && itemData != null)
@@ -196,28 +196,22 @@ namespace CultivationGame.TileSystem
                 return false;
             }
             
-            // Нет инвентаря вообще — всё равно подбираем
-            Debug.Log($"[ResourcePickup] Нет InventoryController у {picker.name}. Предмет подобран: {resourceId} x{amount}");
-            return true;
+            // Нет инвентаря вообще — FIX ИСП-ИНВ-04: НЕ подбираем, предмет остаётся в мире
+            Debug.Log($"[ResourcePickup] Нет InventoryController у {picker.name}. Предмет ОСТАЛСЯ в мире: {resourceId} x{amount}");
+            return false;
         }
         
         /// <summary>
-        /// FIX TIL-H01: Поиск ItemData по resourceId через Resources. (2026-04-11)
-        /// Загружает все ItemData из папки Resources/Items.
+        /// FIX TIL-H01 / ИСП-ИНВ-11: Поиск ItemData по resourceId через ItemDatabase (кэш).
+        /// Заменяет Resources.LoadAll на каждый вызов.
+        /// Редактировано: 2026-05-05
         /// </summary>
         private ItemData FindItemDataById(string id)
         {
             if (string.IsNullOrEmpty(id)) return null;
             
-            // Попробовать загрузить из Resources по имени
-            var items = Resources.LoadAll<ItemData>("Items");
-            foreach (var item in items)
-            {
-                if (item != null && item.itemId == id)
-                    return item;
-            }
-            
-            return null;
+            // ИСП-ИНВ-11: Используем кэшированный ItemDatabase вместо Resources.LoadAll
+            return ItemDatabase.GetById(id);
         }
         
         /// <summary>

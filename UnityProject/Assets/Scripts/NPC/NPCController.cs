@@ -210,7 +210,9 @@ namespace CultivationGame.NPC
                 Intelligence = (int)(state?.Intelligence ?? 10),
                 Penetration = 0,
                 AttackElement = attackElement,
-                CombatSubtype = CombatSubtype.MeleeStrike,
+                // FIX ИСП-БЛ-02: MeleeWeapon если есть оружие, иначе MeleeStrike
+                CombatSubtype = equipmentController?.GetMainWeapon() != null
+                    ? CombatSubtype.MeleeWeapon : CombatSubtype.MeleeStrike,
                 TechniqueLevel = 1,
                 TechniqueGrade = TechniqueGrade.Common,
                 IsUltimate = false,
@@ -527,6 +529,18 @@ namespace CultivationGame.NPC
             
             OnNPCDeath?.Invoke(this);
             OnDeath?.Invoke(); // ICombatant event
+            
+            // FIX ИСП-БЛ-04: Удаление мёртвых NPC из сцены
+            var col = GetComponent<Collider2D>();
+            if (col != null) col.enabled = false; // Перестать блокировать
+            // Отключить визуал если есть
+            var sr = GetComponentInChildren<SpriteRenderer>();
+            if (sr != null)
+            {
+                // Делаем полупрозрачным на 3 секунды, потом уничтожаем
+                sr.color = new Color(sr.color.r, sr.color.g, sr.color.b, 0.4f);
+            }
+            Destroy(gameObject, 3f);
             
             Debug.Log($"NPC {state.Name} died from {cause}");
         }

@@ -107,17 +107,24 @@ namespace CultivationGame.Combat
         /// </summary>
         private bool ShouldEngage(MonoBehaviour target)
         {
-            // Проверяем ICombatant на цели — получаем Attitude если доступен
-            var targetCombatant = target.GetComponent<ICombatant>() as ICombatant;
+            // FIX ИСП-БЛ-05: Проверять отношение ВЛАДЕЛЬЦА триггера к ЦЕЛИ,
+            // а не отношение цели к кому-то
 
-            // Если цель — NPCController, можем проверить Attitude напрямую
-            var targetNpc = target.GetComponent<NPC.NPCController>();
-            if (targetNpc != null)
+            // Получаем владельца триггера — проверяем ЕГО отношение к цели
+            var ownerNpc = GetComponent<NPC.NPCController>();
+            if (ownerNpc != null)
             {
-                // Атакуем только если отношение цели ≤ minAttitudeToEngage
-                // (Hostile < Unfriendly < Neutral < Friendly < Allied)
-                if (targetNpc.Attitude <= minAttitudeToEngage)
-                    return true;
+                // Владелец триггера — враждебный → атакуем цель если она Player или более дружелюбная
+                if (ownerNpc.Attitude <= minAttitudeToEngage)
+                {
+                    // Проверяем: цель — это Player или дружелюбный NPC?
+                    if (target.CompareTag("Player"))
+                        return true;
+
+                    var targetNpc = target.GetComponent<NPC.NPCController>();
+                    if (targetNpc != null && targetNpc.Attitude > ownerNpc.Attitude)
+                        return true; // Владелец более враждебный чем цель → атакуем
+                }
             }
 
             // Fallback: атакуем по тегу "Enemy" если мы "Enemy" и minAttitudeToEngage = Hostile
@@ -126,9 +133,8 @@ namespace CultivationGame.Combat
             if (gameObject.CompareTag("Player") && target.CompareTag("Enemy"))
                 return minAttitudeToEngage >= Attitude.Hostile;
 
-            // С-12: Дополнительный fallback — Enemy с Hostile настройкой всегда атакует
-            // если цель помечена как враждебная через personalityFlags
-            if (targetNpc != null && (targetNpc.Personality & PersonalityTrait.Aggressive) != 0
+            // С-12: Дополнительный fallback — Aggressive всегда атакует
+            if (ownerNpc != null && (ownerNpc.Personality & PersonalityTrait.Aggressive) != 0
                 && minAttitudeToEngage >= Attitude.Hostile)
                 return true;
 

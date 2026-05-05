@@ -117,10 +117,11 @@ namespace CultivationGame.Player
         GameObject ICombatant.GameObject => gameObject;
         int ICombatant.CultivationLevel => qiController?.CultivationLevel ?? 1;
         int ICombatant.CultivationSubLevel => 0;
-        int ICombatant.Strength => 10; // TODO: from StatDevelopment
-        int ICombatant.Agility => 10;
-        int ICombatant.Intelligence => 10;
-        int ICombatant.Vitality => 10;
+        // FIX ИСП-БЛ-08: Подключить StatDevelopment к боевым статам
+        int ICombatant.Strength => (int)(statDevelopment?.GetStat(StatType.Strength) ?? 10);
+        int ICombatant.Agility => (int)(statDevelopment?.GetStat(StatType.Agility) ?? 10);
+        int ICombatant.Intelligence => (int)(statDevelopment?.GetStat(StatType.Intelligence) ?? 10);
+        int ICombatant.Vitality => (int)(statDevelopment?.GetStat(StatType.Vitality) ?? 10);
         long ICombatant.CurrentQi => qiController?.CurrentQi ?? 0;
         long ICombatant.MaxQi => qiController?.MaxQi ?? 0;
         float ICombatant.QiDensity => qiController?.QiDensity ?? 1f;
@@ -132,11 +133,11 @@ namespace CultivationGame.Player
         int ICombatant.Penetration => 0;
         // ФАЗА 1: бонусы из EquipmentController
         float ICombatant.DodgeChance => DefenseProcessor.CalculateDodgeChance(
-            10, equipmentController?.GetDodgePenalty() ?? 0f);
+            (int)(statDevelopment?.GetStat(StatType.Agility) ?? 10), equipmentController?.GetDodgePenalty() ?? 0f);
         float ICombatant.ParryChance => DefenseProcessor.CalculateParryChance(
-            10, equipmentController?.GetParryBonus() ?? 0f);
+            (int)(statDevelopment?.GetStat(StatType.Agility) ?? 10), equipmentController?.GetParryBonus() ?? 0f);
         float ICombatant.BlockChance => DefenseProcessor.CalculateBlockChance(
-            10, equipmentController?.GetBlockBonus() ?? 0f);
+            (int)(statDevelopment?.GetStat(StatType.Strength) ?? 10), equipmentController?.GetBlockBonus() ?? 0f);
         float ICombatant.ArmorCoverage => equipmentController?.GetArmorCoverage() ?? 0f;
         float ICombatant.DamageReduction => equipmentController?.GetDamageReduction() ?? 0f;
         int ICombatant.ArmorValue => equipmentController?.GetArmorValue() ?? 0;
@@ -173,8 +174,15 @@ namespace CultivationGame.Player
             return new AttackerParams
             {
                 CultivationLevel = qiController?.CultivationLevel ?? 1,
-                Strength = 10, Agility = 10, Intelligence = 10, Penetration = 0,
-                AttackElement = attackElement, CombatSubtype = CombatSubtype.MeleeStrike,
+                // FIX ИСП-БЛ-08: Используем StatDevelopment вместо захардкоженных 10
+                Strength = (int)(statDevelopment?.GetStat(StatType.Strength) ?? 10),
+                Agility = (int)(statDevelopment?.GetStat(StatType.Agility) ?? 10),
+                Intelligence = (int)(statDevelopment?.GetStat(StatType.Intelligence) ?? 10),
+                Penetration = 0,
+                AttackElement = attackElement,
+                // FIX ИСП-БЛ-02: MeleeWeapon если есть оружие, иначе MeleeStrike
+                CombatSubtype = equipmentController?.GetMainWeapon() != null
+                    ? CombatSubtype.MeleeWeapon : CombatSubtype.MeleeStrike,
                 TechniqueLevel = 1, TechniqueGrade = TechniqueGrade.Common,
                 IsUltimate = false, IsQiTechnique = false,
                 WeaponBonusDamage = equipmentController?.GetWeaponBonusDamage() ?? 0f,  // ФАЗА 1: из EquipmentController
@@ -192,7 +200,9 @@ namespace CultivationGame.Player
                 CultivationLevel = qiController?.CultivationLevel ?? 1,
                 CurrentQi = qiController?.CurrentQi ?? 0,
                 QiDefense = QiDefenseType.RawQi,
-                Agility = 10, Strength = 10,
+                // FIX ИСП-БЛ-08: Используем StatDevelopment
+                Agility = (int)(statDevelopment?.GetStat(StatType.Agility) ?? 10),
+                Strength = (int)(statDevelopment?.GetStat(StatType.Strength) ?? 10),
                 ArmorCoverage = equipmentController?.GetArmorCoverage() ?? 0f,
                 DamageReduction = equipmentController?.GetDamageReduction() ?? 0f,
                 ArmorValue = equipmentController?.GetArmorValue() ?? 0,

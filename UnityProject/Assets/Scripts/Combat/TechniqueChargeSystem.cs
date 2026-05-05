@@ -405,6 +405,27 @@ namespace CultivationGame.Combat
                 {
                     OnChargeFired?.Invoke(activeCharge);
                     Debug.Log($"[TechniqueChargeSystem] Техника сработала: {activeCharge.Technique.Data.nameRu}");
+
+                    // FIX ИСП-БЛ-03: Подключить заряженные техники к боевой системе
+                    // Если есть активный бой — наносим урон через CombatManager
+                    if (result.Damage > 0 && CombatManager.Instance != null)
+                    {
+                        var combatant = GetComponent<CultivationGame.NPC.NPCController>() as ICombatant
+                            ?? GetComponent<CultivationGame.Player.PlayerController>() as ICombatant;
+                        if (combatant != null)
+                        {
+                            ICombatant opponent = CombatManager.Instance.GetOpponent(combatant);
+                            if (opponent != null && opponent.IsAlive)
+                            {
+                                if (combatant is ITechniqueUser techUser)
+                                {
+                                    CombatManager.Instance.ExecuteTechniqueAttack(
+                                        techUser, opponent, activeCharge.Technique);
+                                }
+                                Debug.Log($"[TechniqueChargeSystem] Нанесён урон техникой: {result.Damage}");
+                            }
+                        }
+                    }
                 }
                 else
                 {

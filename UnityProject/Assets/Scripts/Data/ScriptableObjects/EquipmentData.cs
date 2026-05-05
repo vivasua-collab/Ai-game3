@@ -25,6 +25,12 @@ namespace CultivationGame.Data.ScriptableObjects
     [CreateAssetMenu(fileName = "Equipment", menuName = "Cultivation/Equipment")]
     public class EquipmentData : ItemData
     {
+        // FIX ИСП-ИНВ-02: Экипировка НЕ стакается — каждый экземпляр уникален (grade, durability)
+        protected override void OnEnable()
+        {
+            base.OnEnable();
+            stackable = false;
+        }
         [Header("Equipment")]
         [Tooltip("Слот экипировки")]
         public EquipmentSlot slot;
