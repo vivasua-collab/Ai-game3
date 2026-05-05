@@ -92,7 +92,7 @@ namespace CultivationGame.Combat
 
             // Инициируем бой
             var target = (ICombatant)targetCombatant;
-            if (CombatManager.Instance != null && !CombatManager.Instance.IsInCombat)
+            if (CombatManager.GetOrCreate() != null && !CombatManager.Instance.IsInCombat)
             {
                 lastAggroTime = Time.time;
                 CombatManager.Instance.InitiateCombat(ownerCombatant, target);

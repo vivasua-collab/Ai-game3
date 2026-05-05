@@ -285,7 +285,7 @@ namespace CultivationGame.NPC
             
             if (npcCombatant != null && playerCombatant != null)
             {
-                CombatManager cm = CombatManager.Instance;
+                CombatManager cm = CombatManager.GetOrCreate();
                 if (cm != null)
                 {
                     // Инициируем бой и наносим базовую атаку через полный пайплайн

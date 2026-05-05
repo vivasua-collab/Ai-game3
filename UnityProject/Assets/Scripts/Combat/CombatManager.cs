@@ -97,6 +97,29 @@ namespace CultivationGame.Combat
 
         public static CombatManager Instance { get; private set; }
 
+        /// <summary>
+        /// Получить CombatManager — singleton, FindObjectOfType, или создать автоматически.
+        /// FIX: 2026-05-05 — CombatManager может не быть в сцене (NPCAI.PerformAttack падает).
+        /// </summary>
+        public static CombatManager GetOrCreate()
+        {
+            if (Instance != null) return Instance;
+
+            // Попробовать найти на сцене
+            var found = FindObjectsByType<CombatManager>(FindObjectsSortMode.None);
+            if (found.Length > 0)
+            {
+                Instance = found[0];
+                return Instance;
+            }
+
+            // Создать автоматически
+            Debug.LogWarning("[CombatManager] Auto-creating CombatManager — add to Phase05 scene builder!");
+            GameObject go = new GameObject("CombatManager");
+            Instance = go.AddComponent<CombatManager>();
+            return Instance;
+        }
+
         #endregion
 
         #region Fields

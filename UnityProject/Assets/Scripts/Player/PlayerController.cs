@@ -330,7 +330,7 @@ namespace CultivationGame.Player
         /// </summary>
         private void ExecuteBasicAttack()
         {
-            if (CombatManager.Instance == null || !CombatManager.Instance.IsInCombat) return;
+            if (CombatManager.GetOrCreate() == null || !CombatManager.Instance.IsInCombat) return;
             if (currentCombatTarget == null || !currentCombatTarget.IsAlive)
             {
                 // Пытаемся найти ближайшую цель
@@ -347,7 +347,7 @@ namespace CultivationGame.Player
         /// </summary>
         private void CycleTarget(int direction)
         {
-            if (CombatManager.Instance == null || !CombatManager.Instance.IsInCombat) return;
+            if (CombatManager.GetOrCreate() == null || !CombatManager.Instance.IsInCombat) return;
             
             var combatants = CombatManager.Instance.Combatants;
             if (combatants.Count == 0) return;

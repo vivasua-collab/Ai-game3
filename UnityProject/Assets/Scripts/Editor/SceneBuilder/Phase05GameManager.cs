@@ -7,6 +7,7 @@
 using UnityEngine;
 using UnityEditor;
 using CultivationGame.Core;
+using CultivationGame.Combat;
 using CultivationGame.Managers;
 using CultivationGame.World;
 using CultivationGame.Save;
@@ -50,6 +51,11 @@ namespace CultivationGame.Editor.SceneBuilder
             systems.AddComponent<FactionController>();
             systems.AddComponent<GeneratorRegistry>();
             systems.AddComponent<SaveManager>();
+
+            // CombatManager — синглтон для координации боевых взаимодействий
+            GameObject combatObj = new GameObject("CombatManager");
+            combatObj.transform.SetParent(gameManagerObj.transform);
+            combatObj.AddComponent<CombatManager>();
 
             ConfigureTimeController(systems);
             ConfigureSaveManager(systems);

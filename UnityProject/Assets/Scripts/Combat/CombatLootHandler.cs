@@ -43,7 +43,7 @@ namespace CultivationGame.Combat
             qiController = GetComponent<QiController>();
 
             // Подписываемся на событие генерации лута
-            var combatManager = CombatManager.Instance;
+            var combatManager = CombatManager.GetOrCreate();
             if (combatManager != null)
             {
                 combatManager.OnLootGenerated += OnLootGenerated;

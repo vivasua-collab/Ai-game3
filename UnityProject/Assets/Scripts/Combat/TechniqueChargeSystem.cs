@@ -408,7 +408,7 @@ namespace CultivationGame.Combat
 
                     // FIX ИСП-БЛ-03: Подключить заряженные техники к боевой системе
                     // Если есть активный бой — наносим урон через CombatManager
-                    if (result.Damage > 0 && CombatManager.Instance != null)
+                    if (result.Damage > 0 && CombatManager.GetOrCreate() != null)
                     {
                         var combatant = GetComponent<CultivationGame.NPC.NPCController>() as ICombatant
                             ?? GetComponent<CultivationGame.Player.PlayerController>() as ICombatant;

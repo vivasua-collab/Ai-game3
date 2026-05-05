@@ -588,6 +588,7 @@ namespace CultivationGame.NPC
         }
         
         // FIX NPC-M01: Threat decay over time (2026-04-11)
+        // FIX: 2026-05-05 — Collection was modified during enumeration (Dictionary value update invalidates enumerator)
         /// <summary>
         /// Decay threat levels over time. Threats that are not reinforced gradually fade.
         /// </summary>
@@ -600,7 +601,9 @@ namespace CultivationGame.NPC
             
             threatDecayTimer = 0f;
             
+            // Собираем изменения в отдельные списки — нельзя модифицировать Dictionary внутри foreach
             List<string> toRemove = null;
+            List<KeyValuePair<string, float>> toUpdate = null;
             
             foreach (var kvp in threatLevels)
             {
@@ -612,7 +615,17 @@ namespace CultivationGame.NPC
                 }
                 else
                 {
-                    threatLevels[kvp.Key] = newThreat;
+                    if (toUpdate == null) toUpdate = new List<KeyValuePair<string, float>>();
+                    toUpdate.Add(new KeyValuePair<string, float>(kvp.Key, newThreat));
+                }
+            }
+            
+            // Применяем обновления значений
+            if (toUpdate != null)
+            {
+                foreach (var update in toUpdate)
+                {
+                    threatLevels[update.Key] = update.Value;
                 }
             }
             
@@ -744,6 +757,8 @@ namespace CultivationGame.NPC
         
         /// <summary>
         /// Выполнить атаку по цели через CombatManager.
+        /// FIX: 2026-05-05 — CombatManager not found: добавлен fallback на FindObjectOfType
+        ///   и прямой путь урона при отсутствии CombatManager.
         /// </summary>
         private void PerformAttack(Transform target)
         {
@@ -758,10 +773,13 @@ namespace CultivationGame.NPC
                 return;
             }
             
-            CombatManager cm = CombatManager.Instance;
+            // Пытаемся получить CombatManager — singleton с auto-create fallback
+            CombatManager cm = CombatManager.GetOrCreate();
+            
             if (cm == null)
             {
-                Debug.LogWarning("[NPCAI] CombatManager not found — cannot attack");
+                // CombatManager отсутствует — наносим урон напрямую через ICombatant.TakeDamage
+                PerformDirectAttack(npcCombatant, targetCombatant);
                 return;
             }
             
@@ -779,6 +797,31 @@ namespace CultivationGame.NPC
                 Debug.Log($"[NPCAI] {npcController.NpcName} атакует {targetCombatant.Name}: " +
                           $"урон={result.Damage.FinalDamage:F1}");
             }
+        }
+        
+        /// <summary>
+        /// Прямая атака без CombatManager — упрощённый путь урона.
+        /// Используется как fallback когда CombatManager не найден.
+        /// </summary>
+        private void PerformDirectAttack(ICombatant attacker, ICombatant defender)
+        {
+            if (attacker == null || defender == null || !defender.IsAlive) return;
+            
+            // Базовый урон от силы атакующего
+            int baseDamage = Mathf.Max(1, attacker.Strength / 2);
+            
+            // Выбираем случайную часть тела
+            BodyPartType hitPart = BodyPartType.Torso; // дефолт
+            var bodyCtrl = defender.GameObject?.GetComponent<CultivationGame.Body.BodyController>();
+            if (bodyCtrl != null)
+            {
+                hitPart = CultivationGame.Combat.DefenseProcessor.RollBodyPart();
+            }
+            
+            defender.TakeDamage(hitPart, baseDamage);
+            
+            Debug.Log($"[NPCAI] {npcController?.NpcName ?? "NPC"} атакует {defender.Name} (direct): " +
+                      $"урон={baseDamage}, часть={hitPart}");
         }
         
         /// <summary>
