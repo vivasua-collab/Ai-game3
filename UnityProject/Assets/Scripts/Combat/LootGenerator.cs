@@ -284,11 +284,12 @@ namespace CultivationGame.Combat
             return material switch
             {
                 BodyMaterial.Organic => "organic_material",
-                BodyMaterial.Iron => "iron_scrap",
-                BodyMaterial.Stone => "stone_chunk",
-                BodyMaterial.Jade => "jade_fragment",
-                BodyMaterial.Crystal => "crystal_shard",
-                BodyMaterial.Bone => "bone_powder",
+                BodyMaterial.Scaled => "scale_fragment",
+                BodyMaterial.Chitin => "chitin_plate",
+                BodyMaterial.Mineral => "mineral_shard",
+                BodyMaterial.Ethereal => "ethereal_essence",
+                BodyMaterial.Construct => "construct_scrap",
+                BodyMaterial.Chaos => "chaos_fragment",
                 _ => ""
             };
         }

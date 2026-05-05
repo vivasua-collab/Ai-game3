@@ -350,7 +350,7 @@ namespace CultivationGame.Player
             for (int attempt = 0; attempt < combatants.Count; attempt++)
             {
                 currentIndex = (currentIndex + direction + combatants.Count) % combatants.Count;
-                if (combatants[currentIndex] != this && combatants[currentIndex].IsAlive)
+                if (!ReferenceEquals(combatants[currentIndex], this) && combatants[currentIndex].IsAlive)
                 {
                     currentCombatTarget = combatants[currentIndex];
                     Debug.Log($"[PlayerController] Цель: {currentCombatTarget.Name}");
