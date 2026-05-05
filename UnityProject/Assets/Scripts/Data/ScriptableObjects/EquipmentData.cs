@@ -15,6 +15,7 @@
 using UnityEngine;
 using System.Collections.Generic;
 using CultivationGame.Core;
+using CultivationGame.Data; // С-07: StatBonus перемещён в CultivationGame.Data
 
 namespace CultivationGame.Data.ScriptableObjects
 {

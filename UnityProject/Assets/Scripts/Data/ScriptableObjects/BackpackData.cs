@@ -3,6 +3,7 @@
 // Cultivation World Simulator
 // Создано: 2026-04-18 18:43:19 UTC
 // Редактировано: 2026-04-27 18:06:00 UTC — строчная модель: grid→weight/volume
+// Редактировано: 2026-05-05 09:55:00 UTC — В-14: allowedBeltItemType для ограничения пояса
 // ============================================================================
 //
 // ВЕРСИЯ 3.0: Строчная модель инвентаря.
@@ -45,5 +46,8 @@ namespace CultivationGame.Data.ScriptableObjects
         [Tooltip("Дополнительные слоты пояса (0-4)")]
         [Range(0, 4)]
         public int beltSlots = 0;
+
+        [Tooltip("Допустимый тип предмета для слотов пояса")]
+        public ItemCategory allowedBeltItemType = ItemCategory.Consumable; // В-14: ограничение для пояса
     }
 }

@@ -5,8 +5,10 @@
 // ============================================================================
 // Создан: 2026-03-30 10:00:00 UTC
 // Редактировано: 2026-05-04 04:30:00 UTC — Добавлен UseTechniqueFromCharge
+// Редактировано: 2026-05-05 09:55:00 UTC — С-11: IncreaseMastery baseGain 0.01→1.0, 0.02→2.0
 // Редактировано: 2026-05-07 10:30:00 UTC — ФАЗА 2: qiCostReduction из EquipmentController
 // Редактировано: 2026-05-05 08:25:00 UTC — HasDefensiveTechnique() + HasActiveShield()
+// Редактировано: 2026-05-05 10:05:00 UTC
 
 using System;
 using System.Collections.Generic;
@@ -110,6 +112,8 @@ namespace CultivationGame.Combat
         /// <summary>
         /// Есть ли активная техника-щит (не на кулдауне)?
         /// Используется для QiDefenseType.Shield vs RawQi.
+        /// FIX В-09: Проверяет defenseSubtype == Shield вместо любого Defense.
+        /// Раньше любая Defense-техника активировала Shield-режим Qi Buffer — неверно.
         /// </summary>
         public bool HasActiveShield()
         {
@@ -117,6 +121,7 @@ namespace CultivationGame.Combat
             {
                 if (tech.Data != null &&
                     tech.Data.techniqueType == TechniqueType.Defense &&
+                    tech.Data.defenseSubtype == DefenseSubtype.Shield &&
                     tech.CooldownRemaining <= 0f)
                     return true;
             }
@@ -315,8 +320,9 @@ namespace CultivationGame.Combat
             // CooldownRemaining тоже в секундах — множитель ×60 убран
             technique.CooldownRemaining = technique.Data.cooldown;
             
-            // Повышаем мастерство (+0.01 за использование)
-            IncreaseMastery(technique, 0.01f);
+            // Повышаем мастерство (+1.0 за использование)
+            // С-11: было 0.01 — слишком мало, TECHNIQUE_SYSTEM.md: прирост = max(0.1, baseGain × (1 - mastery/100))
+            IncreaseMastery(technique, 1.0f);
             
             // Заполняем результат
             result.Success = true;
@@ -395,8 +401,9 @@ namespace CultivationGame.Combat
             // Устанавливаем кулдаун
             technique.CooldownRemaining = technique.Data.cooldown;
             
-            // Повышаем мастерство (+0.02 за использование через накачку — больше чем мгновенное)
-            IncreaseMastery(technique, 0.02f);
+            // Повышаем мастерство (+2.0 за использование через накачку — больше чем мгновенное)
+            // С-11: было 0.02 — слишком мало
+            IncreaseMastery(technique, 2.0f);
             
             // Рассчитываем параметры
             int capacity = CalculateCapacity(technique);

@@ -4,7 +4,8 @@
 // Версия: 1.0
 // ============================================================================
 // Создан: 2026-03-30 10:00:00 UTC
-// Редактирован: 2026-03-31 09:54:21 UTC
+// Редактирован: 2026-05-05 09:52:00 UTC
+// Редактировано: 2026-05-05 10:05:00 UTC
 // ============================================================================
 
 using System;
@@ -98,7 +99,8 @@ namespace CultivationGame.Core
         Air,        // Воздух
         Lightning,  // Молния
         Void,       // Пустота
-        Poison      // Яд (особая стихия)
+        Light,      // Свет — FIX К-04: добавлен по ALGORITHMS.md §10.1
+        Poison      // Яд (особая стихия — НЕ имеет противоположностей, К-05)
         // FIX CORE-H05: Count убран. Используйте Enum.GetValues(typeof(Element)).Length
     }
     
@@ -150,6 +152,20 @@ namespace CultivationGame.Core
     }
     
     /// <summary>
+    /// Подтип защитной техники.
+    /// FIX В-09: Добавлен для корректной работы HasActiveShield()
+    /// </summary>
+    public enum DefenseSubtype
+    {
+        None,       // Не защитная
+        Block,      // Блок
+        Parry,      // Парирование
+        Shield,     // Щит (активирует Shield-режим Qi Buffer)
+        Dodge,      // Уклонение
+        Reflect     // Отражение
+    }
+
+    /// <summary>
     /// Подтип боевой техники
     /// Источник: TECHNIQUE_SYSTEM.md §"Combat (Боевые)"
     /// </summary>
@@ -173,18 +189,19 @@ namespace CultivationGame.Core
     /// | Grade | Урон | Бонусов | Шанс эффекта |
     /// |-------|------|---------|--------------|
     /// | Common | ×1.0 | 0 | 0% |
-    /// | Refined | ×1.2 | 1 | 20% |
-    /// | Perfect | ×1.4 | 2 | 50% |
-    /// | Transcendent | ×1.6 | 3 | 80% |
+    /// | Refined | ×1.3 | 1 | 20% |
+    /// | Perfect | ×1.6 | 2 | 50% |
+    /// | Transcendent | ×2.0 | 3 | 80% |
     /// 
     /// ⚠️ ВАЖНО: Стоимость Ци всегда ×1.0 — не зависит от Grade!
+    /// FIX К-01: Множители обновлены по TECHNIQUE_SYSTEM.md
     /// </summary>
     public enum TechniqueGrade
     {
         Common,         // Обычная (×1.0)
-        Refined,        // Очищенная (×1.2)
-        Perfect,        // Совершенная (×1.4)
-        Transcendent    // Трансцендентная (×1.6)
+        Refined,        // Очищенная (×1.3)
+        Perfect,        // Совершенная (×1.6)
+        Transcendent    // Трансцендентная (×2.0)
     }
     
     #endregion
@@ -398,14 +415,19 @@ namespace CultivationGame.Core
     /// <summary>
     /// Состояние прочности.
     /// Источник: EQUIPMENT_SYSTEM.md §4.1 "Состояния"
+    /// FIX С-01: Убрано Excellent, приведено к 5 состояниям документации
+    /// | Pristine | 100%   |
+    /// | Good     | 80-99% |
+    /// | Worn     | 60-79% |
+    /// | Damaged  | 20-59% |
+    /// | Broken   | <20%   |
     /// </summary>
     public enum DurabilityCondition
     {
         Pristine,       // 100% — Идеальное
-        Excellent,      // 80-99% — Отличное
-        Good,           // 60-79% — Хорошее
-        Worn,           // 40-59% — Изношенное
-        Damaged,        // 20-39% — Повреждённое
+        Good,           // 80-99% — Хорошее
+        Worn,           // 60-79% — Изношенное
+        Damaged,        // 20-59% — Повреждённое
         Broken          // <20% — Сломанное
     }
 
@@ -681,6 +703,23 @@ namespace CultivationGame.Core
         Resolution,     // Разрешение действий
         Victory,        // Победа
         Defeat          // Поражение
+    }
+
+    /// <summary>
+    /// Тип стихийного эффекта.
+    /// FIX С-04: Добавлен для реализации стихийных эффектов (COMBAT_SYSTEM.md §«Эффекты стихий»)
+    /// </summary>
+    public enum ElementalEffectType
+    {
+        None,
+        Burn,       // Горение (Fire)
+        Slow,       // Замедление (Water)
+        Stun,       // Оглушение (Earth)
+        Knockback,  // Отталкивание (Air)
+        Chain,      // Цепной урон (Lightning)
+        Pierce,     // Пробитие (Void)
+        Purify,     // Очищение (Light)
+        PoisonDot   // Отравление (Poison)
     }
     
     #endregion

@@ -7,7 +7,7 @@
 // Редактировано: 2026-04-30 09:45:00 UTC — ICombatant: реализация интерфейса, TakeDamage через пайплайн
 // Редактировано: 2026-05-04 07:20:00 UTC — ФАЗА 5: CombatAI + CombatTrigger + ITechniqueUser
 // Редактировано: 2026-05-07 10:00:00 UTC — ФАЗА 1: EquipmentController → ICombatant связь
-// Редактировано: 2026-05-05 08:30:00 UTC — HasShieldTechnique + QiDefense из TechniqueController
+// Редактировано: 2026-05-05 09:55:00 UTC — К-12: preset.baseAttitude вместо ValueToAttitude
 // ============================================================================
 //
 // Источник: docs/NPC_AI_SYSTEM.md, docs/QI_SYSTEM.md
@@ -215,7 +215,11 @@ namespace CultivationGame.NPC
                 TechniqueGrade = TechniqueGrade.Common,
                 IsUltimate = false,
                 IsQiTechnique = false,
-                WeaponBonusDamage = equipmentController?.GetWeaponBonusDamage() ?? 0f  // ФАЗА 1: из EquipmentController
+                WeaponBonusDamage = equipmentController?.GetWeaponBonusDamage() ?? 0f,  // ФАЗА 1: из EquipmentController
+                // FIX С-02: Поля для полной формулы урона оружия (EQUIPMENT_SYSTEM.md §7.3)
+                WeaponDamage = equipmentController?.GetWeaponDamage() ?? 0f,
+                StrBonusRatio = 0.5f,
+                AgiBonusRatio = 0.3f
             };
         }
         
@@ -234,6 +238,9 @@ namespace CultivationGame.NPC
                 DodgePenalty = equipmentController?.GetDodgePenalty() ?? 0f,
                 ParryBonus = equipmentController?.GetParryBonus() ?? 0f,
                 BlockBonus = equipmentController?.GetBlockBonus() ?? 0f,
+                // В-01: Эффективность из экипировки (было захардкожено 0.5 / 0.7)
+                BlockEffectiveness = equipmentController?.GetBlockEffectiveness() ?? 0.5f,
+                ShieldEffectiveness = equipmentController?.GetShieldEffectiveness() ?? 0.7f,
                 BodyMaterial = bodyController?.BodyMaterial ?? BodyMaterial.Organic,
                 DefenderElement = Element.Neutral,
                 FormationBuffMultiplier = 1.0f  // TODO: из FormationSystem
@@ -370,9 +377,14 @@ namespace CultivationGame.NPC
             state.CultivationLevel = (CultivationLevel)preset.cultivationLevel;
             state.SubLevel = preset.cultivationSubLevel;
             
-            // FIX NPC-ATT-01: Convert baseDisposition int → Attitude enum (2026-04-11)
-            state.Attitude = NPCState.ValueToAttitude(preset.baseDisposition);
-#pragma warning disable CS0618 // Disposition obsolete
+            // К-12: Используем baseAttitude напрямую из пресета вместо конвертации baseDisposition
+            state.Attitude = preset.baseAttitude;
+            // Обратно совместимая конвертация если baseAttitude = Neutral (default) и baseDisposition != 0
+#pragma warning disable CS0618 // Disposition/baseDisposition obsolete
+            if (preset.baseAttitude == Attitude.Neutral && preset.baseDisposition != 0)
+            {
+                state.Attitude = NPCState.ValueToAttitude(preset.baseDisposition);
+            }
             // Keep legacy Disposition in sync for any remaining references
             state.Disposition = (Disposition)preset.baseDisposition;
 #pragma warning restore CS0618

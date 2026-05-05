@@ -177,7 +177,11 @@ namespace CultivationGame.Player
                 AttackElement = attackElement, CombatSubtype = CombatSubtype.MeleeStrike,
                 TechniqueLevel = 1, TechniqueGrade = TechniqueGrade.Common,
                 IsUltimate = false, IsQiTechnique = false,
-                WeaponBonusDamage = equipmentController?.GetWeaponBonusDamage() ?? 0f  // ФАЗА 1: из EquipmentController
+                WeaponBonusDamage = equipmentController?.GetWeaponBonusDamage() ?? 0f,  // ФАЗА 1: из EquipmentController
+                // FIX С-02: Поля для полной формулы урона оружия (EQUIPMENT_SYSTEM.md §7.3)
+                WeaponDamage = equipmentController?.GetWeaponDamage() ?? 0f,
+                StrBonusRatio = 0.5f,
+                AgiBonusRatio = 0.3f
             };
         }
         
@@ -195,6 +199,9 @@ namespace CultivationGame.Player
                 DodgePenalty = equipmentController?.GetDodgePenalty() ?? 0f,
                 ParryBonus = equipmentController?.GetParryBonus() ?? 0f,
                 BlockBonus = equipmentController?.GetBlockBonus() ?? 0f,
+                // В-01: Эффективность из экипировки (было захардкожено 0.5 / 0.7)
+                BlockEffectiveness = equipmentController?.GetBlockEffectiveness() ?? 0.5f,
+                ShieldEffectiveness = equipmentController?.GetShieldEffectiveness() ?? 0.7f,
                 BodyMaterial = bodyController?.BodyMaterial ?? BodyMaterial.Organic,
                 DefenderElement = Element.Neutral,
                 FormationBuffMultiplier = 1.0f  // TODO: из FormationSystem

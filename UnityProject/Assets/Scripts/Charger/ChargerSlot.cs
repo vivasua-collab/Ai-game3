@@ -15,13 +15,15 @@ namespace CultivationGame.Charger
     /// <summary>
     /// Качество камня Ци.
     /// Источник: CHARGER_SYSTEM.md (косвенно)
+    /// FIX В-16: Выровнено с EquipmentGrade (Damaged/Common/Refined/Perfect/Transcendent)
     /// </summary>
     public enum QiStoneQuality
     {
-        Raw,        // Сырой (низшее качество)
-        Refined,    // Очищенный
-        Perfect,    // Совершенный
-        Transcendent // Трансцендентный
+        Damaged,        // Повреждённый (×0.5) — FIX В-16: добавлен
+        Common,         // Обычный (×1.0) — FIX В-16: переименован из Raw
+        Refined,        // Очищенный (×1.5)
+        Perfect,        // Совершенный (×2.5)
+        Transcendent    // Трансцендентный (×4.0)
     }
     
     /// <summary>
@@ -44,7 +46,7 @@ namespace CultivationGame.Charger
     {
         [SerializeField] private string stoneId;
         [SerializeField] private string stoneName;
-        [SerializeField] private QiStoneQuality quality = QiStoneQuality.Raw;
+        [SerializeField] private QiStoneQuality quality = QiStoneQuality.Common; // FIX В-16: Raw→Common
         [SerializeField] private QiStoneSize size = QiStoneSize.Small;
         [SerializeField] private Element element = Element.Neutral;
         [SerializeField] private long currentQi;
@@ -101,7 +103,8 @@ namespace CultivationGame.Charger
             // Множитель качества
             float qualityMult = quality switch
             {
-                QiStoneQuality.Raw => 1.0f,
+                QiStoneQuality.Damaged => 0.5f,       // FIX В-16: добавлен Damaged
+                QiStoneQuality.Common => 1.0f,        // FIX В-16: переименован из Raw
                 QiStoneQuality.Refined => 1.5f,
                 QiStoneQuality.Perfect => 2.5f,
                 QiStoneQuality.Transcendent => 4.0f,
@@ -183,7 +186,7 @@ namespace CultivationGame.Charger
         [SerializeField] private QiStone insertedStone;
         [SerializeField] private bool isActive = true;
         [SerializeField] private bool isSealed = false;
-        [SerializeField] private QiStoneQuality minQualityRequired = QiStoneQuality.Raw;
+        [SerializeField] private QiStoneQuality minQualityRequired = QiStoneQuality.Common; // FIX В-16: Raw→Common
         [SerializeField] private QiStoneSize maxSizeAllowed = QiStoneSize.Huge;
         [SerializeField] private float absorptionBonus = 0f;
         [SerializeField] private float qiRetention = 0.95f;

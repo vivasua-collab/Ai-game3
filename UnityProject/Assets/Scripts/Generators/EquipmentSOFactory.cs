@@ -8,6 +8,7 @@
 // Редактировано: 2026-04-29 12:03:16 UTC — исправление некорректной даты (05-01 → 04-29)
 // Редактировано: 2026-05-07 10:30:00 UTC — ФАЗА 2: маппинг qiCostReduction/chargeSpeedBonus
 // Редактировано: 2026-05-05 08:20:00 UTC — БАГ-3: +маппинг techniqueDamageBonus
+// Редактировано: 2026-05-05 09:55:00 UTC — С-07: StatBonus объединён, маппинг bonus→value
 // ============================================================================
 //
 // Мост DTO → EquipmentData SO:
@@ -341,30 +342,30 @@ namespace CultivationGame.Generators
             => Mathf.RoundToInt(dto.armor * 8 * (1 + dto.materialTier * 0.5f));
 
         /// Конвертация бонусов оружия (Generators.StatBonus → Data.StatBonus)
-        private static List<CultivationGame.Data.ScriptableObjects.StatBonus> ConvertBonuses(
-            List<CultivationGame.Generators.StatBonus> dtoBonuses)
+        private static List<CultivationGame.Data.StatBonus> ConvertBonuses(
+            List<CultivationGame.Data.StatBonus> dtoBonuses)
         {
-            var result = new List<CultivationGame.Data.ScriptableObjects.StatBonus>();
+            var result = new List<CultivationGame.Data.StatBonus>();
             foreach (var b in dtoBonuses)
-                result.Add(new CultivationGame.Data.ScriptableObjects.StatBonus
+                result.Add(new CultivationGame.Data.StatBonus
                 {
                     statName = b.statName,
-                    bonus = b.value,
+                    value = b.value,
                     isPercentage = b.isPercentage
                 });
             return result;
         }
 
         /// Конвертация бонусов брони (ArmorBonus → Data.StatBonus)
-        private static List<CultivationGame.Data.ScriptableObjects.StatBonus> ConvertArmorBonuses(
+        private static List<CultivationGame.Data.StatBonus> ConvertArmorBonuses(
             List<ArmorBonus> dtoBonuses)
         {
-            var result = new List<CultivationGame.Data.ScriptableObjects.StatBonus>();
+            var result = new List<CultivationGame.Data.StatBonus>();
             foreach (var b in dtoBonuses)
-                result.Add(new CultivationGame.Data.ScriptableObjects.StatBonus
+                result.Add(new CultivationGame.Data.StatBonus
                 {
                     statName = b.statName,
-                    bonus = b.value,
+                    value = b.value,
                     isPercentage = b.isPercentage
                 });
             return result;

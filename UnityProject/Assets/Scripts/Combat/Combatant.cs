@@ -6,6 +6,7 @@
 // Создан: 2026-03-31 14:08:00 UTC
 // Редактировано: 2026-05-04 07:25:00 UTC — ФАЗА 7: WeaponBonusDamage + FormationBuffMultiplier
 // Редактировано: 2026-05-07 10:00:00 UTC — ФАЗА 1: TODO обновлены (реализовано через EquipmentController)
+// Редактировано: 2026-05-05 10:05:00 UTC
 // ============================================================================
 
 using System;
@@ -142,6 +143,7 @@ namespace CultivationGame.Combat
         
         public virtual int Penetration => 0;
         
+        [Obsolete("Используйте EquipmentController через ICombatant")]
         public virtual float DodgeChance
         {
             get
@@ -151,6 +153,7 @@ namespace CultivationGame.Combat
             }
         }
         
+        [Obsolete("Используйте EquipmentController через ICombatant")]
         public virtual float ParryChance
         {
             get
@@ -160,6 +163,7 @@ namespace CultivationGame.Combat
             }
         }
         
+        [Obsolete("Используйте EquipmentController через ICombatant")]
         public virtual float BlockChance
         {
             get
@@ -169,18 +173,24 @@ namespace CultivationGame.Combat
             }
         }
         
+        [Obsolete("Используйте EquipmentController через ICombatant")]
         public virtual float ArmorCoverage => 0f;
+        [Obsolete("Используйте EquipmentController через ICombatant")]
         public virtual float DamageReduction => 0f;
+        [Obsolete("Используйте EquipmentController через ICombatant")]
         public virtual int ArmorValue => 0;
         
         // FIX CMB-C03: Сырые бонусы экипировки (не финальные шансы!)
         // Финальные шансы считаются в DamageCalculator через DefenseProcessor
         // ФАЗА 1: реализовано через EquipmentController в PlayerController/NPCController
+        [Obsolete("Используйте EquipmentController через ICombatant")]
         public virtual float WeaponParryBonus => 0f;  // EquipmentController.GetParryBonus()
+        [Obsolete("Используйте EquipmentController через ICombatant")]
         public virtual float ShieldBlockBonus => 0f;    // EquipmentController.GetBlockBonus()
 
         // ФАЗА 1: реализовано через EquipmentController.GetWeaponBonusDamage() в PlayerController/NPCController
         /// <summary>Бонусный урон от оружия (из EquipmentController)</summary>
+        [Obsolete("Используйте EquipmentController через ICombatant")]
         public virtual float WeaponBonusDamage => 0f;
 
         // ФАЗА 7: Слой 3b — множитель баффа формации
@@ -280,6 +290,7 @@ namespace CultivationGame.Combat
         /// <summary>
         /// Получить параметры атакующего для DamageCalculator.
         /// ФАЗА 7: Добавлено WeaponBonusDamage для слоя 1b.
+        /// FIX С-02: Добавлены WeaponDamage, StrBonusRatio, AgiBonusRatio.
         /// </summary>
         public AttackerParams GetAttackerParams(Element attackElement = Element.Neutral)
         {
@@ -296,7 +307,11 @@ namespace CultivationGame.Combat
                 TechniqueGrade = TechniqueGrade.Common,
                 IsUltimate = false,
                 IsQiTechnique = false,
-                WeaponBonusDamage = WeaponBonusDamage  // ФАЗА 7: слой 1b
+                WeaponBonusDamage = WeaponBonusDamage,  // ФАЗА 7: слой 1b
+                // FIX С-02: Поля для формулы урона оружия (по умолчанию 0 — fallback на WeaponBonusDamage)
+                WeaponDamage = 0f,
+                StrBonusRatio = 0.5f,
+                AgiBonusRatio = 0.3f
             };
         }
         
@@ -321,6 +336,9 @@ namespace CultivationGame.Combat
                 DodgePenalty = 0f, // ФАЗА 1: реализовано через EquipmentController в PlayerController/NPCController
                 ParryBonus = WeaponParryBonus,   // FIX CMB-C03: сырой бонус оружия
                 BlockBonus = ShieldBlockBonus,    // FIX CMB-C03: сырой бонус щита
+                // В-01: Эффективность парирования/блока (по умолчанию как было захардкожено)
+                BlockEffectiveness = 0.5f,
+                ShieldEffectiveness = 0.7f,
                 BodyMaterial = BodyMaterial,
                 DefenderElement = DefenderElement,  // FIX CMB-H05
                 FormationBuffMultiplier = FormationBuffMultiplier  // ФАЗА 7: слой 3b

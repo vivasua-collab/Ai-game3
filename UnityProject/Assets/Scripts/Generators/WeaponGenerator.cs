@@ -5,6 +5,7 @@
 // Создано: 2026-03-31 10:22:36 UTC
 // Редактировано: 2026-04-28 14:40 UTC — добавлены инвентарные поля (P1: weight, volume, stackable, maxStack, allowNesting, category)
 // Редактировано: 2026-05-05 08:15:00 UTC — БАГ-1: +techniqueDamageBonus в DTO и генерацию
+// Редактировано: 2026-05-05 09:55:00 UTC — С-07: локальный StatBonus удалён, используется CultivationGame.Data.StatBonus
 // ============================================================================
 //
 // Источник: docs/EQUIPMENT_SYSTEM.md
@@ -138,7 +139,7 @@ namespace CultivationGame.Generators
         public ItemCategory category = ItemCategory.Weapon;
 
         // Bonuses
-        public List<StatBonus> bonuses = new List<StatBonus>();
+        public List<CultivationGame.Data.StatBonus> bonuses = new List<CultivationGame.Data.StatBonus>();
 
         // Qi properties
         public float qiConductivity;
@@ -151,13 +152,8 @@ namespace CultivationGame.Generators
         public string description;
     }
 
-    [Serializable]
-    public class StatBonus
-    {
-        public string statName;
-        public float value;
-        public bool isPercentage;
-    }
+    // С-07: Локальный StatBonus удалён — используется CultivationGame.Data.StatBonus
+    // (Scripts/Data/StatBonus.cs)
 
     /// <summary>
     /// Генератор оружия
@@ -591,7 +587,7 @@ namespace CultivationGame.Generators
                 string bonusType = rng.NextElement(possibleBonuses);
                 float value = rng.NextFloat(0.05f, 0.2f) * ((int)weapon.grade + 1);
 
-                weapon.bonuses.Add(new StatBonus
+                weapon.bonuses.Add(new CultivationGame.Data.StatBonus
                 {
                     statName = bonusType,
                     value = value,

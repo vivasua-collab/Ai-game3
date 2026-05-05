@@ -4,6 +4,7 @@
 // Версия: 1.1 — Заменён Instantiate/Destroy на VFXPool
 // Создано: 2026-04-03 13:40:00 UTC
 // Редактировано: 2026-04-09 10:45:00 UTC
+// Редактировано: 2026-05-05 09:55:00 UTC — В-10: ApplyShield реальная реализация через QiController.AddTemporaryShield
 //
 // ИЗМЕНЕНИЯ В ВЕРСИИ 1.1:
 // - FIX: Instantiate/Destroy заменены на VFXPool для оптимизации (аудит Unity 6.3)
@@ -494,18 +495,17 @@ namespace CultivationGame.Formation
 
         /// <summary>
         /// Применить щит к цели.
+        /// В-10: Реальная реализация через QiController.AddTemporaryShield().
         /// </summary>
         public static void ApplyShield(GameObject target, FormationEffect effect)
         {
             if (effect.value <= 0) return;
 
-            // Проверяем QiController
+            // В-10: Используем QiController.AddTemporaryShield() для реального щита
             var qi = target.GetComponent<Qi.QiController>();
             if (qi != null)
             {
-                // Добавляем временный щит
-                // Реальная реализация зависит от системы щитов
-                Debug.Log($"[FormationEffects] Shield {effect.value} applied to {target.name}");
+                qi.AddTemporaryShield(effect.value, effect.duration);
             }
         }
 

@@ -3,6 +3,7 @@
 // Cultivation World Simulator
 // Создано: 2026-04-03 08:15:00 UTC
 // Редактировано: 2026-04-11 06:38:02 UTC — Qi int→long миграция (capacity, currentQi в ChargerBufferData)
+// Редактировано: 2026-05-05 09:55:00 UTC — К-11: удалены бонусы к первичным статам (BUFF_MODIFIERS_SYSTEM.md)
 // ============================================================================
 
 using System;
@@ -131,11 +132,14 @@ namespace CultivationGame.Charger
         [SerializeField] private float overheatThreshold = 100f;
         [SerializeField] private float overheatCooldown = 30f;   // секунд
         
-        [Header("Bonuses")]
-        [SerializeField] private int strengthBonus;
-        [SerializeField] private int agilityBonus;
-        [SerializeField] private int intelligenceBonus;
-        [SerializeField] private int vitalityBonus;
+        // К-11: Бонусы к первичным статам (strength/agility/intelligence/vitality) УДАЛЕНЫ.
+        // Причина: BUFF_MODIFIERS_SYSTEM.md — «БАФФЫ НЕ МОГУТ ВЛИЯТЬ НА ПЕРВИЧНЫЕ ХАРАКТЕРИСТИКИ!»
+        // Зарядник — это бафф-источник, поэтому он не может давать бонусы к первичным статам.
+        // [Header("Bonuses")] — УДАЛЕНО
+        // [SerializeField] private int strengthBonus; — УДАЛЕНО
+        // [SerializeField] private int agilityBonus; — УДАЛЕНО
+        // [SerializeField] private int intelligenceBonus; — УДАЛЕНО
+        // [SerializeField] private int vitalityBonus; — УДАЛЕНО
         
         [Header("Requirements")]
 #pragma warning disable CS0414

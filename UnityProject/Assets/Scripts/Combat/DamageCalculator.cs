@@ -6,6 +6,8 @@
 // Редактировано: 2026-04-10 14:43:00 UTC
 // Редактировано: 2026-05-04 07:25:00 UTC — ФАЗА 7: Слой 1b (оружие), Слой 3b (формация)
 // Редактировано: 2026-05-07 10:30:00 UTC — ФАЗА 2: Слой 1c (TechniqueDamageBonus)
+// Редактировано: 2026-05-05 10:05:00 UTC
+// Редактировано: 2026-05-05 10:10:00 UTC
 // ============================================================================
 
 using System;
@@ -43,12 +45,40 @@ namespace CultivationGame.Combat
         // Дополнительно
         public long QiConsumed;             // FIX: long — Потраченное Ци
         public bool IsFatal;                // СЛОЙ 10: Смертельный удар?
+
+        // FIX В-06: Слот оружия атакующего для износа
+        public EquipmentSlot AttackerWeaponSlot;
+
+        // FIX В-04: Последствия урона (Слой 10)
+        public float BleedDamage;      // Кровотечение: урон за тик
+        public int BleedDuration;      // Длительность кровотечения в тиках
+        public bool IsInShock;         // Шок
+        public float ShockPenalty;     // Штраф шока (0-1)
+        public bool IsStunned;         // Оглушение
+        public float StunDuration;     // Длительность оглушения в секундах
+
+        // FIX С-04: Стихийный эффект (COMBAT_SYSTEM.md §«Эффекты стихий»)
+        public ElementalEffect ElementalEffect;
     }
     
+    /// <summary>
+    /// Стихийный эффект.
+    /// FIX С-04: Добавлен для реализации стихийных эффектов (COMBAT_SYSTEM.md §«Эффекты стихий»)
+    /// </summary>
+    [Serializable]
+    public struct ElementalEffect
+    {
+        public ElementalEffectType type;
+        public float damagePerTick;
+        public float speedPenalty;
+        public int duration;  // в тиках
+    }
+
     /// <summary>
     /// Параметры атакующего.
     /// ФАЗА 7: Добавлено WeaponBonusDamage для слоя 1b.
     /// ФАЗА 2: Добавлено TechniqueDamageBonus для слоя 1c.
+    /// FIX С-02: Добавлены WeaponDamage, StrBonusRatio, AgiBonusRatio для формулы урона оружия.
     /// </summary>
     public struct AttackerParams
     {
@@ -71,6 +101,14 @@ namespace CultivationGame.Combat
         // ФАЗА 2: Слой 1c — бонус урона техник от оружия
         /// <summary>Бонус к урону Ци-техник от оружия (%)</summary>
         public float TechniqueDamageBonus;
+
+        // FIX С-02: Поля для полной формулы урона оружия (EQUIPMENT_SYSTEM.md §7.3)
+        /// <summary>Урон оружия (базовый, без множителей грейда)</summary>
+        public float WeaponDamage;
+        /// <summary>Коэффициент вклада Силы в урон оружия (default 0.5)</summary>
+        public float StrBonusRatio;
+        /// <summary>Коэффициент вклада Ловкости в урон оружия (default 0.3)</summary>
+        public float AgiBonusRatio;
     }
     
     /// <summary>
@@ -93,6 +131,12 @@ namespace CultivationGame.Combat
         public float DodgePenalty;
         public float ParryBonus;
         public float BlockBonus;
+        
+        // В-01: Эффективность парирования и блокирования из экипировки (0-1)
+        /// <summary>Эффективность парирования (0-1). При успехе парирования: damage ×= (1 - BlockEffectiveness)</summary>
+        public float BlockEffectiveness;
+        /// <summary>Эффективность блокирования щитом (0-1). При успехе блока: damage ×= (1 - ShieldEffectiveness)</summary>
+        public float ShieldEffectiveness;
         
         public BodyMaterial BodyMaterial;
         
@@ -151,13 +195,28 @@ namespace CultivationGame.Combat
 
             // ========================================
             // СЛОЙ 1b: Бонус урона оружия (ФАЗА 7)
-            // Для CombatSubtype.MeleeWeapon добавляем бонус от экипировки.
-            // Формула: rawDamage += weaponBonusDamage
-            // Источник: EquipmentController / WeaponData
+            // FIX С-02: Полная формула урона оружия по EQUIPMENT_SYSTEM.md §7.3
+            // Для CombatSubtype.MeleeWeapon рассчитываем урон с учётом статов.
             // ========================================
 
-            if (attacker.CombatSubtype == CombatSubtype.MeleeWeapon && attacker.WeaponBonusDamage > 0)
+            // FIX С-02: Полная формула урона оружия по EQUIPMENT_SYSTEM.md §7.3
+            if (attacker.CombatSubtype == CombatSubtype.MeleeWeapon && attacker.WeaponDamage > 0)
             {
+                float handDamage = 3f + (attacker.Strength - 10f) * 0.3f;
+                float weaponDmg = attacker.WeaponDamage;
+                float baseDamage = UnityEngine.Mathf.Max(handDamage, weaponDmg * 0.5f);
+
+                float strBonus = attacker.Strength * attacker.StrBonusRatio;
+                float agiBonus = attacker.Agility * attacker.AgiBonusRatio;
+                float statScaling = (strBonus + agiBonus) / 100f;
+                float bonusDamage = weaponDmg * statScaling;
+
+                // Заменить плоский бонус на формульный расчёт
+                damage = damage - attacker.WeaponBonusDamage + baseDamage + bonusDamage;
+            }
+            else if (attacker.CombatSubtype == CombatSubtype.MeleeWeapon && attacker.WeaponBonusDamage > 0)
+            {
+                // Fallback: если WeaponDamage не задан, используем старый плоский бонус
                 damage += attacker.WeaponBonusDamage;
             }
             
@@ -201,6 +260,12 @@ namespace CultivationGame.Combat
             result.ElementMultiplier = CalculateElementalInteraction(attacker.AttackElement, defender.DefenderElement);
             damage *= result.ElementMultiplier;
 
+            // FIX С-04: Применить стихийный эффект при преимуществе элемента
+            if (attacker.AttackElement != Element.Neutral && result.ElementMultiplier > 1.0f)
+            {
+                ApplyElementalEffect(attacker.AttackElement, damage, ref result);
+            }
+
             // ========================================
             // СЛОЙ 3b: Бафф формации (ФАЗА 7)
             // Если защитник в формации, входящий урон умножается на formationBuffMultiplier.
@@ -232,7 +297,10 @@ namespace CultivationGame.Combat
                 DamageReduction = defender.DamageReduction,
                 ArmorValue = defender.ArmorValue,
                 BodyMaterial = defender.BodyMaterial,
-                Penetration = attacker.Penetration
+                Penetration = attacker.Penetration,
+                // В-01: Эффективность из экипировки (было захардкожено 0.5 / 0.7)
+                BlockEffectiveness = defender.BlockEffectiveness,
+                ShieldEffectiveness = defender.ShieldEffectiveness
             };
             
             // Проверяем уклонение
@@ -244,17 +312,21 @@ namespace CultivationGame.Combat
             }
             
             // Проверяем парирование
+            // В-01: Множитель из экипировки (было захардкожено 0.5)
             if (RollChance(defenseData.ParryChance))
             {
                 result.WasParried = true;
-                damage *= 0.5f;
+                // Парирование: успех → damage ×= (1 - blockEffectiveness)
+                damage *= (1f - defenseData.BlockEffectiveness);
             }
             
             // Проверяем блок
+            // В-01: Множитель из экипировки (было захардкожено 0.3)
             if (RollChance(defenseData.BlockChance))
             {
                 result.WasBlocked = true;
-                damage *= 0.3f;
+                // Блок щитом: успех → damage ×= (1 - shieldEffectiveness)
+                damage *= (1f - defenseData.ShieldEffectiveness);
             }
             
             // ========================================
@@ -334,6 +406,11 @@ namespace CultivationGame.Combat
             if (attacker == Element.Neutral)
                 return 1.0f;
             
+            // FIX К-05: Poison — НЕ стихия атаки, не имеет стихийных взаимодействий
+            // Источник: ALGORITHMS.md §10.1 «Poison — НЕ стихия, а состояние Ци»
+            if (attacker == Element.Poison)
+                return 1.0f;
+            
             // Проверяем противоположные элементы
             if (GameConstants.OppositeElements.TryGetValue(attacker, out Element opposite))
             {
@@ -348,15 +425,100 @@ namespace CultivationGame.Combat
                     return GameConstants.AFFINITY_ELEMENT_MULTIPLIER; // ×0.8
             }
             
+            // FIX К-04: Light ↔ Void: ×1.5 (двусторонняя противоположность)
+            // Void→Light уже обрабатывается через OppositeElements.
+            // Light→Void тоже, но Light→Poison нужно добавить отдельно:
+            if (attacker == Element.Light && defender == Element.Poison)
+                return GameConstants.FIRE_TO_POISON_MULTIPLIER; // ×1.2 (очищение)
+            
             // Fire → Poison: ×1.2 (выжигание токсинов, одностороннее)
             if (attacker == Element.Fire && defender == Element.Poison)
                 return GameConstants.FIRE_TO_POISON_MULTIPLIER;
             
-            // Void → All (кроме противоположного Lightning): ×1.2
-            if (attacker == Element.Void && defender != Element.Lightning)
+            // Void → All (кроме противоположного Lightning и Light): ×1.2
+            if (attacker == Element.Void && defender != Element.Lightning && defender != Element.Light)
                 return GameConstants.VOID_ELEMENT_MULTIPLIER;
             
             return 1.0f;
+        }
+        
+        /// <summary>
+        /// Применить стихийный эффект на основе элемента атаки.
+        /// FIX С-04: Реализация стихийных эффектов (COMBAT_SYSTEM.md §«Эффекты стихий»)
+        /// </summary>
+        private static void ApplyElementalEffect(Element element, float damage, ref DamageResult result)
+        {
+            switch (element)
+            {
+                case Element.Fire:
+                    // Горение: DoT 5%/тик, 3 тика
+                    result.ElementalEffect = new ElementalEffect
+                    {
+                        type = ElementalEffectType.Burn,
+                        damagePerTick = damage * 0.05f,
+                        duration = 3
+                    };
+                    break;
+                case Element.Water:
+                    // Замедление: -20% скорости, 2 тика
+                    result.ElementalEffect = new ElementalEffect
+                    {
+                        type = ElementalEffectType.Slow,
+                        speedPenalty = 0.2f,
+                        duration = 2
+                    };
+                    break;
+                case Element.Earth:
+                    // Оглушение: 15% шанс
+                    if (RollChance(0.15f))
+                    {
+                        result.IsStunned = true;
+                        result.StunDuration = 1.0f;
+                    }
+                    break;
+                case Element.Air:
+                    // Отталкивание
+                    result.ElementalEffect = new ElementalEffect
+                    {
+                        type = ElementalEffectType.Knockback,
+                        duration = 1
+                    };
+                    break;
+                case Element.Lightning:
+                    // Цепной урон (пока заглушка)
+                    result.ElementalEffect = new ElementalEffect
+                    {
+                        type = ElementalEffectType.Chain,
+                        damagePerTick = damage * 0.3f,
+                        duration = 1
+                    };
+                    break;
+                case Element.Void:
+                    // Пробитие: игнорирование части защиты
+                    result.ElementalEffect = new ElementalEffect
+                    {
+                        type = ElementalEffectType.Pierce,
+                        duration = 1
+                    };
+                    break;
+                case Element.Light:
+                    // Очищение: снимает дебаффы (пока заглушка)
+                    result.ElementalEffect = new ElementalEffect
+                    {
+                        type = ElementalEffectType.Purify,
+                        duration = 1
+                    };
+                    break;
+                case Element.Poison:
+                    // Отравление: DoT 2%/тик, 5 тиков
+                    result.ElementalEffect = new ElementalEffect
+                    {
+                        type = ElementalEffectType.PoisonDot,
+                        damagePerTick = damage * 0.02f,
+                        duration = 5
+                    };
+                    break;
+            }
         }
         
         private static bool RollChance(float chance)

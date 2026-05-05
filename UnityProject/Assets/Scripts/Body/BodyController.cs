@@ -4,12 +4,14 @@
 // Версия: 1.2 — Обновлено для инкапсулированного BodyPart
 // Создано: 2026-03-30 10:00:00 UTC
 // Редактировано: 2026-04-02 14:50:00 UTC
+// Редактировано: 2026-05-05 10:05:00 UTC
 // ============================================================================
 
 using System;
 using System.Collections.Generic;
 using UnityEngine;
 using CultivationGame.Core;
+using CultivationGame.World;
 
 namespace CultivationGame.Body
 {
@@ -69,11 +71,33 @@ namespace CultivationGame.Body
             InitializeBody();
         }
         
-        private void Update()
+        // FIX К-08: Перенесено из Update() в OnWorldTick (Dual Tick Model v3.0)
+        // Регенерация привязана к тиковой системе, масштабируется при паузе/ускорении
+        private void OnEnable()
+        {
+            var timeController = TimeController.Instance;
+            if (timeController != null)
+                timeController.OnWorldTick += HandleWorldTick;
+        }
+
+        private void OnDisable()
+        {
+            var timeController = TimeController.Instance;
+            if (timeController != null)
+                timeController.OnWorldTick -= HandleWorldTick;
+        }
+
+        /// <summary>
+        /// Обработчик мирового тика — регенерация тела.
+        /// </summary>
+        private void HandleWorldTick(int tick)
         {
             if (enableRegeneration && IsAlive)
             {
-                ProcessRegeneration();
+                float tickInterval = TimeController.Instance != null
+                    ? TimeController.Instance.TickInterval
+                    : 1f;
+                ProcessRegeneration(tickInterval);
             }
         }
         
@@ -314,13 +338,14 @@ namespace CultivationGame.Body
         /// Источник: BODY_SYSTEM.md "Кровотечение и регенерация"
         /// Множители регенерации: Constants.RegenerationMultipliers
         /// </summary>
-        private void ProcessRegeneration()
+        // FIX К-08: Принимает tickInterval вместо Time.deltaTime (Dual Tick Model v3.0)
+        private void ProcessRegeneration(float tickInterval)
         {
             if (!IsAlive) return;
             
             // Множитель регенерации от уровня культивации
             float regenMultiplier = GetRegenMultiplier();
-            float regenAmount = regenRate * regenMultiplier * Time.deltaTime;
+            float regenAmount = regenRate * regenMultiplier * tickInterval;
             
             foreach (var part in bodyParts)
             {

@@ -5,6 +5,8 @@
 // ============================================================================
 // Создан: 2026-03-30 10:00:00 UTC
 // Редактирован: 2026-03-31 08:46:09 UTC
+// Редактирован: 2026-05-05 09:55:00 UTC — С-09: Quadruped Torso HP 150→100
+// Редактировано: 2026-05-05 10:05:00 UTC
 // ============================================================================
 
 using System;
@@ -29,6 +31,14 @@ namespace CultivationGame.Body
         public bool CausedBleeding;      // Кровотечение
         public bool CausedShock;         // Шок
         public bool WasAbsorbed;         // Редактировано: 2026-04-03 - Урон поглощён (щит/блок)
+
+        // FIX В-04: Последствия урона (Слой 10)
+        public float BleedDamage;      // Кровотечение: урон за тик
+        public int BleedDuration;      // Длительность кровотечения в тиках
+        public bool IsInShock;         // Шок
+        public float ShockPenalty;     // Штраф шока (0-1)
+        public bool IsStunned;         // Оглушение
+        public float StunDuration;     // Длительность оглушения в секундах
     }
     
     /// <summary>
@@ -78,17 +88,35 @@ namespace CultivationGame.Body
                 result.IsFatal = true;
             }
             
-            // Шанс кровотечения (при ранении+)
-            if (part.State >= BodyPartState.Wounded)
+            // FIX К-06: Кровотечение — пороговая система вместо случайного шанса
+            // Документация: если damage > threshold → bleedDamage per tick
+            float bleedThreshold = part.MaxRedHP * 0.3f;
+            if (totalDamage > bleedThreshold)
             {
-                result.CausedBleeding = UnityEngine.Random.value < 0.3f;
+                result.CausedBleeding = true;
+                // Степени кровотечения (BODY_SYSTEM.md): 1/3/5/10 HP/тик
+                float ratio = totalDamage / 100f;
+                if (ratio > 2.0f) result.BleedDamage = 10f;   // Тяжёлое
+                else if (ratio > 1.0f) result.BleedDamage = 5f; // Среднее
+                else if (ratio > 0.5f) result.BleedDamage = 3f; // Лёгкое
+                else result.BleedDamage = 1f;                    // Микро
+                result.BleedDuration = 5; // 5 тиков
             }
-            
-            // Шанс шока при большом уроне
-            if (totalDamage > part.MaxRedHP * 0.5f)
+
+            // FIX К-07: Шок — порог redHP < 30% вместо случайного шанса
+            // Документация: если redHP упала ниже 30% → штрафы
+            float redHPRatio = part.CurrentRedHP / part.MaxRedHP;
+            if (redHPRatio < 0.3f)
             {
-                result.CausedShock = UnityEngine.Random.value < 0.2f;
+                result.CausedShock = true;
+                result.IsInShock = true;
+                result.ShockPenalty = (0.3f - redHPRatio) / 0.3f; // 0..1
             }
+
+            // FIX В-04: Оглушение — шанс = damage / maxHP × 10%
+            float stunChance = UnityEngine.Mathf.Min(0.5f, totalDamage / part.MaxRedHP * 0.1f);
+            result.IsStunned = UnityEngine.Random.value < stunChance;
+            result.StunDuration = result.IsStunned ? 1.5f : 0f;
             
             return result;
         }
@@ -153,8 +181,8 @@ namespace CultivationGame.Body
             {
                 // Голова — жизненно важная (50 HP при VIT=10)
                 new BodyPart(BodyPartType.Head, 50f * hpMultiplier, isVital: true),
-                // FIX BOD-L03: Torso isVital=false — по документации смерть только от head/heart
-                new BodyPart(BodyPartType.Torso, 150f * hpMultiplier, isVital: false),
+                // С-09: Quadruped Torso HP=100 по BODY_SYSTEM.md (было 150)
+                new BodyPart(BodyPartType.Torso, 100f * hpMultiplier, isVital: false),
                 // Сердце — жизненно важное (80 HP при VIT=10)
                 new BodyPart(BodyPartType.Heart, 80f * hpMultiplier, isVital: true),
                 // Передние ноги (50 HP при VIT=10)

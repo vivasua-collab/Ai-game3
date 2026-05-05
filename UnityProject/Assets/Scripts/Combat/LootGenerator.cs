@@ -3,7 +3,7 @@
 // Cultivation World Simulator
 // Версия: 1.0
 // ============================================================================
-// Создано: 2026-05-04 07:28:00 UTC
+// Редактировано: 2026-05-05 09:55:00 UTC — С-06: переименован LootGenerator → DeathLootGenerator
 // ============================================================================
 //
 // ╔═══════════════════════════════════════════════════════════════════════════╗
@@ -65,6 +65,8 @@ namespace CultivationGame.Combat
 
     /// <summary>
     /// Генератор лута при смерти ICombatant.
+    /// С-06: Переименован из LootGenerator в DeathLootGenerator для различия
+    /// с Generators.LootGenerator (runtime спавн экипировки).
     /// СЛОЙ 10b пайплайна урона — вызывается при смерти.
     ///
     /// Факторы генерации:
@@ -77,7 +79,7 @@ namespace CultivationGame.Combat
     /// - cultivationExp = cultivationLevel × 10 + random(0, cultivationLevel × 5)
     /// - itemChance = baseDropRate × (1 + (level - 1) × 0.1)
     /// </summary>
-    public static class LootGenerator
+    public static class DeathLootGenerator
     {
         #region Константы
 
@@ -132,7 +134,7 @@ namespace CultivationGame.Combat
             // ФАЗА 6: Шанс выпадения экипировки убитого NPC
             GenerateEquipmentDrops(result, defeated);
 
-            Debug.Log($"[LootGenerator] Лут из {defeated.Name}: " +
+            Debug.Log($"[DeathLootGenerator] Лут из {defeated.Name}: " +
                       $"{result.TotalItemCount} предметов, " +
                       $"Ци={result.QiAbsorbed}, Опыт={result.CultivationExp}");
 
@@ -363,7 +365,7 @@ namespace CultivationGame.Combat
                             Amount = 1,
                             Rarity = instance.equipmentData?.rarity ?? CultivationGame.Core.ItemRarity.Common
                         });
-                        Debug.Log($"[LootGenerator] Экипировка выпала: {instance.Name} ({slot})");
+                        Debug.Log($"[DeathLootGenerator] Экипировка выпала: {instance.Name} ({slot})");
                     }
                 }
             }

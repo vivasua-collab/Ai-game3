@@ -4,6 +4,7 @@
 // Версия: 2.0
 // Создано: 2026-03-30 14:00:00 UTC
 // Редактировано: 2026-04-27 18:06:00 UTC — строчная модель: убраны sizeWidth/sizeHeight
+// Редактировано: 2026-05-05 09:55:00 UTC — С-07: StatBonus удалён (используйте CultivationGame.Data.StatBonus)
 // ============================================================================
 //
 // ВЕРСИЯ 2.0: Убраны sizeWidth/sizeHeight — строчная модель инвентаря.
@@ -111,13 +112,9 @@ namespace CultivationGame.Data.ScriptableObjects
         public int minValue;
     }
 
-    [System.Serializable]
-    public class StatBonus
-    {
-        public string statName;
-        public float bonus;
-        public bool isPercentage = false;
-    }
+    // С-07: StatBonus перенесён в CultivationGame.Data.StatBonus (Scripts/Data/StatBonus.cs)
+    // Старый StatBonus здесь удалён — используйте using CultivationGame.Data;
+    // Если в старых SO-ассетах было поле bonus, оно переименовано в value
 
     [System.Serializable]
     public class SpecialEffect

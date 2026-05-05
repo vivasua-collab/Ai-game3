@@ -26,15 +26,17 @@ namespace CultivationGame.Combat
     /// ║  finalDamage = capacity × gradeMult × ultimateMult                         ║
     /// ╚═══════════════════════════════════════════════════════════════════════════╝
     /// 
-    /// Множители Grade (ТЕПЕРЬ СООТВЕТСТВУЮТ ДОКУМЕНТАЦИИ):
+    /// Множители Grade (СООТВЕТСТВУЮТ ДОКУМЕНТАЦИИ):
     /// | Grade        | Множитель |
     /// |--------------|-----------|
     /// | Common       | ×1.0      |
-    /// | Refined      | ×1.2      |
-    /// | Perfect      | ×1.4      |
-    /// | Transcendent | ×1.6      |
+    /// | Refined      | ×1.3      |
+    /// | Perfect      | ×1.6      |
+    /// | Transcendent | ×2.0      |
     /// 
-    /// Ultimate множитель: ×1.3 (согласно TECHNIQUE_SYSTEM.md)
+    /// FIX К-01: Множители обновлены по TECHNIQUE_SYSTEM.md
+    /// 
+    /// Ultimate множитель: ×2.0 (FIX К-02, было ×1.3)
     /// Ultimate стоимость Ци: ×1.5
     /// </summary>
     public static class TechniqueCapacity

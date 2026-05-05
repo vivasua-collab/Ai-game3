@@ -4,6 +4,7 @@
 // Версия: 1.0
 // Создано: 2026-03-30 14:00:00 UTC
 // Редактировано: 2026-03-31 10:05:48 UTC
+// Редактировано: 2026-05-05 10:05:00 UTC
 // ============================================================================
 
 using UnityEngine;
@@ -42,6 +43,10 @@ namespace CultivationGame.Data.ScriptableObjects
         
         [Tooltip("Подтип (для боевых техник)")]
         public CombatSubtype combatSubtype;
+        
+        // В-09: Подтип защитной техники для HasActiveShield()
+        [Tooltip("Подтип защитной техники (Shield активирует Shield-режим Qi Buffer)")]
+        public DefenseSubtype defenseSubtype = DefenseSubtype.None;
         
         [Tooltip("Элемент техники")]
         public Element element;

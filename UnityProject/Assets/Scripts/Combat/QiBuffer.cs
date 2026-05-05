@@ -73,17 +73,19 @@ namespace CultivationGame.Combat
     /// </summary>
     public static class QiBuffer
     {
-        // === Константы для техник Ци (из ALGORITHMS.md) ===
-        private const float QI_TECHNIQUE_RAW_ABSORPTION = 0.9f;     // 90%
-        private const float QI_TECHNIQUE_RAW_PIERCING = 0.1f;       // 10%
-        private const float QI_TECHNIQUE_RAW_RATIO = 3.0f;          // 3:1
-        private const float QI_TECHNIQUE_SHIELD_RATIO = 1.0f;       // 1:1
+        // === Константы для техник Ци (из ALGORITHMS.md, дублируют Constants.cs) ===
+        // FIX С-03: Qi-техник константы оставлены как локальные алиасы для читаемости,
+        // но физические константы перенесены в GameConstants.
+        private const float QI_TECHNIQUE_RAW_ABSORPTION = GameConstants.RAW_QI_ABSORPTION;   // 90%
+        private const float QI_TECHNIQUE_RAW_PIERCING = GameConstants.RAW_QI_PIERCING;       // 10%
+        private const float QI_TECHNIQUE_RAW_RATIO = GameConstants.RAW_QI_RATIO;            // 3:1
+        private const float QI_TECHNIQUE_SHIELD_RATIO = GameConstants.SHIELD_QI_RATIO;      // 1:1
         
-        // === Константы для физического урона (из ALGORITHMS.md) ===
-        private const float PHYSICAL_RAW_ABSORPTION = 0.8f;         // 80%
-        private const float PHYSICAL_RAW_PIERCING = 0.2f;           // 20%
-        private const float PHYSICAL_RAW_RATIO = 5.0f;              // 5:1
-        private const float PHYSICAL_SHIELD_RATIO = 2.0f;           // 2:1
+        // === Константы для физического урона — перенесены в GameConstants (FIX С-03) ===
+        private const float PHYSICAL_RAW_ABSORPTION = GameConstants.PHYSICAL_RAW_QI_ABSORPTION;  // 80%
+        private const float PHYSICAL_RAW_PIERCING = GameConstants.PHYSICAL_RAW_QI_PIERCING;      // 20%
+        private const float PHYSICAL_RAW_RATIO = GameConstants.PHYSICAL_RAW_QI_RATIO;           // 5:1
+        private const float PHYSICAL_SHIELD_RATIO = GameConstants.PHYSICAL_SHIELD_QI_RATIO;     // 2:1
         
         /// <summary>
         /// Обработать урон от ТЕХНИКИ ЦИ через буфер (alias).

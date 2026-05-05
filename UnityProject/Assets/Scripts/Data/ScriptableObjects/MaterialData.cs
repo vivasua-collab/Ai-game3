@@ -2,6 +2,7 @@
 // MaterialData.cs — Данные материала для крафта
 // Cultivation World Simulator
 // Создано: 2026-04-13 14:03:25 UTC
+// Редактировано: 2026-05-05 09:55:00 UTC — В-15: добавлены flexibility и qiRetention
 // ============================================================================
 //
 // ВЫНЕСЕН ИЗ ItemData.cs — Unity требует совпадение имени файла и класса
@@ -51,6 +52,15 @@ namespace CultivationGame.Data.ScriptableObjects
         
         [Tooltip("Бонус к проведению Ци")]
         public float qiConductivityBonus = 0f;
+        
+        [Header("Дополнительные свойства")]
+        [Tooltip("Гибкость (EQUIPMENT_SYSTEM.md §3.2)")]
+        [Range(0f, 1f)]
+        public float flexibility = 0.5f;    // В-15: Гибкость материала
+        
+        [Tooltip("Удержание Ци % (EQUIPMENT_SYSTEM.md §3.2)")]
+        [Range(75f, 100f)]
+        public float qiRetention = 90f;     // В-15: Удержание Ци %
         
         [Header("Source")]
         [Tooltip("Где добывается")]

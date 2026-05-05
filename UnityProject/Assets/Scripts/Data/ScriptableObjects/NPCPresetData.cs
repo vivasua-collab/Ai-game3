@@ -4,6 +4,7 @@
 // Версия: 1.0
 // Создано: 2026-03-30 14:00:00 UTC
 // Редактировано: 2026-03-31 10:05:48 UTC
+// Редактировано: 2026-05-05 09:55:00 UTC — К-12: baseDisposition→baseAttitude; В-11: personalityFlags; С-13: [Obsolete] Alignment и personalityTraits
 // ============================================================================
 
 using UnityEngine;
@@ -80,18 +81,27 @@ namespace CultivationGame.Data.ScriptableObjects
         public float conductivity = 1.0f;
         
         [Header("Personality")]
-        [Tooltip("Черты характера")]
+        [Tooltip("Флаги характера (комбинируемые, [Flags])")]
+        public PersonalityTrait personalityFlags = PersonalityTrait.None; // В-11: заменяет List<PersonalityTraitEntry>
+        
+        [Obsolete("Используйте personalityFlags (PersonalityTrait enum с [Flags])")]
+        [Tooltip("Черты характера (устарело — используйте personalityFlags)")]
         public List<PersonalityTraitEntry> personalityTraits = new List<PersonalityTraitEntry>(); // FIX: PersonalityTrait→PersonalityTraitEntry (2026-04-12)
         
         [Tooltip("Мотивация")]
         [TextArea(1, 2)]
         public string motivation;
         
-        [Tooltip("Мировоззрение")]
+        [Obsolete("Мировоззрение устарело — используйте personalityFlags для характера и baseAttitude для отношения")]
+        [Tooltip("Мировоззрение (устарело)")]
         public Alignment alignment;
         
         [Header("Relations")]
-        [Tooltip("Базовое отношение к игроку")]
+        [Tooltip("Базовое отношение к игроку (enum Attitude)")]
+        public Attitude baseAttitude = Attitude.Neutral; // К-12: заменяет baseDisposition (int)
+        
+        [Obsolete("Используйте baseAttitude (Attitude enum) вместо baseDisposition (int)")]
+        [Tooltip("Базовое расположение (устарело — используйте baseAttitude)")]
         [Range(-100, 100)]
         public int baseDisposition = 0;
         

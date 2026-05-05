@@ -7,6 +7,7 @@
 // Редактировано: 2026-05-04 07:25:00 UTC — ФАЗА 5: AI цикл + Update-driven пайплайн
 // Редактировано: 2026-05-04 07:30:00 UTC — ФАЗА 7: LootGenerator интеграция
 // Редактировано: 2026-05-07 10:30:00 UTC — ФАЗА 2: TechniqueDamageBonus из EquipmentController
+// Редактировано: 2026-05-05 10:05:00 UTC
 //
 // ИЗМЕНЕНИЯ В ВЕРСИИ 2.1:
 // - AI цикл: каждый кадр запрашивает CombatAI.GetNextAction() для NPC
@@ -273,6 +274,16 @@ namespace CultivationGame.Combat
                 Defender = defender
             };
 
+            // Определяем слот оружия атакующего для износа
+            if (attacker.GameObject != null)
+            {
+                var attackerEqCheck = attacker.GameObject.GetComponent<CultivationGame.Inventory.EquipmentController>();
+                if (attackerEqCheck != null && attackerEqCheck.GetMainWeapon() != null)
+                {
+                    damageResult.AttackerWeaponSlot = EquipmentSlot.WeaponMain;
+                }
+            }
+
             // Применяем урон к защищающемуся
             if (damageResult.FinalDamage > 0)
             {
@@ -280,6 +291,36 @@ namespace CultivationGame.Combat
 
                 totalDamageDealt += (int)damageResult.FinalDamage;
                 totalDamageTaken += (int)damageResult.FinalDamage;
+
+                // FIX В-03: Износ брони защитника при получении урона (COMBAT_SYSTEM.md Слой 7)
+                if (damageResult.WasBlocked || damageResult.HitArmor)
+                {
+                    var defenderEq = defender.GameObject?.GetComponent<CultivationGame.Inventory.EquipmentController>();
+                    if (defenderEq != null && damageResult.HitPart != BodyPartType.Heart)
+                    {
+                        // Определяем слот брони по части тела
+                        var armorSlot = GetArmorSlotForBodyPart(damageResult.HitPart);
+                        if (armorSlot != EquipmentSlot.None)
+                        {
+                            int armorHardness = 5; // дефолтная твёрдость
+                            int armorWear = Mathf.Max(1, (int)(damageResult.FinalDamage * 0.1f / armorHardness));
+                            defenderEq.DamageEquipment(armorSlot, armorWear);
+                        }
+                    }
+                }
+
+                // FIX В-06: Износ оружия атакующего (EQUIPMENT_SYSTEM.md §4.2)
+                if (damageResult.AttackerWeaponSlot != EquipmentSlot.None)
+                {
+                    var attackerEq = attacker.GameObject?.GetComponent<CultivationGame.Inventory.EquipmentController>();
+                    if (attackerEq != null)
+                    {
+                        int weaponHardness = 5; // дефолтная твёрдость
+                        int wearThreshold = weaponHardness * 10;
+                        int additionalWear = Mathf.Max(0, (int)(damageResult.FinalDamage - wearThreshold) / 10);
+                        attackerEq.DamageEquipment(damageResult.AttackerWeaponSlot, 1 + additionalWear);
+                    }
+                }
             }
 
             // Отправляем события
@@ -395,7 +436,7 @@ namespace CultivationGame.Combat
             if (loser != null && loser.IsAlive == false)
             {
                 int victorLevel = winner?.CultivationLevel ?? 1;
-                LootResult loot = LootGenerator.GenerateLoot(loser, victorLevel);
+                LootResult loot = DeathLootGenerator.GenerateLoot(loser, victorLevel);
                 OnLootGenerated?.Invoke(loser, loot);
                 Debug.Log($"[CombatManager] Лут из {loser.Name}: {loot.TotalItemCount} предметов, Ци={loot.QiAbsorbed}");
             }
@@ -669,6 +710,27 @@ namespace CultivationGame.Combat
                     return c;
             }
             return null;
+        }
+
+        #endregion
+
+        #region В-03: Износ экипировки — вспомогательные методы
+
+        /// <summary>
+        /// Соответствие части тела слоту брони.
+        /// FIX В-03: используется для определения износа брони при получении урона.
+        /// </summary>
+        private static EquipmentSlot GetArmorSlotForBodyPart(BodyPartType part)
+        {
+            return part switch
+            {
+                BodyPartType.Head => EquipmentSlot.Head,
+                BodyPartType.Torso or BodyPartType.Heart => EquipmentSlot.Torso,
+                BodyPartType.LeftLeg or BodyPartType.RightLeg => EquipmentSlot.Legs,
+                BodyPartType.LeftFoot or BodyPartType.RightFoot => EquipmentSlot.Feet,
+                BodyPartType.LeftArm or BodyPartType.RightArm => EquipmentSlot.Torso,
+                _ => EquipmentSlot.None
+            };
         }
 
         #endregion

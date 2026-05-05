@@ -4,9 +4,10 @@
 // ============================================================================
 // Создано: 2026-04-19 12:00:00 UTC
 // Редактировано: 2026-04-27 18:15:00 UTC — строчная модель инвентаря
+// Редактировано: 2026-05-05 09:55:00 UTC — К-09: уровень 3 вместо 1; К-10: лимит 20 слотов
 // ============================================================================
 // Межмировая складка — безлимитное хранилище с каталогизатором.
-// Доступно с уровня культивации AwakenedCore (1).
+// Доступно с уровня культивации InternalFire (3).
 // Стоимость: baseQiCost + weight × qiCostPerKg.
 // Нет сетки — вместо неё каталог с фильтрацией и группировкой.
 //
@@ -34,15 +35,18 @@ namespace CultivationGame.Inventory
     ///
     /// Безлимитное хранилище с каталогизатором.
     /// Стоимость доступа = Qi (зависит от веса предмета).
-    /// Разблокируется на уровне культивации AwakenedCore (1).
+    /// Разблокируется на уровне культивации InternalFire (3).
     /// </summary>
     public class SpiritStorageController : MonoBehaviour
     {
         #region Configuration
 
+        // К-10: Максимальное количество слотов (записей) в духовном хранилище
+        private const int MAX_SPIRIT_SLOTS = 20;
+
         [Header("Unlock")]
-        [Tooltip("Минимальный уровень культивации для разблокировки")]
-        public int requiredCultivationLevel = 1; // AwakenedCore
+        [Tooltip("Минимальный уровень культивации для разблокировки (3 = InternalFire)")]
+        public int requiredCultivationLevel = 3; // К-09: InternalFire (INVENTORY_SYSTEM.md)
 
         [Header("Qi Cost")]
         [Tooltip("Базовая стоимость Qi за операцию")]
@@ -585,6 +589,26 @@ namespace CultivationGame.Inventory
         /// </summary>
         private SpiritStorageEntry AddEntry(ItemData itemData, int count, int durability, EquipmentGrade grade)
         {
+            // К-10: Проверка лимита слотов (только для новых записей — не стакающихся)
+            if (entries.Count >= MAX_SPIRIT_SLOTS && !itemData.stackable)
+                return null;
+            // К-10: Проверка лимита для стакающихся — только если нет существующего стака
+            if (entries.Count >= MAX_SPIRIT_SLOTS && itemData.stackable)
+            {
+                bool hasExistingStack = false;
+                foreach (var existing in entries)
+                {
+                    if (existing.ItemData.itemId == itemData.itemId &&
+                        existing.durability == durability &&
+                        existing.grade == grade)
+                    {
+                        hasExistingStack = true;
+                        break;
+                    }
+                }
+                if (!hasExistingStack) return null;
+            }
+
             // Пробуем добавить в существующий стак (только для стекируемых с совпадающим durability/grade)
             if (itemData.stackable)
             {

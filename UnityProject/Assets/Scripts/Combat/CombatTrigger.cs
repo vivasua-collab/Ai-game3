@@ -5,6 +5,7 @@
 // ============================================================================
 // Создано: 2026-05-04 04:35:00 UTC
 // Редактировано: 2026-05-04 07:05:00 UTC — FIX CS0414: minAttitudeToEngage используется в ShouldEngage
+// Редактировано: 2026-05-05 09:55:00 UTC — С-12: fallback через personalityFlags
 // ============================================================================
 
 using UnityEngine;
@@ -119,11 +120,17 @@ namespace CultivationGame.Combat
                     return true;
             }
 
-            // Fallback: атакуем по тегу "Player" если мы "Enemy" и minAttitudeToEngage = Hostile
+            // Fallback: атакуем по тегу "Enemy" если мы "Enemy" и minAttitudeToEngage = Hostile
             if (gameObject.CompareTag("Enemy") && target.CompareTag("Player"))
                 return minAttitudeToEngage >= Attitude.Hostile;
             if (gameObject.CompareTag("Player") && target.CompareTag("Enemy"))
                 return minAttitudeToEngage >= Attitude.Hostile;
+
+            // С-12: Дополнительный fallback — Enemy с Hostile настройкой всегда атакует
+            // если цель помечена как враждебная через personalityFlags
+            if (targetNpc != null && (targetNpc.Personality & PersonalityTrait.Aggressive) != 0
+                && minAttitudeToEngage >= Attitude.Hostile)
+                return true;
 
             return false;
         }

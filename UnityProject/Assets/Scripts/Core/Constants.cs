@@ -4,7 +4,7 @@
 // Версия: 1.0
 // ============================================================================
 // Создан: 2026-03-30 10:00:00 UTC
-// Редактирован: 2026-03-31 09:49:01 UTC
+// Редактирован: 2026-05-05 09:50:00 UTC
 // ============================================================================
 
 using System;
@@ -272,6 +272,38 @@ namespace CultivationGame.Core
         
         #endregion
         
+        #region Combat - Physical Qi Buffer
+        
+        /// <summary>
+        /// Поглощение сырой Ци для физического урона (%)
+        /// Источник: ALGORITHMS.md §2.3 «Физ. + Сырая Ци»
+        /// FIX С-03: Перенесено из QiBuffer.cs (были захардкожены)
+        /// </summary>
+        public const float PHYSICAL_RAW_QI_ABSORPTION = 0.8f;
+        
+        /// <summary>
+        /// Пробивающий урон для физического урона (%)
+        /// Источник: ALGORITHMS.md §2.3 «Физ. + Сырая Ци»
+        /// FIX С-03: Перенесено из QiBuffer.cs
+        /// </summary>
+        public const float PHYSICAL_RAW_QI_PIERCING = 0.2f;
+        
+        /// <summary>
+        /// Соотношение Ци:Урон для сырой Ци (физический урон)
+        /// Источник: ALGORITHMS.md §2.3 «Физ. + Сырая Ци»
+        /// FIX С-03: Перенесено из QiBuffer.cs
+        /// </summary>
+        public const float PHYSICAL_RAW_QI_RATIO = 5.0f;
+        
+        /// <summary>
+        /// Соотношение Ци:Урон для щита (физический урон)
+        /// Источник: ALGORITHMS.md §2.3 «Физ. + Щит»
+        /// FIX С-03: Перенесено из QiBuffer.cs
+        /// </summary>
+        public const float PHYSICAL_SHIELD_QI_RATIO = 2.0f;
+        
+        #endregion
+        
         #region Combat - Technique Capacity
         
         /// <summary>
@@ -325,16 +357,18 @@ namespace CultivationGame.Core
         /// | Grade        | Урон |
         /// |--------------|------|
         /// | Common       | ×1.0 |
-        /// | Refined      | ×1.2 |
-        /// | Perfect      | ×1.4 |
-        /// | Transcendent | ×1.6 |
+        /// | Refined      | ×1.3 |
+        /// | Perfect      | ×1.6 |
+        /// | Transcendent | ×2.0 |
+        /// 
+        /// FIX К-01: 1.2→1.3, 1.4→1.6, 1.6→2.0 (источник: TECHNIQUE_SYSTEM.md §«Система Grade»)
         /// </summary>
         public static readonly Dictionary<TechniqueGrade, float> TechniqueGradeMultipliers = new Dictionary<TechniqueGrade, float>
         {
             { TechniqueGrade.Common, 1.0f },
-            { TechniqueGrade.Refined, 1.2f },
-            { TechniqueGrade.Perfect, 1.4f },
-            { TechniqueGrade.Transcendent, 1.6f }
+            { TechniqueGrade.Refined, 1.3f },
+            { TechniqueGrade.Perfect, 1.6f },
+            { TechniqueGrade.Transcendent, 2.0f }
         };
         
         /// <summary>
@@ -352,10 +386,11 @@ namespace CultivationGame.Core
         
         /// <summary>
         /// Множитель урона Ultimate-техники.
-        /// Источник: TECHNIQUE_SYSTEM.md §"Ultimate-техники"
-        /// "Множитель урона: ×1.3"
+        /// Источник: COMBAT_SYSTEM.md, ALGORITHMS.md, TECHNIQUE_SYSTEM.md
+        /// "Множитель урона: ×2.0"
+        /// FIX К-02: 1.3→2.0 (источник истины: документация)
         /// </summary>
-        public const float ULTIMATE_DAMAGE_MULTIPLIER = 1.3f;
+        public const float ULTIMATE_DAMAGE_MULTIPLIER = 2.0f;
         
         /// <summary>
         /// Множитель стоимости Ци Ultimate-техники.
@@ -557,28 +592,33 @@ namespace CultivationGame.Core
         /// <summary>
         /// Состояния прочности по диапазону
         /// Источник: EQUIPMENT_SYSTEM.md §4.1 "Состояния"
+        /// FIX С-01: Убрано Excellent, приведено к 5 состояниям документации
+        /// | Pristine | 100%   | 100% |
+        /// | Good     | 80-99% | 95%  |
+        /// | Worn     | 60-79% | 85%  |
+        /// | Damaged  | 20-59% | 60%  |
+        /// | Broken   | <20%   | 20%  |
         /// </summary>
         public static readonly Dictionary<DurabilityCondition, (float min, float max)> DurabilityRanges = new Dictionary<DurabilityCondition, (float min, float max)>
         {
             { DurabilityCondition.Pristine, (1.0f, 1.0f) },
-            { DurabilityCondition.Excellent, (0.8f, 0.99f) },
-            { DurabilityCondition.Good, (0.6f, 0.79f) },
-            { DurabilityCondition.Worn, (0.4f, 0.59f) },
-            { DurabilityCondition.Damaged, (0.2f, 0.39f) },
+            { DurabilityCondition.Good, (0.8f, 0.99f) },
+            { DurabilityCondition.Worn, (0.6f, 0.79f) },
+            { DurabilityCondition.Damaged, (0.2f, 0.59f) },
             { DurabilityCondition.Broken, (0.0f, 0.19f) }
         };
         
         /// <summary>
         /// Эффективность по состоянию прочности
         /// Источник: EQUIPMENT_SYSTEM.md §4.1 "Состояния"
+        /// FIX С-01: Убрано Excellent, приведено к 5 состояниям
         /// </summary>
         public static readonly Dictionary<DurabilityCondition, float> DurabilityEfficiency = new Dictionary<DurabilityCondition, float>
         {
             { DurabilityCondition.Pristine, 1.0f },
-            { DurabilityCondition.Excellent, 0.95f },
-            { DurabilityCondition.Good, 0.85f },
-            { DurabilityCondition.Worn, 0.70f },
-            { DurabilityCondition.Damaged, 0.50f },
+            { DurabilityCondition.Good, 0.95f },
+            { DurabilityCondition.Worn, 0.85f },
+            { DurabilityCondition.Damaged, 0.60f },
             { DurabilityCondition.Broken, 0.20f }
         };
         
@@ -597,7 +637,10 @@ namespace CultivationGame.Core
             { Element.Earth, Element.Air },
             { Element.Air, Element.Earth },
             { Element.Lightning, Element.Void },      // FIX CMB-C01: Variant A
-            { Element.Void, Element.Lightning }        // FIX CMB-C01: Variant A
+            { Element.Void, Element.Lightning },       // FIX CMB-C01: Variant A
+            { Element.Light, Element.Void },           // FIX К-04: Light ↔ Void (ALGORITHMS.md §10.1)
+            // Void имеет ДВЕ противоположности: Lightning и Light. OppositeElements
+            // хранит только одну пару, вторая обрабатывается в DamageCalculator.
         };
         
         /// <summary>

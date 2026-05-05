@@ -517,6 +517,18 @@ namespace CultivationGame.Inventory
         }
 
         /// <summary>
+        /// Базовый урон оружия в основной руке (WeaponDamage).
+        /// FIX С-02: Добавлен для полной формулы урона оружия (EQUIPMENT_SYSTEM.md §7.3).
+        /// Возвращает damage из EquipmentData без множителей грейда.
+        /// </summary>
+        public float GetWeaponDamage() 
+        { 
+            var weapon = GetEquipment(EquipmentSlot.WeaponMain);
+            if (weapon?.equipmentData == null) return 0f;
+            return weapon.equipmentData.damage;
+        }
+
+        /// <summary>
         /// Бонус парирования от оружия в основной руке.
         /// Извлекается из statBonuses с именем «parryBonus».
         /// </summary>
@@ -613,6 +625,34 @@ namespace CultivationGame.Inventory
         public float GetChargeSpeedBonus()
         {
             return CurrentStats.chargeSpeedBonus;
+        }
+
+        /// <summary>
+        /// Эффективность парирования (0-1) из оружия в основной руке.
+        /// В-01: Замена захардкоженного множителя 0.5 в DamageCalculator.
+        /// Извлекается из statBonuses с именем «blockEffectiveness».
+        /// Если не задано — по умолчанию 0.5 (парирование снижает урон на 50%).
+        /// </summary>
+        public float GetBlockEffectiveness()
+        {
+            var mainWeapon = GetMainWeapon();
+            if (mainWeapon == null) return 0.5f;
+            float bonus = GetStatBonusFromItem(mainWeapon, "blockEffectiveness");
+            return bonus > 0f ? Mathf.Clamp01(bonus) : 0.5f;
+        }
+
+        /// <summary>
+        /// Эффективность блокирования щитом (0-1) из оружия/щита во второй руке.
+        /// В-01: Замена захардкоженного множителя 0.7 в DamageCalculator.
+        /// Извлекается из statBonuses с именем «shieldEffectiveness».
+        /// Если нет щита — возвращает 0.7 по умолчанию (блок снижает урон на 70%).
+        /// </summary>
+        public float GetShieldEffectiveness()
+        {
+            var offItem = GetOffWeapon();
+            if (offItem == null) return 0.7f;
+            float bonus = GetStatBonusFromItem(offItem, "shieldEffectiveness");
+            return bonus > 0f ? Mathf.Clamp01(bonus) : 0.7f;
         }
 
         /// <summary>
@@ -767,12 +807,12 @@ namespace CultivationGame.Inventory
         /// |-------|---------------|
         /// | Damaged | ×0.5 |
         /// | Common | ×1.0 |
-        /// | Refined | ×1.4 (1.3-1.5) |
-        /// | Perfect | ×2.1 (1.7-2.5) |
-        /// | Transcendent | ×3.25 (2.5-4.0) |
-        /// 
-        /// Для диапазонов используется среднее значение.
-        /// FIX EQP-BUG-05: Ранее использовался тот же множитель, что и для прочности.
+        /// FIX К-03: Множители приведены к EQUIPMENT_SYSTEM.md §2.1
+        /// | Damaged      | ×0.5 |
+        /// | Common       | ×1.0 |
+        /// | Refined      | ×1.3 |
+        /// | Perfect      | ×1.6 |
+        /// | Transcendent | ×2.0 |
         /// </summary>
         private float GetEffectivenessMultiplier(EquipmentGrade grade)
         {
@@ -780,9 +820,9 @@ namespace CultivationGame.Inventory
             {
                 EquipmentGrade.Damaged => 0.5f,
                 EquipmentGrade.Common => 1.0f,
-                EquipmentGrade.Refined => 1.4f,       // (1.3 + 1.5) / 2
-                EquipmentGrade.Perfect => 2.1f,       // (1.7 + 2.5) / 2
-                EquipmentGrade.Transcendent => 3.25f, // (2.5 + 4.0) / 2
+                EquipmentGrade.Refined => 1.3f,       // FIX К-03: было 1.4
+                EquipmentGrade.Perfect => 1.6f,       // FIX К-03: было 2.1
+                EquipmentGrade.Transcendent => 2.0f,  // FIX К-03: было 3.25
                 _ => 1.0f
             };
         }
@@ -940,10 +980,10 @@ namespace CultivationGame.Inventory
             if (durability == 0) return DurabilityCondition.Broken;
 
             float percent = DurabilityPercent * 100f;
+            // FIX С-01: Убрано Excellent, приведено к 5 состояниям (EQUIPMENT_SYSTEM.md §4.1)
             if (percent >= 100f) return DurabilityCondition.Pristine;
-            if (percent >= 80f) return DurabilityCondition.Excellent;
-            if (percent >= 60f) return DurabilityCondition.Good;
-            if (percent >= 40f) return DurabilityCondition.Worn;
+            if (percent >= 80f) return DurabilityCondition.Good;
+            if (percent >= 60f) return DurabilityCondition.Worn;
             if (percent >= 20f) return DurabilityCondition.Damaged;
             return DurabilityCondition.Broken;
         }

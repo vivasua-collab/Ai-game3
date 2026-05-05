@@ -34,6 +34,10 @@ namespace CultivationGame.Combat
         public float ParryChance;       // Шанс парирования
         public float BlockChance;       // Шанс блока
         
+        // В-01: Эффективность парирования и блокирования (из экипировки)
+        public float BlockEffectiveness;  // 0-1, эффективность парирования: damage ×= (1 - value)
+        public float ShieldEffectiveness; // 0-1, эффективность блокирования щитом: damage ×= (1 - value)
+        
         public float ArmorCoverage;     // Покрытие брони (%)
         public float DamageReduction;   // Снижение урона (%)
         public int ArmorValue;          // Значение брони

@@ -4,12 +4,15 @@
 // Версия: 1.4 — Fix-03: CanBreakthrough Модель В, Meditate + время, overflow check
 // Создано: 2026-03-30 14:00:00 UTC
 // Редактировано: 2026-04-10 16:20:00 UTC — Fix-03: QI-MDL-B01/02, QI-H01/02, QI-M01
+// Редактировано: 2026-05-05 09:55:00 UTC — В-10: AddTemporaryShield() заглушка
+// Редактировано: 2026-05-05 10:05:00 UTC — FIX К-08/С-10/В-07/В-08
 // ============================================================================
 
 using System;
 using UnityEngine;
 using CultivationGame.Core;
 using CultivationGame.Combat;
+using CultivationGame.World;
 
 namespace CultivationGame.Qi
 {
@@ -77,11 +80,33 @@ namespace CultivationGame.Qi
             RecalculateStats();
         }
         
-        private void Update()
+        // FIX С-10: Перенесено из Update() в OnWorldTick (Dual Tick Model v3.0)
+        // Пассивная регенерация привязана к тиковой системе, масштабируется при паузе/ускорении
+        private void OnEnable()
+        {
+            var tc = TimeController.Instance;
+            if (tc != null)
+                tc.OnWorldTick += HandleWorldTick;
+        }
+
+        private void OnDisable()
+        {
+            var tc = TimeController.Instance;
+            if (tc != null)
+                tc.OnWorldTick -= HandleWorldTick;
+        }
+
+        /// <summary>
+        /// Обработчик мирового тика — пассивная регенерация Ци.
+        /// </summary>
+        private void HandleWorldTick(int tick)
         {
             if (enablePassiveRegen)
             {
-                ProcessPassiveRegeneration();
+                float tickInterval = TimeController.Instance != null
+                    ? TimeController.Instance.TickInterval
+                    : 1f;
+                ProcessPassiveRegeneration(tickInterval);
             }
         }
         
@@ -104,7 +129,9 @@ namespace CultivationGame.Qi
             // Базовая проводимость = coreCapacity / 360 секунд (по документации QI_SYSTEM.md)
             // Это определяет скорость вывода Ци и медитации
             // Базовая проводимость при L1.0: 1000 / 360 ≈ 2.78
-            baseConductivity = maxQiCapacity / 360f;
+            // FIX В-07: Проводимость от coreCapacity, не от maxQiCapacity (QI_SYSTEM.md)
+            // maxQiCapacity = coreCapacity × qualityMult × subLevelGrowth — завышает проводимость
+            baseConductivity = coreCapacity / 360f;
             
             // Итоговая проводимость с бонусом от перков
             // Формула: finalConductivity = baseConductivity × (1 + bonus)
@@ -221,7 +248,8 @@ namespace CultivationGame.Qi
         
         // === Regeneration ===
         
-        private void ProcessPassiveRegeneration()
+        // FIX С-10: Принимает tickInterval вместо Time.deltaTime (Dual Tick Model v3.0)
+        private void ProcessPassiveRegeneration(float tickInterval)
         {
             // Генерация микроядром: 10% от ёмкости в сутки
             // В секундах: ёмкость * 0.1 / (24 * 60 * 60)
@@ -230,7 +258,7 @@ namespace CultivationGame.Qi
             
             // Применяем множители (БЕЗ qiDensity! - она влияет только на урон техник)
             // Регенерация: 10% от ёмкости в сутки, умноженная на regenMultiplier уровня
-            double actualRegen = perSecond * regenMultiplier * Time.deltaTime;
+            double actualRegen = perSecond * regenMultiplier * tickInterval;
             
             if (actualRegen >= 1.0)
             {
@@ -254,6 +282,7 @@ namespace CultivationGame.Qi
         /// Медитация — ускоренное накопление Ци.
         /// FIX QI-H01: Добавлено продвижение игрового времени.
         /// FIX QI-M01: Проверка overflow для durationTicks * conductivity.
+        /// FIX В-08: Медитация не обходит тиковую систему — Qi добавляется по тикам.
         /// </summary>
         /// <param name="durationTicks">Длительность в тиках (1 тик = 1 минута)</param>
         /// <returns>Накопленное Ци</returns>
@@ -261,29 +290,37 @@ namespace CultivationGame.Qi
         {
             if (durationTicks <= 0) return 0;
             
-            // FIX QI-M01: Overflow check
-            double baseGain = (double)conductivity * qiDensity * durationTicks;
-            
+            // FIX В-08: Каждый тик медитации корректно обрабатывается
             // Множитель медитации (зависит от уровня)
             float meditationMult = 1f + cultivationLevel * 0.1f;
             
-            // FIX QI-M01: Clamp to avoid overflow
-            double totalGain = baseGain * meditationMult;
+            // Ци за один тик медитации
+            double qiPerTick = (double)baseConductivity * qiDensity * meditationMult;
+            
+            long totalGained = 0;
             const long MAX_SAFE_GAIN = long.MaxValue / 2;
-            long gained = totalGain > MAX_SAFE_GAIN ? MAX_SAFE_GAIN : (long)totalGain;
             
-            AddQi(gained);
+            for (int i = 0; i < durationTicks; i++)
+            {
+                // FIX QI-M01: Защита от переполнения
+                long gained = qiPerTick > MAX_SAFE_GAIN ? MAX_SAFE_GAIN : (long)qiPerTick;
+                AddQi(gained);
+                totalGained += gained;
+                
+                // Защита от переполнения totalGained
+                if (totalGained < 0) { totalGained = MAX_SAFE_GAIN; break; }
+            }
             
-            // FIX QI-H01: Продвижение игрового времени
+            // Продвижение игрового времени
             // 1 тик = 1 минута, преобразуем в часы
             float hoursAdvanced = durationTicks / 60f;
-            var timeController = FindFirstObjectByType<CultivationGame.World.TimeController>();
+            var timeController = TimeController.Instance;
             if (timeController != null && hoursAdvanced > 0f)
             {
                 timeController.AdvanceHours(Mathf.RoundToInt(hoursAdvanced));
             }
             
-            return gained;
+            return totalGained;
         }
         
         // === Cultivation ===
@@ -444,6 +481,22 @@ namespace CultivationGame.Qi
             return QiBuffer.CalculateRequiredQi(damage, QiDefense, sourceType); // FIX: long return
         }
         
+        // === Shield (В-10) ===
+
+        /// <summary>
+        /// Временный щит — поглощает урон вместо Qi.
+        /// Заглушка: реальная система щитов будет реализована в системе баффов.
+        /// Пока — просто логируем применение.
+        /// </summary>
+        /// <param name="shieldValue">Сила щита (единицы поглощения)</param>
+        /// <param name="duration">Длительность в секундах (0 = бесконечно до исчерпания)</param>
+        public void AddTemporaryShield(float shieldValue, float duration = 0f)
+        {
+            // TODO: Реализовать через BuffManager когда система баффов будет готова
+            // Пока — заглушка для компиляции
+            Debug.Log($"[QiController] Временный щит: {shieldValue} на {duration}с ({gameObject.name})");
+        }
+
         // === Utility ===
         
         /// <summary>

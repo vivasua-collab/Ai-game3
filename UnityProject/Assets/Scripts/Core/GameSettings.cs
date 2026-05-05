@@ -49,7 +49,7 @@ namespace CultivationGame.Core
         public int basePlayerHealth = 100;
         
         [Tooltip("Базовое Ци игрока")]
-        public long basePlayerQi = 100; // FIX: int→long для Qi (2026-04-11)
+        public long basePlayerQi = 1000; // FIX Н-11: 100→1000 (соответствует Constants.BASE_CORE_CAPACITY, GLOSSARY.md)
         
         [Tooltip("Начальный уровень культивации")]
         [Range(1, 10)]

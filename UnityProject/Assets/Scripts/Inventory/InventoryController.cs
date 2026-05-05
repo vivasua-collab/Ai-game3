@@ -836,10 +836,10 @@ namespace CultivationGame.Inventory
             if (durability == 0) return DurabilityCondition.Broken;
 
             float percent = DurabilityPercent * 100f;
+            // FIX С-01: Убрано Excellent, приведено к 5 состояниям (EQUIPMENT_SYSTEM.md §4.1)
             if (percent >= 100f) return DurabilityCondition.Pristine;
-            if (percent >= 80f) return DurabilityCondition.Excellent;
-            if (percent >= 60f) return DurabilityCondition.Good;
-            if (percent >= 40f) return DurabilityCondition.Worn;
+            if (percent >= 80f) return DurabilityCondition.Good;
+            if (percent >= 60f) return DurabilityCondition.Worn;
             if (percent >= 20f) return DurabilityCondition.Damaged;
             return DurabilityCondition.Broken;
         }

@@ -4,6 +4,7 @@
 // Версия: 1.0
 // Создано: 2026-03-30 14:00:00 UTC
 // Редактировано: 2026-03-31 10:05:48 UTC
+// Редактировано: 2026-05-05 09:55:00 UTC — В-12: oppositeElement→oppositeElements (Void имеет 2 противоположности)
 // ============================================================================
 
 using UnityEngine;
@@ -39,7 +40,11 @@ namespace CultivationGame.Data.ScriptableObjects
         public string description;
         
         [Header("Relationships")]
-        [Tooltip("Противоположный элемент")]
+        [Tooltip("Противоположные элементы (список: Void имеет 2 — Lightning и Light)")]
+        public List<Element> oppositeElements = new List<Element>();
+        
+        [Obsolete("Используйте oppositeElements (List<Element>) вместо oppositeElement. Void имеет 2 противоположности.")]
+        [Tooltip("Противоположный элемент (устарело — используйте oppositeElements)")]
         public Element oppositeElement;
         
         [Tooltip("Элементы сродства (ослабляют)")]
