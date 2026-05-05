@@ -4,6 +4,7 @@
 // Создано: 2026-04-03
 // Редактировано: 2026-04-11 06:38:02 UTC — UI-L02: Camera.main null guards, CORE-M03: AttackResult→CombatAttackResult
 // Редактировано: 2026-05-04 07:20:00 UTC — ФАЗА 6: Полоска накачки, слоты техник, индикатор прерывания
+// Редактировано: 2026-05-07 11:00:00 UTC — ФАЗА 4: Оружие в боевом интерфейсе
 
 using System;
 using System.Collections.Generic;
@@ -137,6 +138,23 @@ namespace CultivationGame.UI
         [Tooltip("Массив иконок слотов техник (1-9)")]
         public TechniqueSlotUI[] techniqueSlots = new TechniqueSlotUI[9];
 
+        // ФАЗА 4: Отображение оружия в бою
+        [Header("Оружие (ФАЗА 4)")]
+        [Tooltip("Иконка оружия в основной руке")]
+        public Image weaponMainIcon;
+
+        [Tooltip("Иконка оружия/щита во второй руке")]
+        public Image weaponOffIcon;
+
+        [Tooltip("Текст названия + урон оружия")]
+        public TMP_Text weaponMainText;
+
+        [Tooltip("Текст названия + защита оружия")]
+        public TMP_Text weaponOffText;
+
+        [Tooltip("Панель оружия (показывается в бою)")]
+        public GameObject weaponPanel;
+
         #endregion
 
         #region Runtime Data
@@ -248,6 +266,9 @@ namespace CultivationGame.UI
             if (enemyHealthBar != null) enemyHealthBar.gameObject.SetActive(true);
             if (combatStatePanel != null) combatStatePanel.SetActive(true);
 
+            // ФАЗА 4: Показать панель оружия
+            if (weaponPanel != null) weaponPanel.SetActive(true);
+
             SetInteractable(true);
         }
 
@@ -260,6 +281,9 @@ namespace CultivationGame.UI
             ClearEnemies();
             ClearTechniques();
             ClearLog();
+
+            // ФАЗА 4: Скрыть панель оружия
+            if (weaponPanel != null) weaponPanel.SetActive(false);
         }
 
         /// <summary>
@@ -907,6 +931,61 @@ namespace CultivationGame.UI
                 else
                 {
                     techniqueSlots[i].Clear();
+                }
+            }
+        }
+
+        // === ФАЗА 4: Отображение оружия ===
+
+        /// <summary>
+        /// Обновить отображение оружия в бою из EquipmentController.
+        /// Вызывается при ShowCombatUI() и при смене экипировки.
+        /// </summary>
+        public void UpdateWeaponDisplay(CultivationGame.Inventory.EquipmentController eqCtrl)
+        {
+            if (eqCtrl == null) return;
+
+            // Основная рука
+            var mainWeapon = eqCtrl.GetMainWeapon();
+            if (weaponMainIcon != null)
+            {
+                weaponMainIcon.gameObject.SetActive(mainWeapon != null);
+                if (mainWeapon != null && mainWeapon.equipmentData.icon != null)
+                {
+                    weaponMainIcon.sprite = mainWeapon.equipmentData.icon;
+                }
+            }
+            if (weaponMainText != null)
+            {
+                if (mainWeapon != null)
+                {
+                    weaponMainText.text = $"{mainWeapon.Name}\nУрон: {mainWeapon.equipmentData.damage}";
+                }
+                else
+                {
+                    weaponMainText.text = "Без оружия";
+                }
+            }
+
+            // Вторичная рука
+            var offWeapon = eqCtrl.GetOffWeapon();
+            if (weaponOffIcon != null)
+            {
+                weaponOffIcon.gameObject.SetActive(offWeapon != null);
+                if (offWeapon != null && offWeapon.equipmentData.icon != null)
+                {
+                    weaponOffIcon.sprite = offWeapon.equipmentData.icon;
+                }
+            }
+            if (weaponOffText != null)
+            {
+                if (offWeapon != null)
+                {
+                    weaponOffText.text = $"{offWeapon.Name}\nЗащита: {offWeapon.equipmentData.defense}";
+                }
+                else
+                {
+                    weaponOffText.text = "";
                 }
             }
         }
