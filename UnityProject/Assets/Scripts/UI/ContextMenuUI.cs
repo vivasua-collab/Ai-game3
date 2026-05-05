@@ -2,13 +2,15 @@
 // ContextMenuUI.cs — UI контекстного меню
 // Cultivation World Simulator
 // Создано: 2026-04-27 18:38:00 UTC — выделено из InventoryUI.cs (legacy v1)
-// ============================================================================
-// Минимальная реализация контекстного меню для DragDropHandler.
+// Редактировано: 2026-05-05 — FIX BUG-INTERACT-02: Update() убивал меню при ЛЮБОМ
+//   клике, даже на собственные кнопки, ДО того как onClick успевал сработать.
+//   Исправление: проверяем, что клик НЕ по элементам меню.
 // ============================================================================
 
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.UI;
 using TMPro;
 
@@ -24,7 +26,7 @@ namespace CultivationGame.UI
     }
 
     /// <summary>
-    /// UI контекстного меню — отображает список опций при правом клике.
+    /// UI контекстного меню — отображает список опций при клике.
     /// </summary>
     public class ContextMenuUI : MonoBehaviour
     {
@@ -86,6 +88,11 @@ namespace CultivationGame.UI
             text.fontSize = 14;
             text.alignment = TextAlignmentOptions.Midline;
 
+            // Фон кнопки — чтобы raycast работал
+            var bgImage = buttonGO.AddComponent<Image>();
+            bgImage.color = new Color(0.15f, 0.15f, 0.2f, 0.95f);
+            button.targetGraphic = bgImage;
+
             var capturedOpt = opt;
             button.onClick.AddListener(() =>
             {
@@ -107,11 +114,49 @@ namespace CultivationGame.UI
 
         private void Update()
         {
-            // Закрытие по клику вне меню
-            if (Input.GetMouseButtonDown(0))
+            // FIX BUG-INTERACT-02: Закрытие по клику ВНЕ меню.
+            // Раньше: Input.GetMouseButtonDown(0) убивал меню при ЛЮБОМ клике,
+            // включая клик по собственным кнопкам — onClick НЕ успевал сработать.
+            // Теперь: проверяем, что клик НЕ по элементам этого меню.
+            if (Input.GetMouseButtonDown(0) || Input.GetMouseButtonDown(1))
             {
+                // Если указатель над элементом меню — НЕ закрываем (кнопка обработает)
+                if (EventSystem.current != null && EventSystem.current.IsPointerOverGameObject())
+                {
+                    // Проверяем, попал ли клик на дочерний элемент этого меню
+                    var eventData = new PointerEventData(EventSystem.current);
+                    eventData.position = Input.mousePosition;
+                    var results = new List<RaycastResult>();
+                    EventSystem.current.RaycastAll(eventData, results);
+
+                    foreach (var result in results)
+                    {
+                        if (result.gameObject != null && IsChildOfThisMenu(result.gameObject))
+                        {
+                            // Клик по элементу меню — НЕ закрываем, кнопка обработает
+                            return;
+                        }
+                    }
+                }
+
+                // Клик вне меню — закрываем
                 Destroy(gameObject);
             }
+        }
+
+        /// <summary>
+        /// Проверяет, является ли gameObject дочерним объектом этого меню.
+        /// </summary>
+        private bool IsChildOfThisMenu(GameObject go)
+        {
+            var current = go.transform;
+            while (current != null)
+            {
+                if (current == transform)
+                    return true;
+                current = current.parent;
+            }
+            return false;
         }
     }
 }

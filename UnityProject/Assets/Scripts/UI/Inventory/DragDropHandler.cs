@@ -675,14 +675,43 @@ namespace CultivationGame.UI.Inventory
 
         private void Update()
         {
-            // Закрытие контекстного меню по клику вне
-            if (Mouse.current != null && Mouse.current.leftButton.wasPressedThisFrame && activeContextMenu != null)
+            // Закрытие контекстного меню по клику ВНЕ меню.
+            // FIX: проверяем, что клик не по элементам самого контекстного меню,
+            // иначе onClick кнопок не успеет сработать.
+            if (activeContextMenu != null && Mouse.current != null && Mouse.current.leftButton.wasPressedThisFrame)
             {
-                if (!EventSystem.current.IsPointerOverGameObject())
+                if (EventSystem.current != null && EventSystem.current.IsPointerOverGameObject())
                 {
-                    HideContextMenu();
+                    // Клик по UI — проверяем, попал ли на контекстное меню
+                    var eventData = new UnityEngine.EventSystems.PointerEventData(EventSystem.current);
+                    eventData.position = Mouse.current.position.value;
+                    var results = new List<UnityEngine.EventSystems.RaycastResult>();
+                    EventSystem.current.RaycastAll(eventData, results);
+
+                    foreach (var result in results)
+                    {
+                        if (result.gameObject != null && IsChildOf(result.gameObject.transform, activeContextMenu.transform))
+                        {
+                            // Клик по элементу меню — НЕ закрываем, кнопка обработает
+                            return;
+                        }
+                    }
                 }
+
+                // Клик вне меню — закрываем
+                HideContextMenu();
             }
+        }
+
+        private static bool IsChildOf(Transform child, Transform parent)
+        {
+            var current = child;
+            while (current != null)
+            {
+                if (current == parent) return true;
+                current = current.parent;
+            }
+            return false;
         }
 
         #endregion

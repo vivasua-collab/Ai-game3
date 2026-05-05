@@ -163,6 +163,7 @@ namespace CultivationGame.UI.Inventory
             rowUI.OnDragBegin += OnRowDragBegin;
             rowUI.OnDragging += OnRowDragging;
             rowUI.OnDragEnd += OnRowDragEnd;
+            rowUI.OnSlotClicked += OnRowLeftClicked;
             rowUI.OnSlotRightClicked += OnRowRightClicked;
             rowUI.OnSlotHover += OnRowHover;
             rowUI.OnSlotExit += OnRowExit;
@@ -240,6 +241,13 @@ namespace CultivationGame.UI.Inventory
         private void OnRowDragEnd(InventorySlotUI rowUI, UnityEngine.EventSystems.PointerEventData eventData)
         {
             dragDropHandler?.EndDrag(rowUI, eventData);
+        }
+
+        // FIX BUG-INTERACT-01: Левый клик на предмет — показать контекстное меню
+        // (расходники/экипировка/выброс — всё через контекстное меню)
+        private void OnRowLeftClicked(InventorySlotUI rowUI)
+        {
+            dragDropHandler?.ShowContextMenu(rowUI);
         }
 
         private void OnRowRightClicked(InventorySlotUI rowUI)

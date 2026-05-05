@@ -408,14 +408,55 @@ namespace CultivationGame.Editor.SceneBuilder
             volumeTMPRect.sizeDelta = new Vector2(50f, 18f);
             volumeTMP.alignment = TextAlignmentOptions.MidlineRight;
 
+            // --- Border (рамка по редкости) → border ---
+            GameObject borderGO = new GameObject("Border");
+            borderGO.transform.SetParent(slotGO.transform, false);
+            var borderRect = borderGO.AddComponent<RectTransform>();
+            borderRect.anchorMin = Vector2.zero;
+            borderRect.anchorMax = Vector2.one;
+            borderRect.sizeDelta = Vector2.zero;
+            var borderImage = borderGO.AddComponent<Image>();
+            borderImage.color = Color.gray;
+            borderImage.raycastTarget = false;
+            // Border должен быть ПОД фоном — ставим первым в иерархии
+            borderGO.transform.SetAsFirstSibling();
+
+            // --- DurabilityBar → durabilityBar ---
+            GameObject durabilityGO = new GameObject("DurabilityBar");
+            durabilityGO.transform.SetParent(slotGO.transform, false);
+            var durRect = durabilityGO.AddComponent<RectTransform>();
+            durRect.anchorMin = new Vector2(0f, 0f);
+            durRect.anchorMax = new Vector2(1f, 0f);
+            durRect.pivot = new Vector2(0f, 0f);
+            durRect.sizeDelta = new Vector2(0f, 3f);
+            durRect.anchoredPosition = Vector2.zero;
+            var durBgImage = durabilityGO.AddComponent<Image>();
+            durBgImage.color = new Color(0.2f, 0.2f, 0.2f, 0.5f);
+            durBgImage.raycastTarget = false;
+            // Fill child для durability bar
+            GameObject durFillGO = new GameObject("Fill");
+            durFillGO.transform.SetParent(durabilityGO.transform, false);
+            var durFillRect = durFillGO.AddComponent<RectTransform>();
+            durFillRect.anchorMin = Vector2.zero;
+            durFillRect.anchorMax = new Vector2(1f, 1f);
+            durFillRect.sizeDelta = Vector2.zero;
+            var durFillImage = durFillGO.AddComponent<Image>();
+            durFillImage.color = Color.green;
+            durFillImage.raycastTarget = false;
+            // Используем durFillImage как durabilityBar (fill)
+            durabilityGO.SetActive(false); // Скрыта по умолчанию — показывается только для предметов с прочностью
+
             // --- Подключение SerializeField ссылок InventorySlotUI ---
             SerializedObject so = new SerializedObject(slotUI);
 
             so.FindProperty("iconImage").objectReferenceValue = iconImage;
+            so.FindProperty("background").objectReferenceValue = bgImage;
+            so.FindProperty("border").objectReferenceValue = borderImage;
             so.FindProperty("nameText").objectReferenceValue = nameTMP;
             so.FindProperty("countText").objectReferenceValue = countTMP;
             so.FindProperty("weightText").objectReferenceValue = weightTMP;
             so.FindProperty("volumeText").objectReferenceValue = volumeTMP;
+            so.FindProperty("durabilityBar").objectReferenceValue = durFillImage;
 
             so.ApplyModifiedProperties();
 

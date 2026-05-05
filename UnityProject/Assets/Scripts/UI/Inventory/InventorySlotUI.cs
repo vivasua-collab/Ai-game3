@@ -46,6 +46,9 @@ namespace CultivationGame.UI.Inventory
         [SerializeField] private Color normalColor = new Color(0.1f, 0.1f, 0.18f, 0.8f);
         [SerializeField] private Color hoverColor = new Color(0.2f, 0.2f, 0.35f, 0.9f);
 
+        // FIX BUG-INTERACT-03: Сохранять текущий цвет фона (grade tint), чтобы не сбрасывать при un-hover
+        private Color savedBgColor;
+
         #endregion
 
         #region Runtime Data
@@ -226,12 +229,20 @@ namespace CultivationGame.UI.Inventory
 
         /// <summary>
         /// Устанавливает подсветку при наведении.
+        /// FIX BUG-INTERACT-03: Сохранять Grade-тинт, не сбрасывать на normalColor.
         /// </summary>
         public void SetHoverHighlight(bool hovered)
         {
-            if (background != null && !isDragging)
+            if (background == null || isDragging) return;
+
+            if (hovered)
             {
-                background.color = hovered ? hoverColor : normalColor;
+                savedBgColor = background.color;
+                background.color = hoverColor;
+            }
+            else
+            {
+                background.color = savedBgColor;
             }
         }
 
