@@ -3,7 +3,7 @@
 // Cultivation World Simulator
 // Версия: 1.1 — Добавлен динамический расчёт прорывов
 // Создано: 2026-03-30 14:00:00 UTC
-// Редактировано: 2026-03-31 10:05:48 UTC
+// Редактировано: 2026-05-05 14:06:23 MSK — FIX В-13, С-15: OnValidate для qiDensity и coreCapacityMultiplier
 // ============================================================================
 
 using UnityEngine;
@@ -91,6 +91,25 @@ namespace CultivationGame.Data.ScriptableObjects
         [Tooltip("Урон при неудаче прорыва (%)")]
         [Range(0f, 100f)]
         public float breakthroughFailureDamage = 20f;
+        
+        // === OnValidate ===
+        
+        /// <summary>
+        /// Автоматический пересчёт при изменении в Inspector.
+        /// FIX В-13: qiDensity = 2^(level-1) по ALGORITHMS.md §3.3
+        /// FIX С-15: coreCapacityMultiplier = 1.1^((level-1)×9) по QI_SYSTEM.md
+        /// </summary>
+        private void OnValidate()
+        {
+            // qiDensity: плотность Ци по уровню (2^(level-1))
+            int idx = Mathf.Clamp(level - 1, 0, GameConstants.QiDensityByLevel.Length - 1);
+            qiDensity = GameConstants.QiDensityByLevel[idx];
+            
+            // coreCapacityMultiplier: 1.1^totalSubLevels
+            // totalSubLevels = (level-1) × MAX_SUB_LEVEL (9 под-уровней на уровень)
+            int totalSubLevels = (level - 1) * GameConstants.MAX_SUB_LEVEL;
+            coreCapacityMultiplier = Mathf.Pow(GameConstants.CORE_CAPACITY_GROWTH, totalSubLevels);
+        }
         
         // === Runtime Methods ===
         

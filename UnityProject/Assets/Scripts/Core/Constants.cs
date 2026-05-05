@@ -715,6 +715,18 @@ namespace CultivationGame.Core
         
         #endregion
         
+        #region Combat - Charge System
+        
+        /// <summary>
+        /// Минимальное время накачки (сек). Fallback если TimeController не доступен.
+        /// По правилу: minChargeTime = tickInterval / 10.
+        /// При tickInterval = 1 сек: minChargeTime = 0.1 сек.
+        /// FIX Н-07: Вынесено из TechniqueChargeSystem в Constants
+        /// </summary>
+        public const float MIN_CHARGE_TIME = 0.1f;
+        
+        #endregion
+        
         #region Save System
         
         /// <summary>Интервал автосохранения (в тиках)</summary>

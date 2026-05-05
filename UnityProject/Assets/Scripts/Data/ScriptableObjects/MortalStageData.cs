@@ -3,7 +3,7 @@
 // Cultivation World Simulator
 // Версия: 1.0
 // Создано: 2026-03-30 14:00:00 UTC
-// Редактировано: 2026-03-31 10:05:48 UTC
+// Редактировано: 2026-05-05 14:06:23 MSK — FIX С-16: дефолтные шансы пробуждения
 // ============================================================================
 
 using UnityEngine;
@@ -120,15 +120,15 @@ namespace CultivationGame.Data.ScriptableObjects
         [Header("Awakening")]
         [Tooltip("Базовый шанс пробуждения (%)")]
         [Range(0f, 5f)]
-        public float baseAwakeningChance = 0f;
+        public float baseAwakeningChance = 0.01f;     // FIX С-16: 0→0.01% (CULTIVATION_SYSTEM.md)
 
         [Tooltip("Шанс пробуждения в зоне высокой плотности Ци (%)")]
         [Range(0f, 5f)]
-        public float highDensityAwakeningChance = 0f;
+        public float highDensityAwakeningChance = 0.1f; // FIX С-16: 0→0.1%
 
         [Tooltip("Шанс пробуждения при критическом состоянии (%)")]
         [Range(0f, 5f)]
-        public float criticalAwakeningChance = 0f;
+        public float criticalAwakeningChance = 1.0f;    // FIX С-16: 0→1.0%
 
         [Tooltip("Можно ли пробудиться на этом этапе")]
         public bool canAwaken = false;

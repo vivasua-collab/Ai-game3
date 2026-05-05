@@ -555,7 +555,7 @@ namespace CultivationGame.Combat
             {
                 return tc.MinChargeTime; // tickInterval / 10
             }
-            return 0.1f; // Fallback
+            return GameConstants.MIN_CHARGE_TIME; // FIX Н-07: из Constants (было захардкожено 0.1f)
         }
 
         /// <summary>

@@ -99,6 +99,17 @@ namespace CultivationGame.Combat
     /// <summary>
     /// Статический класс для глобальных событий боя.
     /// Позволяет подписываться на события из любого места кода.
+    ///
+    /// FIX Н-09: Жизненный цикл подписок:
+    ///   1. CombatLog.Initialize() — вызывается из CombatManager.Awake()
+    ///   2. Подписчики (UI, CombatAI, и др.) подписываются на OnCombatEvent и др.
+    ///   3. CombatLog.Cleanup() — вызывается при завершении боя (CombatManager)
+    ///   4. Статические events НЕ очищаются автоматически при уничтожении объектов.
+    ///      ⚠️ Если MonoBehaviour подписывается, он ДОЛЖЕН отписаться в OnDisable/OnDestroy.
+    ///   5. CombatEvents не имеет Cleanup() — сами events живут вечно.
+    ///      Только CombatLog отписывается при Cleanup().
+    ///   6. Риск утечек: если подписчик уничтожается без отписки → NullReferenceException.
+    ///      Решение: использовать weak references или явную отписку.
     /// </summary>
     public static class CombatEvents
     {

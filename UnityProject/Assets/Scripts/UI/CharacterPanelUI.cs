@@ -717,8 +717,7 @@ namespace CultivationGame.UI
                 BodyPartState.Bruised => Color.yellow,
                 BodyPartState.Wounded => Color.orange,
                 BodyPartState.Disabled => Color.red,
-                BodyPartState.Severed => Color.gray,
-                BodyPartState.Destroyed => Color.black,
+                BodyPartState.Severed => Color.gray,  // FIX С-08: Destroyed убран, Severed = конечное состояние
                 _ => Color.white
             };
         }

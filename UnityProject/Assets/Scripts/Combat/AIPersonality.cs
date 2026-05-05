@@ -24,6 +24,19 @@ namespace CultivationGame.Combat
     /// ║  techniquePreference (0-1): предпочтение техник vs базовые атаки           ║
     /// ║  chargeRiskTolerance (0-1): готовность накачивать под огнём               ║
     /// ╚═══════════════════════════════════════════════════════════════════════════╝
+    ///
+    /// FIX Н-06: Связь с PersonalityTrait (Enums.cs):
+    ///   PersonalityTrait.Aggressive  → высокая aggression, низкая retreatThreshold
+    ///   PersonalityTrait.Cautious    → высокая defensiveness, низкая aggression
+    ///   PersonalityTrait.Treacherous → низкая defensiveness союзника, высокий retreatThreshold
+    ///   PersonalityTrait.Ambitious   → высокая techniquePreference, aggression
+    ///   PersonalityTrait.Pacifist    → низкая aggression, высокий retreatThreshold
+    ///   PersonalityTrait.Loyal       → низкий retreatThreshold (не отступает)
+    ///   PersonalityTrait.Vengeful    → высокая aggression после получения урона
+    ///
+    /// AIPersonality управляет ПОВЕДЕНИЕМ В БОЮ (как сражается).
+    /// PersonalityTrait управляет ХАРАКТЕРОМ NPC (взаимодействие, квесты, диалог).
+    /// NPCPresetData.personalityFlags → CombatAI → AIPersonality (маппинг при инициализации).
     /// </summary>
     [CreateAssetMenu(fileName = "AIPersonality", menuName = "Cultivation/AI Personality")]
     public class AIPersonality : ScriptableObject

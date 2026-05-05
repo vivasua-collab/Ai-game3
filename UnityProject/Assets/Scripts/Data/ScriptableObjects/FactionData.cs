@@ -17,7 +17,11 @@ using CultivationGame.Core;
 namespace CultivationGame.Data.ScriptableObjects
 {
     /// <summary>
-    /// Тип фракции
+    /// Тип фракции.
+    /// FIX С-17: Согласовано с FACTION_SYSTEM.md §2 «Классификация фракций»:
+    ///   Sect (Секта), Clan (Клан), Guild (Гильдия), Empire (Империя),
+    ///   Alliance (Альянс), Independent (Независимая), Criminal (Преступная),
+    ///   Religious (Религиозный орден).
     /// </summary>
     public enum FactionType
     {
