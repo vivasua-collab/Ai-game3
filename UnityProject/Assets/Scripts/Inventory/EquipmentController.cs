@@ -738,38 +738,38 @@ namespace CultivationGame.Inventory
                 {
                     case "strength":
                     case "str":
-                        cachedStats.strength += value;
+                        cachedStats.strength += val;
                         break;
                     case "agility":
                     case "agi":
-                        cachedStats.agility += value;
+                        cachedStats.agility += val;
                         break;
                     case "constitution":
                     case "con":
-                        cachedStats.constitution += value;
+                        cachedStats.constitution += val;
                         break;
                     case "intelligence":
                     case "int":
-                        cachedStats.intelligence += value;
+                        cachedStats.intelligence += val;
                         break;
                     case "conductivity":
                     case "cond":
-                        cachedStats.conductivity += value;
+                        cachedStats.conductivity += val;
                         break;
                     case "qi":
                     case "maxqi":
-                        cachedStats.maxQi += value;
+                        cachedStats.maxQi += val;
                         break;
                     case "qiregen":
-                        cachedStats.qiRegen += value;
+                        cachedStats.qiRegen += val;
                         break;
                     case "vitality":
                     case "vit":
-                        cachedStats.vitality += value;
+                        cachedStats.vitality += val;
                         break;
                     default:
                         cachedStats.customBonuses[bonus.statName] =
-                            cachedStats.GetCustomBonus(bonus.statName) + value;
+                            cachedStats.GetCustomBonus(bonus.statName) + val;
                         break;
                 }
             }
