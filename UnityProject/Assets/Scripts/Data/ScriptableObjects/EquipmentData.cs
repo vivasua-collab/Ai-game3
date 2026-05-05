@@ -26,9 +26,9 @@ namespace CultivationGame.Data.ScriptableObjects
     public class EquipmentData : ItemData
     {
         // FIX ИСП-ИНВ-02: Экипировка НЕ стакается — каждый экземпляр уникален (grade, durability)
-        protected override void OnEnable()
+        // Note: ScriptableObject.OnEnable() не virtual — нельзя override
+        protected void OnEnable()
         {
-            base.OnEnable();
             stackable = false;
         }
         [Header("Equipment")]
