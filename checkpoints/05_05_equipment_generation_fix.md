@@ -67,12 +67,7 @@ so.chargeSpeedBonus = dto.qiConductivity > 0 ? dto.qiConductivity * 0.1f : 0f;  
 
 #### НФ-1: chargeSpeedBonus — производная от qiConductivity
 
-`so.chargeSpeedBonus = dto.qiConductivity * 0.1f` — это работает, но неявно.
-Проводимость 3.0 → chargeSpeedBonus 0.3 (30% ускорение). Логика корректна для
-высоких тиров, но не документирована в WeaponGenerator.
-
-**Решение:** Оставить как есть — проводимость Ци логично ускоряет накачку.
-При необходимости можно добавить отдельное поле в DTO позже.
+> Перенесено в 👉 [05_05_docs_update.md](05_05_docs_update.md) (НФ-1: документация формулы)
 
 #### НФ-2: LootGenerator хардкодит пулы предметов
 

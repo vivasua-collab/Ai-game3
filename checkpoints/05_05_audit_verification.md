@@ -67,24 +67,10 @@
 
 ---
 
-## Не исправлено (низкий приоритет / документация)
+## Документация — перенесено
 
-Эти проблемы требуют обновления документации, а не кода:
-- Н-01: Файловая структура документации не совпадает
-- Н-02: WeaponSubtype расширен (не ошибка, обновить docs)
-- Н-03: ArmorWeightClass не документирован
-- Н-04: DodgePenalty = 0f (устранено через В-01)
-- Н-05: TechniqueData.baseQiCost — long vs int (корректно)
-- Н-06: AIPersonality не связан с PersonalityTrait
-- Н-07: MinChargeTime = 0.1f захардкожено
-- Н-08: FormationCore Drain через ProcessTimeTick (корректно)
-- Н-09: CombatEvents статические события без очистки
-- В-13: CultivationLevelData qiDensity формульная валидация
-- С-08: BodyPartState.Destroyed unreachable
-- С-14: FormationCoreType — обновить GLOSSARY
-- С-15: coreCapacityMultiplier OnValidate
-- С-16: MortalStageData дефолтные шансы
-- С-17: FactionData.FactionType
+Задачи по документации перенесены в отдельный чекпоинт:
+👉 [05_05_docs_update.md](05_05_docs_update.md) (12 задач: Н-01..Н-09, В-13, С-08, С-14..С-17, НФ-1)
 
 ---
 

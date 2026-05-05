@@ -35,13 +35,10 @@
 - [x] С-12: CombatTrigger fallback ✅
 - [x] С-13: NPCPresetData Alignment → PersonalityTrait (Obsolete) ✅
 
-## Не затронуты (низкий приоритет / документация)
-- В-13: CultivationLevelData qiDensity — формульная валидация
-- С-08: BodyPartState — убрать Destroyed
-- С-14: FormationCoreType — обновить GLOSSARY.md (документация)
-- С-15: coreCapacityMultiplier — OnValidate
-- С-16: MortalStageData — дефолтные шансы пробуждения
-- С-17: FactionData.FactionType — согласовать с документацией
+## Документация — перенесено
+
+Задачи по документации перенесены:
+👉 [05_05_docs_update.md](05_05_docs_update.md) (В-13, С-08, С-14..С-17)
 
 ## Изменённые файлы
 
