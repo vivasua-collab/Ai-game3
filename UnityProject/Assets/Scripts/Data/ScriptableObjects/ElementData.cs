@@ -7,6 +7,7 @@
 // Редактировано: 2026-05-05 09:55:00 UTC — В-12: oppositeElement→oppositeElements (Void имеет 2 противоположности)
 // ============================================================================
 
+using System;
 using UnityEngine;
 using System.Collections.Generic;
 using CultivationGame.Core;

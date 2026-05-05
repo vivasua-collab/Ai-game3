@@ -7,6 +7,7 @@
 // Редактировано: 2026-05-05 09:55:00 UTC — К-12: baseDisposition→baseAttitude; В-11: personalityFlags; С-13: [Obsolete] Alignment и personalityTraits
 // ============================================================================
 
+using System;
 using UnityEngine;
 using System.Collections.Generic;
 using CultivationGame.Core;
