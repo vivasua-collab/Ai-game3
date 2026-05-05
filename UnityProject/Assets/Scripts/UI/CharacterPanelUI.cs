@@ -18,6 +18,7 @@ using CultivationGame.Body;
 using CultivationGame.Player;
 using CultivationGame.Inventory;
 using CultivationGame.Qi;
+using CultivationGame.Combat;  // ФАЗА 5: TechniqueController
 
 namespace CultivationGame.UI
 {
@@ -70,6 +71,12 @@ namespace CultivationGame.UI
         [SerializeField] private Button closeButton;
         [SerializeField] private Button meditationButton;
         [SerializeField] private Button breakthroughButton;
+
+        // ФАЗА 5: Вкладка техник
+        [Header("Technique Assignment (ФАЗА 5)")]
+        [SerializeField] private Button techniquesButton;
+        [SerializeField] private TechniqueAssignmentUI techniqueAssignmentPanel;
+        [SerializeField] private TechniqueController techniqueController;
 
         #endregion
 
@@ -134,6 +141,10 @@ namespace CultivationGame.UI
 
             if (breakthroughButton != null)
                 breakthroughButton.onClick.AddListener(AttemptBreakthrough);
+
+            // ФАЗА 5: Кнопка открытия панели назначения техник
+            if (techniquesButton != null)
+                techniquesButton.onClick.AddListener(OpenTechniqueAssignment);
 
             // Инициализируем слоты экипировки
             InitializeEquipmentSlots();
@@ -569,6 +580,26 @@ namespace CultivationGame.UI
         private void ClosePanel()
         {
             gameObject.SetActive(false);
+            // ФАЗА 5: Закрыть панель техник тоже
+            if (techniqueAssignmentPanel != null)
+                techniqueAssignmentPanel.Hide();
+        }
+
+        // ФАЗА 5: Открыть панель назначения техник
+        private void OpenTechniqueAssignment()
+        {
+            if (techniqueAssignmentPanel == null)
+            {
+                Debug.LogWarning("[CharacterPanelUI] TechniqueAssignmentPanel не назначена");
+                return;
+            }
+
+            // Получаем TechniqueController если не задан
+            if (techniqueController == null && playerController != null)
+                techniqueController = playerController.GetComponent<TechniqueController>();
+
+            techniqueAssignmentPanel.Initialize(techniqueController, equipmentController);
+            techniqueAssignmentPanel.Show();
         }
 
         #endregion
