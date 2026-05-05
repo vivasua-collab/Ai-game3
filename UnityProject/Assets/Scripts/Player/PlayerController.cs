@@ -4,6 +4,7 @@
 // Версия: 1.2 — Заменён FindFirstObjectByType на ServiceLocator
 // Создано: 2026-03-30 14:00:00 UTC
 // Редактировано: 2026-05-04 07:15:00 UTC — ФАЗА 5: ProcessCombatInput + ITechniqueUser
+// Редактировано: 2026-05-07 10:00:00 UTC — ФАЗА 1: EquipmentController → ICombatant связь
 //
 // ИЗМЕНЕНИЯ В ВЕРСИИ 1.2:
 // - FIX: FindFirstObjectByType заменён на ServiceLocator.GetOrFind (аудит Unity 6.3)
@@ -45,6 +46,7 @@ namespace CultivationGame.Player
         [SerializeField] private InteractionController interactionController;
         [SerializeField] private StatDevelopment statDevelopment;
         [SerializeField] private SleepSystem sleepSystem;
+        [SerializeField] private EquipmentController equipmentController; // ФАЗА 1: связь экипировки с боем
         
         [Header("Movement")]
         [SerializeField] private float moveSpeed = 5f;
@@ -109,6 +111,7 @@ namespace CultivationGame.Player
         public string CurrentLocation => state.CurrentLocation;
         
         // FIX PLR-H01: ICombatant explicit implementations (2026-04-11)
+        // ФАЗА 1: делегирование боевых бонусов в EquipmentController (2026-05-07)
         string ICombatant.Name => playerName;
         GameObject ICombatant.GameObject => gameObject;
         int ICombatant.CultivationLevel => qiController?.CultivationLevel ?? 1;
@@ -126,12 +129,16 @@ namespace CultivationGame.Player
         float ICombatant.HealthPercent => bodyController?.HealthPercent ?? 0f;
         bool ICombatant.IsAlive => state.IsAlive;
         int ICombatant.Penetration => 0;
-        float ICombatant.DodgeChance => DefenseProcessor.CalculateDodgeChance(10, 0f);
-        float ICombatant.ParryChance => DefenseProcessor.CalculateParryChance(10, 0f);
-        float ICombatant.BlockChance => DefenseProcessor.CalculateBlockChance(10, 0f);
-        float ICombatant.ArmorCoverage => 0f;
-        float ICombatant.DamageReduction => 0f;
-        int ICombatant.ArmorValue => 0;
+        // ФАЗА 1: бонусы из EquipmentController
+        float ICombatant.DodgeChance => DefenseProcessor.CalculateDodgeChance(
+            10, equipmentController?.GetDodgePenalty() ?? 0f);
+        float ICombatant.ParryChance => DefenseProcessor.CalculateParryChance(
+            10, equipmentController?.GetParryBonus() ?? 0f);
+        float ICombatant.BlockChance => DefenseProcessor.CalculateBlockChance(
+            10, equipmentController?.GetBlockBonus() ?? 0f);
+        float ICombatant.ArmorCoverage => equipmentController?.GetArmorCoverage() ?? 0f;
+        float ICombatant.DamageReduction => equipmentController?.GetDamageReduction() ?? 0f;
+        int ICombatant.ArmorValue => equipmentController?.GetArmorValue() ?? 0;
         
         // FIX PLR-H01: ICombatant method implementations (2026-04-11)
         void ICombatant.TakeDamage(BodyPartType part, float damage)
@@ -169,7 +176,7 @@ namespace CultivationGame.Player
                 AttackElement = attackElement, CombatSubtype = CombatSubtype.MeleeStrike,
                 TechniqueLevel = 1, TechniqueGrade = TechniqueGrade.Common,
                 IsUltimate = false, IsQiTechnique = false,
-                WeaponBonusDamage = 0f  // ФАЗА 7: TODO из EquipmentController
+                WeaponBonusDamage = equipmentController?.GetWeaponBonusDamage() ?? 0f  // ФАЗА 1: из EquipmentController
             };
         }
         
@@ -181,11 +188,15 @@ namespace CultivationGame.Player
                 CurrentQi = qiController?.CurrentQi ?? 0,
                 QiDefense = QiDefenseType.RawQi,
                 Agility = 10, Strength = 10,
-                ArmorCoverage = 0f, DamageReduction = 0f, ArmorValue = 0,
-                DodgePenalty = 0f, ParryBonus = 0f, BlockBonus = 0f,
+                ArmorCoverage = equipmentController?.GetArmorCoverage() ?? 0f,
+                DamageReduction = equipmentController?.GetDamageReduction() ?? 0f,
+                ArmorValue = equipmentController?.GetArmorValue() ?? 0,
+                DodgePenalty = equipmentController?.GetDodgePenalty() ?? 0f,
+                ParryBonus = equipmentController?.GetParryBonus() ?? 0f,
+                BlockBonus = equipmentController?.GetBlockBonus() ?? 0f,
                 BodyMaterial = bodyController?.BodyMaterial ?? BodyMaterial.Organic,
                 DefenderElement = Element.Neutral,
-                FormationBuffMultiplier = 1.0f  // ФАЗА 7: TODO из FormationSystem
+                FormationBuffMultiplier = 1.0f  // TODO: из FormationSystem
             };
         }
         
@@ -409,6 +420,9 @@ namespace CultivationGame.Player
                 techniqueController = GetComponent<TechniqueController>();
             if (interactionController == null)
                 interactionController = GetComponent<InteractionController>();
+            // ФАЗА 1: EquipmentController — может отсутствовать (опциональная система)
+            if (equipmentController == null)
+                equipmentController = GetComponent<EquipmentController>();
             // FIX: StatDevelopment — [Serializable] класс, НЕ MonoBehaviour.
             // GetComponent<StatDevelopment>() вызывает ArgumentException.
             // Создаём экземпляр через new вместо GetComponent.
@@ -748,9 +762,8 @@ namespace CultivationGame.Player
             }
 
             // === Тик добычи ===
-            // Множитель инструмента (пока 1.0 — без инструмента)
-            // TODO: Получать из EquipmentController, когда система инструментов будет реализована
-            float toolMultiplier = 1.0f;
+            // ФАЗА 1: Множитель инструмента из EquipmentController
+            float toolMultiplier = equipmentController?.GetToolMultiplier() ?? 1.0f;
             int damage = harvestDamage;
 
             // Нанести урон и получить лут

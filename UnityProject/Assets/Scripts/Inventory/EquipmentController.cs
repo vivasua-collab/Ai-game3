@@ -6,6 +6,7 @@
 // Редактировано: 2026-04-18 19:00:00 UTC — ПОЛНАЯ ПЕРЕРАБОТКА по INVENTORY_UI_DRAFT.md v2.0
 // Редактировано: 2026-04-20 06:50:00 UTC — StorageRingData наследует от EquipmentData (FIX CS0184)
 // Редактировано: 2026-04-27 18:15:00 UTC — строчная модель инвентаря
+// Редактировано: 2026-05-07 10:00:00 UTC — ФАЗА 1: бонусы оружия/брони для боевой системы
 // ============================================================================
 // Изменения v2.0:
 // - Убрана система слоёв («матрёшка») для видимых слотов — 1 предмет на слот
@@ -466,6 +467,106 @@ namespace CultivationGame.Inventory
             return equippedItems[EquipmentSlot.WeaponOff];
         }
 
+        // === ФАЗА 1: Боевые бонусы из экипировки ===
+
+        /// <summary>
+        /// Бонусный урон от оружия в основной руке (WeaponBonusDamage).
+        /// Урон × множитель прочности по грейду.
+        /// </summary>
+        public float GetWeaponBonusDamage()
+        {
+            var mainWeapon = GetMainWeapon();
+            if (mainWeapon == null) return 0f;
+            return mainWeapon.equipmentData.damage * GetDurabilityMultiplier(mainWeapon.grade);
+        }
+
+        /// <summary>
+        /// Бонус парирования от оружия в основной руке.
+        /// Извлекается из statBonuses с именем «parryBonus».
+        /// </summary>
+        public float GetParryBonus()
+        {
+            var mainWeapon = GetMainWeapon();
+            if (mainWeapon == null) return 0f;
+            return GetStatBonusFromItem(mainWeapon, "parryBonus");
+        }
+
+        /// <summary>
+        /// Бонус блокирования от щита/оружия во второй руке.
+        /// Извлекается из statBonuses с именем «blockBonus».
+        /// </summary>
+        public float GetBlockBonus()
+        {
+            var offItem = GetOffWeapon();
+            if (offItem == null) return 0f;
+            return GetStatBonusFromItem(offItem, "blockBonus");
+        }
+
+        /// <summary>
+        /// Штраф к уклонению от надетой брони.
+        /// EquipmentData.dodgeBonus: отрицательное = штраф, положительное = бонус.
+        /// Возвращает штраф (положительное число = хуже уклонение).
+        /// </summary>
+        public float GetDodgePenalty()
+        {
+            return -CurrentStats.dodgeBonus;
+        }
+
+        /// <summary>
+        /// Среднее покрытие брони (не оружия) в процентах.
+        /// Учитывает только слоты: Head, Torso, Belt, Legs, Feet.
+        /// </summary>
+        public float GetArmorCoverage()
+        {
+            return CurrentStats.coverage;
+        }
+
+        /// <summary>
+        /// Снижение урона от всей экипировки (%).
+        /// </summary>
+        public float GetDamageReduction()
+        {
+            return CurrentStats.damageReduction;
+        }
+
+        /// <summary>
+        /// Общая защита от всей экипировки.
+        /// </summary>
+        public int GetArmorValue()
+        {
+            return CurrentStats.totalDefense;
+        }
+
+        /// <summary>
+        /// Множитель инструмента для добычи ресурсов.
+        /// Основан на уроне оружия в основной руке.
+        /// Без оружия = 1.0f.
+        /// </summary>
+        public float GetToolMultiplier()
+        {
+            float weaponDamage = GetWeaponBonusDamage();
+            if (weaponDamage <= 0f) return 1.0f;
+            // Формула: 1.0 + урон/50 — железный меч (10 урон) = 1.2x, духовный клинок (50) = 2.0x
+            return 1.0f + weaponDamage / 50f;
+        }
+
+        /// <summary>
+        /// Извлечь значение бонуса из statBonuses предмета по имени.
+        /// </summary>
+        private float GetStatBonusFromItem(EquipmentInstance item, string statName)
+        {
+            if (item?.equipmentData?.statBonuses == null) return 0f;
+            float effectivenessMult = GetEffectivenessMultiplier(item.grade);
+            foreach (var bonus in item.equipmentData.statBonuses)
+            {
+                if (string.Equals(bonus.statName, statName, System.StringComparison.OrdinalIgnoreCase))
+                {
+                    return bonus.isPercentage ? bonus.bonus : bonus.bonus * effectivenessMult;
+                }
+            }
+            return 0f;
+        }
+
         #endregion
 
         #region Stats Calculation
@@ -503,6 +604,15 @@ namespace CultivationGame.Inventory
             cachedStats.totalDefense += Mathf.RoundToInt(data.defense * durabilityMult);
             cachedStats.damageReduction += data.damageReduction;
             cachedStats.dodgeBonus += data.dodgeBonus;
+
+            // ФАЗА 1: Покрытие брони — только для не-оружейных слотов
+            bool isWeaponSlot = (data.slot == EquipmentSlot.WeaponMain || data.slot == EquipmentSlot.WeaponOff);
+            if (!isWeaponSlot)
+            {
+                cachedStats.coverage += data.coverage;
+                cachedStats.moveSpeedPenalty += data.moveSpeedPenalty;
+                cachedStats.qiFlowBonus -= data.qiFlowPenalty; // Инверсия: штраф → бонус (отрицательный qiFlowPenalty = положительный qiFlowBonus)
+            }
 
             // Бонусы к характеристикам — множитель эффективности (×0.5..×3.25)
             foreach (var bonus in data.statBonuses)
@@ -775,13 +885,16 @@ namespace CultivationGame.Inventory
     [Serializable]
     public class EquipmentStats
     {
-        // Combat
+        // Боевые статы
         public int totalDamage;
         public int totalDefense;
         public float damageReduction;
         public float dodgeBonus;
+        public float coverage;           // ФАЗА 1: среднее покрытие брони (%)
+        public float moveSpeedPenalty;    // ФАЗА 1: штраф к скорости движения
+        public float qiFlowBonus;         // ФАЗА 1: бонус/штраф к потоку Ци (инвертированный qiFlowPenalty)
 
-        // Attributes
+        // Характеристики
         public float strength;
         public float agility;
         public float constitution;
@@ -789,11 +902,11 @@ namespace CultivationGame.Inventory
         public float conductivity;
         public float vitality;
 
-        // Qi
+        // Ци
         public float maxQi;
         public float qiRegen;
 
-        // Custom bonuses — runtime Dictionary, use ToSerializable/FromSerializable for save
+        // Произвольные бонусы — runtime Dictionary, использовать ToSerializable/FromSerializable для сохранения
         public Dictionary<string, float> customBonuses = new Dictionary<string, float>();
 
         public float GetCustomBonus(string statName)
@@ -843,6 +956,9 @@ namespace CultivationGame.Inventory
                 result.totalDefense += stat.totalDefense;
                 result.damageReduction += stat.damageReduction;
                 result.dodgeBonus += stat.dodgeBonus;
+                result.coverage += stat.coverage;
+                result.moveSpeedPenalty += stat.moveSpeedPenalty;
+                result.qiFlowBonus += stat.qiFlowBonus;
                 result.strength += stat.strength;
                 result.agility += stat.agility;
                 result.constitution += stat.constitution;

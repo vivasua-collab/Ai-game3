@@ -6,6 +6,7 @@
 // Редактировано: 2026-04-30 07:48:00 UTC — GAP-4: авторегистрация в WorldController + OnDestroy
 // Редактировано: 2026-04-30 09:45:00 UTC — ICombatant: реализация интерфейса, TakeDamage через пайплайн
 // Редактировано: 2026-05-04 07:20:00 UTC — ФАЗА 5: CombatAI + CombatTrigger + ITechniqueUser
+// Редактировано: 2026-05-07 10:00:00 UTC — ФАЗА 1: EquipmentController → ICombatant связь
 // ============================================================================
 //
 // Источник: docs/NPC_AI_SYSTEM.md, docs/QI_SYSTEM.md
@@ -27,6 +28,7 @@ using CultivationGame.Qi;
 using CultivationGame.Body;
 using CultivationGame.World;
 using CultivationGame.Generators;  // Редактировано: 2026-05-01 — NPCRole для save/load
+using CultivationGame.Inventory;    // ФАЗА 1: EquipmentController
 
 namespace CultivationGame.NPC
 {
@@ -44,6 +46,7 @@ namespace CultivationGame.NPC
         [SerializeField] private QiController qiController;
         [SerializeField] private TechniqueController techniqueController;
         [SerializeField] private NPCAI aiController;
+        [SerializeField] private EquipmentController equipmentController; // ФАЗА 1: связь экипировки с боем
         
         // ФАЗА 5: CombatAI и CombatTrigger для боевых решений
         private Combat.CombatAI combatAI;
@@ -87,13 +90,13 @@ namespace CultivationGame.NPC
         public PersonalityTrait Personality => state?.Personality ?? PersonalityTrait.None;
         
         // === ICombatant Explicit Implementation ===
+        // ФАЗА 1: делегирование боевых бонусов в EquipmentController (2026-05-07)
         
         string ICombatant.Name => NpcName;
         GameObject ICombatant.GameObject => gameObject;
         int ICombatant.CultivationLevel => state != null ? (int)state.CultivationLevel : 0;
         int ICombatant.CultivationSubLevel => state?.SubLevel ?? 0;
         int ICombatant.Strength => (int)(state?.BodyStrength ?? 10);
-        // Редактировано: 2026-05-01 — Исправлено: Agility вместо BodyStrength
         int ICombatant.Agility => (int)(state?.Agility ?? 10);
         int ICombatant.Intelligence => (int)(state?.Intelligence ?? 10);
         int ICombatant.Vitality => (int)(state?.Constitution ?? 10);
@@ -108,15 +111,16 @@ namespace CultivationGame.NPC
             : 0f;
         bool ICombatant.IsAlive => IsAlive;
         int ICombatant.Penetration => 0;
+        // ФАЗА 1: бонусы из EquipmentController (исправлен баг: Agility вместо BodyStrength для Dodge/Parry)
         float ICombatant.DodgeChance => DefenseProcessor.CalculateDodgeChance(
-            (int)(state?.BodyStrength ?? 10), 0f);
+            (int)(state?.Agility ?? 10), equipmentController?.GetDodgePenalty() ?? 0f);
         float ICombatant.ParryChance => DefenseProcessor.CalculateParryChance(
-            (int)(state?.BodyStrength ?? 10), 0f);
+            (int)(state?.Agility ?? 10), equipmentController?.GetParryBonus() ?? 0f);
         float ICombatant.BlockChance => DefenseProcessor.CalculateBlockChance(
-            (int)(state?.BodyStrength ?? 10), 0f);
-        float ICombatant.ArmorCoverage => 0f;
-        float ICombatant.DamageReduction => 0f;
-        int ICombatant.ArmorValue => 0;
+            (int)(state?.BodyStrength ?? 10), equipmentController?.GetBlockBonus() ?? 0f);
+        float ICombatant.ArmorCoverage => equipmentController?.GetArmorCoverage() ?? 0f;
+        float ICombatant.DamageReduction => equipmentController?.GetDamageReduction() ?? 0f;
+        int ICombatant.ArmorValue => equipmentController?.GetArmorValue() ?? 0;
         
         // === ICombatant Method Implementations ===
         
@@ -201,7 +205,7 @@ namespace CultivationGame.NPC
             {
                 CultivationLevel = (int)(state?.CultivationLevel ?? Core.CultivationLevel.None),
                 Strength = (int)(state?.BodyStrength ?? 10),
-                Agility = (int)(state?.Agility ?? 10),  // Редактировано: 2026-05-01 — Agility вместо BodyStrength
+                Agility = (int)(state?.Agility ?? 10),
                 Intelligence = (int)(state?.Intelligence ?? 10),
                 Penetration = 0,
                 AttackElement = attackElement,
@@ -210,7 +214,7 @@ namespace CultivationGame.NPC
                 TechniqueGrade = TechniqueGrade.Common,
                 IsUltimate = false,
                 IsQiTechnique = false,
-                WeaponBonusDamage = 0f  // ФАЗА 7: TODO из EquipmentController
+                WeaponBonusDamage = equipmentController?.GetWeaponBonusDamage() ?? 0f  // ФАЗА 1: из EquipmentController
             };
         }
         
@@ -221,17 +225,17 @@ namespace CultivationGame.NPC
                 CultivationLevel = (int)(state?.CultivationLevel ?? Core.CultivationLevel.None),
                 CurrentQi = state?.CurrentQi ?? 0,
                 QiDefense = qiController != null ? qiController.QiDefense : QiDefenseType.RawQi,
-                Agility = (int)(state?.Agility ?? 10),  // Редактировано: 2026-05-01 — Agility вместо BodyStrength
+                Agility = (int)(state?.Agility ?? 10),
                 Strength = (int)(state?.BodyStrength ?? 10),
-                ArmorCoverage = 0f,
-                DamageReduction = 0f,
-                ArmorValue = 0,
-                DodgePenalty = 0f,
-                ParryBonus = 0f,
-                BlockBonus = 0f,
+                ArmorCoverage = equipmentController?.GetArmorCoverage() ?? 0f,
+                DamageReduction = equipmentController?.GetDamageReduction() ?? 0f,
+                ArmorValue = equipmentController?.GetArmorValue() ?? 0,
+                DodgePenalty = equipmentController?.GetDodgePenalty() ?? 0f,
+                ParryBonus = equipmentController?.GetParryBonus() ?? 0f,
+                BlockBonus = equipmentController?.GetBlockBonus() ?? 0f,
                 BodyMaterial = bodyController?.BodyMaterial ?? BodyMaterial.Organic,
                 DefenderElement = Element.Neutral,
-                FormationBuffMultiplier = 1.0f  // ФАЗА 7: TODO из FormationSystem
+                FormationBuffMultiplier = 1.0f  // TODO: из FormationSystem
             };
         }
         
@@ -316,6 +320,9 @@ namespace CultivationGame.NPC
                 techniqueController = GetComponent<TechniqueController>();
             if (aiController == null)
                 aiController = GetComponent<NPCAI>();
+            // ФАЗА 1: EquipmentController — может отсутствовать (опциональная система)
+            if (equipmentController == null)
+                equipmentController = GetComponent<EquipmentController>();
             
             // ФАЗА 5: Инициализация боевых компонентов
             InitializeCombatComponents();

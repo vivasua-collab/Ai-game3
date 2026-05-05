@@ -5,6 +5,7 @@
 // ============================================================================
 // Создан: 2026-03-31 14:08:00 UTC
 // Редактировано: 2026-05-04 07:25:00 UTC — ФАЗА 7: WeaponBonusDamage + FormationBuffMultiplier
+// Редактировано: 2026-05-07 10:00:00 UTC — ФАЗА 1: TODO обновлены (реализовано через EquipmentController)
 // ============================================================================
 
 using System;
@@ -145,7 +146,7 @@ namespace CultivationGame.Combat
         {
             get
             {
-                float penalty = 0f; // TODO: Get from equipped armor
+                float penalty = 0f; // ФАЗА 1: реализовано через EquipmentController в PlayerController/NPCController
                 return DefenseProcessor.CalculateDodgeChance(agility, penalty);
             }
         }
@@ -154,7 +155,7 @@ namespace CultivationGame.Combat
         {
             get
             {
-                float bonus = 0f; // TODO: Get from equipped weapon
+                float bonus = 0f; // ФАЗА 1: реализовано через EquipmentController в PlayerController/NPCController
                 return DefenseProcessor.CalculateParryChance(agility, bonus);
             }
         }
@@ -163,7 +164,7 @@ namespace CultivationGame.Combat
         {
             get
             {
-                float bonus = 0f; // TODO: Get from equipped shield
+                float bonus = 0f; // ФАЗА 1: реализовано через EquipmentController в PlayerController/NPCController
                 return DefenseProcessor.CalculateBlockChance(strength, bonus);
             }
         }
@@ -174,10 +175,11 @@ namespace CultivationGame.Combat
         
         // FIX CMB-C03: Сырые бонусы экипировки (не финальные шансы!)
         // Финальные шансы считаются в DamageCalculator через DefenseProcessor
-        public virtual float WeaponParryBonus => 0f;  // TODO: из EquipmentController
-        public virtual float ShieldBlockBonus => 0f;   // TODO: из EquipmentController
+        // ФАЗА 1: реализовано через EquipmentController в PlayerController/NPCController
+        public virtual float WeaponParryBonus => 0f;  // EquipmentController.GetParryBonus()
+        public virtual float ShieldBlockBonus => 0f;    // EquipmentController.GetBlockBonus()
 
-        // ФАЗА 7: Слой 1b — бонус урона оружия
+        // ФАЗА 1: реализовано через EquipmentController.GetWeaponBonusDamage() в PlayerController/NPCController
         /// <summary>Бонусный урон от оружия (из EquipmentController)</summary>
         public virtual float WeaponBonusDamage => 0f;
 
@@ -316,7 +318,7 @@ namespace CultivationGame.Combat
                 ArmorCoverage = ArmorCoverage,
                 DamageReduction = DamageReduction,
                 ArmorValue = ArmorValue,
-                DodgePenalty = 0f, // TODO: из equipped armor
+                DodgePenalty = 0f, // ФАЗА 1: реализовано через EquipmentController в PlayerController/NPCController
                 ParryBonus = WeaponParryBonus,   // FIX CMB-C03: сырой бонус оружия
                 BlockBonus = ShieldBlockBonus,    // FIX CMB-C03: сырой бонус щита
                 BodyMaterial = BodyMaterial,
