@@ -384,7 +384,11 @@ namespace CultivationGame.Editor
             asset.color = ParseColor(data.color);
 
             // Relationships
+            #pragma warning disable CS0618 // В-12: oppositeElement устарело, но сохраняем обратную совместимость при загрузке
             asset.oppositeElement = ParseElement(data.opposite);
+            #pragma warning restore CS0618
+            // В-12: дублируем в новый список oppositeElements
+            asset.oppositeElements = new List<Element> { ParseElement(data.opposite) };
             asset.affinityElements = ParseElementList(data.affinities);
             asset.weakToElements = ParseElementList(data.weakTo);
 
