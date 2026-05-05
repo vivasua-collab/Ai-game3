@@ -6,6 +6,7 @@
 // Создан: 2026-03-31 14:08:00 UTC
 // Редактировано: 2026-05-04 07:25:00 UTC — ФАЗА 7: WeaponBonusDamage + FormationBuffMultiplier
 // Редактировано: 2026-05-07 10:00:00 UTC — ФАЗА 1: TODO обновлены (реализовано через EquipmentController)
+// Редактировано: 2026-05-05 14:30:00 MSK — FIX: #pragma warning disable CS0618 для переходных Obsolete-свойств
 // Редактировано: 2026-05-05 10:05:00 UTC
 // ============================================================================
 
@@ -307,7 +308,9 @@ namespace CultivationGame.Combat
                 TechniqueGrade = TechniqueGrade.Common,
                 IsUltimate = false,
                 IsQiTechnique = false,
+                #pragma warning disable CS0618 // CombatantBase: переходный период до подключения EquipmentController
                 WeaponBonusDamage = WeaponBonusDamage,  // ФАЗА 7: слой 1b
+                #pragma warning restore CS0618
                 // FIX С-02: Поля для формулы урона оружия (по умолчанию 0 — fallback на WeaponBonusDamage)
                 WeaponDamage = 0f,
                 StrBonusRatio = 0.5f,
@@ -330,12 +333,16 @@ namespace CultivationGame.Combat
                 QiDefense = QiDefense,
                 Agility = Agility,
                 Strength = Strength,
+                #pragma warning disable CS0618 // CombatantBase: переходный период до подключения EquipmentController
                 ArmorCoverage = ArmorCoverage,
                 DamageReduction = DamageReduction,
                 ArmorValue = ArmorValue,
+                #pragma warning restore CS0618
                 DodgePenalty = 0f, // ФАЗА 1: реализовано через EquipmentController в PlayerController/NPCController
+                #pragma warning disable CS0618
                 ParryBonus = WeaponParryBonus,   // FIX CMB-C03: сырой бонус оружия
                 BlockBonus = ShieldBlockBonus,    // FIX CMB-C03: сырой бонус щита
+                #pragma warning restore CS0618
                 // В-01: Эффективность парирования/блока (по умолчанию как было захардкожено)
                 BlockEffectiveness = 0.5f,
                 ShieldEffectiveness = 0.7f,

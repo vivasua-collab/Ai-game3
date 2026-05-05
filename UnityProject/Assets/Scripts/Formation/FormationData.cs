@@ -3,6 +3,7 @@
 // Cultivation World Simulator
 // Создано: 2026-04-03 13:16:34 UTC
 // Редактировано: 2026-04-11 07:30:00 UTC — contourQiOverride и ContourQi: int→long
+// Редактировано: 2026-05-05 14:30:00 MSK — FormationEffect: добавлено поле duration
 // ============================================================================
 //
 // Источник: docs/FORMATION_SYSTEM.md
@@ -94,6 +95,9 @@ namespace CultivationGame.Formation
         [Header("Damage/Heal")]
         public int tickValue = 0;
         public float tickInterval = 1f; // 0 = постоянный эффект
+
+        [Header("Duration")]
+        public float duration = 0f; // 0 = мгновенный, >0 = длительность в секундах (щиты, HoT/DoT)
 
         [Header("Control")]
         public ControlType controlType = ControlType.Slow;

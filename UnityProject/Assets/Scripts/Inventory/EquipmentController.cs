@@ -7,6 +7,7 @@
 // Редактировано: 2026-04-20 06:50:00 UTC — StorageRingData наследует от EquipmentData (FIX CS0184)
 // Редактировано: 2026-04-27 18:15:00 UTC — строчная модель инвентаря
 // Редактировано: 2026-05-07 10:00:00 UTC — ФАЗА 1: бонусы оружия/брони для боевой системы
+// Редактировано: 2026-05-05 14:30:00 MSK — FIX: bonus.bonus → bonus.value (С-07)
 // ============================================================================
 // Изменения v2.0:
 // - Убрана система слоёв («матрёшка») для видимых слотов — 1 предмет на слот
@@ -666,7 +667,7 @@ namespace CultivationGame.Inventory
             {
                 if (string.Equals(bonus.statName, statName, System.StringComparison.OrdinalIgnoreCase))
                 {
-                    return bonus.isPercentage ? bonus.bonus : bonus.bonus * effectivenessMult;
+                    return bonus.isPercentage ? bonus.value : bonus.value * effectivenessMult;
                 }
             }
             return 0f;
@@ -730,8 +731,8 @@ namespace CultivationGame.Inventory
             // Бонусы к характеристикам — множитель эффективности (×0.5..×3.25)
             foreach (var bonus in data.statBonuses)
             {
-                // FIX EQP-BUG-02: используем рассчитанное value, а не bonus.bonus напрямую
-                float value = bonus.isPercentage ? bonus.bonus : bonus.bonus * effectivenessMult;
+                // FIX EQP-BUG-02: используем рассчитанное value из StatBonus.value
+                float val = bonus.isPercentage ? bonus.value : bonus.value * effectivenessMult;
 
                 switch (bonus.statName.ToLower())
                 {

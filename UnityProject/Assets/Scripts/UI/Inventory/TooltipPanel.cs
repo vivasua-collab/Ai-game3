@@ -5,6 +5,7 @@
 // Создано: 2026-04-18 20:00:00 UTC
 // Редактировано: 2026-04-27 18:15:00 UTC — строчная модель инвентаря
 // Редактировано: 2026-04-29 08:55:00 UTC — GradeColors в грейде и тире (UI.2, UI.3)
+// Редактировано: 2026-05-05 14:30:00 MSK — FIX: bonus.bonus → bonus.value (С-07)
 // ============================================================================
 // Расширенная карточка предмета по INVENTORY_UI_DRAFT.md §5.4:
 // - Редкость (цвет рамки)
@@ -368,9 +369,9 @@ namespace CultivationGame.UI.Inventory
             {
                 foreach (var bonus in equip.statBonuses)
                 {
-                    string sign = bonus.bonus >= 0 ? "+" : "";
+                    string sign = bonus.value >= 0 ? "+" : "";
                     string pct = bonus.isPercentage ? "%" : "";
-                    sb.AppendLine($"  {GetStatDisplayName(bonus.statName)}: {sign}{bonus.bonus:F0}{pct}");
+                    sb.AppendLine($"  {GetStatDisplayName(bonus.statName)}: {sign}{bonus.value:F0}{pct}");
                 }
             }
 
