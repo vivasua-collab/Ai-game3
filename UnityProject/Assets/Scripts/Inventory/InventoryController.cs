@@ -318,6 +318,8 @@ namespace CultivationGame.Inventory
                 foreach (var slot in slots)
                 {
                     if (remaining <= 0) break;
+                    // FIX ИСП-ИНВ-09: NullRef guard при null ItemData
+                    if (slot.ItemData == null) continue;
                     if (slot.ItemData.itemId != itemData.itemId) continue;
                     if (slot.Count >= itemData.maxStack) continue;
 
@@ -448,6 +450,7 @@ namespace CultivationGame.Inventory
         private bool RemoveFromSlot(InventorySlot slot, int count)
         {
             if (count <= 0) return false;
+            if (slot.ItemData == null) return false;  // FIX ИСП-ИНВ-09: NullRef guard
             if (count > slot.Count)
                 count = slot.Count;
 
@@ -745,6 +748,8 @@ namespace CultivationGame.Inventory
             rawVolume = 0f;
             foreach (var slot in slots)
             {
+                // FIX ИСП-ИНВ-09: NullRef guard при null ItemData
+                if (slot.ItemData == null) continue;
                 rawWeight += slot.ItemData.weight * slot.Count;
                 rawVolume += slot.ItemData.volume * slot.Count;
             }
@@ -764,6 +769,8 @@ namespace CultivationGame.Inventory
             var data = new List<InventorySlotSaveData>();
             foreach (var slot in slots)
             {
+                // FIX ИСП-ИНВ-09: NullRef guard при null ItemData
+                if (slot.ItemData == null) continue;
                 data.Add(new InventorySlotSaveData
                 {
                     itemId = slot.ItemData.itemId,

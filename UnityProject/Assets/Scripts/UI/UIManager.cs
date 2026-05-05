@@ -207,6 +207,9 @@ namespace CultivationGame.UI
                 Time.timeScale = 0f;
             }
             
+            // FIX: Разблокируем курсор для главного меню
+            UpdateCursorState(GameState.MainMenu);
+            
             OnMenuOpened?.Invoke();
         }
         
@@ -223,6 +226,23 @@ namespace CultivationGame.UI
             {
                 newPanel.SetActive(true);
             }
+            
+            // Управление курсором — всегда свободен в 2D top-down игре
+            UpdateCursorState(newState);
+        }
+        
+        /// <summary>
+        /// FIX: Управление курсором на основе состояния UI.
+        /// В 2D top-down игре курсор ВСЕГДА свободен и видим —
+        /// игроку нужно кликать по NPC, предметам, кнопке DEBUG и т.д.
+        /// </summary>
+        private void UpdateCursorState(GameState state)
+        {
+            // В 2D top-down игре курсор всегда свободен для взаимодействия с миром.
+            // Если нужен LockMode для конкретного режима (например, от первого лица),
+            // это нужно обрабатывать в соответствующем контроллере, а не в UIManager.
+            Cursor.lockState = CursorLockMode.None;
+            Cursor.visible = true;
         }
         
         /// <summary>
@@ -299,6 +319,10 @@ namespace CultivationGame.UI
                     break;
                 case GameState.Dialog:
                     // Не закрываем диалог через ESC
+                    break;
+                case GameState.Inventory:
+                    // FIX: Явный обработчик — закрываем инвентарь, возврат к Playing
+                    ReturnToPrevious();
                     break;
                 default:
                     ReturnToPrevious();

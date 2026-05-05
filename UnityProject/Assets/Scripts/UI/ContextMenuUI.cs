@@ -11,6 +11,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.EventSystems;
+using UnityEngine.InputSystem;
 using UnityEngine.UI;
 using TMPro;
 
@@ -115,17 +116,20 @@ namespace CultivationGame.UI
         private void Update()
         {
             // FIX BUG-INTERACT-02: Закрытие по клику ВНЕ меню.
-            // Раньше: Input.GetMouseButtonDown(0) убивал меню при ЛЮБОМ клике,
-            // включая клик по собственным кнопкам — onClick НЕ успевал сработать.
-            // Теперь: проверяем, что клик НЕ по элементам этого меню.
-            if (Input.GetMouseButtonDown(0) || Input.GetMouseButtonDown(1))
+            // FIX 2026-05-06: Заменена старая Input система на InputSystem (Mouse.current).
+            if (Mouse.current == null) return;
+
+            bool leftClick = Mouse.current.leftButton.wasPressedThisFrame;
+            bool rightClick = Mouse.current.rightButton.wasPressedThisFrame;
+
+            if (leftClick || rightClick)
             {
                 // Если указатель над элементом меню — НЕ закрываем (кнопка обработает)
                 if (EventSystem.current != null && EventSystem.current.IsPointerOverGameObject())
                 {
                     // Проверяем, попал ли клик на дочерний элемент этого меню
                     var eventData = new PointerEventData(EventSystem.current);
-                    eventData.position = Input.mousePosition;
+                    eventData.position = Mouse.current.position.value;
                     var results = new List<RaycastResult>();
                     EventSystem.current.RaycastAll(eventData, results);
 

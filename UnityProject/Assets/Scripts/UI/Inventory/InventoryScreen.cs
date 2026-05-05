@@ -193,9 +193,8 @@ namespace CultivationGame.UI.Inventory
 
             gameObject.SetActive(true);
 
-            // Разблокируем курсор
-            Cursor.lockState = CursorLockMode.None;
-            Cursor.visible = true;
+            // Управление курсором теперь в UIManager.UpdateCursorState()
+            // Курсор разблокируется при SetState(GameState.Inventory)
 
             // Обновляем данные
             Refresh();
@@ -208,9 +207,8 @@ namespace CultivationGame.UI.Inventory
         {
             if (!isOpen) return;
 
-            // Возвращаем курсор
-            Cursor.lockState = CursorLockMode.Locked;
-            Cursor.visible = false;
+            // Управление курсором теперь в UIManager.UpdateCursorState()
+            // Курсор блокируется при SetState(GameState.Playing)
 
             gameObject.SetActive(false);
         }
@@ -323,19 +321,11 @@ namespace CultivationGame.UI.Inventory
         {
             if (Keyboard.current == null) return;
 
-            // ESC закрывает инвентарь
-            if (Keyboard.current.escapeKey.wasPressedThisFrame)
-            {
-                Close();
-                // Уведомляем UIManager через singleton (FIX: был FindFirstObjectByType)
-                if (UIManager.Instance != null)
-                    UIManager.Instance.ReturnToPrevious();
-            }
-
-            // Редактировано: 2026-04-25 — FIX: Убрана обработка клавиши I из InventoryScreen.
-            // UIManager — единственный обработчик переключения инвентаря.
-            // Раньше InventoryScreen тоже обрабатывал I → Close() + ToggleInventory(),
-            // что вызывало двойной toggle и конфликт SetActive.
+            // Редактировано: 2026-05-06 — FIX: Убрана обработка ESC из InventoryScreen.
+            // UIManager — единственный обработчик ESC (HandleEscape → default → ReturnToPrevious).
+            // Раньше InventoryScreen тоже обрабатывал ESC → Close() + ReturnToPrevious(),
+            // что вызывало двойной ReturnToPrevious() и прыжок через 2 состояния.
+            // Аналогично фиксации двойной обработки клавиши I (2026-04-25).
         }
 
         #endregion
