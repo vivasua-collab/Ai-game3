@@ -1,6 +1,6 @@
-# Чекпоинт: Аудит инвентаря — 3 прогона (генерация/подбор → хранение/события → UI)
+# Чекпоинт: Аудит инвентаря — 5 прогонов + верификация
 # Дата первичного аудита: 2026-05-05 14:54:45 MSK
-# Дата 3 прогонов: 2026-05-05 14:54:45 MSK
+# Дата верификации + прогонов 4-5: 2026-05-05 15:59:29 MSK
 # Статус: in_progress
 
 ## Симптом
@@ -8,347 +8,415 @@
 
 ---
 
-## 🔴 КРИТИЧЕСКИЕ БАГИ
+## ВЕРИФИКАЦИЯ БАГОВ (прогоны 1-3)
 
-### БАГ-ИНВ-01: Строки инвентаря неактивны (SetActive(true) не вызывается)
+Все 23 бага из прогонов 1-3 **подтверждены** чтением исходного кода:
+- ✅ ПОДТВЕРЖДЁН: 23/23
+- ⚠️ ЧАСТИЧНО: 0
+- ❌ ОПРОВЕРГНУТ: 0
+
+---
+
+## 🔴 КРИТИЧЕСКИЕ БАГИ (прогоны 1-3)
+
+### БАГ-ИНВ-01: Строки инвентаря неактивны ✅
 - **Файл:** `UI/Inventory/BackpackPanel.cs:152`
-- **Прогон:** 3 (UI)
-- **Причина:** `Phase17InventoryUI.cs:423` создаёт префаб строки `slotGO.SetActive(false)`.
-  При `Instantiate()` клон наследует inactive-состояние, но `rowGO.SetActive(true)` **нигде не вызывается**.
-- **Следствие:** Все строки рюкзака существуют в иерархии, но невидимы.
-  Инвентарь **полностью нефункционален** — пользователь видит пустую панель.
-- **Исправление:** Добавить `rowGO.SetActive(true)` после `Instantiate()` в `CreateRowUI()`
-- **Статус:** ⏳ не исправлено
+- Instantiate() без SetActive(true). Префаб деактивирован Phase17:423.
 
-### БАГ-ИНВ-02: Боевой лут не поступает в инвентарь игрока
+### БАГ-ИНВ-02: Боевой лут не поступает в инвентарь ✅
 - **Файл:** `Combat/CombatManager.cs:440`
-- **Прогон:** 1 (Генерация/подбор)
-- **Причина:** `OnLootGenerated` вызывается, но **нет ни одного подписчика**.
-  `LootResult` (предметы + Qi + XP) генерируется и логируется, но никогда не передаётся
-  в `InventoryController` или `QiController` игрока.
-- **Уточнение:** `LootEntry` содержит только `string ItemId`, без `ItemData` —
-  нужен резолвер для конвертации ItemId → ItemData.
-- **Следствие:** Весь лут из боя потерян. QiAbsorbed и CultivationExp не начисляются.
-- **Исправление:** Создать LootCollector на Player GO, подписать на OnLootGenerated,
-  конвертировать LootEntry.ItemId → ItemData, вызвать AddItem(), применить Qi/Exp
-- **Статус:** ⏳ не исправлено
+- OnLootGenerated — 0 подписчиков. LootResult потерян.
 
-### БАГ-ИНВ-12: Equip() уничтожает старый предмет при замене
+### БАГ-ИНВ-12: Equip() уничтожает старый предмет ✅
 - **Файл:** `Inventory/EquipmentController.cs:260-265, 282-293`
-- **Прогон:** 2 (Хранение/события)
-- **Причина:** При экипировке нового предмета в занятый слот:
-  `oldItem = Unequip(slot)` — снятый предмет **возвращён, но НИКОГДА НЕ ИСПОЛЬЗУЕТСЯ**.
-  Для 2H оружия: `Unequip(WeaponOff)` + `Unequip(WeaponMain)` — оба теряются.
-- **Следствие:** Снятое оружие/броня при замене безвозвратно удаляется.
-- **Исправление:** EquipmentController.Equip() должен возвращать oldItem вызывающему
-  (InventoryController.EquipFromInventory), чтобы тот положил его в рюкзак
-- **Статус:** ⏳ не исправлено
+- oldItem = Unequip(slot) — возвращён, но НИКОГДА НЕ ИСПОЛЬЗУЕТСЯ.
+- EquipTwoHand: Unequip(WeaponOff) + Unequip(WeaponMain) — оба теряются.
 
-### БАГ-ИНВ-13: EquipmentData стакается (stackable=true по умолчанию)
-- **Файл:** `Data/ScriptableObjects/ItemData.cs:58` + `InventoryController.cs:307-333`
-- **Прогон:** 2 (Хранение/события)
-- **Причина:** `ItemData.stackable` по умолчанию `true`. `EquipmentData` наследует это.
-  При AddItem() два меча одного типа но разного грейда объединятся в один стек,
-  grade/durability второго — **потеряны**.
-- **Исправление:** Принудительно `stackable = false` для EquipmentData в фабрике,
-  или проверка `is EquipmentData` в AddItem() → всегда новый слот
-- **Статус:** ⏳ не исправлено
+### БАГ-ИНВ-13: EquipmentData стакается ✅
+- **Файл:** `Data/ScriptableObjects/ItemData.cs:58`
+- stackable=true по умолчанию. EquipmentData наследует.
+- EquipmentSOFactory ставит stackable=false, но ручные SO — нет.
 
 ---
 
-## 🟠 ВЫСОКИЕ БАГИ
+## 🟠 ВЫСОКИЕ БАГИ (прогоны 1-3)
 
-### БАГ-ИНВ-03: GameEvents.OnItemAdded никогда не вызывается
-- **Файл:** `Inventory/InventoryController.cs:298-364` vs `Core/GameEvents.cs:571-597`
-- **Прогон:** 1+2 (Генерация + Хранение)
-- **Причина:** InventoryController.AddItem() стреляет локальными событиями,
-  но **никогда не вызывает** `GameEvents.TriggerItemAdded()`.
-  Аналогично для TriggerItemRemoved/TriggerItemEquipped/TriggerItemUnequipped/TriggerItemCrafted.
-- **Следствие:** Квесты, достижения, туториалы — полностью изолированы от инвентаря.
-- **Исправление:** Построить мост — добавить GameEvents.TriggerXxx() в AddItem/RemoveFromSlot/Equip/Unequip
-- **Статус:** ⏳ не исправлено
+### БАГ-ИНВ-03: GameEvents.OnItemAdded никогда не вызывается ✅
+- 5 событий: TriggerItemAdded/Removed/Equipped/Unequipped/Crafted — 0 вызовов, 0 подписчиков.
 
-### БАГ-ИНВ-04: ResourcePickup — ServiceLocator.Get вместо GetOrFind
-- **Файл:** `Tile/ResourcePickup.cs:147`
-- **Прогон:** 1 (Генерация/подбор)
-- **Причина:** InventoryController **не зарегистрирован** в ServiceLocator.
-  `Get<InventoryController>()` → всегда null. `GetOrFind` нашёл бы через FindFirstObjectByType.
-- **Следствие:** Fallback-путь подбора не работает, предмет теряется.
-- **Исправление:** Заменить `Get` → `GetOrFind` (или зарегистрировать InventoryController)
-- **Статус:** ⏳ не исправлено
+### БАГ-ИНВ-04: ServiceLocator.Get вместо GetOrFind ✅
+- ResourcePickup.cs:147 — Get<> → null. InventoryController не зарегистрирован.
 
-### БАГ-ИНВ-14: ResourcePickup уничтожает предмет при отсутствии инвентаря
-- **Файл:** `Tile/ResourcePickup.cs:199-201`
-- **Прогон:** 1 (Генерация/подбор)
-- **Причина:** Если InventoryController не найден, `TryAddToInventory` возвращает `true`,
-  и Pickup() вызывает `Destroy(gameObject)`. Предмет исчезает из мира бесследно.
-- **Исправление:** Возвращать `false` при отсутствии инвентаря — предмет остаётся в мире
-- **Статус:** ⏳ не исправлено
+### БАГ-ИНВ-14: Предмет уничтожается без инвентаря ✅
+- ResourcePickup.cs:199-201 — return true → Destroy(gameObject).
 
-### БАГ-ИНВ-05: Не подключены поля InventorySlotUI в Phase17
-- **Файл:** `Editor/SceneBuilder/Phase17InventoryUI.cs:411-420`
-- **Прогон:** 3 (UI)
-- **Причина:** Из 8 `[SerializeField]` полей подключены только 5:
-  - ✅ iconImage, nameText, countText, weightText, volumeText
-  - ❌ background (Image на root GO) — не подключена
-  - ❌ border (не создана)
-  - ❌ durabilityBar (не создана)
-- **Следствие:** Нет подсветки грейда, нет рамки редкости, нет полоски прочности.
-  Hover-подсветка не работает (background = null).
-- **Исправление:** Подключить background, создать и подключить border и durabilityBar
-- **Статус:** ⏳ не исправлено
+### БАГ-ИНВ-05: InventorySlotUI — 3 поля не подключены ✅
+- background, border, durabilityBar — не созданы/не подключены в Phase17.
 
-### БАГ-ИНВ-06: spiritStoragePanel не подключена к InventoryScreen
-- **Файл:** `Editor/SceneBuilder/Phase17InventoryUI.cs:906,133-176`
-- **Прогон:** 3 (UI)
-- **Причина:** CreateSpiritStoragePanel() — void, не возвращает GO.
-  WireInventoryScreenReferences() не назначает spiritStoragePanel.
-- **Следствие:** Вкладка Spirit Storage **полностью нефункциональна** — кнопка есть, панель не показывается.
-- **Исправление:** Вернуть GO из CreateSpiritStoragePanel, подключить в WireInventoryScreenReferences
-- **Статус:** ⏳ не исправлено
+### БАГ-ИНВ-06: spiritStoragePanel не подключена ✅
+- CreateSpiritStoragePanel() — void, не возвращает GO. WireInventoryScreenReferences не назначает.
 
-### БАГ-ИНВ-15: InventoryController не зарегистрирован в ServiceLocator
-- **Файл:** Вся кодовая база
-- **Прогон:** 2 (Хранение/события)
-- **Причина:** Ни в одном файле не вызывается `ServiceLocator.Register<InventoryController>()`.
-  EquipmentController тоже не зарегистрирован.
-- **Следствие:** ServiceLocator.Get<T>() → всегда null. Только GetOrFind работает.
-- **Исправление:** Зарегистрировать через RegisteredBehaviour<T> или в GameInitializer
-- **Статус:** ⏳ не исправлено
+### БАГ-ИНВ-15: InventoryController не зарегистрирован в ServiceLocator ✅
+- Register<InventoryController> — 0 результатов. EquipmentController тоже.
 
-### БАГ-ИНВ-16: OnInventoryFull — нулевые подписчики
-- **Файл:** `Inventory/InventoryController.cs:95`
-- **Прогон:** 2 (Хранение/события)
-- **Причина:** Событие стреляет при переполнении, но **ни один код не подписан**.
-- **Следствие:** Пользователь не получает уведомления при полном инвентаре.
-- **Исправление:** Создать ToastController для подписки на OnInventoryFull
-- **Статус:** ⏳ не исправлено
+### БАГ-ИНВ-16: OnInventoryFull — 0 подписчиков ✅
+- InventoryController.cs:95 — событие стреляет, никто не слушает.
 
 ---
 
-## 🟡 СРЕДНИЕ БАГИ
+## 🟡 СРЕДНИЕ БАГИ (прогоны 1-3)
 
-### БАГ-ИНВ-17: Дублирующиеся таблицы маппинга resourceId → ItemData
-- **Файлы:** `Player/PlayerController.cs:855-922`, `Tile/ResourcePickup.cs:228-260`
-- **Прогон:** 1 (Генерация/подбор)
-- **Причина:** PlayerController.CreateResourceItemData() и ResourcePickup.CreateTemporaryItemData()
-  независимо маппят resourceId → ItemData с **разными результатами**:
-  - herb: "Трава"/maxStack=50 vs "Целебная трава"/maxStack=99
-  - berries: "Ягоды"/maxStack=30 vs "Ягоды"/maxStack=99
-- **Следствие:** Предметы одного типа подобранные через разные пути — разные метаданные,
-  проблемы со стаками, разные лимиты.
-- **Исправление:** Единый ItemDatabase или статический метод для resourceId → ItemData
-- **Статус:** ⏳ не исправлено
+### БАГ-ИНВ-17: Дублирующиеся таблицы маппинга ✅
+- PlayerController vs ResourcePickup — разные nameRu, maxStack для одного resourceId.
 
-### БАГ-ИНВ-18: ResourceSpawner создаёт ResourcePickup без ItemData
-- **Файл:** `Tile/ResourceSpawner.cs:299-303`
-- **Прогон:** 1 (Генерация/подбор)
-- **Причина:** Вызывает Initialize(resourceId, amount) — 2-параметровый overload без ItemData.
-  При подборе — дорогой fallback: Resources.LoadAll<ItemData>() или CreateTemporaryItemData().
-- **Исправление:** Передавать ItemData при создании ResourcePickup
-- **Статус:** ⏳ не исправлено
+### БАГ-ИНВ-18: ResourceSpawner без ItemData ✅
+- Initialize(resourceId, amount) — 2-параметровый overload без ItemData.
 
-### БАГ-ИНВ-07: Hover сбрасывает Grade-тинт
-- **Файл:** `UI/Inventory/InventorySlotUI.cs:230-236`
-- **Прогон:** 3 (UI)
-- **Причина:** SetHoverHighlight(false) сбрасывает цвет в `normalColor` вместо
-  оригинального grade-тинта. После наведения на экипировку подсветка грейда пропадает.
-- **Исправление:** Сохранять текущий цвет фона, восстанавливать при un-hover
-- **Статус:** ⏳ не исправлено
+### БАГ-ИНВ-07: Hover сбрасывает Grade-тинт ✅
+- SetHoverHighlight(false) → normalColor вместо grade tint.
 
-### БАГ-ИНВ-19: AddItem частичное добавление — вызывающий не знает сколько добавлено
-- **Файл:** `Inventory/InventoryController.cs:298-364`
-- **Прогон:** 2 (Хранение/события)
-- **Причина:** AddItem(itemData, 50) при лимите 30 — добавит 30, вернёт lastSlot.
-  Вызывающий не может узнать сколько реально добавлено.
-  ResourcePickup при этом Destroy(gameObject) даже если подобрана только часть.
-- **Исправление:** Изменить сигнатуру на `(int addedCount, InventorySlot lastSlot)` или TryAddItem с out
-- **Статус:** ⏳ не исправлено
+### БАГ-ИНВ-19: AddItem — частичное добавление ✅
+- Возвращает InventorySlot, а не addedCount. ResourcePickup Destroy даже при частичном подборе.
 
-### БАГ-ИНВ-20: LoadSaveData теряет предметы через CanFitItem
-- **Файл:** `Inventory/InventoryController.cs:746-770`
-- **Прогон:** 2 (Хранение/события)
-- **Причина:** LoadSaveData вызывает AddItem() для каждого слота. AddItem проверяет лимиты.
-  Если рюкзак ещё не назначен (load order), лимиты базовые (30кг/50л),
-  предметы сверх лимита **тихо отбрасываются**.
-- **Исправление:** LoadSaveData: временно отключить лимиты при загрузке
-- **Статус:** ⏳ не исправлено
+### БАГ-ИНВ-20: LoadSaveData теряет предметы через CanFitItem ✅
+- AddItem() внутри LoadSaveData проверяет лимиты — предметы тихо теряются.
 
-### БАГ-ИНВ-21: Texture2D утечка из CreateProceduralIcon
-- **Файл:** `Generators/EquipmentSOFactory.cs:278-307`
-- **Прогон:** 1 (Генерация/подбор)
-- **Причина:** Каждый CreateRuntimeFromWeapon/Armor вызывает CreateProceduralIcon() →
-  new Texture2D, никогда не уничтожается. Утечка GPU памяти.
-- **Исправление:** Отслеживать и Destroy текстуры при удалении предмета
-- **Статус:** ⏳ не исправлено
+### БАГ-ИНВ-21: Texture2D утечка из CreateProceduralIcon ✅
+- new Texture2D никогда не Destroy.
 
 ---
 
-## 🟢 НИЗКИЕ БАГИ
+## 🟢 НИЗКИЕ БАГИ (прогоны 1-3)
 
-### БАГ-ИНВ-22: HasFreeSpace() всегда true
-- **Файл:** `Inventory/InventoryController.cs:283-288`
-- **Прогон:** 2
-- **Причина:** `return true; // Легаси-совместимость`
+### БАГ-ИНВ-22: HasFreeSpace() всегда true ✅
+### БАГ-ИНВ-23: ScrollRect без Scrollbar ✅
+### БАГ-ИНВ-24: Дублирующий ContextMenu GO ✅
+### БАГ-ИНВ-25: Анимация открытия/закрытия не реализована ✅
+### БАГ-ИНВ-26: Hard-coded "Player" тег ✅
+### БАГ-ИНВ-27: LootEntry — string ItemId, нет ItemData ✅
+
+---
+---
+
+# ПРОГОН 4: ПОТРЕБИТЕЛИ ИНВЕНТАРЯ
+
+## Обнаруженные системы (10)
+
+| Система | Статус | Связь с инвентарём |
+|---------|--------|-------------------|
+| Save/Load | ✅ Реальная | Прямая: GetSaveData/LoadSaveData |
+| Crafting | ✅ Реальная | Прямая: AddItem/RemoveItemById |
+| Quests | ✅ Реальная | Lazy ref, но мост сломан |
+| Trading | ❌ Не существует | NPCType.Merchant определён, но нет реализации |
+| Achievement | 🟡 Stub | Только AchievementSaveData, нет контроллера |
+| Tutorial | 🟡 Stub | Только флаг ShowTutorials, нет системы |
+| Consumable | 🟠 Частичная | UseItem() удаляет, но 0 эффектов |
+| Drop/Discard | 🟠 Частичная | RemoveSlot() без спавна в мире |
+| Sort/Filter | ✅ Частичная | SortInventory есть, Filter на Backpack — нет |
+| DeathLoot | ✅ Реальная | Генерирует, но НЕ доставляет |
+
+## 🔴 КРИТИЧЕСКИЕ БАГИ (прогон 4)
+
+### БАГ-ИНВ-28: QuestController.NotifyItemCollected — никогда не вызывается
+- **Файл:** `Quest/QuestController.cs:452-466`
+- **Причина:** InventoryController.AddItem() не вызывает GameEvents.TriggerItemAdded(),
+  а никто не вызывает NotifyItemCollected напрямую.
+- **Следствие:** Квесты на сбор предметов **никогда не обновляются**.
 - **Статус:** ⏳ не исправлено
 
-### БАГ-ИНВ-23: ScrollRect без Scrollbar
-- **Файл:** `Editor/SceneBuilder/Phase17InventoryUI.cs:767-771`
-- **Прогон:** 3
-- **Причина:** verticalScrollbarVisibility = AutoHide, но verticalScrollbar = null
+### БАГ-ИНВ-29: Квестовые награды теряются при Resources.Load
+- **Файл:** `Quest/QuestController.cs:690`
+- **Причина:** `Resources.Load<ItemData>($"Items/{itemId}")` — хардкод путь.
+  Большинство предметов — runtime SO, не в Resources. Награда теряется.
 - **Статус:** ⏳ не исправлено
 
-### БАГ-ИНВ-24: Дублирующий ContextMenu GO
-- **Файл:** `Editor/SceneBuilder/Phase17InventoryUI.cs:1550-1565`
-- **Прогон:** 3
-- **Причина:** Standalone ContextMenu GO создан, но никогда не используется.
-  Реальное меню создаётся из contextMenuPrefab в DragDropHandler.
+### БАГ-ИНВ-30: UseItem() удаляет предмет без эффекта
+- **Файл:** `UI/Inventory/DragDropHandler.cs:579-584`
+- **Причина:** RemoveItem() вызывается, но эффект (лечение, бафф) **не применяется**.
+- **Следствие:** Расходники исчезают бесполезно.
 - **Статус:** ⏳ не исправлено
 
-### БАГ-ИНВ-25: Анимация открытия/закрытия не реализована
-- **Файл:** `UI/Inventory/InventoryScreen.cs:60-62`
-- **Прогон:** 3
-- **Причина:** Поля openCloseDuration и openCurve существуют, но не используются.
-  SetActive(true/false) мгновенное.
+### БАГ-ИНВ-31: Нет системы ConsumableEffect
+- **Причина:** ItemData не имеет полей для эффектов (healAmount, buff, duration).
+  Вся механика расходников — no-op.
 - **Статус:** ⏳ не исправлено
 
-### БАГ-ИНВ-26: Hard-coded "Player" тег в ResourcePickup
-- **Файл:** `Tile/ResourcePickup.cs:72`
-- **Прогон:** 1
-- **Причина:** `other.CompareTag("Player")` — NPC не могут подбирать предметы
+### БАГ-ИНВ-32: Crafting LoadSaveData не восстанавливает рецепты
+- **Файл:** `Crafting/CraftingController.cs:587-598`
+- **Причина:** LoadSaveData восстанавливает craftingSkills, но **игнорирует** knownRecipeIds.
+  Изученные рецепты теряются при загрузке.
 - **Статус:** ⏳ не исправлено
 
-### БАГ-ИНВ-27: LootEntry содержит string ItemId, нет ItemData
-- **Файл:** `Combat/LootGenerator.cs:29-47`
-- **Прогон:** 1
-- **Причина:** Нет резолвера для конвертации ItemId → ItemData.
-  Блокирует исправление БАГ-ИНВ-02.
+### БАГ-ИНВ-33: Craft objectives квестов никогда не триггерятся
+- **Файл:** `Quest/QuestController.cs`
+- **Причина:** QuestObjectiveType.Craft определён, но CraftingController
+  никогда не вызывает GameEvents.TriggerItemCrafted() или аналогичный метод.
 - **Статус:** ⏳ не исправлено
+
+## 🟠 ВЫСОКИЕ БАГИ (прогон 4)
+
+### БАГ-ИНВ-34: Quest.CheckRequirements — инвентарь не проверяется
+- **Файл:** `Quest/QuestData.cs:93-134`
+- **Причина:** CheckRequirements принимает Dictionary<string, int> inventoryItems,
+  но **никто не собирает** этот словарь из InventoryController.
+- **Статус:** ⏳ не исправлено
+
+### БАГ-ИНВ-35: Квестовые награды — золото/дух.камни не реализованы
+- **Файл:** `Quest/QuestController.cs:664-675`
+- **Статус:** ⏳ не исправлено
+
+### БАГ-ИНВ-36: Drop — предметы уничтожаются безвозвратно
+- **Файл:** `UI/Inventory/DragDropHandler.cs:620-625`
+- **Причина:** RemoveSlot() удаляет, но ResourcePickup в мир не спавнится.
+  Нет подтверждения перед удалением.
+- **Статус:** ⏳ не исправлено
+
+### БАГ-ИНВ-37: Торговля — система отсутствует полностью
+- NPCType.Merchant определён, но TradeController/ShopController не существует.
+- **Статус:** ⏳ не исправлено
+
+### БАГ-ИНВ-38: Achievement — мёртвый stub
+- AchievementSaveData существует, но нет AchievementController.
+- **Статус:** ⏳ не исправлено
+
+### БАГ-ИНВ-39: Equipment Load — парсинг строки → enum может потерять предмет
+- **Файл:** `Save/SaveManager.cs:855`
+- **Причина:** EquipmentArrayToDict использует строковый ключ для парсинга EquipmentSlot.
+  Ошибка парсинга → потеря экипировки.
+- **Статус:** ⏳ не исправлено
+
+## 🟡 СРЕДНИЕ БАГИ (прогон 4)
+
+### БАГ-ИНВ-40: Crafting — материалы тратятся до броска успеха
+- **Файл:** `Crafting/CraftingController.cs:170-172`
+- Нет диалога подтверждения. materialsLost = true — по дизайну, но без UI.
+
+### БАГ-ИНВ-41: Save — Formation/Buff/Tile/Charger сохранены, но не восстановлены
+- **Файл:** `Save/SaveManager.cs:534-535`
+- Собираются при сохранении, но при загрузке — отбрасываются.
+
+### БАГ-ИНВ-42: NewGame() не сбрасывает инвентарь/экипировку/крафт
+- **Файл:** `Save/SaveManager.cs:877-884`
+
+### БАГ-ИНВ-43: SortInventory → OnInventoryRebuilt, но UI может не обновиться
+- **Файл:** `Inventory/InventoryController.cs:663`
+
+### БАГ-ИНВ-44: Нет фильтра/поиска для основного инвентаря
+- SpiritStorage и StorageRing имеют Filter, Backpack — нет.
+
+### БАГ-ИНВ-45: Drag-to-outside ничего не делает
+- **Файл:** `UI/Inventory/DragDropHandler.cs:214-216`
+- DropTarget.Outside → «пока не реализуем»
+
+### БАГ-ИНВ-46: Tutorial flag — ShowTutorials сохраняется, но не проверяется
+- **Файл:** `Save/SaveDataTypes.cs:192`
+
+---
+---
+
+# ПРОГОН 5: КРОСС-СИСТЕМНЫЕ ВЗАИМОДЕЙСТВИЯ И ГРАНИЧНЫЕ СЛУЧАИ
+
+## 🔴 КРИТИЧЕСКИЕ БАГИ (прогон 5)
+
+### БАГ-ИНВ-47: NullRef crash при null ItemData в слоте
+- **Файл:** `Inventory/InventoryController.cs:392, 617, 628, 638, 666`
+- **Причина:** RemoveItemById, FindSlotWithItem, CountItem, SortInventory
+  обращаются к `slot.ItemData.itemId` без null-проверки.
+  Повреждённое сохранение → NullReferenceException.
+- **Статус:** ⏳ не исправлено
+
+### БАГ-ИНВ-48: Пустой itemId — некорректное стекание
+- **Файл:** `Inventory/InventoryController.cs:312`
+- **Причина:** Если два разных предмета имеют itemId="" — они объединяются в один стек.
+  CreateTemporaryItemData() не валидирует уникальность itemId.
+- **Статус:** ⏳ не исправлено
+
+### БАГ-ИНВ-49: Resources.LoadAll<ItemData>() на КАЖДЫЙ подбор — катастрофа производительности
+- **Файл:** `Tile/ResourcePickup.cs:213`
+- **Причина:** FindItemDataById() вызывает Resources.LoadAll<ItemData>("Items") без кэша.
+  50 предметов на карте → 50 вызовов LoadAll.
+- **Статус:** ⏳ не исправлено
+
+### БАГ-ИНВ-50: Инвентарь теряется при смене сцены
+- **Файл:** `GameManager.cs:110` vs Player
+- **Причина:** GameManager: DontDestroyOnLoad. InventoryController на Player — НЕТ.
+  При смене сцены Player уничтожается → инвентарь потерян.
+- **Статус:** ⏳ не исправлено
+
+### БАГ-ИНВ-51: Silent data loss при загрузке — отсутствующий ItemData SO
+- **Файл:** `Inventory/InventoryController.cs:754`
+- **Причина:** LoadSaveData: itemDatabase.TryGetValue → false → предмет тихо пропущен.
+  Нет warning, нет fallback.
+- **Статус:** ⏳ не исправлено
+
+### БАГ-ИНВ-52: Silent equipment loss при загрузке — отсутствующий EquipmentData SO
+- **Файл:** `Inventory/EquipmentController.cs:944`
+- **Причина:** Аналогично БАГ-ИНВ-51 для экипировки.
+- **Статус:** ⏳ не исправлено
+
+### БАГ-ИНВ-53: Множественные одновременные AddItem — нет защиты
+- **Файл:** `Tile/ResourcePickup.cs:67` + `Inventory/InventoryController.cs:298`
+- **Причина:** Игрок подбирает 20 предметов за 1 кадр → 20 AddItem().
+  rawWeight/rawVolume инкрементально, события OnItemAdded могут вызвать RefreshList()
+  в середине AddItem — данные в неконсистентном состоянии.
+- **Статус:** ⏳ не исправлено
+
+## 🟠 ВЫСОКИЕ БАГИ (прогон 5)
+
+### БАГ-ИНВ-54: Сломанная экипировка (durability=0) даёт полные статы
+- **Файл:** `Inventory/EquipmentController.cs:850-854`
+- **Причина:** DamageEquipment() при durability=0 только Debug.Log.
+  Предмет остаётся экипированным и продолжает давать статы.
+  GetDurabilityMultiplier не проверяет durability, только grade.
+- **Статус:** ⏳ не исправлено
+
+### БАГ-ИНВ-55: UnequipToInventory перезаписывает durability при merge в стек
+- **Файл:** `Inventory/InventoryController.cs:586-592`
+- **Причина:** AddItem() может объединить снятый предмет в существующий стек,
+  затем `slot.durability = instance.durability` перезаписывает durability стека.
+  Стек из 2 мечей получает durability только последнего.
+- **Статус:** ⏳ не исправлено
+
+### БАГ-ИНВ-56: Runtime ScriptableObjects утечка памяти
+- **Файл:** `Tile/ResourcePickup.cs:232`
+- **Причина:** CreateTemporaryItemData() создаёт SO, которые никогда не Destroy.
+  Сотни подборов за сессию → утечка.
+- **Статус:** ⏳ не исправлено
+
+### БАГ-ИНВ-57: Предметы теряются при загрузке в меньший рюкзак
+- **Файл:** `Inventory/InventoryController.cs:756`
+- **Причина:** LoadSaveData вызывает AddItem() с проверкой CanFitItem.
+  Если рюкзак изменился — предметы тихо отбрасываются.
+- **Статус:** ⏳ не исправлено
+
+### БАГ-ИНВ-58: Stale drag reference — слот изменён во время перетаскивания
+- **Файл:** `UI/Inventory/DragDropHandler.cs:286-296`
+- **Причина:** draggedSlotUI.Slot указывает на удалённый InventorySlot.
+  Если предмет удалён другим путём во время drag — операция на мёртвом объекте.
+- **Статус:** ⏳ не исправлено
+
+### БАГ-ИНВ-59: maxStack=0 на runtime SO — потенциальный бесконечный цикл
+- **Файл:** `Inventory/InventoryController.cs:339`
+- **Причина:** [Range(1,999)] работает в Inspector, но runtime SO его не проверяют.
+  maxStack=0 → toPlace=0 → while(remaining>0) может зависнуть.
+- **Статус:** ⏳ не исправлено
+
+### БАГ-ИНВ-60: Отрицательный weight/volume — коррупция тоталов
+- **Файл:** `Inventory/InventoryController.cs:327-328`
+- **Причина:** Нет валидации ItemData.weight/volume. Отрицательные значения
+  позволяют добавить бесконечное число предметов.
+- **Статус:** ⏳ не исправлено
+
+### БАГ-ИНВ-61: WeaponOff потерян при экипировке 2H оружия
+- **Файл:** `Inventory/EquipmentController.cs:283-286`
+- **Причина:** Unequip(WeaponOff) — возвращаемое значение отброшено.
+  (Дубль БАГ-ИНВ-12, но акцент на WeaponOff)
+- **Статус:** ⏳ не исправлено
+
+### БАГ-ИНВ-62: Хрупкий порядок инициализации
+- **Файл:** `UI/Inventory/InventoryScreen.cs:91-92`
+- **Причина:** Awake() → Initialize() → ServiceLocator.GetOrFind.
+  Если InventoryController.Awake() ещё не выполнился — GetOrFind возвращает null.
+  GameInitializer не инициализирует инвентарь явно.
+- **Статус:** ⏳ не исправлено
+
+## 🟡 СРЕДНИЕ БАГИ (прогон 5)
+
+### БАГ-ИНВ-63: Нет cooldown/рейт-лимита на подбор
+- Игрок в куче из 20 предметов → 20 OnTriggerEnter2D за кадр.
+
+### БАГ-ИНВ-64: InventoryController растёт без ограничений
+- Нет лимита на количество слотов (только вес/объём).
+
+### БАГ-ИНВ-65: GameInitializer не инициализирует системы инвентаря
+- **Файл:** `Core/GameInitializer.cs:174-240`
+- 8 шагов инициализации, ни один не затрагивает Inventory/Equipment.
+
+### БАГ-ИНВ-66: Боевая механика не снимает сломанную экипировку автоматически
+- **Файл:** `Inventory/EquipmentController.cs:850`
+- durability=0 → только Debug.Log, предмет остаётся надетым.
+
+---
+---
+
+## ИТОГОВАЯ СВОДНАЯ СТАТИСТИКА
+
+| Серьёзность | Прогоны 1-3 | Прогон 4 | Прогон 5 | ИТОГО |
+|-------------|:-----------:|:--------:|:--------:|:-----:|
+| 🔴 КРИТИЧЕСКИЕ | 4 | 6 | 7 | **17** |
+| 🟠 ВЫСОКИЕ | 6 | 6 | 8 | **20** |
+| 🟡 СРЕДНИЕ | 7 | 7 | 4 | **18** |
+| 🟢 НИЗКИЕ | 6 | 0 | 0 | **6** |
+| **ВСЕГО** | **23** | **19** | **19** | **61** |
+
+*(Некоторые баги из прогонов 4-5 пересекаются с прогонами 1-3 по корневой причине,
+но раскрывают разные аспекты)*
 
 ---
 
-## 📋 ДИАГРАММА: ПОЛНАЯ ЦЕПОЧКА ДАННЫХ (3 прогона)
+## ТОП-10 КРИТИЧЕСКИХ ИСПРАВЛЕНИЙ (P0)
+
+| # | Баг | Влияние | Объём |
+|---|-----|---------|-------|
+| 1 | БАГ-ИНВ-01: SetActive(true) | Инвентарь невидим | 1 строка |
+| 2 | БАГ-ИНВ-02: Боевой лут потерян | Бой без награды | ~30 строк |
+| 3 | БАГ-ИНВ-12: Equip() теряет старый предмет | Потеря экипировки | ~15 строк |
+| 4 | БАГ-ИНВ-13: EquipmentData стакается | Потеря grade/durability | ~5 строк |
+| 5 | БАГ-ИНВ-28: Quest NotifyItemCollected | Квесты не работают | ~5 строк |
+| 6 | БАГ-ИНВ-30: UseItem() без эффекта | Расходники бесполезны | ~20 строк |
+| 7 | БАГ-ИНВ-47: NullRef на null ItemData | Краш при повреждённых данных | ~5 строк |
+| 8 | БАГ-ИНВ-49: Resources.LoadAll каждый подбор | Катастрофа производительности | ~10 строк |
+| 9 | БАГ-ИНВ-50: Инвентарь теряется при смене сцены | Полная потеря данных | ~3 строки |
+| 10 | БАГ-ИНВ-51: Silent loss при загрузке | Предметы теряются бесследно | ~5 строк |
+
+---
+
+## ДИАГРАММА: ПОТРЕБИТЕЛИ ИНВЕНТАРЯ (прогон 4)
 
 ```
-═══════════════════ ПРОГОН 1: ГЕНЕРАЦИЯ И ПОДБОР ═══════════════════
+                    ┌─────────────────────┐
+                    │  InventoryController │
+                    │    (центральный)     │
+                    └──┬──┬──┬──┬──┬──┬──┘
+                       │  │  │  │  │  │
+     ┌─────────────────┘  │  │  │  │  └───────────────┐
+     │                    │  │  │  │                    │
+ ┌───▼────┐  ┌───────────┘  │  │  └───────────┐  ┌────▼────┐
+ │Crafting │  │              │  │              │  │ Resource│
+ │  Ctrl   │  │              │  │              │  │  Pickup │
+ │(R/W ✅) │  │              │  │              │  │ (W ✅)  │
+ └─────────┘  │              │  │              │  └─────────┘
+           ┌──▼──────┐  ┌───▼──▼──┐  ┌────────▼───────┐
+           │  Quest   │  │  Save   │  │ DragDropHandler│
+           │  Ctrl    │  │ Manager │  │  (R/W ✅)      │
+           │(W ❌!!)  │  │(R/W ✅) │  └───────┬────────┘
+           └──────────┘  └─────────┘          │
+                                              ▼
+                                    ┌─────────────────┐
+                                    │ UseItem ❌       │
+                                    │ DropItem ⚠️     │
+                                    │ DragEquip ✅    │
+                                    └─────────────────┘
 
-Генерация предмета
-  ├─ ResourceSpawner.SpawnSingleResource()
-  │     └─ ResourcePickup.Initialize(resourceId, amount) ← БЕЗ ItemData! (БАГ-ИНВ-18)
-  ├─ EquipmentRuntimeSpawner.SpawnEquipmentPickup()
-  │     └─ LootGenerator → EquipmentSOFactory → ResourcePickup с EquipmentData ✅
-  │        └─ Texture2D утечка (БАГ-ИНВ-21)
-  ├─ EquipmentRuntimeSpawner.AddToPlayerInventory() → AddItem() ✅
-  │     └─ Но: GameObject.Find("Player") O(n), без кэша
-  └─ DeathLootGenerator.GenerateLoot() → OnLootGenerated
-        └─ ❌ НОЛЬ ПОДПИСЧИКОВ (БАГ-ИНВ-02)
-        └─ LootEntry.ItemId = string, нет ItemData (БАГ-ИНВ-27)
+     ─── ОТКЛЮЧЕННЫЕ ──────────────────────────────────
 
-Подбор предмета
-  ├─ ResourcePickup.OnTriggerEnter2D ("Player" tag — БАГ-ИНВ-26)
-  │     └─ Pickup() → TryAddToInventory()
-  │           ├─ picker.GetComponent<InventoryController>()
-  │           ├─ ServiceLocator.Get<InventoryController>() → NULL! (БАГ-ИНВ-04)
-  │           ├─ FindItemDataById() → Resources.LoadAll (дорого)
-  │           ├─ CreateTemporaryItemData() → новый runtime SO (БАГ-ИНВ-17)
-  │           └─ Нет инвентаря → return true → Destroy (БАГ-ИНВ-14)
-  ├─ PlayerController.HarvestHit() → AddResourceToInventory() ✅
-  │     └─ Но: CreateResourceItemData() — другое маппинг-таблица (БАГ-ИНВ-17)
-  └─ InventoryController.AddItem() → OnItemAdded ✅
-        └─ GameEvents.TriggerItemAdded ← НИКОГДА НЕ ВЫЗЫВАЕТСЯ (БАГ-ИНВ-03)
-
-═══════════════════ ПРОГОН 2: ХРАНЕНИЕ И СОБЫТИЯ ═══════════════════
-
-Хранение
-  └─ InventoryController: List<InventorySlot>
-       └─ InventorySlot: ItemData, Count, durability, grade
-       ├─ AddItem(): стак для EquipmentData! (БАГ-ИНВ-13)
-       ├─ AddItem(): частичное добавление без уведомления (БАГ-ИНВ-19)
-       ├─ LoadSaveData: CanFitItem отбрасывает предметы (БАГ-ИНВ-20)
-       ├─ HasFreeSpace() → всегда true (БАГ-ИНВ-22)
-       └─ Не зарегистрирован в ServiceLocator (БАГ-ИНВ-15)
-
-  └─ EquipmentController: Dictionary<EquipmentSlot, EquipmentInstance>
-       ├─ Equip(): oldItem потерян (БАГ-ИНВ-12)
-       ├─ EquipTwoHand(): оба слота потеряны (БАГ-ИНВ-12)
-       └─ Не зарегистрирован в ServiceLocator (БАГ-ИНВ-15)
-
-События
-  └─ InventoryController локальные: OnItemAdded/Removed/StackChanged ✅
-       └─ BackpackPanel подписан ✅
-       └─ GameEvents.TriggerItemAdded ← 0 вызовов, 0 подписчиков (БАГ-ИНВ-03)
-
-  └─ GameEvents (5 событий): ВСЕ 5 — 0 вызовов, 0 подписчиков (БАГ-ИНВ-03)
-  └─ OnInventoryFull: 0 подписчиков (БАГ-ИНВ-16)
-
-═══════════════════ ПРОГОН 3: UI ОТОБРАЖЕНИЕ ═══════════════════
-
-Сцена (Phase17/18)
-  ├─ BackpackPanel: 8/8 SerializeField подключены ✅
-  ├─ InventorySlotUI: 5/8 подключены (БАГ-ИНВ-05)
-  │     └─ ❌ background, border, durabilityBar
-  ├─ InventoryScreen: 12/13 подключены (БАГ-ИНВ-06)
-  │     └─ ❌ spiritStoragePanel
-  └─ Phase18: фактически no-op (логирует, не подключает)
-
-Отображение
-  └─ InventoryScreen.Initialize() → BackpackPanel.Initialize()
-       └─ SubscribeToEvents() ✅
-       └─ RefreshList() → CreateRowUI() для каждого слота
-            └─ Instantiate(slotRowPrefab, listContainer)
-            └─ ❌ rowGO.SetActive(true) ОТСУТСТВУЕТ (БАГ-ИНВ-01)
-            └─ rowUI.SetSlot() → UpdateItemDisplay()
-                 ├─ iconImage ✅, nameText ✅, countText ✅
-                 ├─ border.color → NULL (БАГ-ИНВ-05)
-                 ├─ background.color → NULL (БАГ-ИНВ-05)
-                 └─ durabilityBar → NULL (БАГ-ИНВ-05)
+     GameEvents.OnItemAdded      ← 0 вызовов, 0 подписчиков
+     QuestController.NotifyItem  ← 0 вызовов
+     AchievementController       ← НЕ СУЩЕСТВУЕТ
+     TradeController             ← НЕ СУЩЕСТВУЕТ
+     ConsumableEffect            ← НЕ СУЩЕСТВУЕТ
+     LootResult → Inventory     ← PIPELINE СЛОМАН
 ```
-
----
-
-## ПРИОРИТЕТ ИСПРАВЛЕНИЙ (итоговый)
-
-| Приоритет | # | Баг | Объём |
-|-----------|---|-----|-------|
-| P0 🔴 | 1 | БАГ-ИНВ-01: SetActive(true) | 1 строка |
-| P0 🔴 | 2 | БАГ-ИНВ-02: Боевой лут | ~30 строк |
-| P0 🔴 | 3 | БАГ-ИНВ-12: Equip() теряет старый предмет | ~15 строк |
-| P0 🔴 | 4 | БАГ-ИНВ-13: EquipmentData стакается | ~5 строк |
-| P1 🟠 | 5 | БАГ-ИНВ-04: GetOrFind | 1 слово |
-| P1 🟠 | 6 | БАГ-ИНВ-14: Предмет уничтожается без инвентаря | 1 строка |
-| P1 🟠 | 7 | БАГ-ИНВ-05: SlotUI поля | ~20 строк |
-| P1 🟠 | 8 | БАГ-ИНВ-06: spiritStoragePanel | ~5 строк |
-| P1 🟠 | 9 | БАГ-ИНВ-15: ServiceLocator регистрация | ~4 строки |
-| P1 🟠 | 10 | БАГ-ИНВ-03: GameEvents мост | ~6 строк |
-| P2 🟡 | 11 | БАГ-ИНВ-16: OnInventoryFull UI | ~10 строк |
-| P2 🟡 | 12 | БАГ-ИНВ-17: Единый ItemDatabase | ~40 строк |
-| P2 🟡 | 13 | БАГ-ИНВ-18: ItemData при спавне | ~5 строк |
-| P2 🟡 | 14 | БАГ-ИНВ-07: Hover vs Grade-тинт | ~5 строк |
-| P2 🟡 | 15 | БАГ-ИНВ-19: AddItem partial | ~10 строк |
-| P2 🟡 | 16 | БАГ-ИНВ-20: LoadSaveData лимиты | ~5 строк |
-| P2 🟡 | 17 | БАГ-ИНВ-21: Texture2D утечка | ~10 строк |
-| P3 🟢 | 18-27 | БАГ-ИНВ-22..27: низкие | различный |
-
----
-
-## СВОДНАЯ СТАТИСТИКА
-
-| Серьёзность | Количество |
-|-------------|-----------|
-| 🔴 КРИТИЧЕСКИЕ | 4 |
-| 🟠 ВЫСОКИЕ | 6 |
-| 🟡 СРЕДНИЕ | 7 |
-| 🟢 НИЗКИЕ | 6 |
-| **ИТОГО** | **23** |
 
 ---
 
 ## ЗАМЕТКИ
 - БАГ-ИНВ-01 — **прямая причина** симптома «предметы не отображаются» (1 строка!)
-- БАГ-ИНВ-12 — самый опасный баг для пользователя: потеря экипировки при замене
-- БАГ-ИНВ-02 + БАГ-ИНВ-27 — боевой лут полностью неработоспособен
-- БАГ-ИНВ-03 — блокирует квесты на сбор предметов
-- БАГ-ИНВ-13 — может привести к потере grade/durability крафтового оружия
-- БАГ-ИНВ-17 — создаёт несогласованные данные между путями подбора
-- TooltipPanel полностью функциональна ✅ (24/24 SerializeField подключены)
-- DragDropHandler подключён корректно ✅, но не работает из-за БАГ-ИНВ-01
+- БАГ-ИНВ-12 + БАГ-ИНВ-55 — потеря экипировки при замене + corruption durability при unequip
+- БАГ-ИНВ-28 — блокирует ВСЕ квесты на сбор предметов
+- БАГ-ИНВ-03 — корневая причина разрыва GameEvents (блокирует квесты, достижения, отслеживание)
+- БАГ-ИНВ-49 — Resources.LoadAll без кэша — может вызвать фризы
+- БАГ-ИНВ-50 — инвентарь не переживёт смену сцены
+- ConsumableEffect (БАГ-ИНВ-31) — целая система отсутствует
+- Trading (БАГ-ИНВ-37) — целая система отсутствует
+- 5 систем GameEvents полностью мертвы (0 вызовов, 0 подписчиков)
