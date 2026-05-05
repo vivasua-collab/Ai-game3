@@ -2,7 +2,8 @@
 
 👉 Основной план: [05_05_combat_pipeline_fix.md](05_05_combat_pipeline_fix.md)
 **Дата:** 2026-05-05 09:45:07 UTC
-**Статус:** in_progress
+**Верификация:** 2026-05-05 14:06:23 MSK
+**Статус:** complete ✅
 
 ---
 
