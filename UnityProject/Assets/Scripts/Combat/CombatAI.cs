@@ -4,6 +4,7 @@
 // Версия: 1.0
 // ============================================================================
 // Создано: 2026-05-04 04:42:00 UTC
+// Редактировано: 2026-05-07 10:45:00 UTC — ФАЗА 3: MeleeWeapon без оружия → пропуск
 // ============================================================================
 //
 // ╔═══════════════════════════════════════════════════════════════════════════╗
@@ -189,10 +190,15 @@ namespace CultivationGame.Combat
 
         /// <summary>
         /// Найти лучшую атакующую технику для текущей ситуации.
+        /// ФАЗА 3: MeleeWeapon техники пропускаются если нет оружия.
         /// </summary>
         private LearnedTechnique FindBestTechnique(bool isMeleeRange)
         {
             if (techniqueController == null) return null;
+
+            // ФАЗА 3: Проверяем наличие оружия для MeleeWeapon техник
+            var eqCtrl = ownerCombatant?.GameObject?.GetComponent<CultivationGame.Inventory.EquipmentController>();
+            bool hasWeapon = eqCtrl != null && eqCtrl.GetMainWeapon() != null;
 
             LearnedTechnique bestTech = null;
             int bestCapacity = 0;
@@ -201,6 +207,14 @@ namespace CultivationGame.Combat
             {
                 if (tech == null || tech.Data == null) continue;
                 if (!techniqueController.CanUseTechnique(tech)) continue;
+
+                // ФАЗА 3: MeleeWeapon без оружия → fallback (проверка дублирует CanUseTechnique,
+                // но позволяет CombatAI логировать причину пропуска)
+                if (tech.Data.combatSubtype == CombatSubtype.MeleeWeapon && !hasWeapon)
+                {
+                    Debug.Log($"[CombatAI] Пропуск {tech.Data.nameRu}: MeleeWeapon без оружия");
+                    continue;
+                }
 
                 // Фильтруем по дальности
                 bool isTechMelee = tech.Data.combatSubtype == CombatSubtype.MeleeStrike ||

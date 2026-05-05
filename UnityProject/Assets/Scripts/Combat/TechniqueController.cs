@@ -223,6 +223,15 @@ namespace CultivationGame.Combat
             // Проверка уровня культивации
             if (qiController.CultivationLevel < technique.Data.minCultivationLevel)
                 return false;
+
+            // ФАЗА 3: MeleeWeapon техника требует оружие в основной руке
+            if (technique.Data.combatSubtype == CombatSubtype.MeleeWeapon)
+            {
+                if (equipmentController == null || equipmentController.GetMainWeapon() == null)
+                {
+                    return false; // Нет оружия — нельзя использовать MeleeWeapon технику
+                }
+            }
             
             // Рассчитываем стоимость Ци
             long qiCost = CalculateQiCost(technique);
