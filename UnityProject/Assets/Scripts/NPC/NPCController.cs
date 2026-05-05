@@ -948,7 +948,10 @@ namespace CultivationGame.NPC
                 CurrentLocation = state.CurrentLocation ?? "",
                 CurrentAIState = (int)state.CurrentAIState,
                 TargetId = state.TargetId ?? "",
-                RoleValue = (int)state.Role  // Редактировано: 2026-05-01 — NPCRole save
+                RoleValue = (int)state.Role,  // Редактировано: 2026-05-01 — NPCRole save
+                // ФАЗА 7: Сохранение экипировки и техник NPC
+                EquipmentSlots = GetEquipmentSaveData(),
+                TechniqueSlots = GetTechniqueSaveData()
             };
         }
         
@@ -1003,6 +1006,102 @@ namespace CultivationGame.NPC
             state.CurrentAIState = (NPCAIState)data.CurrentAIState;
             state.TargetId = data.TargetId;
             state.Role = (NPCRole)data.RoleValue;  // Редактировано: 2026-05-01 — NPCRole load
+
+            // ФАЗА 7: Загрузка экипировки и техник NPC
+            LoadEquipmentSaveData(data.EquipmentSlots);
+            LoadTechniqueSaveData(data.TechniqueSlots);
+        }
+
+        // === ФАЗА 7: Save/Load helpers для экипировки и техник ===
+
+        /// <summary>
+        /// Получить сериализуемые данные экипировки NPC.
+        /// </summary>
+        private NPCEquipmentSaveData[] GetEquipmentSaveData()
+        {
+            if (equipmentController == null) return Array.Empty<NPCEquipmentSaveData>();
+
+            var items = equipmentController.GetAllEquipped();
+            var result = new NPCEquipmentSaveData[items.Count];
+            for (int i = 0; i < items.Count; i++)
+            {
+                result[i] = new NPCEquipmentSaveData
+                {
+                    Slot = (int)items[i].Slot,
+                    ItemId = items[i].ItemId,
+                    Grade = (int)items[i].grade,
+                    Durability = items[i].durability
+                };
+            }
+            return result;
+        }
+
+        /// <summary>
+        /// Получить сериализуемые данные техник NPC.
+        /// </summary>
+        private NPCTechniqueSlotSaveData[] GetTechniqueSaveData()
+        {
+            if (techniqueController == null) return Array.Empty<NPCTechniqueSlotSaveData>();
+
+            var techs = techniqueController.Techniques;
+            var result = new NPCTechniqueSlotSaveData[techs.Count];
+            for (int i = 0; i < techs.Count; i++)
+            {
+                result[i] = new NPCTechniqueSlotSaveData
+                {
+                    TechniqueId = techs[i].Data?.techniqueId ?? "",
+                    Mastery = techs[i].Mastery,
+                    QuickSlot = techs[i].QuickSlot
+                };
+            }
+            return result;
+        }
+
+        /// <summary>
+        /// Загрузить экипировку NPC из сохранения.
+        /// </summary>
+        private void LoadEquipmentSaveData(NPCEquipmentSaveData[] data)
+        {
+            if (data == null || equipmentController == null) return;
+
+            equipmentController.UnequipAll();
+            foreach (var entry in data)
+            {
+                if (string.IsNullOrEmpty(entry.ItemId)) continue;
+
+                var eqData = Resources.Load<CultivationGame.Data.ScriptableObjects.EquipmentData>(
+                    $"Equipment/{entry.ItemId}");
+                if (eqData != null)
+                {
+                    equipmentController.Equip(eqData, (CultivationGame.Core.EquipmentGrade)entry.Grade, entry.Durability);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Загрузить техники NPC из сохранения.
+        /// </summary>
+        private void LoadTechniqueSaveData(NPCTechniqueSlotSaveData[] data)
+        {
+            if (data == null || techniqueController == null) return;
+
+            foreach (var entry in data)
+            {
+                if (string.IsNullOrEmpty(entry.TechniqueId)) continue;
+
+                var techData = Resources.Load<CultivationGame.Data.ScriptableObjects.TechniqueData>(
+                    $"Techniques/{entry.TechniqueId}");
+                if (techData != null)
+                {
+                    techniqueController.LearnTechnique(techData, entry.Mastery);
+                    if (entry.QuickSlot >= 0 && entry.QuickSlot < 9)
+                    {
+                        var learned = techniqueController.GetTechnique(entry.TechniqueId);
+                        if (learned != null)
+                            techniqueController.AssignToQuickSlot(learned, entry.QuickSlot);
+                    }
+                }
+            }
         }
     }
 }

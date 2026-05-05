@@ -3,6 +3,7 @@
 // Cultivation World Simulator
 // Создано: 2026-03-30 10:00:00 UTC
 // Редактировано: 2026-04-11 06:38:02 UTC — NPC-C01/C02, NPC-ATT-01/04: Disposition→Attitude+PersonalityTrait, SkillLevelData сериализация
+// Редактировано: 2026-05-07 11:30:00 UTC — ФАЗА 7: NPCEquipmentSaveData, NPCTechniqueSlotSaveData
 // ============================================================================
 
 using System;
@@ -335,5 +336,38 @@ namespace CultivationGame.NPC
 
         // Редактировано: 2026-05-01 — NPCRole для save/load
         public int RoleValue;  // NPCRole enum as int
+
+        // ФАЗА 7: Экипировка и техники NPC
+        public NPCEquipmentSaveData[] EquipmentSlots;
+        public NPCTechniqueSlotSaveData[] TechniqueSlots;
+    }
+
+    // ============================================================================
+    // ФАЗА 7: Save data для экипировки и техник NPC
+    // ============================================================================
+
+    /// <summary>
+    /// Сериализуемые данные экипировки NPC.
+    /// Сохраняет itemId, slot, grade, durability.
+    /// </summary>
+    [Serializable]
+    public class NPCEquipmentSaveData
+    {
+        public int Slot;          // EquipmentSlot enum as int
+        public string ItemId;
+        public int Grade;        // EquipmentGrade enum as int
+        public int Durability;
+    }
+
+    /// <summary>
+    /// Сериализуемые данные слота техники NPC.
+    /// Сохраняет techniqueId, mastery, quickSlot.
+    /// </summary>
+    [Serializable]
+    public class NPCTechniqueSlotSaveData
+    {
+        public string TechniqueId;
+        public float Mastery;
+        public int QuickSlot;
     }
 }
