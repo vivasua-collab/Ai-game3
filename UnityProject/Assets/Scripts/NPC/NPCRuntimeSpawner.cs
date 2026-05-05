@@ -2,6 +2,7 @@
 // NPCRuntimeSpawner.cs — Runtime спавн NPC (без Editor API)
 // Cultivation World Simulator
 // Создано: 2026-05-04 12:00:00 UTC
+// Редактировано: 2026-05-07 11:15:00 UTC — ФАЗА 6: +EquipmentController в спавн
 // ============================================================================
 //
 // Runtime-версия NPCSceneSpawner — без SerializedObject, Undo, MenuItem.
@@ -25,6 +26,7 @@ using CultivationGame.NPC;
 using CultivationGame.Body;
 using CultivationGame.Qi;
 using CultivationGame.Combat;
+using CultivationGame.Inventory;  // ФАЗА 6: EquipmentController
 
 namespace CultivationGame.NPC
 {
@@ -89,6 +91,7 @@ namespace CultivationGame.NPC
             var body = go.AddComponent<BodyController>();
             var qi = go.AddComponent<QiController>();
             var technique = go.AddComponent<TechniqueController>();
+            var equipment = go.AddComponent<EquipmentController>(); // ФАЗА 6: экипировка NPC
             var visual = go.AddComponent<NPCVisual>();
             var interactable = go.AddComponent<NPCInteractable>();
             var movement = go.AddComponent<NPCMovement>();

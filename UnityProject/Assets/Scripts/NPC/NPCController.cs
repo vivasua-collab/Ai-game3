@@ -698,13 +698,87 @@ namespace CultivationGame.NPC
                 qiController.SetCultivationLevel(generated.cultivationLevel, generated.cultivationSubLevel);
             }
 
-            // Техники (IDs)
-            // techniqueController будет использовать techniqueIds для загрузки техник
+            // ФАЗА 6: Инициализация экипировки и техник из пресета
+            InitializeEquipmentFromPreset();
+            InitializeTechniquesFromPreset();
 
             Debug.Log($"NPC initialized from generator: {state.Name} (L{generated.cultivationLevel}.{generated.cultivationSubLevel})");
         }
 
         // FIX NPC-ATT-01: Conversion helpers from legacy Disposition to Attitude + PersonalityTrait (2026-04-11)
+        /// <summary>
+        /// Convert legacy Disposition enum to Attitude enum.
+
+        // === ФАЗА 6: Инициализация экипировки и техник NPC ===
+
+        /// <summary>
+        /// Инициализировать экипировку NPC из NPCPresetData.equipment.
+        /// NPCPresetData уже имеет List<EquippedItem> с slot, itemId, grade, durabilityPercent.
+        /// </summary>
+        private void InitializeEquipmentFromPreset()
+        {
+            if (preset == null || equipmentController == null) return;
+            if (preset.equipment == null || preset.equipment.Count == 0) return;
+
+            foreach (var item in preset.equipment)
+            {
+                if (string.IsNullOrEmpty(item.itemId)) continue;
+
+                // Загружаем EquipmentData из Resources
+                var equipmentData = Resources.Load<CultivationGame.Data.ScriptableObjects.EquipmentData>(
+                    $"Equipment/{item.itemId}");
+
+                if (equipmentData != null)
+                {
+                    int durability = item.durabilityPercent > 0
+                        ? Mathf.RoundToInt(equipmentData.maxDurability * item.durabilityPercent / 100f)
+                        : -1;
+
+                    equipmentController.Equip(equipmentData, item.grade, durability);
+                    Debug.Log($"[NPCController] Экипировано: {equipmentData.nameRu} → {item.slot} ({item.grade})");
+                }
+                else
+                {
+                    Debug.LogWarning($"[NPCController] EquipmentData не найдена: Equipment/{item.itemId}");
+                }
+            }
+        }
+
+        /// <summary>
+        /// Инициализировать техники NPC из NPCPresetData.knownTechniques.
+        /// NPCPresetData уже имеет List<KnownTechnique> с techniqueId, mastery, quickSlot.
+        /// </summary>
+        private void InitializeTechniquesFromPreset()
+        {
+            if (preset == null || techniqueController == null) return;
+            if (preset.knownTechniques == null || preset.knownTechniques.Count == 0) return;
+
+            foreach (var known in preset.knownTechniques)
+            {
+                if (string.IsNullOrEmpty(known.techniqueId)) continue;
+
+                // Загружаем TechniqueData из Resources
+                var techData = Resources.Load<CultivationGame.Data.ScriptableObjects.TechniqueData>(
+                    $"Techniques/{known.techniqueId}");
+
+                if (techData != null)
+                {
+                    techniqueController.LearnTechnique(techData, known.mastery);
+                    if (known.quickSlot >= 0 && known.quickSlot < 9)
+                    {
+                        var learned = techniqueController.GetTechnique(known.techniqueId);
+                        if (learned != null)
+                            techniqueController.AssignToQuickSlot(learned, known.quickSlot);
+                    }
+                    Debug.Log($"[NPCController] Изучена техника: {techData.nameRu} (mastery={known.mastery:F0}%, slot={known.quickSlot})");
+                }
+                else
+                {
+                    Debug.LogWarning($"[NPCController] TechniqueData не найдена: Techniques/{known.techniqueId}");
+                }
+            }
+        }
+
         /// <summary>
         /// Convert legacy Disposition enum to Attitude enum.
         /// </summary>

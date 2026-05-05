@@ -129,6 +129,9 @@ namespace CultivationGame.Combat
             // === Предметы ===
             GenerateItemDrops(result, defeatedLevel, defeatedElement, defeated.BodyMaterial, defeated.Name);
 
+            // ФАЗА 6: Шанс выпадения экипировки убитого NPC
+            GenerateEquipmentDrops(result, defeated);
+
             Debug.Log($"[LootGenerator] Лут из {defeated.Name}: " +
                       $"{result.TotalItemCount} предметов, " +
                       $"Ци={result.QiAbsorbed}, Опыт={result.CultivationExp}");
@@ -326,6 +329,43 @@ namespace CultivationGame.Combat
         private static bool RollChance(float chance)
         {
             return UnityEngine.Random.value < chance;
+        }
+
+        // ФАЗА 6: Шанс выпадения экипировки убитого NPC
+        private const float EQUIPMENT_DROP_RATE = 0.30f; // 30% шанс выпадения каждого предмета
+
+        /// <summary>
+        /// ФАЗА 6: Сгенерировать выпадение экипировки убитого NPC.
+        /// Каждый экипированный предмет имеет 30% шанс выпасть.
+        /// </summary>
+        private static void GenerateEquipmentDrops(LootResult result, ICombatant defeated)
+        {
+            if (defeated?.GameObject == null) return;
+
+            var eqCtrl = defeated.GameObject.GetComponent<CultivationGame.Inventory.EquipmentController>();
+            if (eqCtrl == null) return;
+
+            foreach (var slot in CultivationGame.Inventory.EquipmentController.VisibleSlots)
+            {
+                var instance = eqCtrl.GetEquipment(slot);
+                if (instance == null) continue;
+
+                if (RollChance(EQUIPMENT_DROP_RATE))
+                {
+                    string itemId = instance.equipmentData?.itemId ?? "";
+                    if (!string.IsNullOrEmpty(itemId))
+                    {
+                        // Добавляем предмет в лут (как EquipmentEntry)
+                        result.Items.Add(new LootEntry
+                        {
+                            ItemId = itemId,
+                            Amount = 1,
+                            Rarity = instance.equipmentData?.rarity ?? CultivationGame.Core.ItemRarity.Common
+                        });
+                        Debug.Log($"[LootGenerator] Экипировка выпала: {instance.Name} ({slot})");
+                    }
+                }
+            }
         }
 
         #endregion
