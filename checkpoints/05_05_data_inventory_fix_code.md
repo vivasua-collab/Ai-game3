@@ -1,7 +1,7 @@
 # 📦 Кодовая база: Исправление данных и инвентаря
 
-👉 Основной план: [05_08_data_inventory_fix.md](05_08_data_inventory_fix.md)
-**Дата:** 2026-05-08 12:40:00 MSK
+👉 Основной план: [05_05_data_inventory_fix.md](05_05_data_inventory_fix.md)
+**Дата:** 2026-05-05 09:45:07 UTC
 **Статус:** in_progress
 
 ---

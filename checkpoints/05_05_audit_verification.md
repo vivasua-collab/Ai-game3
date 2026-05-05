@@ -1,6 +1,6 @@
 # Чекпоинт: Верификация аудита боёвки и экипировки
 
-**Дата:** 2026-05-08 12:40:00 MSK
+**Дата:** 2026-05-05 09:45:07 UTC
 **Фаза:** Аудит v3.0 → Верификация → Планы исправления
 **Статус:** complete
 
@@ -61,9 +61,9 @@ baseGain=0.01/0.02 слишком мал — подтверждено. НО Max(
 
 | Чекпоинт | Домен | Проблем | Время |
 |----------|-------|:-------:|:-----:|
-| [05_08_constants_enums_fix.md](05_08_constants_enums_fix.md) | Константы, Enum | 9 | ~90 мин |
-| [05_08_combat_pipeline_fix.md](05_08_combat_pipeline_fix.md) | Боевой пайплайн | 11 | ~335 мин |
-| [05_08_data_inventory_fix.md](05_08_data_inventory_fix.md) | Данные, инвентарь | 25 | ~270 мин |
+| [05_05_constants_enums_fix.md](05_05_constants_enums_fix.md) | Константы, Enum | 9 | ~90 мин |
+| [05_05_combat_pipeline_fix.md](05_05_combat_pipeline_fix.md) | Боевой пайплайн | 11 | ~335 мин |
+| [05_05_data_inventory_fix.md](05_05_data_inventory_fix.md) | Данные, инвентарь | 25 | ~270 мин |
 
 17 проблем (в основном низкие и документационные) не включены — требуют обновления
 документации, а не кода.
@@ -83,9 +83,9 @@ baseGain=0.01/0.02 слишком мал — подтверждено. НО Max(
 ## Изменённые файлы
 
 - `docs_temp/AUDIT_COMBAT_EQUIPMENT_v3.md` — прочитан (не изменялся)
-- `checkpoints/05_08_constants_enums_fix.md` — создан
-- `checkpoints/05_08_constants_enums_fix_code.md` — создан
-- `checkpoints/05_08_combat_pipeline_fix.md` — создан
-- `checkpoints/05_08_combat_pipeline_fix_code.md` — создан
-- `checkpoints/05_08_data_inventory_fix.md` — создан
-- `checkpoints/05_08_data_inventory_fix_code.md` — создан
+- `checkpoints/05_05_constants_enums_fix.md` — создан
+- `checkpoints/05_05_constants_enums_fix_code.md` — создан
+- `checkpoints/05_05_combat_pipeline_fix.md` — создан
+- `checkpoints/05_05_combat_pipeline_fix_code.md` — создан
+- `checkpoints/05_05_data_inventory_fix.md` — создан
+- `checkpoints/05_05_data_inventory_fix_code.md` — создан

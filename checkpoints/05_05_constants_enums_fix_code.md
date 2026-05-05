@@ -1,7 +1,7 @@
 # 📦 Кодовая база: Исправление констант и Enum
 
-👉 Основной план: [05_08_constants_enums_fix.md](05_08_constants_enums_fix.md)
-**Дата:** 2026-05-08 12:40:00 MSK
+👉 Основной план: [05_05_constants_enums_fix.md](05_05_constants_enums_fix.md)
+**Дата:** 2026-05-05 09:45:07 UTC
 **Статус:** in_progress
 
 ---

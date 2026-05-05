@@ -1,10 +1,10 @@
 # Чекпоинт: Исправление данных и инвентаря
 
-**Дата:** 2026-05-08 12:40:00 MSK
+**Дата:** 2026-05-05 09:45:07 UTC
 **Фаза:** Пост-аудит исправления — Волна 2
 **Статус:** in_progress
 
-👉 Кодовая база: [05_08_data_inventory_fix_code.md](05_08_data_inventory_fix_code.md)
+👉 Кодовая база: [05_05_data_inventory_fix_code.md](05_05_data_inventory_fix_code.md)
 
 ---
 

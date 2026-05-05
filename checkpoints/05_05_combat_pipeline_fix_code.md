@@ -1,7 +1,7 @@
 # 📦 Кодовая база: Исправление боевого пайплайна
 
-👉 Основной план: [05_08_combat_pipeline_fix.md](05_08_combat_pipeline_fix.md)
-**Дата:** 2026-05-08 12:40:00 MSK
+👉 Основной план: [05_05_combat_pipeline_fix.md](05_05_combat_pipeline_fix.md)
+**Дата:** 2026-05-05 09:45:07 UTC
 **Статус:** in_progress
 
 ---

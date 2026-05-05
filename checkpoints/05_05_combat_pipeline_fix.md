@@ -1,10 +1,10 @@
 # Чекпоинт: Исправление боевого пайплайна
 
-**Дата:** 2026-05-08 12:40:00 MSK
+**Дата:** 2026-05-05 09:45:07 UTC
 **Фаза:** Пост-аудит исправления — Волна 3 (самая сложная)
 **Статус:** in_progress
 
-👉 Кодовая база: [05_08_combat_pipeline_fix_code.md](05_08_combat_pipeline_fix_code.md)
+👉 Кодовая база: [05_05_combat_pipeline_fix_code.md](05_05_combat_pipeline_fix_code.md)
 
 ---
 
