@@ -5,6 +5,7 @@
 // ============================================================================
 // Создан: 2026-03-30 10:00:00 UTC
 // Редактировано: 2026-05-04 04:30:00 UTC — Добавлен UseTechniqueFromCharge
+// Редактировано: 2026-05-07 10:30:00 UTC — ФАЗА 2: qiCostReduction из EquipmentController
 
 using System;
 using System.Collections.Generic;
@@ -62,6 +63,9 @@ namespace CultivationGame.Combat
     {
         [Header("References")]
         [SerializeField] private QiController qiController;
+
+        // ФАЗА 2: EquipmentController для qiCostReduction (опционально)
+        private CultivationGame.Inventory.EquipmentController equipmentController;
         
         [Header("Config")]
         [SerializeField] private int maxQuickSlots = 10;
@@ -96,9 +100,12 @@ namespace CultivationGame.Combat
             
             if (qiController == null)
                 qiController = GetComponent<QiController>();
-            
+
             // Получаем/создаём систему накачки
             chargeSystem = GetComponent<TechniqueChargeSystem>();
+
+            // ФАЗА 2: EquipmentController — может отсутствовать (опционально)
+            equipmentController = GetComponent<CultivationGame.Inventory.EquipmentController>();
         }
         
         private void Update()
@@ -385,10 +392,20 @@ namespace CultivationGame.Combat
         
         private long CalculateQiCost(LearnedTechnique technique)
         {
-            return TechniqueCapacity.CalculateQiCost(
+            // Базовая стоимость из TechniqueCapacity
+            long baseCost = TechniqueCapacity.CalculateQiCost(
                 technique.Data.baseQiCost,
                 technique.Data.techniqueLevel
             );
+
+            // ФАЗА 2: Снижение стоимости Ци от оружия
+            float reduction = equipmentController?.GetQiCostReduction() ?? 0f;
+            if (reduction > 0f)
+            {
+                baseCost = (long)(baseCost * (1f - reduction));
+            }
+
+            return baseCost;
         }
         
         private int CalculateCapacity(LearnedTechnique technique)

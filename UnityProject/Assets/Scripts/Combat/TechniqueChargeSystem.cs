@@ -4,6 +4,7 @@
 // Версия: 1.0
 // ============================================================================
 // Создано: 2026-05-04 04:28:00 UTC
+// Редактировано: 2026-05-07 10:30:00 UTC — ФАЗА 2: chargeSpeedBonus из EquipmentController
 // ============================================================================
 //
 // ╔═══════════════════════════════════════════════════════════════════════════╗
@@ -67,6 +68,9 @@ namespace CultivationGame.Combat
         [SerializeField] private TechniqueController techniqueController;
         [SerializeField] private QiController qiController;
 
+        // ФАЗА 2: EquipmentController для chargeSpeedBonus (опционально)
+        private CultivationGame.Inventory.EquipmentController equipmentController;
+
         // === Runtime ===
         private TechniqueChargeData activeCharge = TechniqueChargeData.Empty;
         private bool isSubscribedToTick = false;
@@ -113,6 +117,8 @@ namespace CultivationGame.Combat
                 techniqueController = GetComponent<TechniqueController>();
             if (qiController == null)
                 qiController = GetComponent<QiController>();
+            // ФАЗА 2: EquipmentController — может отсутствовать (опционально)
+            equipmentController = GetComponent<CultivationGame.Inventory.EquipmentController>();
         }
 
         private void OnEnable()
@@ -482,6 +488,13 @@ namespace CultivationGame.Combat
 
             // Рассчитываем эффективное время
             float effectiveTime = baseChargeTime / (1f + cultivationBonus) / (1f + masteryBonus);
+
+            // ФАЗА 2: Бонус скорости накачки от оружия
+            float chargeBonus = equipmentController?.GetChargeSpeedBonus() ?? 0f;
+            if (chargeBonus > 0f)
+            {
+                effectiveTime /= (1f + chargeBonus);
+            }
 
             // Применяем ограничение tick/10
             return Mathf.Max(minChargeTime, effectiveTime);

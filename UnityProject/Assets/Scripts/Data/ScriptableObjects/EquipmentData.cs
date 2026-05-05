@@ -3,6 +3,7 @@
 // Cultivation World Simulator
 // Создано: 2026-04-13 14:03:25 UTC
 // Редактировано: 2026-04-29 08:55:00 UTC — добавлены moveSpeedPenalty, qiFlowPenalty, equippedSprite (Д6, Д7)
+// Редактировано: 2026-05-07 10:30:00 UTC — ФАЗА 2: techniqueDamageBonus, qiCostReduction, chargeSpeedBonus
 // ============================================================================
 //
 // ВЫНЕСЕН ИЗ ItemData.cs — Unity требует совпадение имени файла и класса
@@ -83,5 +84,18 @@ namespace CultivationGame.Data.ScriptableObjects
 
         [Tooltip("Особые эффекты")]
         public List<SpecialEffect> specialEffects = new List<SpecialEffect>();
+
+        [Header("Technique Bonuses")]
+        [Tooltip("Бонус к урону техник (%) — для магического оружия")]
+        [Range(0f, 50f)]
+        public float techniqueDamageBonus = 0f;
+
+        [Tooltip("Снижение стоимости Ци техник (%) — от качества оружия")]
+        [Range(0f, 30f)]
+        public float qiCostReduction = 0f;
+
+        [Tooltip("Ускорение накачки техник (%) — для духовного оружия")]
+        [Range(0f, 25f)]
+        public float chargeSpeedBonus = 0f;
     }
 }

@@ -95,6 +95,9 @@ namespace CultivationGame.Inventory
         /// <summary>Флаг dirty для пересчёта статов</summary>
         private bool statsDirty = true;
 
+        // ФАЗА 2: QiController для обновления проводимости при смене экипировки
+        private QiController qiController;
+
         #endregion
 
         #region Events
@@ -110,6 +113,9 @@ namespace CultivationGame.Inventory
 
         /// <summary>Слот WeaponOff заблокирован/разблокирован двуручным оружием</summary>
         public event Action<bool> OnWeaponOffBlockChanged;
+
+        // ФАЗА 2: Подписка на OnStatsChanged для обновления QiController
+        private bool qiUpdateSubscribed = false;
 
         #endregion
 
@@ -136,6 +142,36 @@ namespace CultivationGame.Inventory
         private void Awake()
         {
             InitializeSlots();
+            // ФАЗА 2: Получаем QiController для обновления проводимости
+            qiController = GetComponent<QiController>();
+            // Подписываемся на собственное событие для обновления QiController
+            if (!qiUpdateSubscribed)
+            {
+                OnStatsChanged += ApplyQiFlowBonus;
+                qiUpdateSubscribed = true;
+            }
+        }
+
+        private void OnDestroy()
+        {
+            // ФАЗА 2: Отписка
+            if (qiUpdateSubscribed)
+            {
+                OnStatsChanged -= ApplyQiFlowBonus;
+                qiUpdateSubscribed = false;
+            }
+        }
+
+        /// <summary>
+        /// ФАЗА 2: Обновить бонус проводимости Ци в QiController при смене экипировки.
+        /// qiFlowBonus (из EquipmentStats) → QiController.SetConductivityBonus()
+        /// </summary>
+        private void ApplyQiFlowBonus(EquipmentStats stats)
+        {
+            if (qiController != null && stats != null)
+            {
+                qiController.SetConductivityBonus(stats.qiFlowBonus);
+            }
         }
 
         #endregion
@@ -550,6 +586,35 @@ namespace CultivationGame.Inventory
             return 1.0f + weaponDamage / 50f;
         }
 
+        // === ФАЗА 2: Бонусы техник от оружия ===
+
+        /// <summary>
+        /// Бонус к урону техник от оружия (%).
+        /// Сумма techniqueDamageBonus от WeaponMain + WeaponOff.
+        /// </summary>
+        public float GetTechniqueDamageBonus()
+        {
+            return CurrentStats.techniqueDamageBonus;
+        }
+
+        /// <summary>
+        /// Снижение стоимости Ци техник от оружия (%).
+        /// Сумма qiCostReduction от WeaponMain + WeaponOff.
+        /// </summary>
+        public float GetQiCostReduction()
+        {
+            return CurrentStats.qiCostReduction;
+        }
+
+        /// <summary>
+        /// Ускорение накачки техник от оружия (%).
+        /// Сумма chargeSpeedBonus от WeaponMain + WeaponOff.
+        /// </summary>
+        public float GetChargeSpeedBonus()
+        {
+            return CurrentStats.chargeSpeedBonus;
+        }
+
         /// <summary>
         /// Извлечь значение бонуса из statBonuses предмета по имени.
         /// </summary>
@@ -612,6 +677,14 @@ namespace CultivationGame.Inventory
                 cachedStats.coverage += data.coverage;
                 cachedStats.moveSpeedPenalty += data.moveSpeedPenalty;
                 cachedStats.qiFlowBonus -= data.qiFlowPenalty; // Инверсия: штраф → бонус (отрицательный qiFlowPenalty = положительный qiFlowBonus)
+            }
+
+            // ФАЗА 2: Бонусы техник от оружия — множитель эффективности
+            if (isWeaponSlot)
+            {
+                cachedStats.techniqueDamageBonus += data.techniqueDamageBonus * effectivenessMult;
+                cachedStats.qiCostReduction += data.qiCostReduction;
+                cachedStats.chargeSpeedBonus += data.chargeSpeedBonus * effectivenessMult;
             }
 
             // Бонусы к характеристикам — множитель эффективности (×0.5..×3.25)
@@ -894,6 +967,11 @@ namespace CultivationGame.Inventory
         public float moveSpeedPenalty;    // ФАЗА 1: штраф к скорости движения
         public float qiFlowBonus;         // ФАЗА 1: бонус/штраф к потоку Ци (инвертированный qiFlowPenalty)
 
+        // ФАЗА 2: Бонусы техник от оружия
+        public float techniqueDamageBonus;  // % бонус к урону техник
+        public float qiCostReduction;       // % снижения стоимости Ци техник
+        public float chargeSpeedBonus;      // % ускорения накачки техник
+
         // Характеристики
         public float strength;
         public float agility;
@@ -959,6 +1037,9 @@ namespace CultivationGame.Inventory
                 result.coverage += stat.coverage;
                 result.moveSpeedPenalty += stat.moveSpeedPenalty;
                 result.qiFlowBonus += stat.qiFlowBonus;
+                result.techniqueDamageBonus += stat.techniqueDamageBonus;
+                result.qiCostReduction += stat.qiCostReduction;
+                result.chargeSpeedBonus += stat.chargeSpeedBonus;
                 result.strength += stat.strength;
                 result.agility += stat.agility;
                 result.constitution += stat.constitution;

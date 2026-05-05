@@ -5,6 +5,7 @@
 // Создан: 2026-03-30 10:00:00 UTC
 // Редактировано: 2026-04-10 14:43:00 UTC
 // Редактировано: 2026-05-04 07:25:00 UTC — ФАЗА 7: Слой 1b (оружие), Слой 3b (формация)
+// Редактировано: 2026-05-07 10:30:00 UTC — ФАЗА 2: Слой 1c (TechniqueDamageBonus)
 // ============================================================================
 
 using System;
@@ -47,6 +48,7 @@ namespace CultivationGame.Combat
     /// <summary>
     /// Параметры атакующего.
     /// ФАЗА 7: Добавлено WeaponBonusDamage для слоя 1b.
+    /// ФАЗА 2: Добавлено TechniqueDamageBonus для слоя 1c.
     /// </summary>
     public struct AttackerParams
     {
@@ -65,6 +67,10 @@ namespace CultivationGame.Combat
         // ФАЗА 7: Слой 1b — бонус урона оружия
         /// <summary>Бонусный урон от оружия (для CombatSubtype.MeleeWeapon)</summary>
         public float WeaponBonusDamage;
+
+        // ФАЗА 2: Слой 1c — бонус урона техник от оружия
+        /// <summary>Бонус к урону Ци-техник от оружия (%)</summary>
+        public float TechniqueDamageBonus;
     }
     
     /// <summary>
@@ -153,6 +159,18 @@ namespace CultivationGame.Combat
             if (attacker.CombatSubtype == CombatSubtype.MeleeWeapon && attacker.WeaponBonusDamage > 0)
             {
                 damage += attacker.WeaponBonusDamage;
+            }
+            
+            // ========================================
+            // СЛОЙ 1c: Бонус урона техник от оружия (ФАЗА 2)
+            // Для Ци-техник добавляем бонус от оружия (%).
+            // Формула: damage *= (1 + techniqueDamageBonus)
+            // Источник: EquipmentController / WeaponData.techniqueDamageBonus
+            // ========================================
+            
+            if (attacker.IsQiTechnique && attacker.TechniqueDamageBonus > 0)
+            {
+                damage *= (1f + attacker.TechniqueDamageBonus);
             }
             
             // ========================================

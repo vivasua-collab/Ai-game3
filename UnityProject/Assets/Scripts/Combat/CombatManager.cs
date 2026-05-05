@@ -6,6 +6,7 @@
 // Создан: 2026-03-31 14:12:00 UTC
 // Редактировано: 2026-05-04 07:25:00 UTC — ФАЗА 5: AI цикл + Update-driven пайплайн
 // Редактировано: 2026-05-04 07:30:00 UTC — ФАЗА 7: LootGenerator интеграция
+// Редактировано: 2026-05-07 10:30:00 UTC — ФАЗА 2: TechniqueDamageBonus из EquipmentController
 //
 // ИЗМЕНЕНИЯ В ВЕРСИИ 2.1:
 // - AI цикл: каждый кадр запрашивает CombatAI.GetNextAction() для NPC
@@ -340,6 +341,8 @@ namespace CultivationGame.Combat
             attackerParams.IsUltimate = technique.Data.isUltimate;
             attackerParams.IsQiTechnique = techResult.Type != TechniqueType.Cultivation;
             attackerParams.CombatSubtype = technique.Data.combatSubtype;
+            // ФАЗА 2: TechniqueDamageBonus из EquipmentController атакующего
+            attackerParams.TechniqueDamageBonus = GetTechniqueDamageBonus(attacker);
 
             // Выполняем атаку
             AttackResult result = ExecuteAttack(attacker, defender, techResult.Capacity, attackerParams);
@@ -666,6 +669,21 @@ namespace CultivationGame.Combat
                     return c;
             }
             return null;
+        }
+
+        #endregion
+
+        #region ФАЗА 2: Вспомогательные методы
+
+        /// <summary>
+        /// Получить TechniqueDamageBonus из EquipmentController атакующего.
+        /// Ищет EquipmentController на GameObject атакующего.
+        /// </summary>
+        private float GetTechniqueDamageBonus(ICombatant attacker)
+        {
+            if (attacker?.GameObject == null) return 0f;
+            var eqCtrl = attacker.GameObject.GetComponent<CultivationGame.Inventory.EquipmentController>();
+            return eqCtrl?.GetTechniqueDamageBonus() ?? 0f;
         }
 
         #endregion
