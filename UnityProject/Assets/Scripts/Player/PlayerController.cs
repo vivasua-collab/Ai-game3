@@ -5,6 +5,7 @@
 // Создано: 2026-03-30 14:00:00 UTC
 // Редактировано: 2026-05-04 07:15:00 UTC — ФАЗА 5: ProcessCombatInput + ITechniqueUser
 // Редактировано: 2026-05-07 10:00:00 UTC — ФАЗА 1: EquipmentController → ICombatant связь
+// Редактировано: 2026-05-05 08:30:00 UTC — HasShieldTechnique + QiDefense из TechniqueController
 //
 // ИЗМЕНЕНИЯ В ВЕРСИИ 1.2:
 // - FIX: FindFirstObjectByType заменён на ServiceLocator.GetOrFind (аудит Unity 6.3)
@@ -123,8 +124,8 @@ namespace CultivationGame.Player
         long ICombatant.CurrentQi => qiController?.CurrentQi ?? 0;
         long ICombatant.MaxQi => qiController?.MaxQi ?? 0;
         float ICombatant.QiDensity => qiController?.QiDensity ?? 1f;
-        QiDefenseType ICombatant.QiDefense => QiDefenseType.RawQi; // TODO: check shield technique
-        bool ICombatant.HasShieldTechnique => false; // TODO: check techniqueController
+        QiDefenseType ICombatant.QiDefense => techniqueController != null && techniqueController.HasActiveShield() ? QiDefenseType.Shield : QiDefenseType.RawQi;
+        bool ICombatant.HasShieldTechnique => techniqueController != null && techniqueController.HasDefensiveTechnique();
         BodyMaterial ICombatant.BodyMaterial => bodyController?.BodyMaterial ?? BodyMaterial.Organic;
         float ICombatant.HealthPercent => bodyController?.HealthPercent ?? 0f;
         bool ICombatant.IsAlive => state.IsAlive;

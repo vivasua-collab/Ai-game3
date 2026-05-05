@@ -7,6 +7,7 @@
 //   Причина: Editor/ папка компилируется в Assembly-CSharp-Editor, недоступный в runtime.
 // Редактировано: 2026-04-29 12:03:16 UTC — исправление некорректной даты (05-01 → 04-29)
 // Редактировано: 2026-05-07 10:30:00 UTC — ФАЗА 2: маппинг qiCostReduction/chargeSpeedBonus
+// Редактировано: 2026-05-05 08:20:00 UTC — БАГ-3: +маппинг techniqueDamageBonus
 // ============================================================================
 //
 // Мост DTO → EquipmentData SO:
@@ -85,6 +86,7 @@ namespace CultivationGame.Generators
 
             // ФАЗА 2: Бонусы техник от оружия — маппинг из GeneratedWeapon DTO
             so.qiCostReduction = dto.qiCostReduction;
+            so.techniqueDamageBonus = dto.techniqueDamageBonus;  // БАГ-3: маппинг бонуса урона техник
             so.chargeSpeedBonus = dto.qiConductivity > 0 ? dto.qiConductivity * 0.1f : 0f; // Проводимость → ускорение накачки
 
             // Бонусы

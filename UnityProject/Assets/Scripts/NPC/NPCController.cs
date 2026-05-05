@@ -7,6 +7,7 @@
 // Редактировано: 2026-04-30 09:45:00 UTC — ICombatant: реализация интерфейса, TakeDamage через пайплайн
 // Редактировано: 2026-05-04 07:20:00 UTC — ФАЗА 5: CombatAI + CombatTrigger + ITechniqueUser
 // Редактировано: 2026-05-07 10:00:00 UTC — ФАЗА 1: EquipmentController → ICombatant связь
+// Редактировано: 2026-05-05 08:30:00 UTC — HasShieldTechnique + QiDefense из TechniqueController
 // ============================================================================
 //
 // Источник: docs/NPC_AI_SYSTEM.md, docs/QI_SYSTEM.md
@@ -103,8 +104,8 @@ namespace CultivationGame.NPC
         long ICombatant.CurrentQi => state?.CurrentQi ?? 0;
         long ICombatant.MaxQi => state?.MaxQi ?? 0;
         float ICombatant.QiDensity => qiController?.QiDensity ?? 1f;
-        QiDefenseType ICombatant.QiDefense => qiController != null ? qiController.QiDefense : QiDefenseType.RawQi;
-        bool ICombatant.HasShieldTechnique => false; // TODO: проверить TechniqueController
+        QiDefenseType ICombatant.QiDefense => techniqueController != null && techniqueController.HasActiveShield() ? QiDefenseType.Shield : (qiController != null ? qiController.QiDefense : QiDefenseType.RawQi);
+        bool ICombatant.HasShieldTechnique => techniqueController != null && techniqueController.HasDefensiveTechnique();
         BodyMaterial ICombatant.BodyMaterial => bodyController?.BodyMaterial ?? BodyMaterial.Organic;
         float ICombatant.HealthPercent => state != null && state.MaxHealth > 0
             ? (float)state.CurrentHealth / state.MaxHealth

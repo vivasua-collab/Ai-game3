@@ -6,6 +6,7 @@
 // Создан: 2026-03-30 10:00:00 UTC
 // Редактировано: 2026-05-04 04:30:00 UTC — Добавлен UseTechniqueFromCharge
 // Редактировано: 2026-05-07 10:30:00 UTC — ФАЗА 2: qiCostReduction из EquipmentController
+// Редактировано: 2026-05-05 08:25:00 UTC — HasDefensiveTechnique() + HasActiveShield()
 
 using System;
 using System.Collections.Generic;
@@ -91,6 +92,36 @@ namespace CultivationGame.Combat
         
         public List<LearnedTechnique> Techniques => learnedTechniques;
         public int TechniqueCount => learnedTechniques.Count;
+
+        /// <summary>
+        /// Есть ли у практика защитная техника (Shield/Block/Dodge)?
+        /// Используется ICombatant.HasShieldTechnique для определения QiDefense типа.
+        /// </summary>
+        public bool HasDefensiveTechnique()
+        {
+            foreach (var tech in learnedTechniques)
+            {
+                if (tech.Data != null && tech.Data.techniqueType == TechniqueType.Defense)
+                    return true;
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// Есть ли активная техника-щит (не на кулдауне)?
+        /// Используется для QiDefenseType.Shield vs RawQi.
+        /// </summary>
+        public bool HasActiveShield()
+        {
+            foreach (var tech in learnedTechniques)
+            {
+                if (tech.Data != null &&
+                    tech.Data.techniqueType == TechniqueType.Defense &&
+                    tech.CooldownRemaining <= 0f)
+                    return true;
+            }
+            return false;
+        }
         
         // === Unity Lifecycle ===
         

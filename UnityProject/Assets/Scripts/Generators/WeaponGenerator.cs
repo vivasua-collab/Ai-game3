@@ -4,6 +4,7 @@
 // Версия: 1.0
 // Создано: 2026-03-31 10:22:36 UTC
 // Редактировано: 2026-04-28 14:40 UTC — добавлены инвентарные поля (P1: weight, volume, stackable, maxStack, allowNesting, category)
+// Редактировано: 2026-05-05 08:15:00 UTC — БАГ-1: +techniqueDamageBonus в DTO и генерацию
 // ============================================================================
 //
 // Источник: docs/EQUIPMENT_SYSTEM.md
@@ -142,6 +143,7 @@ namespace CultivationGame.Generators
         // Qi properties
         public float qiConductivity;
         public float qiCostReduction;
+        public float techniqueDamageBonus;  // БАГ-1: бонус к урону Ци-техник (%)
 
         // Special
         public List<string> specialEffects = new List<string>();
@@ -365,6 +367,23 @@ namespace CultivationGame.Generators
             // Qi conductivity
             weapon.qiConductivity = rng.NextFloat(minCond, maxCond) * gradeEffMult;
             weapon.qiCostReduction = weapon.grade >= EquipmentGrade.Refined ? (int)weapon.grade * 0.05f : 0f;
+
+            // БАГ-1: Бонус к урону техник — магическое оружие и высокие грейды
+            if (weapon.weaponClass == WeaponClass.Magic)
+            {
+                // Магическое оружие (Посох, Жезл): бонус зависит от проводимости и грейда
+                weapon.techniqueDamageBonus = weapon.qiConductivity * 0.04f +
+                    (weapon.grade >= EquipmentGrade.Refined ? (int)weapon.grade * 0.03f : 0f);
+            }
+            else if (weapon.grade >= EquipmentGrade.Perfect)
+            {
+                // Совершенное+ немагическое: малый бонус (2-8%)
+                weapon.techniqueDamageBonus = (int)weapon.grade * 0.02f;
+            }
+            else
+            {
+                weapon.techniqueDamageBonus = 0f;
+            }
 
             // Requirements
             CalculateRequirements(weapon, rng);
